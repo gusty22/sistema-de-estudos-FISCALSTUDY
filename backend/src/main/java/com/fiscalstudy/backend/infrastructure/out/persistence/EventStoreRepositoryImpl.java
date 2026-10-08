@@ -26,4 +26,13 @@ public class EventStoreRepositoryImpl implements EventStoreRepository {
                      
         jdbcTemplate.update(sql, eventId, eventType, aggregateType, aggregateId, sessionId, now, now, eventVersion, schemaVersion, payloadJson);
     }
+
+    @Override
+    public boolean hasRecentEvent(String eventType, String aggregateId, String sessionId, int minutes) {
+        String since = Instant.now().minusSeconds(minutes * 60L).toString();
+        String sql = "SELECT COUNT(*) FROM event_store " +
+                     "WHERE event_type = ? AND aggregate_id = ? AND session_id = ? AND occurred_at >= ?";
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, eventType, aggregateId, sessionId, since);
+        return count != null && count > 0;
+    }
 }
