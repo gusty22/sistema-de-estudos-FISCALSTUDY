@@ -14,6 +14,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.JsonProcessingException;
 
 @RestController
 @RequestMapping("/api/v1/ingestion")
@@ -21,9 +23,11 @@ public class IngestionController {
 
     private static final Logger logger = LoggerFactory.getLogger(IngestionController.class);
     private final JdbcTemplate jdbcTemplate;
+    private final ObjectMapper objectMapper;
 
     public IngestionController(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
+        this.objectMapper = new ObjectMapper();
     }
 
     @PostMapping("/import")
@@ -46,9 +50,21 @@ public class IngestionController {
                 Object rawStatement = q.get("statement");
                 String statement = rawStatement != null ? String.valueOf(rawStatement) : null;
                 
-                String sql = "INSERT INTO questions (id, enunciado, banca, ano, cargo) VALUES (?, ?, ?, ?, ?) " +
-                             "ON CONFLICT(id) DO UPDATE SET enunciado=excluded.enunciado, banca=excluded.banca, ano=excluded.ano, cargo=excluded.cargo";
-                jdbcTemplate.update(sql, id, statement, banca, ano, cargo);
+                String optionsJson = "[]";
+                if (q.containsKey("options")) {
+                    try {
+                        optionsJson = objectMapper.writeValueAsString(q.get("options"));
+                    } catch (JsonProcessingException e) {
+                        logger.error("Error serializing options", e);
+                    }
+                }
+                
+                // Mocking correct option since Python ingestion doesn't have it yet
+                String correctOption = "A"; 
+
+                String sql = "INSERT INTO questions (id, enunciado, options_json, correct_option, banca, ano, cargo) VALUES (?, ?, ?, ?, ?, ?, ?) " +
+                             "ON CONFLICT(id) DO UPDATE SET enunciado=excluded.enunciado, options_json=excluded.options_json, correct_option=excluded.correct_option, banca=excluded.banca, ano=excluded.ano, cargo=excluded.cargo";
+                jdbcTemplate.update(sql, id, statement, optionsJson, correctOption, banca, ano, cargo);
                 
                 logger.info("Saved question {}", id);
             }

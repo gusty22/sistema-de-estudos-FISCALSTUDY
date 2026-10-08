@@ -17,6 +17,8 @@ CREATE TABLE IF NOT EXISTS event_store (
 CREATE TABLE IF NOT EXISTS questions (
     id TEXT PRIMARY KEY,
     enunciado TEXT,
+    options_json TEXT,
+    correct_option TEXT,
     banca TEXT,
     ano INTEGER,
     orgao TEXT,
