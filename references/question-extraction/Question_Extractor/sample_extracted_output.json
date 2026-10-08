@@ -1,0 +1,377 @@
+{
+  "document_id": "96441f18-60a5-41e8-a7dd-3b824b9bcfb7",
+  "original_filename": "Sample_Physics_Exam_Paper.pdf",
+  "status": "completed",
+  "total_questions": 14,
+  "questions": [
+    {
+      "id": "1404314a-4ee8-44b8-b0fe-17691d7578ff",
+      "question_number": "1",
+      "question_text": "All questions are compulsory.",
+      "question_type": "short_answer",
+      "confidence": 0.98,
+      "extraction_status": "verified",
+      "source_pages": [
+        1
+      ],
+      "options": [],
+      "answer": {
+        "label": "B",
+        "text": "Tesla",
+        "confidence": 0.95,
+        "matching_status": "matched"
+      }
+    },
+    {
+      "id": "5f5b3309-f643-4514-b661-af2928d2923e",
+      "question_number": "1",
+      "question_text": "What is the SI unit of magnetic flux density?",
+      "question_type": "MCQ",
+      "confidence": 1.0,
+      "extraction_status": "verified",
+      "source_pages": [
+        1
+      ],
+      "options": [
+        {
+          "label": "A",
+          "text": "Weber",
+          "confidence": 0.95
+        },
+        {
+          "label": "B",
+          "text": "Tesla",
+          "confidence": 0.95
+        },
+        {
+          "label": "C",
+          "text": "Henry",
+          "confidence": 0.95
+        },
+        {
+          "label": "D",
+          "text": "Gauss",
+          "confidence": 0.95
+        }
+      ],
+      "answer": {
+        "label": "B",
+        "text": "Tesla",
+        "confidence": 0.95,
+        "matching_status": "matched"
+      }
+    },
+    {
+      "id": "e7431916-9f74-470b-a4a4-f40a3055ff6d",
+      "question_number": "1",
+      "question_text": "Zero",
+      "question_type": "short_answer",
+      "confidence": 0.85,
+      "extraction_status": "verified",
+      "source_pages": [
+        1
+      ],
+      "options": [],
+      "answer": {
+        "label": "B",
+        "text": "Tesla",
+        "confidence": 0.95,
+        "matching_status": "matched"
+      }
+    },
+    {
+      "id": "e6160d14-8447-46c8-982c-f38dc608c26f",
+      "question_number": "2",
+      "question_text": "Read each question carefully before answering.",
+      "question_type": "short_answer",
+      "confidence": 1.0,
+      "extraction_status": "verified",
+      "source_pages": [
+        1
+      ],
+      "options": [],
+      "answer": {
+        "label": "C",
+        "text": "Gamma rays",
+        "confidence": 0.95,
+        "matching_status": "matched"
+      }
+    },
+    {
+      "id": "f56d5c35-45ff-4509-adbd-741800d9c2a7",
+      "question_number": "2",
+      "question_text": "Which electromagnetic wave has the highest frequency?",
+      "question_type": "MCQ",
+      "confidence": 1.0,
+      "extraction_status": "verified",
+      "source_pages": [
+        1
+      ],
+      "options": [
+        {
+          "label": "A",
+          "text": "Infrared rays",
+          "confidence": 0.95
+        },
+        {
+          "label": "B",
+          "text": "Ultraviolet rays",
+          "confidence": 0.95
+        },
+        {
+          "label": "C",
+          "text": "Gamma rays",
+          "confidence": 0.95
+        },
+        {
+          "label": "D",
+          "text": "Microwaves",
+          "confidence": 0.95
+        }
+      ],
+      "answer": {
+        "label": "C",
+        "text": "Gamma rays",
+        "confidence": 0.95,
+        "matching_status": "matched"
+      }
+    },
+    {
+      "id": "5cbf6d7c-ffda-4624-90ab-b18272e871fa",
+      "question_number": "2",
+      "question_text": "Constant and equal to potential at surface",
+      "question_type": "short_answer",
+      "confidence": 1.0,
+      "extraction_status": "verified",
+      "source_pages": [
+        1
+      ],
+      "options": [],
+      "answer": {
+        "label": "C",
+        "text": "Gamma rays",
+        "confidence": 0.95,
+        "matching_status": "matched"
+      }
+    },
+    {
+      "id": "fac664da-bf4c-495d-bc68-74eb3622fd40",
+      "question_number": "3",
+      "question_text": "The electric potential inside a hollow charged conducting sphere is:",
+      "question_type": "short_answer",
+      "confidence": 1.0,
+      "extraction_status": "verified",
+      "source_pages": [
+        1
+      ],
+      "options": [],
+      "answer": {
+        "label": "2",
+        "text": "Constant and equal to potential at surface",
+        "confidence": 0.95,
+        "matching_status": "matched"
+      }
+    },
+    {
+      "id": "3d78ccaa-2093-41e8-a565-fd8c06d25165",
+      "question_number": "3",
+      "question_text": "Directly proportional to radius",
+      "question_type": "short_answer",
+      "confidence": 1.0,
+      "extraction_status": "verified",
+      "source_pages": [
+        1
+      ],
+      "options": [],
+      "answer": {
+        "label": "2",
+        "text": "Constant and equal to potential at surface",
+        "confidence": 0.95,
+        "matching_status": "matched"
+      }
+    },
+    {
+      "id": "9050ddc9-a4cc-4b74-9374-54870bc7bf1a",
+      "question_number": "4",
+      "question_text": "Inversely proportional to distance from center",
+      "question_type": "short_answer",
+      "confidence": 1.0,
+      "extraction_status": "verified",
+      "source_pages": [
+        1
+      ],
+      "options": [],
+      "answer": {
+        "label": "A",
+        "text": "True",
+        "confidence": 0.95,
+        "matching_status": "matched"
+      }
+    },
+    {
+      "id": "16883b16-2432-4c24-ab37-b6c4d3f4fb71",
+      "question_number": "4",
+      "question_text": "Identify whether the following statement is true or false:\nAn ideal voltmeter has infinite internal electrical resistance.",
+      "question_type": "true_false",
+      "confidence": 0.98,
+      "extraction_status": "verified",
+      "source_pages": [
+        1
+      ],
+      "options": [
+        {
+          "label": "A",
+          "text": "True",
+          "confidence": 0.95
+        },
+        {
+          "label": "B",
+          "text": "False",
+          "confidence": 0.95
+        }
+      ],
+      "answer": {
+        "label": "A",
+        "text": "True",
+        "confidence": 0.95,
+        "matching_status": "matched"
+      }
+    },
+    {
+      "id": "93267971-ac88-47c2-b127-8a610c17dd5e",
+      "question_number": "5",
+      "question_text": "Explain the physical principles of electromagnetic induction\nunderlying Faraday's second law, particularly regarding the time rate\nof magnetic flux change through an arbitrary closed surface,\nand determine the magnitude of induced electromotive force in a rotating conductive loop.\nAlso state how Lenz's law ensures the conservation of mechanical energy in electromagnetic systems.",
+      "question_type": "MCQ",
+      "confidence": 0.96,
+      "extraction_status": "verified",
+      "source_pages": [
+        1,
+        2
+      ],
+      "options": [
+        {
+          "label": "A",
+          "text": "Directly proportional to the rate of change of magnetic flux",
+          "confidence": 0.95
+        },
+        {
+          "label": "B",
+          "text": "Inversely proportional to magnetic flux",
+          "confidence": 0.95
+        },
+        {
+          "label": "C",
+          "text": "Independent of magnetic flux variation",
+          "confidence": 0.95
+        },
+        {
+          "label": "D",
+          "text": "Equal to magnetic vector potential",
+          "confidence": 0.95
+        }
+      ],
+      "answer": {
+        "label": "A",
+        "text": "Directly proportional to the rate of change of magnetic flux",
+        "confidence": 0.95,
+        "matching_status": "matched"
+      }
+    },
+    {
+      "id": "8b477722-3f3a-4400-ad66-49747ec4309d",
+      "question_number": "6",
+      "question_text": "What is the de Broglie wavelength of an electron accelerated through 100 Volts?",
+      "question_type": "MCQ",
+      "confidence": 1.0,
+      "extraction_status": "verified",
+      "source_pages": [
+        2
+      ],
+      "options": [
+        {
+          "label": "A",
+          "text": "0.123 nm",
+          "confidence": 0.95
+        },
+        {
+          "label": "B",
+          "text": "1.23 nm",
+          "confidence": 0.95
+        },
+        {
+          "label": "C",
+          "text": "12.3 nm",
+          "confidence": 0.95
+        },
+        {
+          "label": "D",
+          "text": "0.012 nm",
+          "confidence": 0.95
+        }
+      ],
+      "answer": {
+        "label": "A",
+        "text": "0.123 nm",
+        "confidence": 0.95,
+        "matching_status": "matched"
+      }
+    },
+    {
+      "id": "9e843145-4cff-437b-90f9-5afe44344e1d",
+      "question_number": "7",
+      "question_text": "The phenomenon of light bending around sharp obstacles is called:",
+      "question_type": "MCQ",
+      "confidence": 1.0,
+      "extraction_status": "verified",
+      "source_pages": [
+        2
+      ],
+      "options": [
+        {
+          "label": "A",
+          "text": "Polarization",
+          "confidence": 0.95
+        },
+        {
+          "label": "B",
+          "text": "Refraction",
+          "confidence": 0.95
+        },
+        {
+          "label": "C",
+          "text": "Diffraction",
+          "confidence": 0.95
+        },
+        {
+          "label": "D",
+          "text": "Dispersion",
+          "confidence": 0.95
+        }
+      ],
+      "answer": {
+        "label": "C",
+        "text": "Diffraction",
+        "confidence": 0.95,
+        "matching_status": "matched"
+      }
+    },
+    {
+      "id": "65948f76-1674-426b-b9b5-3e0d691f2cfd",
+      "question_number": "8",
+      "question_text": "Fill in the blank:\nThe work done in moving a test charge over an equipotential surface is always equal to _____________.",
+      "question_type": "fill_blank",
+      "confidence": 0.98,
+      "extraction_status": "verified",
+      "source_pages": [
+        2
+      ],
+      "options": [],
+      "answer": {
+        "label": null,
+        "text": null,
+        "confidence": 0.0,
+        "matching_status": "not_found"
+      }
+    }
+  ]
+}

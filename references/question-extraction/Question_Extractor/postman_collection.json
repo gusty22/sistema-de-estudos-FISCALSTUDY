@@ -1,0 +1,266 @@
+{
+  "info": {
+    "name": "Document Intelligence & Question Extraction Service",
+    "_postman_id": "9b1deb4d-3b7d-4ba9-9152-32b0f44924bb",
+    "description": "Postman collection demonstrating the full asynchronous workflow of Document Intelligence & Question Extraction: Auth, Upload, Status Polling, Question Retrieval, Answer Matching, Review Queue, and JSON Export.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:3000",
+      "type": "string"
+    },
+    {
+      "key": "authToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "documentId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "01 - Authentication",
+      "item": [
+        {
+          "name": "Register Reviewer",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"evaluator@pragatibharati.org\",\n  \"password\": \"SecurePass123!\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/auth/register", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "register"] }
+          }
+        },
+        {
+          "name": "Login (Sets authToken)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.access_token) {",
+                  "    pm.collectionVariables.set('authToken', jsonData.access_token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"demo@examintelligence.org\",\n  \"password\": \"SecureExam123!\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "login"] }
+          }
+        },
+        {
+          "name": "Get Current User Profile",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/auth/me", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "me"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 - Document Ingestion & Status",
+      "item": [
+        {
+          "name": "Upload Document (PDF / Image)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "sample_documents/Sample_Physics_Exam_Paper.pdf"
+                }
+              ]
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/documents", "host": ["{{baseUrl}}"], "path": ["api", "v1", "documents"] }
+          }
+        },
+        {
+          "name": "Seed Sample Package (Instant Multi-Page Exam & Key)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.document_id) {",
+                  "    pm.collectionVariables.set('documentId', jsonData.document_id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/documents/seed-sample?include_answer_key=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "documents", "seed-sample"],
+              "query": [{ "key": "include_answer_key", "value": "true" }]
+            }
+          }
+        },
+        {
+          "name": "Check Processing Status",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/documents/{{documentId}}/status", "host": ["{{baseUrl}}"], "path": ["api", "v1", "documents", "{{documentId}}", "status"] }
+          }
+        },
+        {
+          "name": "List User Documents",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/documents?page=1&page_size=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "documents"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "page_size", "value": "10" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 - Questions & Answer Extraction",
+      "item": [
+        {
+          "name": "List Extracted Questions for Document",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/documents/{{documentId}}/questions?page=1&page_size=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "documents", "{{documentId}}", "questions"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "page_size", "value": "50" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Export Document Clean JSON Output",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/documents/{{documentId}}/export/json", "host": ["{{baseUrl}}"], "path": ["api", "v1", "documents", "{{documentId}}", "export", "json"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 - Human-in-the-Loop Review Queue",
+      "item": [
+        {
+          "name": "Get Review Queue (Pending Issues)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reviews/queue?status=pending&page=1&page_size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "reviews", "queue"],
+              "query": [
+                { "key": "status", "value": "pending" },
+                { "key": "page", "value": "1" },
+                { "key": "page_size", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Submit Review Action (Approve / Correct / Reject)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{authToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"approved\",\n  \"notes\": \"Verified question text continuity across page break.\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/review-items/REVIEW_ITEM_ID", "host": ["{{baseUrl}}"], "path": ["api", "v1", "review-items", "REVIEW_ITEM_ID"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 - Related Documents (Answer Keys)",
+      "item": [
+        {
+          "name": "List Linked Relations",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/documents/{{documentId}}/relations", "host": ["{{baseUrl}}"], "path": ["api", "v1", "documents", "{{documentId}}", "relations"] }
+          }
+        },
+        {
+          "name": "Associate Answer Key Document",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{authToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"related_document_id\": \"RELATED_DOC_ID\",\n  \"relation_type\": \"answer_key\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/documents/{{documentId}}/relations", "host": ["{{baseUrl}}"], "path": ["api", "v1", "documents", "{{documentId}}", "relations"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 - Analytics & Diagnostics",
+      "item": [
+        {
+          "name": "Get Dashboard Analytics",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/analytics/dashboard", "host": ["{{baseUrl}}"], "path": ["api", "v1", "analytics", "dashboard"] }
+          }
+        },
+        {
+          "name": "System Health Check",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/health", "host": ["{{baseUrl}}"], "path": ["health"] }
+          }
+        }
+      ]
+    }
+  ]
+}
