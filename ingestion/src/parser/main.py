@@ -34,5 +34,9 @@ def main():
     print(f"Extracted {len(payload['data']['questions'])} questions.")
     print(f"Payload saved to {output_path}")
 
+    from src.api.api_client import APIClient
+    client = APIClient()
+    client.post_payload(output_path)
+
 if __name__ == "__main__":
     main()

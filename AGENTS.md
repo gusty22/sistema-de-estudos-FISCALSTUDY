@@ -37,3 +37,8 @@
 - Testes são rigorosamente exigidos.
 - Testar: criação de schemas, persistência de banco, importação da fixture, leitura de API, registro e resposta de eventos.
 - Requer pelo menos um teste de aceitação end-to-end (E2E). O passo só é dado como concluído quando os testes passam.
+
+## Protocolo de Versionamento (Git)
+- Avalie as alterações antes de comitar. Commits devem ser orgânicos e granulares (separe alterações de naturezas diferentes).
+- NÃO crie mensagens robóticas ou genéricas como 'update', 'fixes' ou descrições excessivamente detalhadas que pareçam criadas por IA. Aja como um mantenedor humano mantendo o próprio projeto.
+- NUNCA suba arquivos sensíveis (DBs locais, credenciais, proofs originais em /tests/golden-set/docs/ ou a pasta de /references/).

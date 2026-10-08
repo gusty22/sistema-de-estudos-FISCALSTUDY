@@ -30,3 +30,7 @@ db/*.db
 # Ingestion temp
 ingestion/inspection_*.json
 ingestion/output/
+
+# Exclusão de Referências e Fixtures com Direitos Autorais
+references/
+tests/golden-set/docs/
