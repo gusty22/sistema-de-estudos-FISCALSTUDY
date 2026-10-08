@@ -3,6 +3,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 venv/
+ingestion/venv/
 .env
 
 # Node
@@ -22,6 +23,7 @@ target/
 .antigravity/
 
 # Temporary / Output
+*.log
 ingestion/output/*.txt
 
 # DB
