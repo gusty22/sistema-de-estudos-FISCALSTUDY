@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+
+# Node
+node_modules/
+dist/
+
+# Java / Spring Boot
+target/
+.mvn/
+*.class
+
+# IDE
+.vscode/
+.idea/
+
+# Antigravity
+.antigravity/
+
+# Temporary / Output
+ingestion/output/*.txt
+
+# DB
+db/*.db
+
+# Ingestion temp
+ingestion/inspection_*.json
+ingestion/output/
