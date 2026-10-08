@@ -21,19 +21,21 @@ public class QuestionSelectionService {
     public Optional<Question> getNextQuestion(String sessionId) {
         Optional<Question> question = questionRepository.findNextAvailableQuestion();
         
-        question.ifPresent(q -> {
-            String payload = String.format("{\"questionId\": \"%s\", \"isNew\": true}", q.getId());
+        return question;
+    }
+
+    public void recordPresentation(String questionId, String sessionId) {
+        if (!eventStoreRepository.hasRecentEvent("QUESTION_PRESENTED", questionId, sessionId, 5)) {
+            String payload = String.format("{\"questionId\": \"%s\"}", questionId);
             eventStoreRepository.appendEvent(
                     "QUESTION_PRESENTED",
                     "QUESTION",
-                    q.getId(),
+                    questionId,
                     sessionId,
                     1,
                     "v1",
                     payload
             );
-        });
-
-        return question;
+        }
     }
 }

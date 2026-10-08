@@ -46,6 +46,18 @@ public class QuestionController {
         return ResponseEntity.ok(dto);
     }
 
+    @PostMapping("/{id}/presented")
+    public ResponseEntity<Void> recordPresentation(
+            @PathVariable String id,
+            @RequestBody Map<String, String> payload) {
+        String sessionId = payload.get("sessionId");
+        if (sessionId == null || sessionId.isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
+        questionSelectionService.recordPresentation(id, sessionId);
+        return ResponseEntity.ok().build();
+    }
+
     @PostMapping("/{id}/attempts")
     public ResponseEntity<AttemptResultDTO> submitAttempt(
             @PathVariable String id,
@@ -69,6 +81,9 @@ public class QuestionController {
 
             return ResponseEntity.ok(new AttemptResultDTO(isCorrect));
         } catch (IllegalArgumentException e) {
+            if (e.getMessage() != null && e.getMessage().contains("Invalid")) {
+                return ResponseEntity.badRequest().build();
+            }
             return ResponseEntity.notFound().build();
         }
     }
