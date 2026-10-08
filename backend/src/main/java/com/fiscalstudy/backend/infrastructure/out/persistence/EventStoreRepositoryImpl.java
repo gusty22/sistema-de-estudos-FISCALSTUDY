@@ -35,4 +35,10 @@ public class EventStoreRepositoryImpl implements EventStoreRepository {
         Integer count = jdbcTemplate.queryForObject(sql, Integer.class, eventType, aggregateId, sessionId, since);
         return count != null && count > 0;
     }
+
+    @Override
+    public java.util.List<String> getEventPayloads(String sessionId, String eventType) {
+        String sql = "SELECT payload_json FROM event_store WHERE session_id = ? AND event_type = ?";
+        return jdbcTemplate.queryForList(sql, String.class, sessionId, eventType);
+    }
 }

@@ -18,9 +18,18 @@ interface Question {
   };
 }
 
+interface SessionSummary {
+  totalAnswered: number;
+  correctCount: number;
+  accuracy: number;
+  averageTimeMs: number;
+  overconfidenceCount: number;
+}
+
 const QuestionViewer: React.FC = () => {
   const [sessionStarted, setSessionStarted] = useState(false);
   const [sessionEnded, setSessionEnded] = useState(false);
+  const [summary, setSummary] = useState<SessionSummary | null>(null);
   const [question, setQuestion] = useState<Question | null>(null);
   const [loading, setLoading] = useState(false);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
@@ -54,6 +63,12 @@ const QuestionViewer: React.FC = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sessionId })
       });
+      
+      const res = await fetch(`http://localhost:8080/api/v1/sessions/${sessionId}/summary`);
+      if (res.ok) {
+        setSummary(await res.json());
+      }
+      
       setSessionEnded(true);
     } catch (err) {
       console.error("Failed to end session", err);
@@ -155,8 +170,23 @@ const QuestionViewer: React.FC = () => {
   if (sessionEnded) {
     return (
       <div className="viewer-container empty">
-        <div className="glass empty-state">
-          <h2>Sessão Finalizada. Obrigado!</h2>
+        <div className="glass empty-state" style={{maxWidth: '500px', width: '100%'}}>
+          <h2 style={{borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '15px', marginBottom: '20px'}}>Sessão Finalizada</h2>
+          {summary ? (
+             <div style={{textAlign: 'left', fontSize: '1.1em'}}>
+               <p style={{display: 'flex', justifyContent: 'space-between'}}><span>Questões Respondidas:</span> <strong>{summary.totalAnswered}</strong></p>
+               <p style={{display: 'flex', justifyContent: 'space-between'}}><span>Acertos:</span> <strong>{summary.correctCount} ({summary.accuracy.toFixed(1)}%)</strong></p>
+               <p style={{display: 'flex', justifyContent: 'space-between'}}><span>Tempo Médio por Questão:</span> <strong>{(summary.averageTimeMs / 1000).toFixed(1)}s</strong></p>
+               {summary.overconfidenceCount > 0 && (
+                 <div style={{marginTop: '25px', padding: '15px', background: 'rgba(255,50,50,0.15)', border: '1px solid rgba(255,50,50,0.5)', borderRadius: '8px'}}>
+                   <h4 style={{color: '#ff6b6b', margin: '0 0 8px 0'}}>⚠️ Atenção</h4>
+                   <p style={{margin: 0, fontSize: '0.9em', lineHeight: '1.4'}}>Você demonstrou falsa fluência (confiança máxima em respostas erradas) em <strong>{summary.overconfidenceCount}</strong> questões nesta sessão.</p>
+                 </div>
+               )}
+             </div>
+          ) : (
+             <p>Carregando resumo...</p>
+          )}
         </div>
       </div>
     );
