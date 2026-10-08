@@ -19,14 +19,46 @@ interface Question {
 }
 
 const QuestionViewer: React.FC = () => {
+  const [sessionStarted, setSessionStarted] = useState(false);
+  const [sessionEnded, setSessionEnded] = useState(false);
   const [question, setQuestion] = useState<Question | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [confidence, setConfidence] = useState<number>(0);
   const [feedback, setFeedback] = useState<{ isCorrect: boolean } | null>(null);
   
-  const [startTime, setStartTime] = useState<number>(0);
-  const sessionId = useRef('session-' + Date.now()).current;
+  const [activeTimeMs, setActiveTimeMs] = useState<number>(0);
+  const [lastFocusTime, setLastFocusTime] = useState<number>(0);
+  
+  // Create a unique session ID
+  const sessionId = useRef('session-' + crypto.randomUUID()).current;
+
+  const startSession = async () => {
+    try {
+      await fetch(`http://localhost:8080/api/v1/sessions/start`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId })
+      });
+      setSessionStarted(true);
+      fetchNextQuestion();
+    } catch (err) {
+      console.error("Failed to start session", err);
+    }
+  };
+
+  const endSession = async () => {
+    try {
+      await fetch(`http://localhost:8080/api/v1/sessions/end`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId })
+      });
+      setSessionEnded(true);
+    } catch (err) {
+      console.error("Failed to end session", err);
+    }
+  };
 
   const fetchNextQuestion = async () => {
     setLoading(true);
@@ -38,9 +70,20 @@ const QuestionViewer: React.FC = () => {
       if (response.ok) {
         const data = await response.json();
         setQuestion(data);
-        setStartTime(Date.now());
+        
+        // Registrar a apresentação explicitamente (Alternativa D)
+        await fetch(`http://localhost:8080/api/v1/questions/${data.questionId}/presented`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId })
+        });
+
+        // Iniciar cronômetro só após registrar apresentação com sucesso
+        setActiveTimeMs(0);
+        setLastFocusTime(Date.now());
       } else {
         console.error("No questions found");
+        setQuestion(null);
       }
     } catch (error) {
       console.error("Failed to fetch question:", error);
@@ -50,13 +93,29 @@ const QuestionViewer: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchNextQuestion();
-  }, []);
+    const handleVisibilityChange = () => {
+      if (!sessionStarted || sessionEnded) return;
+      
+      if (document.visibilityState === 'hidden') {
+        if (lastFocusTime > 0) {
+          setActiveTimeMs(prev => prev + (Date.now() - lastFocusTime));
+        }
+      } else {
+        setLastFocusTime(Date.now());
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [lastFocusTime, sessionStarted, sessionEnded]);
 
   const handleSubmit = async () => {
     if (!question || !selectedOption || confidence === 0) return;
 
-    const activeTimeMs = Date.now() - startTime;
+    let finalActiveTime = activeTimeMs;
+    if (document.visibilityState === 'visible' && lastFocusTime > 0) {
+      finalActiveTime += (Date.now() - lastFocusTime);
+    }
     
     // extrair apenas a letra se vier no formato 'A) ...'
     const optionLetter = selectedOption.match(/^([A-E])\)?/)?.[1] || selectedOption.charAt(0);
@@ -68,7 +127,7 @@ const QuestionViewer: React.FC = () => {
         body: JSON.stringify({
           selectedOption: optionLetter,
           confidenceLevel: confidence,
-          activeTimeMs,
+          activeTimeMs: finalActiveTime,
           sessionId
         })
       });
@@ -81,6 +140,27 @@ const QuestionViewer: React.FC = () => {
       console.error("Failed to submit attempt:", error);
     }
   };
+
+  if (!sessionStarted) {
+    return (
+      <div className="viewer-container empty">
+        <div className="glass empty-state">
+          <h2>Pronto para começar?</h2>
+          <button className="btn mt-4" onClick={startSession}>Iniciar Estudo</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (sessionEnded) {
+    return (
+      <div className="viewer-container empty">
+        <div className="glass empty-state">
+          <h2>Sessão Finalizada. Obrigado!</h2>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -97,6 +177,7 @@ const QuestionViewer: React.FC = () => {
         <div className="glass empty-state">
           <h2>Você concluiu todas as questões disponíveis!</h2>
           <button className="btn mt-4" onClick={fetchNextQuestion}>Tentar Novamente</button>
+          <button className="btn mt-4" style={{marginLeft: '10px'}} onClick={endSession}>Encerrar Sessão</button>
         </div>
       </div>
     );
@@ -114,12 +195,13 @@ const QuestionViewer: React.FC = () => {
 
   return (
     <div className="viewer-container animate-fade-in">
-      <header className="viewer-header">
+      <header className="viewer-header" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
         <div className="metadata-tags">
           <span className="tag">{question.metadata.board}</span>
           <span className="tag">{question.metadata.discipline}</span>
           <span className="tag">{question.metadata.year}</span>
         </div>
+        <button className="btn" style={{padding: '5px 15px', fontSize: '0.9em', background: 'transparent', border: '1px solid #fff', color: '#fff'}} onClick={endSession}>Encerrar Sessão</button>
       </header>
 
       <main className="question-content glass">
