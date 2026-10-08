@@ -25,7 +25,28 @@ public class AttemptSubmissionService {
         }
 
         Question question = questionOpt.get();
-        boolean isCorrect = selectedOption != null && selectedOption.trim().equalsIgnoreCase(question.getCorrectOption() != null ? question.getCorrectOption().trim() : "");
+        
+        if (selectedOption == null || selectedOption.trim().isEmpty()) {
+            throw new IllegalArgumentException("Invalid selected option");
+        }
+        
+        String optionLetter = selectedOption.trim().toUpperCase();
+        
+        boolean isValidOption = false;
+        if (question.getOptions() != null) {
+            for (String opt : question.getOptions()) {
+                if (opt != null && opt.trim().toUpperCase().startsWith(optionLetter)) {
+                    isValidOption = true;
+                    break;
+                }
+            }
+        }
+        
+        if (!isValidOption) {
+            throw new IllegalArgumentException("Invalid selected option");
+        }
+
+        boolean isCorrect = optionLetter.equalsIgnoreCase(question.getCorrectOption() != null ? question.getCorrectOption().trim() : "");
 
         String payload = String.format(
             "{\"questionId\": \"%s\", \"selectedOption\": \"%s\", \"isCorrect\": %b, \"confidenceLevel\": %d, \"activeTimeMs\": %d}",

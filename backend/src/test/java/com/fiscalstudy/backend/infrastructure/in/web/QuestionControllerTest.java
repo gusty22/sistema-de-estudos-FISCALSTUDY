@@ -42,7 +42,7 @@ class QuestionControllerTest {
         jdbcTemplate.execute("DELETE FROM questions");
 
         String qId = "q123";
-        String optionsJson = "[{\"label\":\"A\", \"text\":\"Option A\"}, {\"label\":\"B\", \"text\":\"Option B\"}]";
+        String optionsJson = "[\"A) Option A\", \"B) Option B\"]";
         jdbcTemplate.update("INSERT INTO questions (id, enunciado, options_json, correct_option, banca, ano, cargo) VALUES (?, ?, ?, ?, ?, ?, ?)",
                 qId, "Qual a capital de MG?", optionsJson, "A", "FCC", 2023, "Auditor");
     }
@@ -90,6 +90,36 @@ class QuestionControllerTest {
     @Test
     void submitAttempt_InvalidConfidence_ReturnsBadRequest() throws Exception {
         String payload = "{\"selectedOption\":\"A\", \"confidenceLevel\":6, \"activeTimeMs\":1500, \"sessionId\":\"sess1\"}";
+
+        mockMvc.perform(post("/api/v1/questions/q123/attempts")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(payload))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void submitAttempt_ZeroConfidence_ReturnsBadRequest() throws Exception {
+        String payload = "{\"selectedOption\":\"A\", \"confidenceLevel\":0, \"activeTimeMs\":1500, \"sessionId\":\"sess1\"}";
+
+        mockMvc.perform(post("/api/v1/questions/q123/attempts")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(payload))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void submitAttempt_InvalidOption_ReturnsBadRequest() throws Exception {
+        String payload = "{\"selectedOption\":\"Z\", \"confidenceLevel\":4, \"activeTimeMs\":1500, \"sessionId\":\"sess1\"}";
+
+        mockMvc.perform(post("/api/v1/questions/q123/attempts")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(payload))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void submitAttempt_EmptyOption_ReturnsBadRequest() throws Exception {
+        String payload = "{\"selectedOption\":\"\", \"confidenceLevel\":4, \"activeTimeMs\":1500, \"sessionId\":\"sess1\"}";
 
         mockMvc.perform(post("/api/v1/questions/q123/attempts")
                 .contentType(MediaType.APPLICATION_JSON)
