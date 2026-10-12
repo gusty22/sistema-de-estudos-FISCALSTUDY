@@ -18,6 +18,14 @@ public class AttemptSubmissionService {
     }
 
     public boolean submitAttempt(String questionId, String selectedOption, int confidenceLevel, long activeTimeMs, String sessionId) {
+        if (sessionId == null || sessionId.isBlank()) {
+            throw new IllegalArgumentException("Session ID is required");
+        }
+
+        if (eventStoreRepository.isSessionEnded(sessionId)) {
+            throw new IllegalStateException("Session already ended");
+        }
+
         Optional<Question> questionOpt = questionRepository.findById(questionId);
         
         if (questionOpt.isEmpty()) {
@@ -46,11 +54,33 @@ public class AttemptSubmissionService {
             throw new IllegalArgumentException("Invalid selected option");
         }
 
-        boolean isCorrect = optionLetter.equalsIgnoreCase(question.getCorrectOption() != null ? question.getCorrectOption().trim() : "");
+        // Idempotência: se já respondeu esta questão nesta mesma sessão, não duplica evento
+        if (eventStoreRepository.hasEvent("ANSWER_SUBMITTED", questionId, sessionId)) {
+            return calculateIsCorrect(question, optionLetter);
+        }
 
+        String correctOpt = question.getCorrectOption() != null ? question.getCorrectOption().trim() : null;
+        boolean isAnulada = "ANULADA".equalsIgnoreCase(correctOpt);
+        boolean isGabaritoAusente = (correctOpt == null || correctOpt.isBlank());
+
+        boolean isCorrect;
+        String gabaritoStatus;
+
+        if (isAnulada) {
+            isCorrect = true; // Em concurso público, questão anulada não pune o estudante
+            gabaritoStatus = "ANULADA";
+        } else if (isGabaritoAusente) {
+            isCorrect = false;
+            gabaritoStatus = "AUSENTE";
+        } else {
+            isCorrect = optionLetter.equalsIgnoreCase(correctOpt);
+            gabaritoStatus = "DEFINITIVO";
+        }
+
+        String isCorrectStr = isGabaritoAusente ? "null" : String.valueOf(isCorrect);
         String payload = String.format(
-            "{\"questionId\": \"%s\", \"selectedOption\": \"%s\", \"isCorrect\": %b, \"confidenceLevel\": %d, \"activeTimeMs\": %d}",
-            questionId, selectedOption, isCorrect, confidenceLevel, activeTimeMs
+            "{\"questionId\": \"%s\", \"selectedOption\": \"%s\", \"isCorrect\": %s, \"gabaritoStatus\": \"%s\", \"confidenceLevel\": %d, \"activeTimeMs\": %d}",
+            questionId, selectedOption, isCorrectStr, gabaritoStatus, confidenceLevel, activeTimeMs
         );
 
         eventStoreRepository.appendEvent(
@@ -64,5 +94,12 @@ public class AttemptSubmissionService {
         );
 
         return isCorrect;
+    }
+
+    private boolean calculateIsCorrect(Question question, String optionLetter) {
+        String correctOpt = question.getCorrectOption() != null ? question.getCorrectOption().trim() : null;
+        if ("ANULADA".equalsIgnoreCase(correctOpt)) return true;
+        if (correctOpt == null || correctOpt.isBlank()) return false;
+        return optionLetter.equalsIgnoreCase(correctOpt);
     }
 }

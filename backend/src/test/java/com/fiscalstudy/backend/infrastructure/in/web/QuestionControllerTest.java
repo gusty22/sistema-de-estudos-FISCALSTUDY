@@ -42,7 +42,7 @@ class QuestionControllerTest {
         jdbcTemplate.execute("DELETE FROM questions");
 
         String qId = "q123";
-        String optionsJson = "[\"A) Option A\", \"B) Option B\"]";
+        String optionsJson = "[\"A) Option A\", \"B) Option B\", \"C) Option C\", \"D) Option D\"]";
         jdbcTemplate.update("INSERT INTO questions (id, enunciado, options_json, correct_option, banca, ano, cargo) VALUES (?, ?, ?, ?, ?, ?, ?)",
                 qId, "Qual a capital de MG?", optionsJson, "A", "FCC", 2023, "Auditor");
     }
@@ -63,8 +63,8 @@ class QuestionControllerTest {
 
     @Test
     void getNextQuestion_ExcludesAnsweredQuestionsInSession() throws Exception {
-        // Insert a second question
-        String optionsJson = "[\"A) SP\", \"B) RJ\"]";
+        // Insert a second question with 4 options
+        String optionsJson = "[\"A) SP\", \"B) RJ\", \"C) MG\", \"D) ES\"]";
         jdbcTemplate.update("INSERT INTO questions (id, enunciado, options_json, correct_option, banca, ano, cargo) VALUES (?, ?, ?, ?, ?, ?, ?)",
                 "q456", "Qual a capital de SP?", optionsJson, "A", "FCC", 2023, "Auditor");
 
@@ -91,7 +91,7 @@ class QuestionControllerTest {
     void getNextQuestion_WithDisciplineFilter_ReturnsMatchingQuestion() throws Exception {
         jdbcTemplate.update("UPDATE questions SET disciplina = 'Geografia' WHERE id = 'q123'");
 
-        String optionsJson = "[\"A) 2\", \"B) 3\"]";
+        String optionsJson = "[\"A) 2\", \"B) 3\", \"C) 4\", \"D) 5\"]";
         jdbcTemplate.update("INSERT INTO questions (id, enunciado, options_json, correct_option, banca, ano, cargo, disciplina) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                 "q999", "Quanto é 1+1?", optionsJson, "A", "FCC", 2023, "Auditor", "Matemática");
 
@@ -104,7 +104,7 @@ class QuestionControllerTest {
     void getDisciplines_ReturnsDistinctOrderedList() throws Exception {
         jdbcTemplate.update("UPDATE questions SET disciplina = 'Geografia' WHERE id = 'q123'");
 
-        String optionsJson = "[\"A) 2\", \"B) 3\"]";
+        String optionsJson = "[\"A) 2\", \"B) 3\", \"C) 4\", \"D) 5\"]";
         jdbcTemplate.update("INSERT INTO questions (id, enunciado, options_json, correct_option, banca, ano, cargo, disciplina) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                 "q999", "Quanto é 1+1?", optionsJson, "A", "FCC", 2023, "Auditor", "Matemática");
 
@@ -259,6 +259,78 @@ class QuestionControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(payload))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void submitAttempt_OnEndedSession_ReturnsBadRequest() throws Exception {
+        // Record session ended
+        jdbcTemplate.update("INSERT INTO event_store (event_id, event_type, aggregate_type, aggregate_id, session_id, occurred_at, recorded_at, event_version, schema_version, payload_json) " +
+                "VALUES ('e_end', 'STUDY_SESSION_ENDED', 'SESSION', 'sess_done', 'sess_done', '2026-10-12T00:00:00Z', '2026-10-12T00:00:00Z', 1, 'v1', '{}')");
+
+        String payload = "{\"selectedOption\":\"A\", \"confidenceLevel\":4, \"activeTimeMs\":1500, \"sessionId\":\"sess_done\"}";
+
+        mockMvc.perform(post("/api/v1/questions/q123/attempts")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(payload))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void submitAttempt_DuplicateAttemptInSameSession_IsIdempotent() throws Exception {
+        String payload = "{\"selectedOption\":\"A\", \"confidenceLevel\":5, \"activeTimeMs\":1500, \"sessionId\":\"sess_idem\"}";
+
+        // First attempt
+        mockMvc.perform(post("/api/v1/questions/q123/attempts")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(payload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.isCorrect").value(true));
+
+        // Duplicate attempt on the same question in same session
+        mockMvc.perform(post("/api/v1/questions/q123/attempts")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(payload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.isCorrect").value(true));
+
+        Integer eventCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM event_store WHERE event_type = 'ANSWER_SUBMITTED' AND session_id = 'sess_idem'", Integer.class);
+        assertEquals(1, eventCount, "Duplicate attempt must not record multiple events in the event store");
+    }
+
+    @Test
+    void submitAttempt_OnAnuladaQuestion_DoesNotPenalize() throws Exception {
+        String optionsJson = "[\"A) Opt A\", \"B) Opt B\", \"C) Opt C\", \"D) Opt D\"]";
+        jdbcTemplate.update("INSERT INTO questions (id, enunciado, options_json, correct_option, banca, ano, cargo) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                "q_anulada", "Questão anulada pela banca", optionsJson, "ANULADA", "IBGP", 2023, "Auditor");
+
+        String payload = "{\"selectedOption\":\"B\", \"confidenceLevel\":4, \"activeTimeMs\":2000, \"sessionId\":\"sess_anul\"}";
+
+        mockMvc.perform(post("/api/v1/questions/q_anulada/attempts")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(payload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.isCorrect").value(true));
+
+        String savedPayload = jdbcTemplate.queryForObject("SELECT payload_json FROM event_store WHERE aggregate_id = 'q_anulada'", String.class);
+        org.junit.jupiter.api.Assertions.assertTrue(savedPayload.contains("\"gabaritoStatus\": \"ANULADA\""));
+    }
+
+    @Test
+    void getNextQuestion_SkipsStructurallyIncompleteQuestions() throws Exception {
+        // Insert incomplete question (only 3 options)
+        String incompleteOptions = "[\"A) 1\", \"B) 2\", \"C) 3\"]";
+        jdbcTemplate.update("INSERT INTO questions (id, enunciado, options_json, correct_option, banca, ano, cargo, disciplina) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                "q_incomplete", "Questão incompleta", incompleteOptions, "A", "FCC", 2023, "Auditor", "Direito");
+
+        // Insert valid question
+        String validOptions = "[\"A) 1\", \"B) 2\", \"C) 3\", \"D) 4\"]";
+        jdbcTemplate.update("INSERT INTO questions (id, enunciado, options_json, correct_option, banca, ano, cargo, disciplina) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                "q_valid", "Questão válida", validOptions, "A", "FCC", 2023, "Auditor", "Direito");
+
+        // Must skip q_incomplete and return q_valid
+        mockMvc.perform(get("/api/v1/questions/next?disciplina=Direito"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.questionId").value("q_valid"));
     }
 }
 

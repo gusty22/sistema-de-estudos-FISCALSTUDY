@@ -43,8 +43,29 @@ public class EventStoreRepositoryImpl implements EventStoreRepository {
 
 
     @Override
+    public boolean hasEvent(String eventType, String aggregateId, String sessionId) {
+        String sql = "SELECT COUNT(*) FROM event_store WHERE event_type = ? AND aggregate_id = ? AND session_id = ?";
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, eventType, aggregateId, sessionId);
+        return count != null && count > 0;
+    }
+
+    @Override
+    public boolean isSessionEnded(String sessionId) {
+        if (sessionId == null || sessionId.isBlank()) return false;
+        String sql = "SELECT COUNT(*) FROM event_store WHERE event_type = 'STUDY_SESSION_ENDED' AND session_id = ?";
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, sessionId);
+        return count != null && count > 0;
+    }
+
+    @Override
     public java.util.List<String> getEventPayloads(String sessionId, String eventType) {
         String sql = "SELECT payload_json FROM event_store WHERE session_id = ? AND event_type = ?";
         return jdbcTemplate.queryForList(sql, String.class, sessionId, eventType);
+    }
+
+    @Override
+    public java.util.List<String> getAllEventPayloads(String eventType) {
+        String sql = "SELECT payload_json FROM event_store WHERE event_type = ? ORDER BY occurred_at ASC";
+        return jdbcTemplate.queryForList(sql, String.class, eventType);
     }
 }

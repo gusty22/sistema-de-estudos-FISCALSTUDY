@@ -92,6 +92,8 @@ public class QuestionController {
             );
 
             return ResponseEntity.ok(new AttemptResultDTO(isCorrect));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.badRequest().build();
         } catch (IllegalArgumentException e) {
             if (e.getMessage() != null && e.getMessage().contains("Invalid")) {
                 return ResponseEntity.badRequest().build();

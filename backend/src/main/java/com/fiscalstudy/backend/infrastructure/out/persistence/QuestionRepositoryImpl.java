@@ -42,7 +42,7 @@ public class QuestionRepositoryImpl implements QuestionRepository {
             params.add(sessionId.trim());
         }
 
-        sql.append("ORDER BY RANDOM() LIMIT 1");
+        sql.append("ORDER BY RANDOM() LIMIT 25");
 
         List<Question> questions = jdbcTemplate.query(sql.toString(), (rs, rowNum) -> {
             try {
@@ -67,7 +67,39 @@ public class QuestionRepositoryImpl implements QuestionRepository {
             }
         }, params.toArray());
 
-        return questions.isEmpty() ? Optional.empty() : Optional.of(questions.get(0));
+        return questions.stream()
+                .filter(this::isStructurallyValid)
+                .findFirst();
+    }
+
+    private boolean isStructurallyValid(Question q) {
+        if (q.getStatement() == null || q.getStatement().isBlank()) {
+            return false;
+        }
+        if (q.getOptions() == null || q.getOptions().size() < 4) {
+            return false;
+        }
+        java.util.Set<String> letters = new java.util.HashSet<>();
+        for (String opt : q.getOptions()) {
+            if (opt != null && opt.length() >= 2) {
+                String firstChar = opt.trim().substring(0, 1).toUpperCase();
+                if (firstChar.matches("[A-E]")) {
+                    letters.add(firstChar);
+                }
+            }
+        }
+        if (!letters.contains("A") || !letters.contains("B") || !letters.contains("C") || !letters.contains("D")) {
+            return false;
+        }
+
+        String correctOpt = q.getCorrectOption();
+        if (correctOpt != null && !correctOpt.isBlank() && !"ANULADA".equalsIgnoreCase(correctOpt)) {
+            String optLetter = correctOpt.trim().toUpperCase();
+            if (!letters.contains(optLetter)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     @Override

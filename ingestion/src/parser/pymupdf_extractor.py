@@ -27,7 +27,7 @@ class PyMuPDFExtractor(PdfExtractor):
     def __init__(self):
         # Regex para ancoragem
         self.question_pattern = re.compile(r"^QUEST[AÃ][O0]\s*(\d+)", re.IGNORECASE)
-        self.option_pattern = re.compile(r"^(?:[^\w\n]*[a-z]{0,2}[\)\.]?\s*)?([A-E])\)\s*(.*)", re.IGNORECASE)
+        self.option_pattern = re.compile(r"^(?!\s*\([A-Za-z]{2,})(?:[^\w\n]*|\S{1,2}\s+)?([A-E])\)\s*(.*)", re.IGNORECASE)
 
     def extract(self, file_path: str, metadata: dict) -> dict:
         doc = pymupdf.open(file_path)
@@ -140,7 +140,8 @@ class PyMuPDFExtractor(PdfExtractor):
             q_id = q["id"]
             q["statement"] = q["statement"].strip()
             q["options"] = [o.strip() for o in q["options"]]
-            q["correct_option"] = GABARITO_TECNICO_FISCAL.get(q_id, "A")
+            q["correct_option"] = GABARITO_TECNICO_FISCAL.get(q_id, None)
+            q["gabarito_status"] = "DEFINITIVO" if q["correct_option"] is not None else "AUSENTE"
             q["disciplina"] = get_discipline(q_id)
             q["confidence_score"] = 1.0 if len(q["options"]) == 4 else 0.75
             

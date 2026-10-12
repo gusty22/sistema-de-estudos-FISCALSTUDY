@@ -59,9 +59,12 @@ public class IngestionController {
                     }
                 }
                 
-                String correctOption = "A"; 
+                String correctOption = null; 
                 if (q.containsKey("correct_option") && q.get("correct_option") != null) {
-                    correctOption = String.valueOf(q.get("correct_option")).trim();
+                    String rawOpt = String.valueOf(q.get("correct_option")).trim();
+                    if (!rawOpt.isEmpty() && !rawOpt.equalsIgnoreCase("null")) {
+                        correctOption = rawOpt.toUpperCase();
+                    }
                 }
 
                 String disciplina = null;
@@ -70,6 +73,25 @@ public class IngestionController {
                 }
 
                 String orgao = metadata != null && metadata.containsKey("orgao") ? (String) metadata.get("orgao") : "Prefeitura de Araguari";
+
+                // Proteção contra colisão acidental entre provas distintas
+                List<Map<String, Object>> existing = jdbcTemplate.queryForList(
+                    "SELECT id, banca, ano, cargo, orgao FROM questions WHERE id = ?", id
+                );
+                if (!existing.isEmpty()) {
+                    Map<String, Object> prev = existing.get(0);
+                    String prevBanca = (String) prev.get("banca");
+                    Integer prevAno = (Integer) prev.get("ano");
+                    String prevCargo = (String) prev.get("cargo");
+
+                    boolean sameProvenance = java.util.Objects.equals(prevBanca, banca) &&
+                                             java.util.Objects.equals(prevAno, ano) &&
+                                             java.util.Objects.equals(prevCargo, cargo);
+                    if (!sameProvenance) {
+                        id = buildCanonicalQuestionId(banca, ano, cargo, id);
+                        logger.warn("ID collision detected with different provenance. Re-qualifying to canonical ID: {}", id);
+                    }
+                }
 
                 String sql = "INSERT INTO questions (id, enunciado, options_json, correct_option, banca, ano, orgao, cargo, disciplina) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) " +
                              "ON CONFLICT(id) DO UPDATE SET enunciado=excluded.enunciado, options_json=excluded.options_json, correct_option=excluded.correct_option, banca=excluded.banca, ano=excluded.ano, orgao=excluded.orgao, cargo=excluded.cargo, disciplina=excluded.disciplina";
@@ -91,5 +113,21 @@ public class IngestionController {
         }
 
         return ResponseEntity.ok().build();
+    }
+
+    private String buildCanonicalQuestionId(String banca, Integer ano, String cargo, String rawId) {
+        String b = banca != null ? slugify(banca) : "banca";
+        String y = ano != null ? String.valueOf(ano) : "0000";
+        String c = cargo != null ? slugify(cargo) : "cargo";
+        return b + "-" + y + "-" + c + "-q" + rawId;
+    }
+
+    private String slugify(String input) {
+        if (input == null) return "unknown";
+        return java.text.Normalizer.normalize(input, java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{InCombiningDiacriticalMarks}+", "")
+                .replaceAll("[^a-zA-Z0-9]+", "-")
+                .toLowerCase()
+                .replaceAll("^-+|-+$", "");
     }
 }

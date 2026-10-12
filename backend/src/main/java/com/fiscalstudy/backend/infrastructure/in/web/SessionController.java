@@ -69,6 +69,7 @@ public class SessionController {
             return ResponseEntity.ok(new SessionSummaryDTO(0, 0, 0.0, 0.0, 0));
         }
 
+        int evaluatedCount = 0;
         int correctCount = 0;
         long totalTimeMs = 0;
         int overconfidenceCount = 0;
@@ -76,19 +77,29 @@ public class SessionController {
         for (String payload : payloads) {
             try {
                 JsonNode node = mapper.readTree(payload);
-                boolean isCorrect = node.path("isCorrect").asBoolean();
+                String gabaritoStatus = node.path("gabaritoStatus").asText("DEFINITIVO");
+                JsonNode isCorrectNode = node.path("isCorrect");
                 int confidenceLevel = node.path("confidenceLevel").asInt();
                 long activeTimeMs = node.path("activeTimeMs").asLong();
 
-                if (isCorrect) correctCount++;
                 totalTimeMs += activeTimeMs;
-                if (!isCorrect && confidenceLevel == 5) overconfidenceCount++;
+
+                // Questões sem gabarito verificado são excluídas do cálculo de acurácia
+                if (!"AUSENTE".equalsIgnoreCase(gabaritoStatus) && !isCorrectNode.isNull()) {
+                    evaluatedCount++;
+                    boolean isCorrect = isCorrectNode.asBoolean();
+                    if (isCorrect) {
+                        correctCount++;
+                    } else if (confidenceLevel == 5) {
+                        overconfidenceCount++;
+                    }
+                }
             } catch (Exception e) {
                 // ignore invalid payloads
             }
         }
 
-        double accuracy = (double) correctCount / totalAnswered * 100.0;
+        double accuracy = evaluatedCount > 0 ? ((double) correctCount / evaluatedCount * 100.0) : 0.0;
         double averageTimeMs = (double) totalTimeMs / totalAnswered;
 
         SessionSummaryDTO dto = new SessionSummaryDTO(
