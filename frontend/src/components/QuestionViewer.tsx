@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import './QuestionViewer.css';
 
 interface Option {
@@ -27,14 +27,14 @@ interface SessionSummary {
 }
 
 const QuestionViewer: React.FC = () => {
-  const [sessionStarted, setSessionStarted] = useState(false);
+  const [sessionStarted, setSessionStarted] = useState(() => sessionStorage.getItem('fiscalstudy_sessionStarted') === 'true');
   const [sessionEnded, setSessionEnded] = useState(false);
   const [summary, setSummary] = useState<SessionSummary | null>(null);
   const [question, setQuestion] = useState<Question | null>(null);
   const [loading, setLoading] = useState(false);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [confidence, setConfidence] = useState<number>(0);
-  const [feedback, setFeedback] = useState<{ isCorrect: boolean } | null>(null);
+  const [feedback, setFeedback] = useState<{ isCorrect: boolean | null; gabaritoStatus?: string } | null>(null);
   
   const [disciplines, setDisciplines] = useState<string[]>([]);
   const [selectedDiscipline, setSelectedDiscipline] = useState<string>('');
@@ -42,50 +42,18 @@ const QuestionViewer: React.FC = () => {
   const [activeTimeMs, setActiveTimeMs] = useState<number>(0);
   const [lastFocusTime, setLastFocusTime] = useState<number>(0);
   
-  // Create a unique session ID
-  const sessionId = useRef('session-' + crypto.randomUUID()).current;
-
-  useEffect(() => {
-    fetch('http://localhost:8080/api/v1/questions/disciplines')
-      .then(res => res.ok ? res.json() : [])
-      .then(data => setDisciplines(data))
-      .catch(() => {});
-  }, []);
-
-  const startSession = async () => {
-    try {
-      await fetch(`http://localhost:8080/api/v1/sessions/start`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId })
-      });
-      setSessionStarted(true);
-      fetchNextQuestion();
-    } catch (err) {
-      console.error("Failed to start session", err);
+  // Create or retrieve session ID with persistence across page reloads
+  const getInitialSessionId = () => {
+    let stored = sessionStorage.getItem('fiscalstudy_sessionId');
+    if (!stored) {
+      stored = 'session-' + crypto.randomUUID();
+      sessionStorage.setItem('fiscalstudy_sessionId', stored);
     }
+    return stored;
   };
+  const sessionId = useRef(getInitialSessionId()).current;
 
-  const endSession = async () => {
-    try {
-      await fetch(`http://localhost:8080/api/v1/sessions/end`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId })
-      });
-      
-      const res = await fetch(`http://localhost:8080/api/v1/sessions/${sessionId}/summary`);
-      if (res.ok) {
-        setSummary(await res.json());
-      }
-      
-      setSessionEnded(true);
-    } catch (err) {
-      console.error("Failed to end session", err);
-    }
-  };
-
-  const fetchNextQuestion = async () => {
+  const fetchNextQuestion = useCallback(async () => {
     setLoading(true);
     setFeedback(null);
     setSelectedOption(null);
@@ -111,13 +79,64 @@ const QuestionViewer: React.FC = () => {
         setActiveTimeMs(0);
         setLastFocusTime(Date.now());
       } else {
-        console.error("No questions found");
         setQuestion(null);
       }
     } catch (error) {
       console.error("Failed to fetch question:", error);
     } finally {
       setLoading(false);
+    }
+  }, [sessionId, selectedDiscipline]);
+
+  useEffect(() => {
+    fetch('http://localhost:8080/api/v1/questions/disciplines')
+      .then(res => res.ok ? res.json() : [])
+      .then(data => setDisciplines(data))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (sessionStarted && !question && !sessionEnded) {
+      const timer = setTimeout(() => {
+        fetchNextQuestion();
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [sessionStarted, question, sessionEnded, fetchNextQuestion]);
+
+  const startSession = async () => {
+    try {
+      await fetch(`http://localhost:8080/api/v1/sessions/start`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId })
+      });
+      sessionStorage.setItem('fiscalstudy_sessionStarted', 'true');
+      setSessionStarted(true);
+      fetchNextQuestion();
+    } catch (err) {
+      console.error("Failed to start session", err);
+    }
+  };
+
+  const endSession = async () => {
+    try {
+      await fetch(`http://localhost:8080/api/v1/sessions/end`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId })
+      });
+      
+      const res = await fetch(`http://localhost:8080/api/v1/sessions/${sessionId}/summary`);
+      if (res.ok) {
+        setSummary(await res.json());
+      }
+      
+      sessionStorage.removeItem('fiscalstudy_sessionStarted');
+      sessionStorage.removeItem('fiscalstudy_sessionId');
+      setSessionEnded(true);
+    } catch (err) {
+      console.error("Failed to end session", err);
     }
   };
 
@@ -252,11 +271,16 @@ const QuestionViewer: React.FC = () => {
   let optionsList: string[] = [];
   if (Array.isArray(question.options)) {
     if (typeof question.options[0] === 'string') {
-      optionsList = question.options as string[];
+      optionsList = [...(question.options as string[])];
     } else {
-      // Se for object
       optionsList = (question.options as Option[]).map((o: Option) => `${o.label}) ${o.text}`);
     }
+    // Garante ordenação alfabética estrita das alternativas (A, B, C, D, E)
+    optionsList.sort((a, b) => {
+      const letterA = a.match(/^([A-E])\)?/i)?.[1]?.toUpperCase() || '';
+      const letterB = b.match(/^([A-E])\)?/i)?.[1]?.toUpperCase() || '';
+      return letterA.localeCompare(letterB);
+    });
   }
 
   return (
@@ -279,10 +303,11 @@ const QuestionViewer: React.FC = () => {
           {optionsList.map((opt, idx) => {
             const isSelected = selectedOption === opt;
             const letter = opt.match(/^([A-E])\)?/)?.[1] || opt.charAt(0);
+            const isUnverifiedGabarito = feedback?.gabaritoStatus === 'AUSENTE' || feedback?.gabaritoStatus === 'SOB_REVISAO';
             return (
               <div 
                 key={idx} 
-                className={`option-card ${isSelected ? 'selected' : ''} ${feedback && isSelected ? (feedback.isCorrect ? 'correct' : 'incorrect') : ''} ${feedback ? 'disabled' : ''}`}
+                className={`option-card ${isSelected ? 'selected' : ''} ${feedback && isSelected ? (isUnverifiedGabarito ? 'selected' : (feedback.isCorrect ? 'correct' : 'incorrect')) : ''} ${feedback ? 'disabled' : ''}`}
                 onClick={() => !feedback && setSelectedOption(opt)}
               >
                 <div className="option-marker">{letter}</div>
@@ -318,14 +343,34 @@ const QuestionViewer: React.FC = () => {
           </button>
         </div>
       ) : (
-        <div className={`feedback-bar glass animate-fade-in ${feedback.isCorrect ? 'feedback-correct' : 'feedback-error'}`}>
+        <div 
+          className={`feedback-bar glass animate-fade-in ${
+            feedback.gabaritoStatus === 'ANULADA' ? 'feedback-correct' :
+            (feedback.gabaritoStatus === 'AUSENTE' || feedback.gabaritoStatus === 'SOB_REVISAO') ? '' :
+            (feedback.isCorrect ? 'feedback-correct' : 'feedback-error')
+          }`}
+          style={
+            (feedback.gabaritoStatus === 'AUSENTE' || feedback.gabaritoStatus === 'SOB_REVISAO')
+              ? { background: 'rgba(234, 179, 8, 0.15)', border: '1px solid rgba(234, 179, 8, 0.5)' }
+              : undefined
+          }
+        >
           <div className="feedback-message">
-            {feedback.isCorrect ? (
-              <h3>✅ Resposta Correta!</h3>
+            {feedback.gabaritoStatus === 'ANULADA' ? (
+              <h3>✅ Questão Anulada pela Banca (ponto atribuído)</h3>
+            ) : feedback.gabaritoStatus === 'AUSENTE' ? (
+              <h3 style={{ color: '#facc15' }}>ℹ️ Resposta Registrada (Gabarito Ausente)</h3>
+            ) : feedback.gabaritoStatus === 'SOB_REVISAO' ? (
+              <h3 style={{ color: '#facc15' }}>⚠️ Resposta Registrada (Gabarito sob Revisão)</h3>
+            ) : feedback.isCorrect ? (
+              <h3>✅ Resposta Correta! {feedback.gabaritoStatus === 'RETIFICADO' ? '(Gabarito Retificado)' : ''}</h3>
             ) : (
-              <h3>❌ Resposta Incorreta</h3>
+              <h3>❌ Resposta Incorreta {feedback.gabaritoStatus === 'RETIFICADO' ? '(Gabarito Retificado)' : ''}</h3>
             )}
-            <p>Confiança registrada: {confidence}/5</p>
+            <p>
+              Confiança registrada: {confidence}/5
+              {(feedback.gabaritoStatus === 'AUSENTE' || feedback.gabaritoStatus === 'SOB_REVISAO') && ' — Não impacta cálculo de acurácia.'}
+            </p>
           </div>
           <button className="btn" onClick={fetchNextQuestion}>
             Próxima Questão ➔
