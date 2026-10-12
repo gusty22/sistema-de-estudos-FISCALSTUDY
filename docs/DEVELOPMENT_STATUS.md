@@ -77,15 +77,23 @@ Como o ambiente do agente não possui os binários instalados do Playwright devi
 | 2026-10-12 / `main` / `7a2fff9` | **Fase 1 (P1):** Correção da vertical de apresentação (CQRS/Idempotência) e ajuste de testes backend | `QuestionControllerTest.java`, `SessionControllerTest.java`, `App.tsx`, `QuestionViewer.tsx` | `.\mvnw test` (17 pass, 0 fail); `npm run build` (sucesso); `oxlint` (0 erros) | Vertical de eventos e sessão 100% testada e aprovada | Executar P2 |
 | 2026-10-12 / `main` / `7a2fff9` | **Fase 1 (P2):** Ingestão do Golden Set Araguari (40 questões) com pareamento do gabarito oficial | `pymupdf_extractor.py`, `IngestionController.java`, `IngestionControllerTest.java`, `main.py`, `.gitignore` | `.\mvnw test` (18 pass, 0 fail); Ingestão executada via REST; Banco validado via SQLite com 41 questões e eventos persistidos | Concluído com integridade e proveniência | P4: Seleção com filtros de disciplina e exclusão de questões repetidas |
 | 2026-10-12 / `main` / `7a2fff9` | **Fase 1 (P4):** Seleção adaptativa de questões por sessão/disciplina e listagem de disciplinas | `QuestionRepository.java`, `QuestionRepositoryImpl.java`, `QuestionSelectionService.java`, `QuestionController.java`, `QuestionControllerTest.java`, `QuestionViewer.tsx` | `.\mvnw test` (22 pass, 0 fail); `npm run build` (182ms, 0 erros); `oxlint` (0 erros) | Seleção de questões integrada com histórico da sessão e filtro por disciplina | P3: Higiene de scripts temporários e documentação final |
+| 2026-10-12 / `main` / `69a4229` | **Fase 1 (P5):** Análise completa de 8 projetos públicos de referência externa | `references/EXTERNAL_PROJECTS_ANALYSIS.md`, `docs/DEVELOPMENT_STATUS.md` | Análise estática, licenças, viabilidade, matriz e mapeamento aos 5 eixos estratégicos | Concluído sem alteração de escopo, dependências ou arquitetura | Retomar plano principal da V1 |
 
 ---
 
-## 5. Avaliação Futura de Referências Open-Source (P5 — ADOPT_LATER)
+## 5. Avaliação de Referências Open-Source (P5 — Concluída e Registrada)
 
-Projetos de código aberto catalogados em `references/` para análise futura posterior à estabilização completa da V1:
-- `ts-fsrs` / Spaced Repetition: Avaliação futura do algoritmo FSRS para agendamento de retenção e revisões espaçadas.
-- `docling`: Avaliação para OCR/parsing de PDFs complexos com tabelas ou escaneamentos degradados.
-- `notebooklm-para-concursos`: Metodologias de ritmo de estudo (ciclos ultradianos) para o Decision Engine.
-- `agent-memory`: Arquitetura de memória longitudinal e reflexão pedagógica.
+Documento permanente consolidado em: [`references/EXTERNAL_PROJECTS_ANALYSIS.md`](file:///c:/Users/washi/OneDrive/Área de Trabalho/sistema de estudos/references/EXTERNAL_PROJECTS_ANALYSIS.md).
 
-*Diretriz Confirmada:* Nenhuma dessas bibliotecas será instalada ou integrada durante a estabilização da V1. A análise aprofundada é estritamente tarefa futura de P5.
+Projetos analisados e recomendações consolidadas:
+1. `mattpocock/skills` (`teach`, `handoff`, `wait-what`, `writing-for-agents`) — **Aproveitar agora** (nível conceitual de prompts e concisão de feedback ao aluno).
+2. `THU-MAIC/OpenMAIC` — **Manter como referência** (simulação multi-agente para discursivas em V2/V3; rejeitar runtime LangGraph na V1).
+3. `Imbad0202/academic-research-skills` — **Descartar** (licença CC BY-NC 4.0 restritiva contra fins comerciais; escopo de papers LaTeX descolado de concursos).
+4. `rebelytics/one-skill-to-rule-them-all` (*Task Observer*) — **Aproveitar agora** (formaliza o padrão de inferência da filosofia do Terceiro Observador).
+5. `thedotmack/claude-mem` — **Investigar posteriormente** (avaliar FTS nativo no SQLite próprio em V2; descartar ChromaDB e workers na V1).
+6. `headroomlabs-ai/headroom` — **Investigar posteriormente** (relevante para compressão de enunciados longos quando forem integradas LLMs em V2; irrelevante no core determinístico da V1).
+7. `denzainch/omniroute` (*OmniRoute*) — **Descartar** (roteador de infraestrutura externa multi-provedor sem papel no software local da V1).
+8. `cloudflare/security-audit-skill` — **Aproveitar agora** (adotar matriz estática de segurança OWASP para auditoria contínua de endpoints Spring e SQLite).
+
+*Diretriz Cumprida:* Nenhuma dependência foi instalada, a arquitetura determinística local-first permaneceu intacta e o plano de desenvolvimento principal pode prosseguir com segurança.
+
