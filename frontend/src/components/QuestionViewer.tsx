@@ -9,7 +9,7 @@ interface Option {
 interface Question {
   questionId: string;
   statement: string;
-  options: any; // Can be array of string or objects
+  options: string[] | Option[];
   metadata: {
     discipline: string;
     topic: string;
@@ -36,11 +36,21 @@ const QuestionViewer: React.FC = () => {
   const [confidence, setConfidence] = useState<number>(0);
   const [feedback, setFeedback] = useState<{ isCorrect: boolean } | null>(null);
   
+  const [disciplines, setDisciplines] = useState<string[]>([]);
+  const [selectedDiscipline, setSelectedDiscipline] = useState<string>('');
+
   const [activeTimeMs, setActiveTimeMs] = useState<number>(0);
   const [lastFocusTime, setLastFocusTime] = useState<number>(0);
   
   // Create a unique session ID
   const sessionId = useRef('session-' + crypto.randomUUID()).current;
+
+  useEffect(() => {
+    fetch('http://localhost:8080/api/v1/questions/disciplines')
+      .then(res => res.ok ? res.json() : [])
+      .then(data => setDisciplines(data))
+      .catch(() => {});
+  }, []);
 
   const startSession = async () => {
     try {
@@ -81,7 +91,11 @@ const QuestionViewer: React.FC = () => {
     setSelectedOption(null);
     setConfidence(0);
     try {
-      const response = await fetch(`http://localhost:8080/api/v1/questions/next?sessionId=${sessionId}`);
+      let url = `http://localhost:8080/api/v1/questions/next?sessionId=${sessionId}`;
+      if (selectedDiscipline) {
+        url += `&disciplina=${encodeURIComponent(selectedDiscipline)}`;
+      }
+      const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
         setQuestion(data);
@@ -159,9 +173,31 @@ const QuestionViewer: React.FC = () => {
   if (!sessionStarted) {
     return (
       <div className="viewer-container empty">
-        <div className="glass empty-state">
+        <div className="glass empty-state" style={{ maxWidth: '480px', width: '100%' }}>
           <h2>Pronto para começar?</h2>
-          <button className="btn mt-4" onClick={startSession}>Iniciar Estudo</button>
+          <p style={{ color: '#94a3b8', marginTop: '8px' }}>Selecione uma disciplina ou faça um simulado geral:</p>
+          <div style={{ marginTop: '16px', marginBottom: '20px' }}>
+            <select
+              value={selectedDiscipline}
+              onChange={(e) => setSelectedDiscipline(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '10px 14px',
+                borderRadius: '8px',
+                background: 'rgba(255, 255, 255, 0.08)',
+                color: '#fff',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                fontSize: '1em',
+                outline: 'none'
+              }}
+            >
+              <option value="" style={{ background: '#1e293b', color: '#fff' }}>Todas as Disciplinas (Geral)</option>
+              {disciplines.map((d) => (
+                <option key={d} value={d} style={{ background: '#1e293b', color: '#fff' }}>{d}</option>
+              ))}
+            </select>
+          </div>
+          <button className="btn" onClick={startSession}>Iniciar Estudo</button>
         </div>
       </div>
     );
@@ -205,7 +241,7 @@ const QuestionViewer: React.FC = () => {
     return (
       <div className="viewer-container empty">
         <div className="glass empty-state">
-          <h2>Você concluiu todas as questões disponíveis!</h2>
+          <h2>Você concluiu todas as questões disponíveis{selectedDiscipline ? ` de ${selectedDiscipline}` : ''}!</h2>
           <button className="btn mt-4" onClick={fetchNextQuestion}>Tentar Novamente</button>
           <button className="btn mt-4" style={{marginLeft: '10px'}} onClick={endSession}>Encerrar Sessão</button>
         </div>
@@ -216,10 +252,10 @@ const QuestionViewer: React.FC = () => {
   let optionsList: string[] = [];
   if (Array.isArray(question.options)) {
     if (typeof question.options[0] === 'string') {
-      optionsList = question.options;
+      optionsList = question.options as string[];
     } else {
       // Se for object
-      optionsList = question.options.map(o => `${o.label}) ${o.text}`);
+      optionsList = (question.options as Option[]).map((o: Option) => `${o.label}) ${o.text}`);
     }
   }
 

@@ -1,4 +1,3 @@
-import React from 'react';
 import QuestionViewer from './components/QuestionViewer';
 
 function App() {

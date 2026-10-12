@@ -24,8 +24,10 @@ public class QuestionController {
     }
 
     @GetMapping("/next")
-    public ResponseEntity<QuestionDTO> getNextQuestion(@RequestParam(required = false) String sessionId) {
-        Optional<Question> questionOpt = questionSelectionService.getNextQuestion(sessionId);
+    public ResponseEntity<QuestionDTO> getNextQuestion(
+            @RequestParam(required = false) String sessionId,
+            @RequestParam(required = false) String disciplina) {
+        Optional<Question> questionOpt = questionSelectionService.getNextQuestion(sessionId, disciplina);
         
         if (questionOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
@@ -44,6 +46,12 @@ public class QuestionController {
         );
         
         return ResponseEntity.ok(dto);
+    }
+
+    @GetMapping("/disciplines")
+    public ResponseEntity<List<String>> getDisciplines() {
+        List<String> disciplines = questionSelectionService.getAvailableDisciplines();
+        return ResponseEntity.ok(disciplines);
     }
 
     @PostMapping("/{id}/presented")

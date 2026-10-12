@@ -24,9 +24,27 @@ public class QuestionRepositoryImpl implements QuestionRepository {
 
     @Override
     public Optional<Question> findNextAvailableQuestion() {
-        String sql = "SELECT * FROM questions ORDER BY RANDOM() LIMIT 1"; // Simplest strategy for V1
-        
-        List<Question> questions = jdbcTemplate.query(sql, (rs, rowNum) -> {
+        return findNextAvailableQuestion(null, null);
+    }
+
+    @Override
+    public Optional<Question> findNextAvailableQuestion(String sessionId, String disciplina) {
+        StringBuilder sql = new StringBuilder("SELECT * FROM questions WHERE 1=1 ");
+        List<Object> params = new java.util.ArrayList<>();
+
+        if (disciplina != null && !disciplina.isBlank()) {
+            sql.append("AND disciplina = ? ");
+            params.add(disciplina.trim());
+        }
+
+        if (sessionId != null && !sessionId.isBlank()) {
+            sql.append("AND id NOT IN (SELECT aggregate_id FROM event_store WHERE session_id = ? AND event_type = 'ANSWER_SUBMITTED') ");
+            params.add(sessionId.trim());
+        }
+
+        sql.append("ORDER BY RANDOM() LIMIT 1");
+
+        List<Question> questions = jdbcTemplate.query(sql.toString(), (rs, rowNum) -> {
             try {
                 List<String> options = null;
                 String optionsJson = rs.getString("options_json");
@@ -47,7 +65,7 @@ public class QuestionRepositoryImpl implements QuestionRepository {
             } catch (Exception e) {
                 throw new RuntimeException("Failed to map question", e);
             }
-        });
+        }, params.toArray());
 
         return questions.isEmpty() ? Optional.empty() : Optional.of(questions.get(0));
     }
@@ -80,5 +98,11 @@ public class QuestionRepositoryImpl implements QuestionRepository {
         }, id);
 
         return questions.isEmpty() ? Optional.empty() : Optional.of(questions.get(0));
+    }
+
+    @Override
+    public List<String> findAllDisciplines() {
+        String sql = "SELECT DISTINCT disciplina FROM questions WHERE disciplina IS NOT NULL AND TRIM(disciplina) != '' ORDER BY disciplina";
+        return jdbcTemplate.queryForList(sql, String.class);
     }
 }

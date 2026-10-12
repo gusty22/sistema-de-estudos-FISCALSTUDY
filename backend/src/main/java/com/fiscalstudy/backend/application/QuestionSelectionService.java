@@ -19,9 +19,15 @@ public class QuestionSelectionService {
     }
 
     public Optional<Question> getNextQuestion(String sessionId) {
-        Optional<Question> question = questionRepository.findNextAvailableQuestion();
-        
-        return question;
+        return getNextQuestion(sessionId, null);
+    }
+
+    public Optional<Question> getNextQuestion(String sessionId, String disciplina) {
+        return questionRepository.findNextAvailableQuestion(sessionId, disciplina);
+    }
+
+    public java.util.List<String> getAvailableDisciplines() {
+        return questionRepository.findAllDisciplines();
     }
 
     public void recordPresentation(String questionId, String sessionId) {
