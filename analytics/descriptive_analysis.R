@@ -26,8 +26,8 @@ if (n_total == 0) {
 }
 
 # 1. FILTRAGEM E PROTEÇÃO DE DADOS
-# Questões com gabarito ausente ou anuladas
-df_evaluated <- df[!is.na(df$is_correct) & df$gabarito_status != "AUSENTE", ]
+# Questões com gabarito ausente, sob revisão ou com is_correct NA
+df_evaluated <- df[!is.na(df$is_correct) & !(df$gabarito_status %in% c("AUSENTE", "SOB_REVISAO")), ]
 n_evaluated <- nrow(df_evaluated)
 n_excluded <- n_total - n_evaluated
 
