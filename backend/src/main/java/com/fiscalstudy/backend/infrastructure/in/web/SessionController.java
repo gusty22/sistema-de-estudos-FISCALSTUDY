@@ -85,7 +85,10 @@ public class SessionController {
                 totalTimeMs += activeTimeMs;
 
                 // Questões sem gabarito verificado são excluídas do cálculo de acurácia
-                if (!"AUSENTE".equalsIgnoreCase(gabaritoStatus) && !isCorrectNode.isNull()) {
+                boolean isUnverified = "AUSENTE".equalsIgnoreCase(gabaritoStatus) || 
+                                       "SOB_REVISAO".equalsIgnoreCase(gabaritoStatus) || 
+                                       isCorrectNode.isNull();
+                if (!isUnverified) {
                     evaluatedCount++;
                     boolean isCorrect = isCorrectNode.asBoolean();
                     if (isCorrect) {

@@ -68,7 +68,10 @@ public class AnalyticsProjectionService {
                 acc.total++;
                 acc.totalTimeMs += activeTime;
 
-                if (!"AUSENTE".equalsIgnoreCase(gabaritoStatus) && !isCorrectNode.isNull()) {
+                boolean isUnverified = "AUSENTE".equalsIgnoreCase(gabaritoStatus) || 
+                                       "SOB_REVISAO".equalsIgnoreCase(gabaritoStatus) || 
+                                       isCorrectNode.isNull();
+                if (!isUnverified) {
                     evaluatedCount++;
                     boolean isCorrect = isCorrectNode.asBoolean();
                     acc.evaluated++;
@@ -131,9 +134,10 @@ public class AnalyticsProjectionService {
         String interv = overconfidenceCount > 0
                 ? "Revisar itens onde houve confiança máxima e erro para corrigir falsas certezas antes de avançar para novos blocos."
                 : "Manter ciclo contínuo de resolução determinística por blocos de questões.";
+        String res = "Evidência posterior sobre intervenção: aguardando ciclo subsequente de resoluções para mensurar eficácia.";
 
         AnalyticsOverviewDTO.DiagnosticGuidanceDTO guidance = new AnalyticsOverviewDTO.DiagnosticGuidanceDTO(
-                obs, ind, hip, diag, interv
+                obs, ind, hip, diag, interv, res
         );
 
         return new AnalyticsOverviewDTO(

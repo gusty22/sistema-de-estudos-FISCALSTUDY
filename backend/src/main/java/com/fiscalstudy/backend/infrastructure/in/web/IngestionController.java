@@ -67,6 +67,19 @@ public class IngestionController {
                     }
                 }
 
+                String gabaritoStatus = "DEFINITIVO";
+                if (q.containsKey("gabarito_status") && q.get("gabarito_status") != null) {
+                    gabaritoStatus = String.valueOf(q.get("gabarito_status")).trim().toUpperCase();
+                } else if ("ANULADA".equalsIgnoreCase(correctOption)) {
+                    gabaritoStatus = "ANULADA";
+                } else if (correctOption == null || correctOption.isBlank()) {
+                    gabaritoStatus = "AUSENTE";
+                }
+
+                if ("ANULADA".equalsIgnoreCase(gabaritoStatus) && correctOption == null) {
+                    correctOption = "ANULADA";
+                }
+
                 String disciplina = null;
                 if (q.containsKey("disciplina") && q.get("disciplina") != null) {
                     disciplina = String.valueOf(q.get("disciplina")).trim();
@@ -93,9 +106,18 @@ public class IngestionController {
                     }
                 }
 
-                String sql = "INSERT INTO questions (id, enunciado, options_json, correct_option, banca, ano, orgao, cargo, disciplina) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) " +
-                             "ON CONFLICT(id) DO UPDATE SET enunciado=excluded.enunciado, options_json=excluded.options_json, correct_option=excluded.correct_option, banca=excluded.banca, ano=excluded.ano, orgao=excluded.orgao, cargo=excluded.cargo, disciplina=excluded.disciplina";
-                jdbcTemplate.update(sql, id, statement, optionsJson, correctOption, banca, ano, orgao, cargo, disciplina);
+                boolean hasGabaritoCol = jdbcTemplate.queryForList("PRAGMA table_info(questions)").stream()
+                        .anyMatch(col -> "gabarito_status".equalsIgnoreCase(String.valueOf(col.get("name"))));
+
+                if (hasGabaritoCol) {
+                    String sql = "INSERT INTO questions (id, enunciado, options_json, correct_option, gabarito_status, banca, ano, orgao, cargo, disciplina) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
+                                 "ON CONFLICT(id) DO UPDATE SET enunciado=excluded.enunciado, options_json=excluded.options_json, correct_option=excluded.correct_option, gabarito_status=excluded.gabarito_status, banca=excluded.banca, ano=excluded.ano, orgao=excluded.orgao, cargo=excluded.cargo, disciplina=excluded.disciplina";
+                    jdbcTemplate.update(sql, id, statement, optionsJson, correctOption, gabaritoStatus, banca, ano, orgao, cargo, disciplina);
+                } else {
+                    String sql = "INSERT INTO questions (id, enunciado, options_json, correct_option, banca, ano, orgao, cargo, disciplina) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) " +
+                                 "ON CONFLICT(id) DO UPDATE SET enunciado=excluded.enunciado, options_json=excluded.options_json, correct_option=excluded.correct_option, banca=excluded.banca, ano=excluded.ano, orgao=excluded.orgao, cargo=excluded.cargo, disciplina=excluded.disciplina";
+                    jdbcTemplate.update(sql, id, statement, optionsJson, correctOption, banca, ano, orgao, cargo, disciplina);
+                }
                 
                 logger.info("Saved question {}", id);
             }

@@ -8,16 +8,30 @@ public class Question {
     private String statement;
     private List<String> options;
     private String correctOption;
+    private GabaritoStatus gabaritoStatus;
     private String discipline;
     private String topic;
     private String board;
     private Integer year;
 
     public Question(String id, String statement, List<String> options, String correctOption, String discipline, String topic, String board, Integer year) {
+        this(id, statement, options, correctOption, null, discipline, topic, board, year);
+    }
+
+    public Question(String id, String statement, List<String> options, String correctOption, GabaritoStatus gabaritoStatus, String discipline, String topic, String board, Integer year) {
         this.id = id;
         this.statement = statement;
         this.options = options;
         this.correctOption = correctOption;
+        if ("ANULADA".equalsIgnoreCase(correctOption)) {
+            this.gabaritoStatus = GabaritoStatus.ANULADA;
+        } else if (correctOption == null || correctOption.isBlank()) {
+            this.gabaritoStatus = GabaritoStatus.AUSENTE;
+        } else if (gabaritoStatus != null) {
+            this.gabaritoStatus = gabaritoStatus;
+        } else {
+            this.gabaritoStatus = GabaritoStatus.DEFINITIVO;
+        }
         this.discipline = discipline;
         this.topic = topic;
         this.board = board;
@@ -28,6 +42,7 @@ public class Question {
     public String getStatement() { return statement; }
     public List<String> getOptions() { return options; }
     public String getCorrectOption() { return correctOption; }
+    public GabaritoStatus getGabaritoStatus() { return gabaritoStatus; }
     public String getDiscipline() { return discipline; }
     public String getTopic() { return topic; }
     public String getBoard() { return board; }

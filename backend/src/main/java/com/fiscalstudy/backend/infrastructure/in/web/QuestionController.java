@@ -83,7 +83,7 @@ public class QuestionController {
 
 
         try {
-            boolean isCorrect = attemptSubmissionService.submitAttempt(
+            com.fiscalstudy.backend.domain.AttemptResult result = attemptSubmissionService.submitAttempt(
                     id,
                     payload.getSelectedOption(),
                     payload.getConfidenceLevel(),
@@ -91,7 +91,10 @@ public class QuestionController {
                     payload.getSessionId()
             );
 
-            return ResponseEntity.ok(new AttemptResultDTO(isCorrect));
+            return ResponseEntity.ok(new AttemptResultDTO(
+                    result.getIsCorrect(),
+                    result.getGabaritoStatus() != null ? result.getGabaritoStatus().name() : "DEFINITIVO"
+            ));
         } catch (IllegalStateException e) {
             return ResponseEntity.badRequest().build();
         } catch (IllegalArgumentException e) {
@@ -146,8 +149,25 @@ public class QuestionController {
         public void setSessionId(String sessionId) { this.sessionId = sessionId; }
     }
 
+    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
     public static class AttemptResultDTO {
-        public boolean isCorrect;
-        public AttemptResultDTO(boolean isCorrect) { this.isCorrect = isCorrect; }
+        @com.fasterxml.jackson.annotation.JsonProperty("isCorrect")
+        public Boolean isCorrect;
+
+        @com.fasterxml.jackson.annotation.JsonProperty("gabaritoStatus")
+        public String gabaritoStatus;
+
+        public AttemptResultDTO(Boolean isCorrect, String gabaritoStatus) {
+            this.isCorrect = isCorrect;
+            this.gabaritoStatus = gabaritoStatus;
+        }
+
+        public AttemptResultDTO(boolean isCorrect) {
+            this.isCorrect = isCorrect;
+            this.gabaritoStatus = "DEFINITIVO";
+        }
+
+        public Boolean getIsCorrect() { return isCorrect; }
+        public String getGabaritoStatus() { return gabaritoStatus; }
     }
 }

@@ -22,6 +22,15 @@ public class QuestionRepositoryImpl implements QuestionRepository {
         this.objectMapper = new ObjectMapper();
     }
 
+    @jakarta.annotation.PostConstruct
+    public void ensureSchemaCompatibility() {
+        try {
+            jdbcTemplate.execute("ALTER TABLE questions ADD COLUMN gabarito_status TEXT DEFAULT 'DEFINITIVO'");
+        } catch (Exception ignored) {
+            // Column already exists
+        }
+    }
+
     @Override
     public Optional<Question> findNextAvailableQuestion() {
         return findNextAvailableQuestion(null, null);
@@ -50,13 +59,28 @@ public class QuestionRepositoryImpl implements QuestionRepository {
                 String optionsJson = rs.getString("options_json");
                 if (optionsJson != null && !optionsJson.isEmpty()) {
                     options = objectMapper.readValue(optionsJson, new TypeReference<List<String>>(){});
+                    if (options != null) {
+                        options.sort((opt1, opt2) -> {
+                            String l1 = (opt1 != null && !opt1.isBlank()) ? opt1.trim().substring(0, 1).toUpperCase() : "";
+                            String l2 = (opt2 != null && !opt2.isBlank()) ? opt2.trim().substring(0, 1).toUpperCase() : "";
+                            return l1.compareTo(l2);
+                        });
+                    }
                 }
+
+                String rawStatus = null;
+                try {
+                    rawStatus = rs.getString("gabarito_status");
+                } catch (Exception ignored) {}
+                com.fiscalstudy.backend.domain.GabaritoStatus gabaritoStatus = 
+                        com.fiscalstudy.backend.domain.GabaritoStatus.fromString(rawStatus);
                 
                 return new Question(
                         rs.getString("id"),
                         rs.getString("enunciado"),
                         options,
                         rs.getString("correct_option"),
+                        gabaritoStatus,
                         rs.getString("disciplina"),
                         rs.getString("assunto"),
                         rs.getString("banca"),
@@ -112,13 +136,28 @@ public class QuestionRepositoryImpl implements QuestionRepository {
                 String optionsJson = rs.getString("options_json");
                 if (optionsJson != null && !optionsJson.isEmpty()) {
                     options = objectMapper.readValue(optionsJson, new TypeReference<List<String>>(){});
+                    if (options != null) {
+                        options.sort((opt1, opt2) -> {
+                            String l1 = (opt1 != null && !opt1.isBlank()) ? opt1.trim().substring(0, 1).toUpperCase() : "";
+                            String l2 = (opt2 != null && !opt2.isBlank()) ? opt2.trim().substring(0, 1).toUpperCase() : "";
+                            return l1.compareTo(l2);
+                        });
+                    }
                 }
+
+                String rawStatus = null;
+                try {
+                    rawStatus = rs.getString("gabarito_status");
+                } catch (Exception ignored) {}
+                com.fiscalstudy.backend.domain.GabaritoStatus gabaritoStatus = 
+                        com.fiscalstudy.backend.domain.GabaritoStatus.fromString(rawStatus);
                 
                 return new Question(
                         rs.getString("id"),
                         rs.getString("enunciado"),
                         options,
                         rs.getString("correct_option"),
+                        gabaritoStatus,
                         rs.getString("disciplina"),
                         rs.getString("assunto"),
                         rs.getString("banca"),

@@ -73,13 +73,19 @@ public class AnalyticsOverviewDTO {
         public String hipotese;
         public String diagnostico;
         public String intervencao;
+        public String resultado;
 
         public DiagnosticGuidanceDTO(String observacao, String indicador, String hipotese, String diagnostico, String intervencao) {
+            this(observacao, indicador, hipotese, diagnostico, intervencao, "Sem intervenção prévia registrada para este ciclo.");
+        }
+
+        public DiagnosticGuidanceDTO(String observacao, String indicador, String hipotese, String diagnostico, String intervencao, String resultado) {
             this.observacao = observacao;
             this.indicador = indicador;
             this.hipotese = hipotese;
             this.diagnostico = diagnostico;
             this.intervencao = intervencao;
+            this.resultado = resultado;
         }
     }
 }

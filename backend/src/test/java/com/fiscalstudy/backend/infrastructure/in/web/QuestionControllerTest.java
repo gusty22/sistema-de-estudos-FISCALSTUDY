@@ -316,6 +316,78 @@ class QuestionControllerTest {
     }
 
     @Test
+    void submitAttempt_OnGabaritoAusente_ReturnsNullIsCorrect() throws Exception {
+        String optionsJson = "[\"A) Opt A\", \"B) Opt B\", \"C) Opt C\", \"D) Opt D\"]";
+        jdbcTemplate.update("INSERT INTO questions (id, enunciado, options_json, correct_option, banca, ano, cargo) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                "q_ausente", "Questão sem gabarito cadastrado", optionsJson, null, "IBGP", 2023, "Auditor");
+
+        String payload = "{\"selectedOption\":\"B\", \"confidenceLevel\":4, \"activeTimeMs\":2000, \"sessionId\":\"sess_aus\"}";
+
+        mockMvc.perform(post("/api/v1/questions/q_ausente/attempts")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(payload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.isCorrect").doesNotExist())
+                .andExpect(jsonPath("$.gabaritoStatus").value("AUSENTE"));
+
+        String savedPayload = jdbcTemplate.queryForObject("SELECT payload_json FROM event_store WHERE aggregate_id = 'q_ausente'", String.class);
+        org.junit.jupiter.api.Assertions.assertTrue(savedPayload.contains("\"gabaritoStatus\": \"AUSENTE\""));
+        org.junit.jupiter.api.Assertions.assertTrue(savedPayload.contains("\"isCorrect\": null"));
+    }
+
+    @Test
+    void submitAttempt_OnGabaritoSobRevisao_ReturnsNullIsCorrect() throws Exception {
+        String optionsJson = "[\"A) Opt A\", \"B) Opt B\", \"C) Opt C\", \"D) Opt D\"]";
+        jdbcTemplate.update("INSERT INTO questions (id, enunciado, options_json, correct_option, gabarito_status, banca, ano, cargo) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                "q_revisao", "Questão com gabarito sob revisão", optionsJson, "A", "SOB_REVISAO", "IBGP", 2023, "Auditor");
+
+        String payload = "{\"selectedOption\":\"A\", \"confidenceLevel\":5, \"activeTimeMs\":1500, \"sessionId\":\"sess_rev\"}";
+
+        mockMvc.perform(post("/api/v1/questions/q_revisao/attempts")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(payload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.isCorrect").doesNotExist())
+                .andExpect(jsonPath("$.gabaritoStatus").value("SOB_REVISAO"));
+
+        String savedPayload = jdbcTemplate.queryForObject("SELECT payload_json FROM event_store WHERE aggregate_id = 'q_revisao'", String.class);
+        org.junit.jupiter.api.Assertions.assertTrue(savedPayload.contains("\"gabaritoStatus\": \"SOB_REVISAO\""));
+        org.junit.jupiter.api.Assertions.assertTrue(savedPayload.contains("\"isCorrect\": null"));
+    }
+
+    @Test
+    void submitAttempt_OnGabaritoRetificado_ReturnsRetificadoStatus() throws Exception {
+        String optionsJson = "[\"A) Opt A\", \"B) Opt B\", \"C) Opt C\", \"D) Opt D\"]";
+        jdbcTemplate.update("INSERT INTO questions (id, enunciado, options_json, correct_option, gabarito_status, banca, ano, cargo) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                "q_retificado", "Questão com gabarito retificado", optionsJson, "B", "RETIFICADO", "IBGP", 2023, "Auditor");
+
+        String payload = "{\"selectedOption\":\"B\", \"confidenceLevel\":5, \"activeTimeMs\":1800, \"sessionId\":\"sess_ret\"}";
+
+        mockMvc.perform(post("/api/v1/questions/q_retificado/attempts")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(payload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.isCorrect").value(true))
+                .andExpect(jsonPath("$.gabaritoStatus").value("RETIFICADO"));
+    }
+
+    @Test
+    void getNextQuestion_ReturnsOptionsSortedAlphabetically() throws Exception {
+        // Options in disordered sequence: C, A, D, B
+        String disorderedOptions = "[\"C) Terceira\", \"A) Primeira\", \"D) Quarta\", \"B) Segunda\"]";
+        jdbcTemplate.update("INSERT INTO questions (id, enunciado, options_json, correct_option, banca, ano, cargo, disciplina) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                "q_disordered", "Questão com opções desordenadas", disorderedOptions, "A", "FCC", 2023, "Auditor", "Administração");
+
+        mockMvc.perform(get("/api/v1/questions/next?disciplina=Administração"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.questionId").value("q_disordered"))
+                .andExpect(jsonPath("$.options[0]").value("A) Primeira"))
+                .andExpect(jsonPath("$.options[1]").value("B) Segunda"))
+                .andExpect(jsonPath("$.options[2]").value("C) Terceira"))
+                .andExpect(jsonPath("$.options[3]").value("D) Quarta"));
+    }
+
+    @Test
     void getNextQuestion_SkipsStructurallyIncompleteQuestions() throws Exception {
         // Insert incomplete question (only 3 options)
         String incompleteOptions = "[\"A) 1\", \"B) 2\", \"C) 3\"]";

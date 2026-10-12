@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS questions (
     enunciado TEXT,
     options_json TEXT,
     correct_option TEXT,
+    gabarito_status TEXT DEFAULT 'DEFINITIVO',
     banca TEXT,
     ano INTEGER,
     orgao TEXT,
