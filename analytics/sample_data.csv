@@ -1,0 +1,21 @@
+question_id,selected_option,is_correct,gabarito_status,confidence_level,active_time_ms,discipline,board,year
+"1","A",true,"DEFINITIVO",5,14200,"Língua Portuguesa","IBGP",2023
+"2","B",true,"DEFINITIVO",4,18500,"Língua Portuguesa","IBGP",2023
+"3","C",false,"DEFINITIVO",5,22100,"Língua Portuguesa","IBGP",2023
+"4","D",true,"DEFINITIVO",3,26000,"Língua Portuguesa","IBGP",2023
+"11","B",true,"DEFINITIVO",4,45000,"Raciocínio Lógico","IBGP",2023
+"12","A",false,"DEFINITIVO",2,52000,"Raciocínio Lógico","IBGP",2023
+"13","B",true,"DEFINITIVO",5,38000,"Raciocínio Lógico","IBGP",2023
+"14","C",NA,"AUSENTE",3,31000,"Raciocínio Lógico","IBGP",2023
+"16","D",true,"DEFINITIVO",5,12000,"Noções de Informática","IBGP",2023
+"17","A",true,"DEFINITIVO",4,15000,"Noções de Informática","IBGP",2023
+"18","B",true,"DEFINITIVO",5,14000,"Noções de Informática","IBGP",2023
+"19","C",false,"DEFINITIVO",5,19000,"Noções de Informática","IBGP",2023
+"21","B",false,"DEFINITIVO",2,33000,"Conhecimentos Gerais","IBGP",2023
+"22","D",true,"DEFINITIVO",4,21000,"Conhecimentos Gerais","IBGP",2023
+"26","D",true,"DEFINITIVO",4,29000,"Legislação Municipal","IBGP",2023
+"27","A",false,"DEFINITIVO",3,34000,"Legislação Municipal","IBGP",2023
+"28","D",true,"DEFINITIVO",5,28000,"Legislação Municipal","IBGP",2023
+"31","A",false,"DEFINITIVO",5,41000,"Conhecimentos Específicos","IBGP",2023
+"32","C",true,"DEFINITIVO",4,36000,"Conhecimentos Específicos","IBGP",2023
+"33","A",true,"DEFINITIVO",3,39000,"Conhecimentos Específicos","IBGP",2023
