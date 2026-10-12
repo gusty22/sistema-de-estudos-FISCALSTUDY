@@ -27,7 +27,7 @@ target/
 ingestion/output/*.txt
 
 # DB
-db/*.db
+db/*.db*
 
 # Ingestion temp
 ingestion/inspection_*.json
@@ -36,3 +36,5 @@ ingestion/output/
 # Exclusão de Referências e Fixtures com Direitos Autorais
 references/
 tests/golden-set/docs/
+FiscalStudy_Kit_Retomada_2026-10-11/
+
