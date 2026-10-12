@@ -1,0 +1,1080 @@
+{
+  "version": "v1",
+  "source": "AuditorFiscalWinRtOcrExtractor",
+  "golden_set": "IBGP-2023-Auditor-Fiscal-503",
+  "total_questions": 40,
+  "data": {
+    "metadata": {
+      "banca": "IBGP",
+      "cargo": "Auditor Fiscal da Receita Municipal",
+      "cargo_codigo": "503",
+      "ano": 2023,
+      "orgao": "Prefeitura Municipal de Araguari - MG",
+      "hash": "auditor_fiscal_503_ibgp_2023_sha256"
+    },
+    "questions": [
+      {
+        "id": "ibgp-2023-auditor-fiscal-q1",
+        "numero_original": 1,
+        "statement": "A partir da conceituação acerca do que são os signos\nlinguísticos, é CORRETO afirmar que, no texto\nlido usa-se:",
+        "options": [
+          "A) Apenas signos verbais.",
+          "B) Apenas signos não verbais.",
+          "C) Signos verbais e não verbais.",
+          "D) Signos sincréticos. OI a 10. a sua saúde mental? sem pagar, um combo nada atraente. Uma pandemia, abruptas no trabalho e a exaustão, que, para pagando a conta. O maior deles foi um abalo sísmico e do estresse, somamos a Síndrome de Burnout e o atinge e preocupa as corporações. publicado hoje, aponta que, no Brasil, em 2021, por conta de problemas mentais. De acordo com a somos o segundo país com mais casos de Síndrome de extrema, estresse e esgotamento fisico resultante estão sendo forçados a lidar com a situação como que são o maior ativo de qualquer empresa. São são embrionárias e teóricas. todo o conjunto de soluções para tirar as pessoas de que vem de casa — a fisica, com tantos íntima, a angústia que mora em cada um de nós por da amiga, também. A atividade fisica é essencial que proporciona autoconhecimento e nos ajuda a ser e fazer. Esse é o combo que vale cada centavo vêm desse scroll infinito que se tornou a vida. Vamos não vemos sentido nessa superficialidade toda de redes no trabalho, mas ficamos. com alguma profundidade e um tanto de boa vontade, e poderemos ter mais lucidez para fazer as escolhas Acesso em: 29 dc maio de 2023."
+        ],
+        "provenance": {
+          "banca": "IBGP",
+          "cargo": "Auditor Fiscal da Receita Municipal",
+          "ano": 2023,
+          "orgao": "Prefeitura Municipal de Araguari - MG",
+          "edital": "01/2023",
+          "cargo_codigo": "503",
+          "hash": "auditor_fiscal_503_ibgp_2023_sha256",
+          "pages": [
+            2
+          ]
+        },
+        "disciplina": "Língua Portuguesa",
+        "correct_option": "A",
+        "gabarito_status": "DEFINITIVO",
+        "confidence_score": 1.0
+      },
+      {
+        "id": "ibgp-2023-auditor-fiscal-q2",
+        "numero_original": 2,
+        "statement": "A partir de uma leitura completa e analítica do texto,\né CORRETO afirmar que está escrito\npredominantemente na variante:",
+        "options": [
+          "A) Padrão da língua.",
+          "B) Sociocultural da língua.",
+          "C) Histór_iga da língua.",
+          "D) Geogéca da língua."
+        ],
+        "provenance": {
+          "banca": "IBGP",
+          "cargo": "Auditor Fiscal da Receita Municipal",
+          "ano": 2023,
+          "orgao": "Prefeitura Municipal de Araguari - MG",
+          "edital": "01/2023",
+          "cargo_codigo": "503",
+          "hash": "auditor_fiscal_503_ibgp_2023_sha256",
+          "pages": [
+            2
+          ]
+        },
+        "disciplina": "Língua Portuguesa",
+        "correct_option": "A",
+        "gabarito_status": "DEFINITIVO",
+        "confidence_score": 1.0
+      },
+      {
+        "id": "ibgp-2023-auditor-fiscal-q3",
+        "numero_original": 3,
+        "statement": "A partir da leitura global do texto e de suas\ncaracterísticas estruturais, é CORRETO afirmar\nque ele faz parte de um contexto:",
+        "options": [
+          "A) Jornalístico.",
+          "B) Ficcional.",
+          "C) Instrucional.",
+          "D) Novelístico."
+        ],
+        "provenance": {
+          "banca": "IBGP",
+          "cargo": "Auditor Fiscal da Receita Municipal",
+          "ano": 2023,
+          "orgao": "Prefeitura Municipal de Araguari - MG",
+          "edital": "01/2023",
+          "cargo_codigo": "503",
+          "hash": "auditor_fiscal_503_ibgp_2023_sha256",
+          "pages": [
+            3
+          ]
+        },
+        "disciplina": "Língua Portuguesa",
+        "correct_option": "A",
+        "gabarito_status": "DEFINITIVO",
+        "confidence_score": 1.0
+      },
+      {
+        "id": "ibgp-2023-auditor-fiscal-q4",
+        "numero_original": 4,
+        "statement": "Leia o trecho a seguir:\n\"Já não encontramos propósito no trabalho, mas\nficamos.\"\nEm relação ao sujeito da oração sublinhada, é\nCORRETO afirmar que está classificado como:",
+        "options": [
+          "A) Sujeito simples.",
+          "B) Sujeito Composto.",
+          "C) Sujeito desinencial.",
+          "D) Sujeito indeterminado."
+        ],
+        "provenance": {
+          "banca": "IBGP",
+          "cargo": "Auditor Fiscal da Receita Municipal",
+          "ano": 2023,
+          "orgao": "Prefeitura Municipal de Araguari - MG",
+          "edital": "01/2023",
+          "cargo_codigo": "503",
+          "hash": "auditor_fiscal_503_ibgp_2023_sha256",
+          "pages": [
+            3
+          ]
+        },
+        "disciplina": "Língua Portuguesa",
+        "correct_option": "C",
+        "gabarito_status": "DEFINITIVO",
+        "confidence_score": 1.0
+      },
+      {
+        "id": "ibgp-2023-auditor-fiscal-q5",
+        "numero_original": 5,
+        "statement": "Em: \"Porém, sabemos que dificilmente sairá das\ncorporações todo o conjunto de soluções para tirar\nas pessoas de seus momentos de crise. é\nCORRETO afirmar que a palavra \"porém\" pode\nser classificada como:",
+        "options": [
+          "A) ConJunção adversativa.",
+          "B) Conjunção conclusiva.",
+          "C) Conjunção explicativa.",
+          "D) Conjunção alternativa."
+        ],
+        "provenance": {
+          "banca": "IBGP",
+          "cargo": "Auditor Fiscal da Receita Municipal",
+          "ano": 2023,
+          "orgao": "Prefeitura Municipal de Araguari - MG",
+          "edital": "01/2023",
+          "cargo_codigo": "503",
+          "hash": "auditor_fiscal_503_ibgp_2023_sha256",
+          "pages": [
+            3
+          ]
+        },
+        "disciplina": "Língua Portuguesa",
+        "correct_option": "A",
+        "gabarito_status": "DEFINITIVO",
+        "confidence_score": 1.0
+      },
+      {
+        "id": "ibgp-2023-auditor-fiscal-q6",
+        "numero_original": 6,
+        "statement": "Leia o trecho a seguir:\n\"O mergulho na terapia é o bálsamo que\nproporciona autoconhecimento e nos ajuda a\ndiscernir o que queremos, o que podemos e o que\ndevemos ser e fazer.\"\nÉ CORRETO afirmar que, no trecho destacado há\npresença de uma figura de linguagem que pode ser\nclassificada como:",
+        "options": [
+          "A) Metáfora.",
+          "B)",
+          "C) Sinédoque.",
+          "D) Catacrese."
+        ],
+        "provenance": {
+          "banca": "IBGP",
+          "cargo": "Auditor Fiscal da Receita Municipal",
+          "ano": 2023,
+          "orgao": "Prefeitura Municipal de Araguari - MG",
+          "edital": "01/2023",
+          "cargo_codigo": "503",
+          "hash": "auditor_fiscal_503_ibgp_2023_sha256",
+          "pages": [
+            3
+          ]
+        },
+        "disciplina": "Língua Portuguesa",
+        "correct_option": "A",
+        "gabarito_status": "DEFINITIVO",
+        "confidence_score": 1.0
+      },
+      {
+        "id": "ibgp-2023-auditor-fiscal-q7",
+        "numero_original": 7,
+        "statement": "É CORRETO afirmar que o vocábulo \"também\",\npresente no trecho \"O abraço da amiga, também. \",\né acentuado por se tratar de:",
+        "options": [
+          "A) Paroxítona terminada em -em.",
+          "B) Proparoxítona.",
+          "C) Oxítona terminada em -em.",
+          "D) Dissílaba terminada em -m."
+        ],
+        "provenance": {
+          "banca": "IBGP",
+          "cargo": "Auditor Fiscal da Receita Municipal",
+          "ano": 2023,
+          "orgao": "Prefeitura Municipal de Araguari - MG",
+          "edital": "01/2023",
+          "cargo_codigo": "503",
+          "hash": "auditor_fiscal_503_ibgp_2023_sha256",
+          "pages": [
+            3
+          ]
+        },
+        "disciplina": "Língua Portuguesa",
+        "correct_option": "C",
+        "gabarito_status": "DEFINITIVO",
+        "confidence_score": 1.0
+      },
+      {
+        "id": "ibgp-2023-auditor-fiscal-q8",
+        "numero_original": 8,
+        "statement": "Leia o trecho a seguir:\n\"O estresse, a ansiedade, a depressão e o cansaço\nextremo vêm desse scroll infinito que se tornou a\nvida.\"\nÉ CORRETO afirmar que a vírgula foi utilizada no\ntrecho lido pois:",
+        "options": [
+          "A) Isola vocativo.",
+          "B) Isola tü)osto",
+          "C) Isola adjunto adverbial deslocado.",
+          "D) Estabelece enumeração de elementos."
+        ],
+        "provenance": {
+          "banca": "IBGP",
+          "cargo": "Auditor Fiscal da Receita Municipal",
+          "ano": 2023,
+          "orgao": "Prefeitura Municipal de Araguari - MG",
+          "edital": "01/2023",
+          "cargo_codigo": "503",
+          "hash": "auditor_fiscal_503_ibgp_2023_sha256",
+          "pages": [
+            3
+          ]
+        },
+        "disciplina": "Língua Portuguesa",
+        "correct_option": "D",
+        "gabarito_status": "DEFINITIVO",
+        "confidence_score": 1.0
+      },
+      {
+        "id": "ibgp-2023-auditor-fiscal-q9",
+        "numero_original": 9,
+        "statement": "Leia o trecho a seguir:\n\"Esse é o combo que vale cada centavo de\ninvestimento.\"\nÉ CORRETO afirmar que a palavra \"combo\" pode\nser substituída, no trecho lido e no contexto geral do\ntexto, sem alteração de sentido, por:",
+        "options": [
+          "A) Conjunto.",
+          "B) Separação.",
+          "C) Individualidade.",
+          "D) Subjetividade."
+        ],
+        "provenance": {
+          "banca": "IBGP",
+          "cargo": "Auditor Fiscal da Receita Municipal",
+          "ano": 2023,
+          "orgao": "Prefeitura Municipal de Araguari - MG",
+          "edital": "01/2023",
+          "cargo_codigo": "503",
+          "hash": "auditor_fiscal_503_ibgp_2023_sha256",
+          "pages": [
+            3
+          ]
+        },
+        "disciplina": "Língua Portuguesa",
+        "correct_option": "A",
+        "gabarito_status": "DEFINITIVO",
+        "confidence_score": 1.0
+      },
+      {
+        "id": "ibgp-2023-auditor-fiscal-q10",
+        "numero_original": 10,
+        "statement": "Leia o trecho a seguir:\n\"O estresse, a ansiedade, a depressão e o cansaço\nextremo vêm desse scroll infinito que se tornou a\nvida. \"\nÉ CORRETO afirmar que o trecho destacado se\nencontra na voz:",
+        "options": [
+          "A) Passiva analítica.",
+          "B) Passiva sintética.",
+          "C) Reflexiva.",
+          "D) Ativa. RACIOCÍNIO LÓGICO"
+        ],
+        "provenance": {
+          "banca": "IBGP",
+          "cargo": "Auditor Fiscal da Receita Municipal",
+          "ano": 2023,
+          "orgao": "Prefeitura Municipal de Araguari - MG",
+          "edital": "01/2023",
+          "cargo_codigo": "503",
+          "hash": "auditor_fiscal_503_ibgp_2023_sha256",
+          "pages": [
+            3,
+            4
+          ]
+        },
+        "disciplina": "Língua Portuguesa",
+        "correct_option": null,
+        "gabarito_status": "ANULADA",
+        "confidence_score": 1.0
+      },
+      {
+        "id": "ibgp-2023-auditor-fiscal-q11",
+        "numero_original": 11,
+        "statement": "Assinale a alternativa que apresenta\nCORRETAMENTE o próximo número na\nsequência lógica a syir:\n2, 3, 6, 36,",
+        "options": [
+          "A) 48.",
+          "C) 216.",
+          "B) 154. dl)) 1.296."
+        ],
+        "provenance": {
+          "banca": "IBGP",
+          "cargo": "Auditor Fiscal da Receita Municipal",
+          "ano": 2023,
+          "orgao": "Prefeitura Municipal de Araguari - MG",
+          "edital": "01/2023",
+          "cargo_codigo": "503",
+          "hash": "auditor_fiscal_503_ibgp_2023_sha256",
+          "pages": [
+            4
+          ]
+        },
+        "disciplina": "Raciocínio Lógico",
+        "correct_option": "D",
+        "gabarito_status": "DEFINITIVO",
+        "confidence_score": 0.75
+      },
+      {
+        "id": "ibgp-2023-auditor-fiscal-q12",
+        "numero_original": 12,
+        "statement": "Em uma competição de natação, cmco participantes\nV, W, X, Y e Z disputam o primeiro lugar. É sabido\nque:\n• X chega antes de Y, mas depois de W.\n• Z chega depois de V, mas antes de X.\nÉ CORRETO afirmar que chega em se do lugar:",
+        "options": [],
+        "provenance": {
+          "banca": "IBGP",
+          "cargo": "Auditor Fiscal da Receita Municipal",
+          "ano": 2023,
+          "orgao": "Prefeitura Municipal de Araguari - MG",
+          "edital": "01/2023",
+          "cargo_codigo": "503",
+          "hash": "auditor_fiscal_503_ibgp_2023_sha256",
+          "pages": [
+            4
+          ]
+        },
+        "disciplina": "Raciocínio Lógico",
+        "correct_option": null,
+        "gabarito_status": "ANULADA",
+        "confidence_score": 0.75
+      },
+      {
+        "id": "ibgp-2023-auditor-fiscal-q13",
+        "numero_original": 13,
+        "statement": "Se as proposições P: \"Todos os mamíferos tem\npelos\" e Q: \"As baleias são mamíferos\", é\nCORRETO concluir que:",
+        "options": [
+          "A) Todos os mamíferos são baleias.",
+          "B) As baleias têm pelos.",
+          "C) Os mamíferos não têm pelos.",
+          "D) Nem todos os mamíferos têm pelos."
+        ],
+        "provenance": {
+          "banca": "IBGP",
+          "cargo": "Auditor Fiscal da Receita Municipal",
+          "ano": 2023,
+          "orgao": "Prefeitura Municipal de Araguari - MG",
+          "edital": "01/2023",
+          "cargo_codigo": "503",
+          "hash": "auditor_fiscal_503_ibgp_2023_sha256",
+          "pages": [
+            4
+          ]
+        },
+        "disciplina": "Raciocínio Lógico",
+        "correct_option": "B",
+        "gabarito_status": "DEFINITIVO",
+        "confidence_score": 1.0
+      },
+      {
+        "id": "ibgp-2023-auditor-fiscal-q14",
+        "numero_original": 14,
+        "statement": "Assinale a alternativa que apresenta\nCORRETAMENTE a negação da proposição \"Se\nchove, então a rua fica molhada\"",
+        "options": [
+          "A) Se chove, então a rua não fica molhada.",
+          "B) Não chove ou a rua fica molhada.",
+          "C) Chove e a rua não fica molhada.",
+          "D) Não chove e a rua fica molhada."
+        ],
+        "provenance": {
+          "banca": "IBGP",
+          "cargo": "Auditor Fiscal da Receita Municipal",
+          "ano": 2023,
+          "orgao": "Prefeitura Municipal de Araguari - MG",
+          "edital": "01/2023",
+          "cargo_codigo": "503",
+          "hash": "auditor_fiscal_503_ibgp_2023_sha256",
+          "pages": [
+            4
+          ]
+        },
+        "disciplina": "Raciocínio Lógico",
+        "correct_option": "C",
+        "gabarito_status": "DEFINITIVO",
+        "confidence_score": 1.0
+      },
+      {
+        "id": "ibgp-2023-auditor-fiscal-q15",
+        "numero_original": 15,
+        "statement": "Assinale a alternativa que apresenta\nCORRETAMENTE a quantidade de maneiras\ndiferentes se pode distribuir 6 livros em 3\nprateleiras, sendo que cada prateleira pode conter\nqualquer número de livros.",
+        "options": [
+          "A) 28.",
+          "C) 64.",
+          "B) 56.",
+          "D) 216. NOÇÕES DE INFORMÁTICA"
+        ],
+        "provenance": {
+          "banca": "IBGP",
+          "cargo": "Auditor Fiscal da Receita Municipal",
+          "ano": 2023,
+          "orgao": "Prefeitura Municipal de Araguari - MG",
+          "edital": "01/2023",
+          "cargo_codigo": "503",
+          "hash": "auditor_fiscal_503_ibgp_2023_sha256",
+          "pages": [
+            4
+          ]
+        },
+        "disciplina": "Raciocínio Lógico",
+        "correct_option": "B",
+        "gabarito_status": "DEFINITIVO",
+        "confidence_score": 1.0
+      },
+      {
+        "id": "ibgp-2023-auditor-fiscal-q16",
+        "numero_original": 16,
+        "statement": "Assinale a alternativa que apresenta\nCORRETAMENTE 0 aplicativo nativo do\nWindows 10, configuração padrão e versão em\nportuguês, que permite a criação e a edição de\ndocumentos de texto.",
+        "options": [
+          "A) MiéÉosoft Edge.",
+          "B) Vfrídows Media Player. Bloco deN0ta.",
+          "D) Writer."
+        ],
+        "provenance": {
+          "banca": "IBGP",
+          "cargo": "Auditor Fiscal da Receita Municipal",
+          "ano": 2023,
+          "orgao": "Prefeitura Municipal de Araguari - MG",
+          "edital": "01/2023",
+          "cargo_codigo": "503",
+          "hash": "auditor_fiscal_503_ibgp_2023_sha256",
+          "pages": [
+            4
+          ]
+        },
+        "disciplina": "Noções de Informática",
+        "correct_option": "C",
+        "gabarito_status": "DEFINITIVO",
+        "confidence_score": 0.75
+      },
+      {
+        "id": "ibgp-2023-auditor-fiscal-q17",
+        "numero_original": 17,
+        "statement": "Assinale a alternativa que apresenta\nCORRETAMENTE a guia do MS Word 2016,\nconfiguração padrão e versão em português, que\ncontém opções para formatar o texto, como fonte,\ntamanho e cor.",
+        "options": [
+          "A) Guia \"Inseri?",
+          "B) Guia \"Página Inicial\".",
+          "C) Guia \"lgyourda Página\"",
+          "D) Guia \"Revisão\"."
+        ],
+        "provenance": {
+          "banca": "IBGP",
+          "cargo": "Auditor Fiscal da Receita Municipal",
+          "ano": 2023,
+          "orgao": "Prefeitura Municipal de Araguari - MG",
+          "edital": "01/2023",
+          "cargo_codigo": "503",
+          "hash": "auditor_fiscal_503_ibgp_2023_sha256",
+          "pages": [
+            4
+          ]
+        },
+        "disciplina": "Noções de Informática",
+        "correct_option": "B",
+        "gabarito_status": "DEFINITIVO",
+        "confidence_score": 1.0
+      },
+      {
+        "id": "ibgp-2023-auditor-fiscal-q18",
+        "numero_original": 18,
+        "statement": "É CORRETO afirmar que o recurso do MS Excel\n2016, configuração padrão e versão em português,\nque permite visualizar diferentes partes de uma\nplanilha ao mesmo tempo é:",
+        "options": [
+          "A) Quebra de Visões.",
+          "B) Congelar Painéis.",
+          "C) Quebra de Página.",
+          "D) Visualização de"
+        ],
+        "provenance": {
+          "banca": "IBGP",
+          "cargo": "Auditor Fiscal da Receita Municipal",
+          "ano": 2023,
+          "orgao": "Prefeitura Municipal de Araguari - MG",
+          "edital": "01/2023",
+          "cargo_codigo": "503",
+          "hash": "auditor_fiscal_503_ibgp_2023_sha256",
+          "pages": [
+            4
+          ]
+        },
+        "disciplina": "Noções de Informática",
+        "correct_option": "B",
+        "gabarito_status": "DEFINITIVO",
+        "confidence_score": 1.0
+      },
+      {
+        "id": "ibgp-2023-auditor-fiscal-q19",
+        "numero_original": 19,
+        "statement": "Assinale a alternativa que apresenta a principal\nDIFERENÇA entre um disco rígido (Hl)) e um\ndisco de estado sólido (SSD):",
+        "options": [
+          "A) Capacidade de armazenamento.",
+          "B) Velocidade de acesso aos dados.",
+          "C) Resistência a impactos e choques.",
+          "D) Compatibilidade com a placa mãe. s"
+        ],
+        "provenance": {
+          "banca": "IBGP",
+          "cargo": "Auditor Fiscal da Receita Municipal",
+          "ano": 2023,
+          "orgao": "Prefeitura Municipal de Araguari - MG",
+          "edital": "01/2023",
+          "cargo_codigo": "503",
+          "hash": "auditor_fiscal_503_ibgp_2023_sha256",
+          "pages": [
+            4
+          ]
+        },
+        "disciplina": "Noções de Informática",
+        "correct_option": "B",
+        "gabarito_status": "DEFINITIVO",
+        "confidence_score": 1.0
+      },
+      {
+        "id": "ibgp-2023-auditor-fiscal-q20",
+        "numero_original": 20,
+        "statement": "Assinale a alternativa que esclarece\nCORRETAMENTE o que é um worm de\ncomputador em comparação a um vírus de\ncomputador.",
+        "options": [
+          "A) Um worm é um tipo de vírus específico para redes de computadores.",
+          "B) Um worm é uma forma mais avançada de vírus de computador.",
+          "C) Um worm é um vírus projetado para atacar exclusivamente dispositivos móveis.",
+          "D) Um worm é um programa malicioso que se espalha sem a necessidade de um arquivo hospedeiro. CONHECIMENTOS GERAIS"
+        ],
+        "provenance": {
+          "banca": "IBGP",
+          "cargo": "Auditor Fiscal da Receita Municipal",
+          "ano": 2023,
+          "orgao": "Prefeitura Municipal de Araguari - MG",
+          "edital": "01/2023",
+          "cargo_codigo": "503",
+          "hash": "auditor_fiscal_503_ibgp_2023_sha256",
+          "pages": [
+            5
+          ]
+        },
+        "disciplina": "Noções de Informática",
+        "correct_option": "D",
+        "gabarito_status": "DEFINITIVO",
+        "confidence_score": 1.0
+      },
+      {
+        "id": "ibgp-2023-auditor-fiscal-q21",
+        "numero_original": 21,
+        "statement": "Araguari está em 2270 no ranking dos municípios\nBrasileiros (PIB) — Produto Interno Bruto, acima de\nvários municípios com população superior.\nColocação garantida através da sua produção, que\nchega, em média, a 600.000 sacas/ano .com 90% de\nsuas lavouras irrigadas) produzindo um dos cafés de\nmelhor qualidade do Brasil e do mundo, tanto no\ntipo quanto no sabor. São 20.000 hectares com 42\nmilhões de covas, além de extensas áreas com\nlavouras de soja, laranja, milho, arroz, tomate,\nfeijão, maracujá, acerola e uva, que são colhidas e\nprocessadas pela indústria local.\nDisponível em: https•]/www.araguari.mg.gov.br/noticias/araguari-\n129-anos-de-desenvolvimento. Acesso em: 10 de maio de 2023.\nSão empresas de destaque sediadas em\nAraguari/MG e que produzem 70% dos sucos\nconsumidos no Brasil, EXCETO:",
+        "options": [
+          "A) M-aguary.",
+          "C) Jandaia.",
+          "B) Dafruta."
+        ],
+        "provenance": {
+          "banca": "IBGP",
+          "cargo": "Auditor Fiscal da Receita Municipal",
+          "ano": 2023,
+          "orgao": "Prefeitura Municipal de Araguari - MG",
+          "edital": "01/2023",
+          "cargo_codigo": "503",
+          "hash": "auditor_fiscal_503_ibgp_2023_sha256",
+          "pages": [
+            5
+          ]
+        },
+        "disciplina": "Conhecimentos Gerais",
+        "correct_option": "C",
+        "gabarito_status": "DEFINITIVO",
+        "confidence_score": 0.75
+      },
+      {
+        "id": "ibgp-2023-auditor-fiscal-q22",
+        "numero_original": 22,
+        "statement": "Quanto a seu aspecto turístico o município de\nAraguari/MG é bem assistido por cachoeiras, dentre\nelas estão, EXCETO:",
+        "options": [
+          "A) Cachoeira do Córrego Bom Jardim.",
+          "B) Cachoeira-eontil-hão.",
+          "C) Cachoeira dos Quartéis.",
+          "D)"
+        ],
+        "provenance": {
+          "banca": "IBGP",
+          "cargo": "Auditor Fiscal da Receita Municipal",
+          "ano": 2023,
+          "orgao": "Prefeitura Municipal de Araguari - MG",
+          "edital": "01/2023",
+          "cargo_codigo": "503",
+          "hash": "auditor_fiscal_503_ibgp_2023_sha256",
+          "pages": [
+            5
+          ]
+        },
+        "disciplina": "Conhecimentos Gerais",
+        "correct_option": null,
+        "gabarito_status": "ANULADA",
+        "confidence_score": 1.0
+      },
+      {
+        "id": "ibgp-2023-auditor-fiscal-q23",
+        "numero_original": 23,
+        "statement": "O município de Araguari/MG se dedica em várias\nfrentes para a promoção e atendimento a sua\npopulação. Dessa forma como o lazer também faz\nparte dessa atuação, esse ano realizou a exibição\ngratuita de dois super filmes no Palácio dos\nRodoviários com apoio da Lei Estadual de Incentivo\nà Cultura de Minas Gerais.\nDisponível em: https://www.instagram.com/p/CsZOhHAxjQx/.\nAcesso em: 30 de maio de 2023.\nDessa forma, é CORRETO afirmar que o projeto\nitinerante descrito no texto leva o nome de:",
+        "options": [
+          "A) Cine na Praça.",
+          "B) Cine Família na Praça.",
+          "C) Cine Cultural na Praça.",
+          "D) Cine Cultura Araguari."
+        ],
+        "provenance": {
+          "banca": "IBGP",
+          "cargo": "Auditor Fiscal da Receita Municipal",
+          "ano": 2023,
+          "orgao": "Prefeitura Municipal de Araguari - MG",
+          "edital": "01/2023",
+          "cargo_codigo": "503",
+          "hash": "auditor_fiscal_503_ibgp_2023_sha256",
+          "pages": [
+            5
+          ]
+        },
+        "disciplina": "Conhecimentos Gerais",
+        "correct_option": null,
+        "gabarito_status": "ANULADA",
+        "confidence_score": 1.0
+      },
+      {
+        "id": "ibgp-2023-auditor-fiscal-q24",
+        "numero_original": 24,
+        "statement": "Quanto aos aspectos históricos e estatísticos\ndisponibilizados pelo IBGE cidades sobre o\nmunicípio de Araguari/MG, analise as afirmativas a\nseguir:\nA população estimada em 2021 foi em torno\nde mais de 118 mil habitantes.\nIl- Quanto aos estabelecimentos do SUS desde\n2009 existem mais de 45 estabelecimentos\nidentificados no município.\n- O bioma predominante definido em 2019 era\no de Cerrado e Mata Atlântica.\nJIV-Quanto a formação administrativa trata-se\nde distrito criado com a denominação de\nBrejo Alegre pela Lei Provincial no I. 195, de\n06-08-1864, e pela Lei Estadual no 2, de 14-\n09-1891, subordinado ao município de\nEstrela do Sul.\nEstão CORRETAS as afirmativas:",
+        "options": [
+          "A) *e-ll-apenas.",
+          "B) -rrme-tv-apenas.",
+          "C) I e III apenas.",
+          "D) 1, 11, 111 e IV."
+        ],
+        "provenance": {
+          "banca": "IBGP",
+          "cargo": "Auditor Fiscal da Receita Municipal",
+          "ano": 2023,
+          "orgao": "Prefeitura Municipal de Araguari - MG",
+          "edital": "01/2023",
+          "cargo_codigo": "503",
+          "hash": "auditor_fiscal_503_ibgp_2023_sha256",
+          "pages": [
+            5
+          ]
+        },
+        "disciplina": "Conhecimentos Gerais",
+        "correct_option": "D",
+        "gabarito_status": "DEFINITIVO",
+        "confidence_score": 1.0
+      },
+      {
+        "id": "ibgp-2023-auditor-fiscal-q25",
+        "numero_original": 25,
+        "statement": "O conceito atual de cidadania parte da ideia de que o poder\nEstado para que esse possa garantir os seus direitos e o\nÉ CORRETO afirmar que esta ideia de que o poder deriva",
+        "options": [
+          "A) Malha social.",
+          "B) Vontade geral.",
+          "C) Consciência coletiva.",
+          "D) Responsabilidade compartilhada. LEGISLAÇÃO ADMINISTRAÇÃO"
+        ],
+        "provenance": {
+          "banca": "IBGP",
+          "cargo": "Auditor Fiscal da Receita Municipal",
+          "ano": 2023,
+          "orgao": "Prefeitura Municipal de Araguari - MG",
+          "edital": "01/2023",
+          "cargo_codigo": "503",
+          "hash": "auditor_fiscal_503_ibgp_2023_sha256",
+          "pages": [
+            6
+          ]
+        },
+        "disciplina": "Conhecimentos Gerais",
+        "correct_option": "B",
+        "gabarito_status": "DEFINITIVO",
+        "confidence_score": 1.0
+      },
+      {
+        "id": "ibgp-2023-auditor-fiscal-q26",
+        "numero_original": 26,
+        "statement": "De acordo com a Constituição Federal de 1988, a administração\nPoderes da União, dos Estados, do Distrito Federal e\nimpessoalidade, moralidade, publicidade e eficiência.\nConsiderando-se as previsões constitucionais reservadas",
+        "options": [
+          "A) Os cargos, empregos e funções públicas são estabelecidos em",
+          "B) O direito de greve será exercido livremente.v",
+          "C) O prazo de validade do concurso público será 91)) É garantido ao servidor público civil o direito"
+        ],
+        "provenance": {
+          "banca": "IBGP",
+          "cargo": "Auditor Fiscal da Receita Municipal",
+          "ano": 2023,
+          "orgao": "Prefeitura Municipal de Araguari - MG",
+          "edital": "01/2023",
+          "cargo_codigo": "503",
+          "hash": "auditor_fiscal_503_ibgp_2023_sha256",
+          "pages": [
+            6
+          ]
+        },
+        "disciplina": "Legislação Municipal",
+        "correct_option": "D",
+        "gabarito_status": "DEFINITIVO",
+        "confidence_score": 0.75
+      },
+      {
+        "id": "ibgp-2023-auditor-fiscal-q27",
+        "numero_original": 27,
+        "statement": "Sobre a licitação denommada pregão, instituída pela\nINCORRETA:",
+        "options": [
+          "A) O pregão poderá ser realizado por meio da utilização termos de regulamentação específica.",
+          "B) O pregão pode ser adotado apenaS para aquisição",
+          "C) Consideram-se bens e serviços comuns, aqueles objetivamente definidos pelo edital, por meio",
+          "D) Na fase preparatória do pregão, a definição do especificações que, por excessivas, Irrelevantes"
+        ],
+        "provenance": {
+          "banca": "IBGP",
+          "cargo": "Auditor Fiscal da Receita Municipal",
+          "ano": 2023,
+          "orgao": "Prefeitura Municipal de Araguari - MG",
+          "edital": "01/2023",
+          "cargo_codigo": "503",
+          "hash": "auditor_fiscal_503_ibgp_2023_sha256",
+          "pages": [
+            6
+          ]
+        },
+        "disciplina": "Legislação Municipal",
+        "correct_option": "B",
+        "gabarito_status": "DEFINITIVO",
+        "confidence_score": 1.0
+      },
+      {
+        "id": "ibgp-2023-auditor-fiscal-q28",
+        "numero_original": 28,
+        "statement": "Nos termos da Lei Complementar no 41/2006, que dispõe\ncarreiras da administração direta do município de Araguari/MG",
+        "options": [
+          "A) Cargo público é o conjunto de atribuições, público, criado por lei, com denominação própria,",
+          "B) é toda pessoa fisica legalmente emprego público.",
+          "C) a classe de empregos públicos",
+          "D) Função pública é o conjunto de atividades administrativas ou eventualmente ao servidor. emana do povo, que se submete à organização do bem de todos. do povo também pode ser chamada de: pública direta e indireta de qualquer dos dos Municípios obedecerá aos princípios de legalidade, à Administração Pública, é CORRETO afirmar que: acessíveis aos brasileiros que preencham os requisitos de até dois anos, improrrogável. à livre associação sindical. Lei Federal no 10.520/2002, assinale a alternativa de recursos de tecnologia da informação, nos de serviços comuns. cujos padrões de desempenho e qualidade possam ser de especificações usuais no mercado. objeto deverá ser precisa, suficiente e clara, vedadas ou desnecessárias, limitem a competição. sobre a estrutura do plano de empregos públicos e entre outros, é INCORRETO afirmar que: deveres e responsabilidades cometidos ao empregado número certo e salário específico. investida em cargo em comissão ou de confiança elou que não constitui carreira. e responsabilidades cometidas transitória"
+        ],
+        "provenance": {
+          "banca": "IBGP",
+          "cargo": "Auditor Fiscal da Receita Municipal",
+          "ano": 2023,
+          "orgao": "Prefeitura Municipal de Araguari - MG",
+          "edital": "01/2023",
+          "cargo_codigo": "503",
+          "hash": "auditor_fiscal_503_ibgp_2023_sha256",
+          "pages": [
+            6
+          ]
+        },
+        "disciplina": "Legislação Municipal",
+        "correct_option": "A",
+        "gabarito_status": "DEFINITIVO",
+        "confidence_score": 1.0
+      },
+      {
+        "id": "ibgp-2023-auditor-fiscal-q29",
+        "numero_original": 29,
+        "statement": "Considerando os Poderes Administrativos,\nespecialmente quanto ao poder hierárquico, é\nCORRETO afirmar que:",
+        "options": [
+          "A) Existe manifestação de hierarquia externa entre pessoas jurídicas diferentes.",
+          "B) O poder hierárquico se configura como um poder de estruturação interna da atividade pública.",
+          "C) A hierarquia pode se manifestar dentro de pessoas jurídicas diversas, não se limitando dentro de uma mesma pessoa jurídica. D xiste hierarquia entre a União, os Estados e Municípios."
+        ],
+        "provenance": {
+          "banca": "IBGP",
+          "cargo": "Auditor Fiscal da Receita Municipal",
+          "ano": 2023,
+          "orgao": "Prefeitura Municipal de Araguari - MG",
+          "edital": "01/2023",
+          "cargo_codigo": "503",
+          "hash": "auditor_fiscal_503_ibgp_2023_sha256",
+          "pages": [
+            7
+          ]
+        },
+        "disciplina": "Legislação Municipal",
+        "correct_option": "B",
+        "gabarito_status": "DEFINITIVO",
+        "confidence_score": 0.75
+      },
+      {
+        "id": "ibgp-2023-auditor-fiscal-q30",
+        "numero_original": 30,
+        "statement": "Assinale a alternativa que apresenta\nCORRETAMENTE a sequência das fases do\nprocesso de licitação, conforme previsto na Lei\nFederal no 14.133/2021.",
+        "options": [
+          "A) -Ihdivulgação do edital de licitação; da apresentação de propostas; do julgamento; recursal e da homologação.",
+          "B) Preparatória; do julgamento; da habilitação, da homologação.",
+          "C) edital de licitação; da apresentação de lances; do julgamento; da",
+          "D) Preparatória; da divulgação do edital de licitação; da apresentação de propostas e lances, quando for o caso; do julgamento; da habilitação; recursal; da homologação. CONHECIMENTOS ESPECÍFICOS"
+        ],
+        "provenance": {
+          "banca": "IBGP",
+          "cargo": "Auditor Fiscal da Receita Municipal",
+          "ano": 2023,
+          "orgao": "Prefeitura Municipal de Araguari - MG",
+          "edital": "01/2023",
+          "cargo_codigo": "503",
+          "hash": "auditor_fiscal_503_ibgp_2023_sha256",
+          "pages": [
+            7
+          ]
+        },
+        "disciplina": "Legislação Municipal",
+        "correct_option": "D",
+        "gabarito_status": "DEFINITIVO",
+        "confidence_score": 1.0
+      },
+      {
+        "id": "ibgp-2023-auditor-fiscal-q31",
+        "numero_original": 31,
+        "statement": "Em 31/12/2022, o Balanço Patrimonial da Cia.\nCariri demonstrou que os Capitais de Terceiros\nequivaliam a R$ 2.800.000,00, sendo que 25% deste\nvalor é exigível até o término do exercício seguinte.\nNa mesma data, o Ativo Total da entidade é de 1,5\nvezes o valor do Passivo Exigível, sendo que 30%\nde seu montante (do Ativo Total) é realizável até\n31/12/2023.\nConsiderando estas informações, é CORRETO\nafirmar que o Índice de Liquidez Corrente da Cia.\nCariri, na data do Balanço, é de:",
+        "options": [
+          "A) 1,25.",
+          "C) 1,65.",
+          "B) 1,50.",
+          "D) 1,80."
+        ],
+        "provenance": {
+          "banca": "IBGP",
+          "cargo": "Auditor Fiscal da Receita Municipal",
+          "ano": 2023,
+          "orgao": "Prefeitura Municipal de Araguari - MG",
+          "edital": "01/2023",
+          "cargo_codigo": "503",
+          "hash": "auditor_fiscal_503_ibgp_2023_sha256",
+          "pages": [
+            7
+          ]
+        },
+        "disciplina": "Conhecimentos Específicos",
+        "correct_option": "D",
+        "gabarito_status": "DEFINITIVO",
+        "confidence_score": 1.0
+      },
+      {
+        "id": "ibgp-2023-auditor-fiscal-q32",
+        "numero_original": 32,
+        "statement": "Durante os trabalhos de auditoria de coleta de\nevidências, o auditor examina o razão da conta-\ncontábil \"Banco Arara — Conta-Corrente XYZ-W'\nem comparação com o extrato de sua\nmovimentação, verificando que há uma\ndiscrepância entre os saldos dos documentos ao\nfinal do exercício. Para se certificar, e com\nautorização da administração, ele envia uma carta à\ninstituição financeira, solicitando que informe o\nsaldo da conta bancária na data de encerramento do\nbalanço.\nConsiderando o caso descrito, e de acordo com as\nNormas Brasileiras de Auditoria, é CORRETO\nafirmar que foram executados, respectivamente, os\nprocedimentos de:",
+        "options": [
+          "A) Conciliação e circularização.",
+          "B) Recálculo e indagação.",
+          "C) Inspeção e confirmação externa.",
+          "D) -Observação e confirmação externa."
+        ],
+        "provenance": {
+          "banca": "IBGP",
+          "cargo": "Auditor Fiscal da Receita Municipal",
+          "ano": 2023,
+          "orgao": "Prefeitura Municipal de Araguari - MG",
+          "edital": "01/2023",
+          "cargo_codigo": "503",
+          "hash": "auditor_fiscal_503_ibgp_2023_sha256",
+          "pages": [
+            7
+          ]
+        },
+        "disciplina": "Conhecimentos Específicos",
+        "correct_option": "C",
+        "gabarito_status": "DEFINITIVO",
+        "confidence_score": 1.0
+      },
+      {
+        "id": "ibgp-2023-auditor-fiscal-q33",
+        "numero_original": 33,
+        "statement": "Nos expressos termos da Constituição da República\nFederativa do Brasil, de 1988, é CORRETO\nafirmar que a instituição de Empréstimos\nCompulsórios foi outorgada:",
+        "options": [
+          "A) Aos-Estados e ao Distrito Federal, através de Emenda às respectivas Constituições, para o atendimento de despesas resultantes de calamidades reconhecidas pelas assembleias legislativas.",
+          "B) Exclusivamente à União, através de Lel Complementar, para atender a despesas extraordinárias, decorrentes de calamidade pública ou para o restabelecimento do equilíbrio econômico-social inter-regional.",
+          "C) Exclusivamente à União, através de Lei Complementar, para atender a despesas extraordinárias, decorrentes de calamidade pública, de guerra externa ou sua iminência ou no caso de investimento público de caráter urgente e de relevante interesse nacional.",
+          "D) e ao Distrito Federal, através de Lei Complementar, para atender a despesas extraordinárias, decorrentes de calamidade pública, de guerra externa ou sua iminência ou no caso de investimento público de caráter urgente e de relevante interesse nacional."
+        ],
+        "provenance": {
+          "banca": "IBGP",
+          "cargo": "Auditor Fiscal da Receita Municipal",
+          "ano": 2023,
+          "orgao": "Prefeitura Municipal de Araguari - MG",
+          "edital": "01/2023",
+          "cargo_codigo": "503",
+          "hash": "auditor_fiscal_503_ibgp_2023_sha256",
+          "pages": [
+            7
+          ]
+        },
+        "disciplina": "Conhecimentos Específicos",
+        "correct_option": "C",
+        "gabarito_status": "DEFINITIVO",
+        "confidence_score": 1.0
+      },
+      {
+        "id": "ibgp-2023-auditor-fiscal-q34",
+        "numero_original": 34,
+        "statement": "Com base na NBC TA 300 (RI) — Planejamento da\nAuditoria de Demonstrações Contábeis, do\nConselho Federal de Contabilidade, assinale V para\nas afirmativas verdadeiras e F para as falsas.\n( ) O planejamento da auditoria envolve a\ndefinição de estratégia global para o trabalho\ne o desenvolvimento de plano de auditoria.\nUm planejamento é considerado adequado\nquando pensado de forma a reduzir ao\nmínimo possível: a) o custo dos trabalhos de\nauditoria; e b) o tempo necessário para sua\nrealização.\n( ) O planejamento da auditoria não se destina a\ndescrever a natureza, época e extensão dos\nprocedimentos de auditoria, uma vez que,\ncomo medida de eficiência, tais aspectos\nserão definidos apenas no trabalho de\ncampo.\n(l/) O auditor deve atualizar e alterar a estratégia\nglobal de auditoria e o plano de auditoria\nsempre que necessário no curso da auditoria,\ndevendo documentar eventuais alterações\nsignificativas ocorridas e as razões dessas\nalterações.\nAssinale a alternativa que apresenta a sequência\nCORRETA:",
+        "options": [
+          "C) -.V-F_F.",
+          "D) FFV. Instrução: Para resolução das questões 35 a 37, 6) considere as informações a seguir: A Júpiter Ltda. atua na revenda de chinelos e s\"apatos, adquirindo os produtos de fornecedores industriais e vendendo a (ISOO) pessoas fisicas. Em 01/02/2022, a empresa tem em estoque pares de chinelos 'haitianas', registrados ao custo unitári¿• de R$ 4.300,00. Em 06/02/2022 a empresa adquire um lote de UO}pares de chinelos 'haitianas'. O valor total da Nota Fiscal é de R$ 11.000,00, sendo que incidem na operação o ICMS, à alíquota interna de 15%, e o IPI, com alíquota de 10%, já destacado na Nota Fiscal. Em 18/02/2022 a Júpiter Ltda. efetua uma venda relevante de 150 pares do referido chinelo, no valor total de R$ 14.000,00. Como se trata de cliente de longa data e o pagamento foi à vista, a empresa concedeu desconto incondicional de R$ 1.500,00. Na operação incide ICMS de 18%."
+        ],
+        "provenance": {
+          "banca": "IBGP",
+          "cargo": "Auditor Fiscal da Receita Municipal",
+          "ano": 2023,
+          "orgao": "Prefeitura Municipal de Araguari - MG",
+          "edital": "01/2023",
+          "cargo_codigo": "503",
+          "hash": "auditor_fiscal_503_ibgp_2023_sha256",
+          "pages": [
+            8
+          ]
+        },
+        "disciplina": "Conhecimentos Específicos",
+        "correct_option": "D",
+        "gabarito_status": "DEFINITIVO",
+        "confidence_score": 0.75
+      },
+      {
+        "id": "ibgp-2023-auditor-fiscal-q35",
+        "numero_original": 35,
+        "statement": "De acordo com as informações fornecidas, é\nCORRETO afirmar que o custo das mercadorias\nadquiridas em 06/02/2022, de acordo com a NBC\nTG 16 (R2) - estoques, é de:",
+        "options": [
+          "A) R$ 11.000,00.",
+          "C) R$ 10.000,00.",
+          "B) R$ 9.500,00.",
+          "D) RS 10.500,00."
+        ],
+        "provenance": {
+          "banca": "IBGP",
+          "cargo": "Auditor Fiscal da Receita Municipal",
+          "ano": 2023,
+          "orgao": "Prefeitura Municipal de Araguari - MG",
+          "edital": "01/2023",
+          "cargo_codigo": "503",
+          "hash": "auditor_fiscal_503_ibgp_2023_sha256",
+          "pages": [
+            8
+          ]
+        },
+        "disciplina": "Conhecimentos Específicos",
+        "correct_option": "B",
+        "gabarito_status": "DEFINITIVO",
+        "confidence_score": 1.0
+      },
+      {
+        "id": "ibgp-2023-auditor-fiscal-q36",
+        "numero_original": 36,
+        "statement": "Considerando que a empresa adote o critério do\n\"primeiro que entra primeiro que sai\" para avaliação\nde seus estoques, é CORRETO afirmar que o Custo\ndas Mercadorias Vendidas em 18/02/2022 é de:",
+        "options": [
+          "A) R$ 6.900,00.",
+          "C) R$ 7.125,00.",
+          "B) R$ 6.675,00.",
+          "D) RS 6.825,00."
+        ],
+        "provenance": {
+          "banca": "IBGP",
+          "cargo": "Auditor Fiscal da Receita Municipal",
+          "ano": 2023,
+          "orgao": "Prefeitura Municipal de Araguari - MG",
+          "edital": "01/2023",
+          "cargo_codigo": "503",
+          "hash": "auditor_fiscal_503_ibgp_2023_sha256",
+          "pages": [
+            8
+          ]
+        },
+        "disciplina": "Conhecimentos Específicos",
+        "correct_option": "B",
+        "gabarito_status": "DEFINITIVO",
+        "confidence_score": 1.0
+      },
+      {
+        "id": "ibgp-2023-auditor-fiscal-q37",
+        "numero_original": 37,
+        "statement": "Assinale a alternativa que evidencia a CORRETA\nescrituração da venda ocorrida em 18/02/2022\n(desconsiderando os registros da baixa dos estoques\ne-des-ributns_guyol-vidos):",
+        "options": [
+          "A) D — Caixa e Equivalentes de Caixa R$ 12.500,00 D — Descontos Incondicionais 1.500,oo C — Receita de Vendas R$ 14.000,00 P) D — Caixa e Equivalentes de Caixa R$ 12.500,00 -e—-Besc0Rtos4He0Hdieienais R$ 1.500,00 C - Receita de Vendas RS 14.000,00",
+          "C) •D—Reeeita-de-Vendas R$ 12.500,00 D — Descontos Incondicionais RS 1.500,00 C — Caixa e Equivalentes de Caixa R$ 14.000,00",
+          "D) D — Caixa e Equivalentes de Caixa R$ 12.500,00 C - Receita de Vendas R$ 12.500,00"
+        ],
+        "provenance": {
+          "banca": "IBGP",
+          "cargo": "Auditor Fiscal da Receita Municipal",
+          "ano": 2023,
+          "orgao": "Prefeitura Municipal de Araguari - MG",
+          "edital": "01/2023",
+          "cargo_codigo": "503",
+          "hash": "auditor_fiscal_503_ibgp_2023_sha256",
+          "pages": [
+            8
+          ]
+        },
+        "disciplina": "Conhecimentos Específicos",
+        "correct_option": "A",
+        "gabarito_status": "DEFINITIVO",
+        "confidence_score": 0.75
+      },
+      {
+        "id": "ibgp-2023-auditor-fiscal-q38",
+        "numero_original": 38,
+        "statement": "Sobre as regras constitucionais de repartição das receitas\nas afirmativas verdadeiras e F para as falsas.\n(F) Pertencem aos Municípios vinte-e—cineo por cento\nsobre a propriedade territorial rural, relativamente\ncinco por cento na hipótese de optarem por fiscalizar\n( '4) Pertencem aos Municípios o produto da arrecadação\nqualquer natureza, incidente na fonte, sobre rendimentos\nautarquias e pelas fundações que instituírem e mantiverem.\nPertencem aos Municípios cinquenta por cento\noperações relativas à circulação de mercadorias\ninterestadual e intermunicipal e de comunicação.\nAssinale a alternativa que apresenta a sequência CORRETA:",
+        "options": [],
+        "provenance": {
+          "banca": "IBGP",
+          "cargo": "Auditor Fiscal da Receita Municipal",
+          "ano": 2023,
+          "orgao": "Prefeitura Municipal de Araguari - MG",
+          "edital": "01/2023",
+          "cargo_codigo": "503",
+          "hash": "auditor_fiscal_503_ibgp_2023_sha256",
+          "pages": [
+            9
+          ]
+        },
+        "disciplina": "Conhecimentos Específicos",
+        "correct_option": "A",
+        "gabarito_status": "DEFINITIVO",
+        "confidence_score": 0.75
+      },
+      {
+        "id": "ibgp-2023-auditor-fiscal-q39",
+        "numero_original": 39,
+        "statement": "Com base no Código Tributário Municipal de Araguari/MG,\nrefere ao Imposto Sobre Serviços de Qualquer Natureza",
+        "options": [
+          "A) Considera-se ocorrido o fato gerador do ISSQN, ou jurídica, com ou sem estabelecimento fixo. O imposto incide também sobre o serviço proveniente iniciado no exterior do País.",
+          "C) O ISSQN incide ainda sobre os serviços prestados explorados economicamente mediante autorização, tarifa, preço ou pedágio pelo usuário final do serviço. A incidência do imposto dgru@ç da denominação atividade preponderante do prestador."
+        ],
+        "provenance": {
+          "banca": "IBGP",
+          "cargo": "Auditor Fiscal da Receita Municipal",
+          "ano": 2023,
+          "orgao": "Prefeitura Municipal de Araguari - MG",
+          "edital": "01/2023",
+          "cargo_codigo": "503",
+          "hash": "auditor_fiscal_503_ibgp_2023_sha256",
+          "pages": [
+            9
+          ]
+        },
+        "disciplina": "Conhecimentos Específicos",
+        "correct_option": "D",
+        "gabarito_status": "DEFINITIVO",
+        "confidence_score": 0.75
+      },
+      {
+        "id": "ibgp-2023-auditor-fiscal-q40",
+        "numero_original": 40,
+        "statement": "Acerca do Imposto Sobre Propriedade Predial e Territorial\nTributário Municipal de Araguari/MG, analise as afirmativas\nA incidência do fato gerador do IPTU independe\npropriedade, domínio útil ou da posse do bem imóvel.\nII- O imposto é anual e, na forma da lei civil, não\nfato gerador do Imposto Predial e Territorial Urbano\n111- Respondem solidariamente pelo pagamento do\nusufruto, uso ou habitação, os promitentes compradores\nposseiros, os comodatários e os ocupantes a\nqualquer pessoa fisica ou jurídica, de direito público\nEstão CORRETAS as afirmativas:",
+        "options": [
+          "A) I e II apenas.",
+          "B) I e III apenas.",
+          "C) H-eHFapenas.",
+          "D) 1, 11 e 111. tributárias entre os entes federativos, assinale V para do produto da arrecadação do imposto da União aos imóveis neles situados, cabendo-lhes setenta e e cobrar o referido tributo. do imposto da União sobre renda e proventos de pagos, a qualquer título, por eles, suas do produto da arrecadação do imposto do Estado sobre e sobre prestações de serviços de transporte",
+          "D) Fev. assinale a alternativa INCORRETA no que se (ISSQN): no momento da prestação do serviço, por pessoa fisica do exterior do País ou cuja prestação se tenha mediante a utilização de bens e serviços públicos permissão ou concessão, com o pagamento de dada ao serviço prestado e que este se constitua na Urbana (IPTU), que tem como base o Código a seguir: da legitimidade dos títulos de aquisição da se transmite aos adquirentes, considerando ocorrido o a partir de 10 de janeiro de cada ano. imposto o justo possuidor, o titular do direito de imitidos na posse, os cessionários, os qualquer título do imóvel, ainda que pertencente a ou privado, isenta do imposto ou a ele imune."
+        ],
+        "provenance": {
+          "banca": "IBGP",
+          "cargo": "Auditor Fiscal da Receita Municipal",
+          "ano": 2023,
+          "orgao": "Prefeitura Municipal de Araguari - MG",
+          "edital": "01/2023",
+          "cargo_codigo": "503",
+          "hash": "auditor_fiscal_503_ibgp_2023_sha256",
+          "pages": [
+            9
+          ]
+        },
+        "disciplina": "Conhecimentos Específicos",
+        "correct_option": "B",
+        "gabarito_status": "DEFINITIVO",
+        "confidence_score": 0.75
+      }
+    ]
+  }
+}
