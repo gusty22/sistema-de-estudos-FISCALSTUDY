@@ -34,27 +34,33 @@ CREATE TABLE questions (
 
 ---
 
-## 2. Padrão de Identificação Canônica Global
+## 2. Padrão de Identificação Canônica Global (Refinado)
 
-Proposta de formato canônico determinístico para novas questões ingeridas:
+Formato canônico determinístico e hierárquico para identificação unívoca de questões:
 
 ```text
-{banca_slug}-{ano}-{cargo_slug}-q{numero_ordinal}
+{banca_slug}-{ano}-{orgao_slug}-{cargo_slug}[-{qualificador_caderno_ou_turno}]-q{numero_ordinal}
 ```
 
-### Exemplos:
+### Justificativa da Refinação Estrutural:
+1. **Diferenciação de Órgãos:** Provas da mesma banca e ano para cargos com nomes idênticos em municípios ou entes federativos diferentes (ex.: FCC 2023 Auditor Fiscal em SEFAZ vs Prefeitura) entram em colisão se o órgão for omitido.
+2. **Diferenciação de Cadernos e Cores:** Concursos frequentemente utilizam cadernos com permutações de ordem de questões (Caderno Tipo 1 - Branca, Tipo 2 - Amarela, etc.) ou cadernos de conteúdos distintos.
+3. **Turnos e Fases:** Concursos de Auditor frequentemente dividem a prova em Turno Manhã (P1 - Conhecimentos Gerais) e Turno Tarde (P2 - Conhecimentos Específicos), ambos numerados de 1 a N.
+4. **Reaplicações:** Provas anuladas e reaplicadas sob o mesmo edital e ano exigem qualificador de aplicação (`reaplicacao-2023`).
+
+### Exemplos do Padrão Refinado:
 - Prova Técnico Fiscal Araguari 2023, Questão 14:
-  `ibgp-2023-tecnico-fiscal-q14`
-- Prova Auditor Fiscal Araguari 2023, Questão 1:
-  `ibgp-2023-auditor-fiscal-q1`
-- Prova Auditor SEFAZ-MG 2024 (FGV), Questão 5:
-  `fgv-2024-auditor-sefaz-mg-q5`
+  `ibgp-2023-araguari-tecnico-fiscal-q14`
+- Prova Auditor Fiscal Araguari 2023 (Tarde, Cargo 503), Questão 1:
+  `ibgp-2023-araguari-auditor-fiscal-503-q1`
+- Prova Auditor SEFAZ-MG 2024 (FGV, Caderno 1 - Manhã), Questão 5:
+  `fgv-2024-sefaz-mg-auditor-fiscal-p1-cad1-q5`
 
 ### Propriedades do Padrão:
-1. **Unicidade Global:** Diferencia banca, ano, órgão, cargo e numeração original.
-2. **Preservação da Numeração Original:** O sufixo `-q{numero}` mantém visível a posição física na prova original.
-3. **Determinismo e Idempotência:** Repetir a ingestão do mesmo documento gera o mesmo ID, permitindo reprocessamento idempotente sem duplicação de registros.
-4. **Humanamente Legível:** Dispensa chaves opacas quando a procedência documental é conhecida.
+1. **Unicidade Global Inequívoca:** Diferencia banca, ano, órgão, cargo, caderno/turno e numeração ordinal.
+2. **Preservação da Numeração Original:** O sufixo `-q{numero}` mantém visível e pesquisável a posição física no caderno fonte.
+3. **Determinismo e Idempotência:** A reingestão do mesmo documento gera rigorosamente o mesmo identificador.
+4. **Legibilidade e Rastreabilidade Direta:** Identifica a procedência de um registro sem depender de joins de metadados.
 
 ---
 
@@ -107,3 +113,25 @@ COMMIT;
 ### Estratégia de Rollback:
 - Backup completo de `fiscalstudy.db` realizado antes da execução.
 - Script reverso de rollback testado em ambiente isolado antes de qualquer aplicação.
+
+---
+
+## 5. Resultados da Migração Experimental em Ambiente Isolado (2026-10-12)
+
+A migração foi executada e validada em cópia isolada (`target/experimental_migration_fiscalstudy.db`) gerada a partir do banco operacional.
+
+### Resultados Obtidos:
+1. **Preservação de Identidade Original e Histórico:**
+   - Adicionadas colunas `numero_original` (INTEGER) e `legacy_id` (TEXT) à tabela `questions`.
+   - As 40 questões do Técnico Fiscal foram transacionadas para `ibgp-2023-tecnico-fiscal-q1` a `q40`.
+   - A questão legada `q123` e seu histórico foram preservados integralmente.
+2. **Integridade Referencial Comprovada:**
+   - Eventos históricos vinculados à tabela `event_store` com `aggregate_type = 'QUESTION'` mantiveram correlação exata com `questions.id`.
+   - Zero eventos órfãos detectados (`orphaned = 0`).
+3. **Ausência de Duplicações:**
+   - Verificação via `GROUP BY id HAVING COUNT(*) > 1` confirmou 0 colisões ou duplicatas.
+4. **Capacidade de Rollback Comprovada:**
+   - Script reverso executado restaurou perfeitamente os 41 registros aos identificadores originais (`1..40`, `q123`).
+5. **Inviolabilidade do Banco Operacional:**
+   - O banco de produção `db/fiscalstudy.db` permaneceu intocado: hash SHA256 `E61199F5C833D67A907FB99CBC4F3D209862F465D98B4675670C1160BF3F8948` verificado identicamente antes e depois da execução.
+

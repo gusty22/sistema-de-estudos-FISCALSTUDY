@@ -6,21 +6,52 @@
 
 ---
 
-## 1. Princípios Arquiteturais da Integração
+---
 
-1. **Desacoplamento Estrito:** A linguagem **R** atua como ambiente de experimentação, auditoria estatística e modelagem longitudinal. Ela **NÃO** é dependência em tempo de execução (*runtime dependency*) do backend Spring Boot nem do frontend React.
-2. **Zero Dependências Pesadas:** O script principal utiliza exclusivamente o **R Base**, não exigindo instalação de bibliotecas pesadas (como `tidyverse`, `caret`, `rstan`, etc.) para operações descritivas e determinísticas.
-3. **Imutabilidade e Segurança:** A exportação de dados é estritamente analítica e anonimizada. Não expõe senhas, chaves, dados pessoais ou segredos.
-4. **Isolamento de Ambientes:** Testes automatizados do backend operam em banco isolado (`target/test-fiscalstudy.db`). A análise estatística consome o contrato analítico oficial.
+## 1. Princípios Arquiteturais e Divisão de Responsabilidades
+
+Existe um projeto independente denominado **`fiscalstudy-analytics`**, dedicado exclusivamente às análises estatísticas e psicométricas. Em conformidade com o princípio de responsabilidade única e para evitar duplicidade arquitetural, as fronteiras entre os projetos são estritamente delimitadas:
+
+### 1.1 Responsabilidades do FiscalStudy (Repositório Principal)
+- **Regras Operacionais:** Gerenciamento do ciclo de vida das sessões de estudo, seleção determinística de itens, apresentação CQRS e registro imutável no `event_store`.
+- **Integridade e Consistência:** Validação estrutural de itens (`isStructurallyValid`), expurgo de anomalias, tratamento de gabaritos e separação rigorosa entre pontuação de concurso e acurácia pedagógica.
+- **Projeções Determinísticas:** Agregações aritméticas em tempo real (tempo ativo, total respondido, taxa de acerto por sessão, detecção de overconfidence).
+- **Provedor de Contratos:** Geração e disponibilização de logs anonimizados e contratos de exportação analítica.
+- **Interface com o Usuário:** Aplicação web responsiva (React + TypeScript).
+
+### 1.2 Responsabilidades do `fiscalstudy-analytics` (Projeto R Independente)
+- **Modelagem Psicométrica e Estatística Avançada:** Teoria de Resposta ao Item (TRI/IRT 1PL/2PL/3PL), Bayesian Knowledge Tracing (BKT), calibração bayesiana, modelagem de curvas de esquecimento e estimação de traço latente $\theta$.
+- **Exploração e Relatórios Analíticos:** Gráficos longitudinais, matrizes de correlação, análise fatorial e testes de hipóteses estatísticas.
+- **Geração de Artefatos Calibrados:** Produção de parâmetros de calibração para posterior consumo determinístico pelo FiscalStudy.
+- **Isolamento Total:** Nenhuma modificação é realizada no projeto R externo a partir deste repositório principal.
+
+### 1.3 Registro de Sobreposições Evitadas
+1. **Não Implementar Plataforma Analítica Duplicada no Repositório Principal:** O backend Java não deve incorporar motores de inferência psicométrica ou bibliotecas de estimação latente. Permanece 100% determinístico e pragmático.
+2. **Escopo do Script Local em R (`analytics/descriptive_analysis.R`):** Mantido exclusivamente como teste de integração do contrato de exportação (smoke test determinístico com R Base), sem evoluir para um segundo motor analítico concorrente.
+3. **Desacoplamento em Runtime:** O FiscalStudy operacional nunca executa scripts em R de maneira síncrona nem depende de sua execução para operar as sessões do estudante.
 
 ---
 
-## 2. Contrato de Dados (Exportação Analítica)
+## 2. Contratos Formais de Integração
 
-### Endpoint Oficial:
-`GET /api/v1/analytics/export`  
-**Content-Type:** `text/csv; charset=UTF-8`  
-**Content-Disposition:** `attachment; filename="fiscalstudy_attempts.csv"`
+### Contrato A: Exportação de Tentativas para o `fiscalstudy-analytics` (Data Lake Analítico)
+- **Endpoint:** `GET /api/v1/analytics/export`  
+- **Formato:** `text/csv; charset=UTF-8`  
+- **Cabeçalho Content-Disposition:** `attachment; filename="fiscalstudy_attempts.csv"`
+- **Garantias do Contrato:**
+  - Imutabilidade histórica garantida pelo `event_store`.
+  - Expurgo de itens anulados das colunas de acerto pedagógico (`is_correct = NA`).
+  - Campo `gabarito_status` explicita o estado do gabarito oficial (`DEFINITIVO`, `PRELIMINAR`, `RETIFICADO`, `ANULADA`, `AUSENTE`, `SOB_REVISAO`).
+  - Campo `concurso_point` reflete a pontuação oficial do edital (1 para acerto válido ou item anulado; 0 para erro ou item sem gabarito).
+
+### Contrato B: Ingestão de Parâmetros Calibrados (Futuro)
+- Caso o `fiscalstudy-analytics` calibre parâmetros de dificuldade ($b_i$) ou discriminação ($a_i$), a comunicação com o FiscalStudy dar-se-á exclusivamente via arquivos estáticos versionados (`calibrated_parameters_v1.json`), consumidos de modo somente-leitura.
+
+### Detalhamento do Esquema da Exportação Analítica (Contrato A):
+- **Endpoint Oficial:** `GET /api/v1/analytics/export`  
+- **Content-Type:** `text/csv; charset=UTF-8`  
+- **Content-Disposition:** `attachment; filename="fiscalstudy_attempts.csv"`
+
 
 ### Estrutura do Esquema de Dados:
 
