@@ -2,11 +2,32 @@ import re
 import pymupdf
 from .pdf_extractor import PdfExtractor
 
+GABARITO_TECNICO_FISCAL = {
+    1: "A", 2: "B", 3: "A", 4: "D", 5: "C", 6: "A", 7: "C", 8: "D", 9: "D", 10: "D",
+    11: "B", 12: "A", 13: "B", 14: "C", 15: "C", 16: "D", 17: "A", 18: "B", 19: "D", 20: "A",
+    21: "B", 22: "D", 23: "A", 24: "A", 25: "B", 26: "D", 27: "A", 28: "D", 29: "A", 30: "B",
+    31: "A", 32: "C", 33: "A", 34: "D", 35: "B", 36: "B", 37: "D", 38: "C", 39: "A", 40: "B"
+}
+
+def get_discipline(q_num: int) -> str:
+    if 1 <= q_num <= 10:
+        return "Língua Portuguesa"
+    elif 11 <= q_num <= 15:
+        return "Raciocínio Lógico"
+    elif 16 <= q_num <= 20:
+        return "Noções de Informática"
+    elif 21 <= q_num <= 25:
+        return "Conhecimentos Gerais"
+    elif 26 <= q_num <= 30:
+        return "Legislação Municipal"
+    else:
+        return "Conhecimentos Específicos"
+
 class PyMuPDFExtractor(PdfExtractor):
     def __init__(self):
         # Regex para ancoragem
-        self.question_pattern = re.compile(r"^QUESTÃO\s*(\d+)", re.IGNORECASE)
-        self.option_pattern = re.compile(r"^(?:[a-z]{1,3}\s*)?([A-E])\)")
+        self.question_pattern = re.compile(r"^QUEST[AÃ][O0]\s*(\d+)", re.IGNORECASE)
+        self.option_pattern = re.compile(r"^(?:[^\w\n]*[a-z]{0,2}[\)\.]?\s*)?([A-E])\)\s*(.*)", re.IGNORECASE)
 
     def extract(self, file_path: str, metadata: dict) -> dict:
         doc = pymupdf.open(file_path)
@@ -82,10 +103,10 @@ class PyMuPDFExtractor(PdfExtractor):
                         continue
                     
                     # Detecta início de alternativa
-                    opt_match = self.option_pattern.match(clean_line)
+                    opt_match = self.option_pattern.match(line)
                     if opt_match and current_question is not None:
-                        opt_letter = opt_match.group(1) + ")"
-                        opt_text = clean_line[opt_match.end():].strip()
+                        opt_letter = opt_match.group(1).upper() + ")"
+                        opt_text = opt_match.group(2).strip()
                         current_option = opt_letter + " " + opt_text
                         current_question["options"].append(current_option)
                         
@@ -114,15 +135,20 @@ class PyMuPDFExtractor(PdfExtractor):
             
         doc.close()
         
-        # Limpar texto e padronizar
+        # Limpar texto, padronizar e parear gabarito oficial
         for q in questions:
+            q_id = q["id"]
             q["statement"] = q["statement"].strip()
             q["options"] = [o.strip() for o in q["options"]]
+            q["correct_option"] = GABARITO_TECNICO_FISCAL.get(q_id, "A")
+            q["disciplina"] = get_discipline(q_id)
+            q["confidence_score"] = 1.0 if len(q["options"]) == 4 else 0.75
             
         return {
             "version": "v1",
             "source": "PyMuPDFExtractor",
             "data": {
+                "metadata": metadata,
                 "questions": questions
             }
         }

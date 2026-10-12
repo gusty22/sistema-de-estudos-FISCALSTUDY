@@ -29,4 +29,14 @@ public class IngestionControllerTest {
                 .content(jsonPayload))
                 .andExpect(status().isOk());
     }
+
+    @Test
+    public void testImportDataWithQuestionsReturns200() throws Exception {
+        String jsonPayload = "{\"version\":\"v1\",\"source\":\"test\",\"data\":{\"metadata\":{\"banca\":\"IBGP\",\"ano\":2023,\"cargo\":\"Técnico Fiscal\"},\"questions\":[{\"id\":1,\"statement\":\"Qual a capital?\",\"options\":[\"A) BH\",\"B) SP\"],\"correct_option\":\"A\",\"disciplina\":\"Português\"}]}}";
+
+        mockMvc.perform(post("/api/v1/ingestion/import")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonPayload))
+                .andExpect(status().isOk());
+    }
 }

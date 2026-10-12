@@ -59,12 +59,21 @@ public class IngestionController {
                     }
                 }
                 
-                // Mocking correct option since Python ingestion doesn't have it yet
                 String correctOption = "A"; 
+                if (q.containsKey("correct_option") && q.get("correct_option") != null) {
+                    correctOption = String.valueOf(q.get("correct_option")).trim();
+                }
 
-                String sql = "INSERT INTO questions (id, enunciado, options_json, correct_option, banca, ano, cargo) VALUES (?, ?, ?, ?, ?, ?, ?) " +
-                             "ON CONFLICT(id) DO UPDATE SET enunciado=excluded.enunciado, options_json=excluded.options_json, correct_option=excluded.correct_option, banca=excluded.banca, ano=excluded.ano, cargo=excluded.cargo";
-                jdbcTemplate.update(sql, id, statement, optionsJson, correctOption, banca, ano, cargo);
+                String disciplina = null;
+                if (q.containsKey("disciplina") && q.get("disciplina") != null) {
+                    disciplina = String.valueOf(q.get("disciplina")).trim();
+                }
+
+                String orgao = metadata != null && metadata.containsKey("orgao") ? (String) metadata.get("orgao") : "Prefeitura de Araguari";
+
+                String sql = "INSERT INTO questions (id, enunciado, options_json, correct_option, banca, ano, orgao, cargo, disciplina) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) " +
+                             "ON CONFLICT(id) DO UPDATE SET enunciado=excluded.enunciado, options_json=excluded.options_json, correct_option=excluded.correct_option, banca=excluded.banca, ano=excluded.ano, orgao=excluded.orgao, cargo=excluded.cargo, disciplina=excluded.disciplina";
+                jdbcTemplate.update(sql, id, statement, optionsJson, correctOption, banca, ano, orgao, cargo, disciplina);
                 
                 logger.info("Saved question {}", id);
             }

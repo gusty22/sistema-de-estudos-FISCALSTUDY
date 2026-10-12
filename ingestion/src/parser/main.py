@@ -1,7 +1,14 @@
 import os
 import json
 import hashlib
-from .pymupdf_extractor import PyMuPDFExtractor
+import sys
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+
+try:
+    from .pymupdf_extractor import PyMuPDFExtractor
+except (ImportError, ValueError):
+    from src.parser.pymupdf_extractor import PyMuPDFExtractor
 
 def main():
     pdf_path = os.path.join(os.path.dirname(__file__), "../../../tests/golden-set/docs/ibgp-2023-prefeitura-de-araguari-mg-tecnico-fiscal-da-receita-municipal-prova.pdf")
@@ -20,6 +27,7 @@ def main():
 
     metadata = {
         "banca": "IBGP",
+        "orgao": "Prefeitura de Araguari",
         "cargo": "Técnico Fiscal da Receita Municipal",
         "ano": 2023,
         "hash": file_hash
