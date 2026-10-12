@@ -27,8 +27,7 @@ def get_discipline(q_num: int) -> str:
 
 def reconstruct_page_lines(words, mid_x=610, y_top=60, y_bottom=1620):
     filtered = [w for w in words if y_top <= w["y"] <= y_bottom]
-    col0 = [w for w in filtered if w["x"] < mid_x]
-    col1 = [w for w in filtered if w["x"] >= mid_x]
+    gutter_words = [w for w in filtered if 570 <= w["x"] <= 630]
     
     def words_to_lines(col_words):
         if not col_words:
@@ -48,6 +47,15 @@ def reconstruct_page_lines(words, mid_x=610, y_top=60, y_bottom=1620):
             lines.append(" ".join(x["t"] for x in cur_line))
         return lines
 
+    has_right_question = any(
+        w["x"] > mid_x and re.search(r"^quest", w["t"], re.IGNORECASE)
+        for w in filtered
+    )
+    if not has_right_question and len(gutter_words) > 10:
+        return words_to_lines(filtered)
+
+    col0 = [w for w in filtered if w["x"] < mid_x]
+    col1 = [w for w in filtered if w["x"] >= mid_x]
     return words_to_lines(col0) + words_to_lines(col1)
 
 def extract_auditor_fiscal_questions(words_json_path: str, metadata: dict) -> dict:
