@@ -1,0 +1,13 @@
+spring:
+  datasource:
+    url: jdbc:sqlite:target/test-fiscalstudy.db
+    driver-class-name: org.sqlite.JDBC
+  jpa:
+    database-platform: org.hibernate.community.dialect.SQLiteDialect
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql

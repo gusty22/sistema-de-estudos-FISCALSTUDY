@@ -77,6 +77,10 @@ public class QuestionController {
         if (payload.getActiveTimeMs() < 0) {
             return ResponseEntity.badRequest().build();
         }
+        if (payload.getSessionId() == null || payload.getSessionId().isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
+
 
         try {
             boolean isCorrect = attemptSubmissionService.submitAttempt(

@@ -235,12 +235,30 @@ class QuestionControllerTest {
     }
 
     @Test
-    void submitAttempt_NonExistentQuestion_ReturnsNotFound() throws Exception {
-        String payload = "{\"selectedOption\":\"A\", \"confidenceLevel\":4, \"activeTimeMs\":1500, \"sessionId\":\"sess1\"}";
+    void recordPresentation_LegitimateCallAfterDebounce_RecordsSecondEvent() throws Exception {
+        // Record an initial presentation from 10 seconds ago
+        String tenSecondsAgo = java.time.Instant.now().minusSeconds(10).toString();
+        jdbcTemplate.update("INSERT INTO event_store (event_id, event_type, aggregate_type, aggregate_id, session_id, occurred_at, recorded_at, event_version, schema_version, payload_json) " +
+                "VALUES ('e_past', 'QUESTION_PRESENTED', 'QUESTION', 'q123', 'sess1', ?, ?, 1, 'v1', '{\"questionId\":\"q123\"}')", tenSecondsAgo, tenSecondsAgo);
 
-        mockMvc.perform(post("/api/v1/questions/invalid_q/attempts")
+        // Legitimate second presentation after technical debounce window
+        mockMvc.perform(post("/api/v1/questions/q123/presented")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"sessionId\":\"sess1\"}"))
+                .andExpect(status().isOk());
+
+        Integer eventCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM event_store WHERE event_type = 'QUESTION_PRESENTED' AND session_id = 'sess1'", Integer.class);
+        assertEquals(2, eventCount);
+    }
+
+    @Test
+    void submitAttempt_MissingSessionId_ReturnsBadRequest() throws Exception {
+        String payload = "{\"selectedOption\":\"A\", \"confidenceLevel\":4, \"activeTimeMs\":1500}";
+
+        mockMvc.perform(post("/api/v1/questions/q123/attempts")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(payload))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isBadRequest());
     }
 }
+

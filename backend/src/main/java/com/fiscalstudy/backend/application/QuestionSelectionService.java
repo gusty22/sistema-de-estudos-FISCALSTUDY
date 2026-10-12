@@ -31,7 +31,8 @@ public class QuestionSelectionService {
     }
 
     public void recordPresentation(String questionId, String sessionId) {
-        if (!eventStoreRepository.hasRecentEvent("QUESTION_PRESENTED", questionId, sessionId, 5)) {
+        // Debounce técnico de 5 segundos para absorver StrictMode e retries imediatos sem suprimir reapresentações legítimas
+        if (!eventStoreRepository.hasRecentEventSeconds("QUESTION_PRESENTED", questionId, sessionId, 5)) {
             String payload = String.format("{\"questionId\": \"%s\"}", questionId);
             eventStoreRepository.appendEvent(
                     "QUESTION_PRESENTED",
