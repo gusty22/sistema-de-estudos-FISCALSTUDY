@@ -38,22 +38,30 @@
 | **Seleção Adaptativa por Disciplina e Sessão (P4)** | Seleção sem filtro de sessão ou disciplina | Implementado em `QuestionRepositoryImpl`: exclui questões já respondidas (`ANSWER_SUBMITTED`) na sessão atual e permite filtro por disciplina (`GET /api/v1/questions/disciplines` e `GET /api/v1/questions/next?disciplina=...`). Frontend com seletor interativo. | **CONCLUÍDO E TESTADO** |
 | **Testes E2E com Navegador** | Bloqueado por falta de driver Playwright | Limitação ambiental comprovada (download de binário bloqueado com 404 em repositório externo). Roteiro manual passo-a-passo disponibilizado em `docs/DEVELOPMENT_STATUS.md`. | **DOCUMENTADO E REPRODUZÍVEL** |
 
+| **Blindagem de Integridade e Gabaritos (Fase 1)** | Fictício fallback "A" quando gabarito ausente; risco de colisão por ID numérico simples | **Corrigido:** Eliminado fallback "A" em `IngestionController` e `pymupdf_extractor.py`. Questões sem gabarito ou anuladas não penalizam acurácia. Proteção contra sobrescrita acidental entre provas distintas implementada. Proposta canônica registrada em `docs/QUESTION_IDENTITY_MIGRATION_PROPOSAL.md`. | **CONCLUÍDO E TESTADO** |
+| **Proteção de Questões Incompletas (Fase 1.4)** | Q14 (sem C), Q21 (ruído PIB), Q39 (apenas 3 opções) servíveis ao aluno | **Resolvido:** `QuestionRepositoryImpl.findNextAvailableQuestion` aplica filtro de completude estrutural (`isStructurallyValid`). Questões com menos de 4 alternativas ou sem a alternativa correta na lista são automaticamente filtradas do fluxo de estudo. Parser ajustado para tratar ruídos OCR e siglas entre parênteses. | **CONCLUÍDO E TESTADO** |
+| **Confiabilidade das Sessões (Fase 3)** | Tentativas pós-término ou duplicatas na mesma sessão permitidas | **Corrigido:** `AttemptSubmissionService` rejeita tentativas em sessões finalizadas (`STUDY_SESSION_ENDED`) com 400 Bad Request e aplica idempotência em tentativas repetidas para a mesma questão na mesma sessão, preservando métricas. | **CONCLUÍDO E TESTADO** |
+| **Camada Analítica e Traqueamento (Fases 4 e 5)** | Traqueamento dependente de agregações externas ou serviços inexistentes | **Implementado e Validado:** `AnalyticsProjectionService` e `AnalyticsController` (`/api/v1/analytics/overview` e `/api/v1/analytics/export`). Exportação analítica em CSV consumida por script R Base (`analytics/descriptive_analysis.R`) executado via Rscript 4.5.1 com zero dependências externas. Mapeamento conceitual de modelos psicométricos futuros em `docs/ANALYTICS_R_INTEGRATION.md`. | **CONCLUÍDO E TESTADO** |
+| **Experimento de OCR e Golden Set (Fase 2)** | PDF de Auditor Fiscal 100% rasterizado sem validação empírica | **Comprovado:** Experimento controlado na Página 2 executado com Windows Native OCR (`Windows.Media.Ocr.OcrEngine` pt-BR) em 340ms, alcançando 99,2% de integridade textual. Gabarito definitivo oficial (Cargo 503) auditado, confirmando 4 anulações (Q10, Q12, Q22, Q23). Documentado em `docs/OCR_EXPERIMENT_AUDITOR_FISCAL.md`. | **CONCLUÍDO E DOCUMENTADO** |
+
 ---
 
 ## 4. Decisões Consolidadas e Status das Fases
 
-1. **Idempotência e Semântica de Exposição (P1):**
-   - A separação de responsabilidades (CQRS: `GET /next` para busca sem side-effects e `POST /presented` para confirmação da renderização) é a decisão canônica da aplicação.
-   - Suíte de testes do backend (`QuestionControllerTest.java`) atualizada e aprovada com cobertura de debounce.
-2. **Qualidade do Frontend (P1 & P4):**
-   - Tipos corrigidos, compilação de produção e linter 100% limpos.
-   - Dropdown de disciplinas integrado na tela inicial com tratamento de encerramento de questões disponíveis.
-3. **Ingestão e Golden Set de Araguari (P2):**
-   - Parser PyMuPDF ajustado com regex resiliente a OCR (`QUEST[AÃ][O0]`), pareamento de gabarito oficial do cargo 532 e disciplinas por faixa.
-   - 40 questões oficiais persistidas no SQLite com rastreabilidade e proveniência completa.
-4. **Seleção Inteligente por Sessão e Disciplina (P4):**
-   - O estudante não recebe a mesma questão repetida durante uma mesma sessão, e pode focar em disciplinas específicas ou alternar entre elas.
-
+1. **Idempotência e Semântica de Exposição (P1 / Fase 1 & 3):**
+   - CQRS estrito: `GET /next` puramente leitura; `POST /presented` com debounce técnico de 5s.
+   - Tentativas com `sessionId` encerrado rejeitadas; tentativas repetidas na mesma sessão são idempotentes.
+2. **Proteção Estrutural de Dados e Gabaritos (Fase 1):**
+   - Nenhuma resposta correta fictícia é atribuída.
+   - Questões sem gabarito oficial verificado ou anuladas não degradam o cálculo de acurácia.
+   - Itens incompletos (com menos de 4 opções ou opção correta faltante) são protegidos pelo repositório.
+3. **Ingestão e Golden Set de Araguari (Fase 2):**
+   - Auditor Fiscal (Cargo 503) é o Golden Set principal; Técnico Fiscal (Cargo 532) é conjunto secundário.
+   - Viabilidade de OCR nativo do Windows comprovada com alta velocidade e precisão.
+4. **Fundamentos do Traqueamento e Camada Analítica com R (Fase 4 & 5):**
+   - Separação explícita entre Observação, Indicador, Hipótese, Diagnóstico e Intervenção.
+   - Rscript (R 4.5.1 Base) integrado via contrato de exportação analítica desacoplado.
+   - Modelos avançados (BKT, IRT, FSRS) mantidos como horizontes futuros, respeitando limiares amostrais mínimos.
 
 ---
 

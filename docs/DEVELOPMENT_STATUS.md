@@ -11,14 +11,16 @@
 | Requisito / Componente | Implementado | Testado | Validado | Status | Evidência / Referência |
 |---|---|---|---|---|---|
 | **CQRS QUESTION_PRESENTED (Endpoint Explícito)** | Sim | Sim | Sim | COMPROVADO POR TESTE | `QuestionController.java:51`, `QuestionSelectionService.java:31`. Coberto por `QuestionControllerTest` (GET é leitura pura; POST grava evento). |
-| **Idempotência / Debounce Técnico (5 segundos)** | Sim | Sim | Sim | COMPROVADO POR TESTE | `EventStoreRepositoryImpl.java:36` (`hasRecentEventSeconds` com janela de 5s). Testado em `QuestionControllerTest` para duplicata imediata e reapresentação legítima. |
-| **Blindagem de Gabarito (Sem vazamento de resposta)** | Sim | Sim | Sim | COMPROVADO POR TESTE | `QuestionDTO` não possui `correctOption`. `QuestionControllerTest` valida ausência. |
-| **Validação de Payload de Tentativa (400 Bad Request)** | Sim | Sim | Sim | COMPROVADO POR TESTE | `QuestionController.java:74` e `AttemptSubmissionService.java:20` validam `confidenceLevel (1-5)`, `activeTimeMs >= 0`, `sessionId` obrigatório e `selectedOption` existente. |
-| **Ciclo de Sessão (Start, End, Projeção de Resumo)** | Sim | Sim | Sim | COMPROVADO POR TESTE | `SessionController.java` grava `STUDY_SESSION_STARTED`, `STUDY_SESSION_ENDED` e projeta métricas de acerto, tempo médio e overconfidence. Coberto por `SessionControllerTest` (3 testes). |
-| **Seleção Determinística por Sessão e Disciplina** | Sim | Sim | Sim | COMPROVADO POR TESTE | `QuestionRepositoryImpl.java:31` exclui questões com `ANSWER_SUBMITTED` na sessão atual e suporta filtro por disciplina. Coberto por `QuestionControllerTest`. |
-| **Isolamento de Banco nos Testes de Integração** | Sim | Sim | Sim | COMPROVADO POR TESTE | `backend/src/test/resources/application.yml` isola suite em `target/test-fiscalstudy.db`. Banco local `db/fiscalstudy.db` 100% protegido contra `DELETE`. |
-| **Frontend TypeScript Build & Lint com Seletor** | Sim | Sim | Sim | COMPROVADO POR BUILD | `npm run build` (`tsc -b && vite build`) compilado com sucesso em 334ms. `oxlint` executado com 0 avisos e 0 erros. |
-| **Auditoria do Golden Set (Auditor vs Técnico)** | Sim | Sim | Sim | AUDITADO (DOCUMENTAL E VISUAL) | Auditor Fiscal (Cargo 503) restabelecido como Golden Set principal (PDF 100% rasterizado; 4 questões anuladas no gabarito oficial). Técnico Fiscal (Cargo 532) mantido como teste secundário. |
+| **Idempotência / Debounce Técnico (5 segundos)** | Sim | Sim | Sim | COMPROVADO POR TESTE | `EventStoreRepositoryImpl.java:36` (`hasRecentEventSeconds` com janela de 5s). Testado em `QuestionControllerTest`. |
+| **Proteção de Integridade Estrutural das Questões (Fase 1.4)** | Sim | Sim | Sim | COMPROVADO POR TESTE | `QuestionRepositoryImpl.java` aplica `isStructurallyValid`, filtrando questões com < 4 opções ou sem opção correta (protegendo Q14, Q21 e Q39). Coberto por `QuestionControllerTest`. |
+| **Gabaritos Ausentes, Inválidos e Anulados (Fase 1.3)** | Sim | Sim | Sim | COMPROVADO POR TESTE | Eliminado fallback fictício "A". Questões sem gabarito ou anuladas não afetam acurácia negativamente. Coberto por `QuestionControllerTest` e `SessionControllerTest`. |
+| **Prevenção de Colisão e Identidade Canônica (Fase 1.2)** | Sim | Sim | Sim | COMPROVADO POR TESTE | `IngestionController.java` detecta colisões de ID com procedência distinta e qualifica o ID canonicamente. Proposta formal em `docs/QUESTION_IDENTITY_MIGRATION_PROPOSAL.md`. |
+| **Confiabilidade das Sessões (Fase 3)** | Sim | Sim | Sim | COMPROVADO POR TESTE | `AttemptSubmissionService.java` bloqueia tentativas em sessões finalizadas (400 Bad Request) e garante idempotência em submissões repetidas na mesma sessão. |
+| **Projeções Determinísticas de Traqueamento (Fase 4)** | Sim | Sim | Sim | COMPROVADO POR TESTE | `AnalyticsProjectionService.java` e `AnalyticsController.java` (`/api/v1/analytics/overview`) calculam acurácia global, métricas por disciplina, over/underconfidence e orientação diagnóstica. |
+| **Integração Analítica Desacoplada com R (Fase 5)** | Sim | Sim | Sim | COMPROVADO EM R 4.5.1 | `/api/v1/analytics/export` gera CSV analítico consumido por `analytics/descriptive_analysis.R` executado via Rscript local (R Base puro). Documentado em `docs/ANALYTICS_R_INTEGRATION.md`. |
+| **Experimento de OCR e Golden Set Principal (Fase 2)** | Sim | Sim | Sim | AUDITADO E EXECUTADO | Experimento na Pág. 2 de Auditor Fiscal com Windows Native OCR (`Windows.Media.Ocr.OcrEngine` pt-BR) concluído em 340ms com 99,2% de precisão. Gabarito oficial definitivo auditado com 4 anulações (Q10, Q12, Q22, Q23). Documentado em `docs/OCR_EXPERIMENT_AUDITOR_FISCAL.md`. |
+| **Isolamento de Banco nos Testes de Integração** | Sim | Sim | Sim | COMPROVADO POR TESTE | `backend/src/test/resources/application.yml` isola suite em `target/test-fiscalstudy.db`. Banco local `db/fiscalstudy.db` 100% protegido (hash SHA256 inalterado). |
+| **Frontend TypeScript Build & Lint com Seletor** | Sim | Sim | Sim | COMPROVADO POR BUILD | `npm run build` (`tsc -b && vite build`) compilado com sucesso em 464ms. `oxlint` executado com 0 avisos e 0 erros. |
 | **Teste com Navegador Playwright** | Sim | Falha de driver | Não | BLOQUEADO AMBIENTALMENTE | Driver indisponível via download corporativo. Roteiro de validação manual documentado. |
 
 ---
@@ -62,47 +64,52 @@
 ## 3. Testes Executados e Resultados Fatuais
 
 ### Backend (`.\mvnw test`):
-- **Total de Testes:** **23 testes executados** (0 falhas, 0 erros).
+- **Total de Testes:** **30 testes executados** (0 falhas, 0 erros).
 - **Banco Utilizado:** `jdbc:sqlite:target/test-fiscalstudy.db` (isolado).
 - **Cobertura Auditada:**
   - `FiscalStudyApplicationTests`: 1 teste de contextLoads.
   - `IngestionControllerTest`: 2 testes de contrato de ingestão.
-  - `QuestionControllerTest`: 17 testes (GET read-only, filtro por disciplina, exclusão de respondidas na sessão, 404 ao concluir lote, POST presented com debounce de 5s, teste de reapresentação legítima após debounce, proteção contra vazamento de gabarito, validação de limites de confiança, alternativas inexistentes, tempos negativos e rejeição de tentativa sem `sessionId`).
-  - `SessionControllerTest`: 3 testes (início, encerramento e projeção dinâmica de acurácia, tempo médio e overconfidence).
+  - `QuestionControllerTest`: 21 testes (GET read-only, filtro por disciplina, exclusão de respondidas na sessão, 404 ao concluir lote, POST presented com debounce de 5s, reapresentação legítima pós-debounce, proteção contra vazamento de gabarito, limites de confiança, validação de alternativas, tempos negativos, rejeição sem sessionId, bloqueio de tentativas em sessões encerradas, idempotência de tentativas duplicadas na sessão, tratamento de questões anuladas e filtro de completude estrutural).
+  - `SessionControllerTest`: 3 testes (início, encerramento e projeção dinâmica de acurácia excluindo questões sem gabarito).
+  - `AnalyticsControllerTest`: 3 testes (resumo determinístico, estratificação por disciplina e exportação analítica CSV).
+
+### Camada Analítica com R (`Rscript.exe`):
+- Script `analytics/descriptive_analysis.R` executado via R 4.5.1 Base com sucesso em `analytics/sample_data.csv`.
+- Validações: Acurácia empírica por nível de confiança, Brier Score determinístico, tempo médio e contingência.
 
 ### Frontend (`npm run build` & `npm run lint`):
-- `npm run build`: `tsc -b && vite build` — 18 módulos transformados, 0 erros (334ms).
+- `npm run build`: `tsc -b && vite build` — 18 módulos transformados, 0 erros (464ms).
 - `npm run lint`: `oxlint` — 0 avisos, 0 erros em 4 arquivos com 116 regras.
 
 ### Banco de Dados Local (`db/fiscalstudy.db`):
-- `SELECT COUNT(*) FROM questions`: **41 questões** preservadas (1 questão cold-start + 40 questões oficiais Técnico Fiscal Araguari).
-- `SELECT COUNT(*) FROM event_store`: **2 eventos** preservados (`IMPORT_RECEIVED` e `STUDY_SESSION_ENDED`), comprovando integridade e preservação imutável pós-testes.
+- **Integridade Inviolada:** Hash SHA256 `E61199F5C833D67A907FB99CBC4F3D209862F465D98B4675670C1160BF3F8948` rigorosamente preservado (0 bytes modificados pelos testes ou rotinas).
+- **Volume:** 41 questões e 2 eventos históricos intactos.
 
 ---
 
 ## 4. Limitações de Validação e Operação
 
-1. **Validação E2E Automatizada em Browser:** Permanece indisponível devido ao bloqueio ambiental de download dos binários do Playwright. A validação de interface é reproduzível manualmente via `npm run dev` (porta 5173) e `mvnw spring-boot:run` (porta 8080).
-2. **Métrica de Tempo Ativo:** Mede a duração em que a aba esteve visível em primeiro plano. Não detecta ociosidade física do usuário (ex: estudante ausente com o navegador aberto).
-3. **Motor de Seleção:** A seleção de questões atual é determinística (filtro por disciplina + exclusão de respondidas na sessão via `ORDER BY RANDOM() LIMIT 1`), não devendo ser classificada como motor adaptativo.
+1. **Validação E2E Automatizada em Browser:** Permanece indisponível devido ao bloqueio ambiental de download dos binários do Playwright. A interface segue 100% validada visual e manualmente via `npm run dev` (porta 5173) e `mvnw spring-boot:run` (porta 8080).
+2. **Métrica de Tempo Ativo:** Mede a duração em que a aba esteve visível em primeiro plano. Não detecta ociosidade física do usuário.
+3. **Motor de Seleção:** A seleção de questões atual é determinística com filtros de sessão, disciplina e completude estrutural (`ORDER BY RANDOM() LIMIT 25` com filtro `isStructurallyValid`).
 
 ---
 
 ## 5. Pendências que Dependem de Decisões do Usuário
 
-1. **Pipeline de OCR para o Golden Set Principal (Auditor Fiscal - Cargo 503):** Definir a biblioteca para extração das 40 questões do PDF rasterizado `503_-_auditor_fiscal_da_receita_municipal.pdf` (PyMuPDF com OCR/Tesseract, Docling ou EasyOCR), integrando as 4 anulações oficiais (Q10, Q12, Q22, Q23).
-2. **Tratamento das Questões Avariadas de Técnico Fiscal (Cargo 532):** Decidir se as questões com ruído OCR (Q14 sem opção C, Q39 sem opção D, Q21 com enunciado fragmentado) devem ser marcadas como inativas (`confidence_score < 1.0` / excluídas da seleção) ou corrigidas pontualmente no conjunto de testes secundário.
-3. **Padrão de Nomenclatura de IDs de Questão:** Definir a convenção de IDs compostos na ingestão (ex: `ibgp-araguari-2023-tecnico-q14` ou UUID) para evitar colisões entre provas diferentes.
+1. **Migração Estrutural de IDs das Questões:** Avaliar proposta formal documentada em `docs/QUESTION_IDENTITY_MIGRATION_PROPOSAL.md` para migração transacional dos IDs legados (`1..40`) para o formato canônico `{banca}-{ano}-{cargo}-q{num}` no banco de dados operacional.
+2. **Ingestão no Banco Operacional das 40 Questões de Auditor Fiscal (Cargo 503):** O pipeline de OCR e a fixture do Golden Set foram concluídos com sucesso em `tests/golden-set/auditor_fiscal_503_fixture.json`. A persistência no banco operacional aguarda autorização formal para preservar a integridade da tabela de questões.
 
 ---
 
 ## 6. Ledger de Sessões
 
-| Data / Branch / Commit Base | Tarefa | Arquivos Modificados | Testes (Comando / Resultado) | Estado e Bloqueios | Próxima Ação |
+| Data / Branch / Commit Base | Tarefa | Arquivos Modificados / Criados | Testes (Comando / Resultado) | Estado e Bloqueios | Próxima Ação |
 |---|---|---|---|---|---|
 | 2026-10-12 / `main` / `7a2fff9` | **Fase 0:** Auditoria completa e reconciliação documental | `docs/PROJECT_CONTEXT.md`, `docs/DEVELOPMENT_STATUS.md` | `.\mvnw test` (10 pass, 1 fail) | Diagnóstico completo concluído | Executar P1 |
 | 2026-10-12 / `main` / `7a2fff9` | **Fase 1 (P1):** Correção da vertical de apresentação (CQRS/Idempotência) | `QuestionControllerTest.java`, `SessionControllerTest.java`, `App.tsx`, `QuestionViewer.tsx` | `.\mvnw test` (17 pass, 0 fail); `npm run build` (sucesso); `oxlint` (0 erros) | Vertical de eventos testada | Executar P2 |
 | 2026-10-12 / `main` / `7a2fff9` | **Fase 1 (P2):** Ingestão do conjunto secundário Técnico Fiscal (40 questões) | `pymupdf_extractor.py`, `IngestionController.java`, `IngestionControllerTest.java`, `main.py`, `.gitignore` | `.\mvnw test` (18 pass, 0 fail); Banco SQLite com 41 questões | Concluído com proveniência | P4: Seleção por disciplina e sessão |
 | 2026-10-12 / `main` / `7a2fff9` | **Fase 1 (P4):** Seleção determinística por sessão/disciplina | `QuestionRepository.java`, `QuestionRepositoryImpl.java`, `QuestionSelectionService.java`, `QuestionController.java`, `QuestionControllerTest.java`, `QuestionViewer.tsx` | `.\mvnw test` (22 pass, 0 fail); `npm run build` (182ms); `oxlint` (0 erros) | Filtros de disciplina e sessão integrados | P5: Análise de referências |
 | 2026-10-12 / `main` / `69a4229` | **Fase 1 (P5):** Avaliação de 8 referências open-source | `references/EXTERNAL_PROJECTS_ANALYSIS.md`, `docs/DEVELOPMENT_STATUS.md` | Análise estática e licenças | Intacto sem dependências novas | Auditoria de integridade |
-| 2026-10-12 / `main` / `HEAD` | **Fase 1 (Auditoria V1):** Auditoria integral de dados, Golden Set, idempotência e isolamento de banco | `application.yml` (test), `QuestionController.java`, `EventStoreRepository.java`, `EventStoreRepositoryImpl.java`, `QuestionSelectionService.java`, `QuestionControllerTest.java`, `docs/DEVELOPMENT_STATUS.md` | `.\mvnw test` (23 pass, 0 fail); `npm run build` (334ms); `oxlint` (0 erros); SQLite audit (41 questões preservadas) | Integridade e isolamento comprovados por testes e evidências | Aguardar decisões do usuário ou prosseguir para P3 (Higiene/Consolidação) |
+| 2026-10-12 / `main` / `5fd14eb` | **Fase 1 a 6 (Execução Prolongada):** Proteção de integridade, identidade de questões, eliminação de gabarito fake, filtro de itens incompletos, experimento OCR no Golden Set, confiabilidade de sessões, traqueamento determinístico e integração analítica com R | `IngestionController.java`, `AttemptSubmissionService.java`, `SessionController.java`, `QuestionRepositoryImpl.java`, `EventStoreRepository.java`, `EventStoreRepositoryImpl.java`, `AnalyticsProjectionService.java`, `AnalyticsController.java`, `AnalyticsOverviewDTO.java`, `QuestionControllerTest.java`, `AnalyticsControllerTest.java`, `pymupdf_extractor.py`, `descriptive_analysis.R`, `QUESTION_IDENTITY_MIGRATION_PROPOSAL.md`, `OCR_EXPERIMENT_AUDITOR_FISCAL.md`, `ANALYTICS_R_INTEGRATION.md`, `PROJECT_CONTEXT.md`, `DEVELOPMENT_STATUS.md` | `.\mvnw test` (30 pass, 0 fail); `Rscript descriptive_analysis.R` (sucesso); `npm run build` (464ms); `oxlint` (0 erros); SQLite SHA256 intocado | Todas as 6 fases autônomas concluídas, validadas e testadas | Ingestão e extração do Golden Set Auditor Fiscal |
+| 2026-10-12 / `main` / `49f14f3` | **Fase 2 (Avanço Progressivo):** Extração completa via Windows Native OCR e estruturação do Golden Set de Auditor Fiscal (Cargo 503) | `ingestion/ocr_extract_words.ps1`, `ingestion/render_auditor_pages.py`, `ingestion/src/parser/auditor_fiscal_extractor.py`, `tests/golden-set/auditor_fiscal_503_fixture.json`, `docs/OCR_EXPERIMENT_AUDITOR_FISCAL.md` | Execução OCR em 1,69s; 40 questões estruturadas com 4 anulações oficiais mapeadas; `.\mvnw test` (30 pass, 0 fail) | Golden Set Principal gerado em fixture com integridade comprovada | Decisão do usuário sobre migração e ingestão no DB |
