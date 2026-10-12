@@ -72,19 +72,24 @@ public class AttemptSubmissionService {
         }
 
         Boolean isCorrect;
+        int concursoPoint;
         if (status == com.fiscalstudy.backend.domain.GabaritoStatus.ANULADA) {
-            isCorrect = true; // Em concurso público, questão anulada não penaliza o estudante
+            isCorrect = null; // Excluído de acurácia/domínio pedagógico
+            concursoPoint = 1; // Ponto atribuído conforme regras do concurso
         } else if (status == com.fiscalstudy.backend.domain.GabaritoStatus.AUSENTE || status == com.fiscalstudy.backend.domain.GabaritoStatus.SOB_REVISAO) {
             isCorrect = null; // Sem gabarito verificado: sem acerto/erro atribuído
+            concursoPoint = 0;
         } else {
             String correctOpt = question.getCorrectOption() != null ? question.getCorrectOption().trim() : "";
-            isCorrect = optionLetter.equalsIgnoreCase(correctOpt);
+            boolean matched = optionLetter.equalsIgnoreCase(correctOpt);
+            isCorrect = matched;
+            concursoPoint = matched ? 1 : 0;
         }
 
         String isCorrectStr = (isCorrect == null) ? "null" : String.valueOf(isCorrect);
         String payload = String.format(
-            "{\"questionId\": \"%s\", \"selectedOption\": \"%s\", \"isCorrect\": %s, \"gabaritoStatus\": \"%s\", \"confidenceLevel\": %d, \"activeTimeMs\": %d}",
-            questionId, selectedOption, isCorrectStr, status.name(), confidenceLevel, activeTimeMs
+            "{\"questionId\": \"%s\", \"selectedOption\": \"%s\", \"isCorrect\": %s, \"concursoPoint\": %d, \"gabaritoStatus\": \"%s\", \"confidenceLevel\": %d, \"activeTimeMs\": %d}",
+            questionId, selectedOption, isCorrectStr, concursoPoint, status.name(), confidenceLevel, activeTimeMs
         );
 
         eventStoreRepository.appendEvent(
@@ -97,17 +102,18 @@ public class AttemptSubmissionService {
                 payload
         );
 
-        return new com.fiscalstudy.backend.domain.AttemptResult(isCorrect, status);
+        return new com.fiscalstudy.backend.domain.AttemptResult(isCorrect, status, concursoPoint);
     }
 
     private com.fiscalstudy.backend.domain.AttemptResult calculateAttemptResult(Question question, String optionLetter, com.fiscalstudy.backend.domain.GabaritoStatus status) {
         if (status == com.fiscalstudy.backend.domain.GabaritoStatus.ANULADA) {
-            return new com.fiscalstudy.backend.domain.AttemptResult(true, status);
+            return new com.fiscalstudy.backend.domain.AttemptResult(null, status, 1);
         }
         if (status == com.fiscalstudy.backend.domain.GabaritoStatus.AUSENTE || status == com.fiscalstudy.backend.domain.GabaritoStatus.SOB_REVISAO) {
-            return new com.fiscalstudy.backend.domain.AttemptResult(null, status);
+            return new com.fiscalstudy.backend.domain.AttemptResult(null, status, 0);
         }
         String correctOpt = question.getCorrectOption() != null ? question.getCorrectOption().trim() : "";
-        return new com.fiscalstudy.backend.domain.AttemptResult(optionLetter.equalsIgnoreCase(correctOpt), status);
+        boolean matched = optionLetter.equalsIgnoreCase(correctOpt);
+        return new com.fiscalstudy.backend.domain.AttemptResult(matched, status, matched ? 1 : 0);
     }
 }

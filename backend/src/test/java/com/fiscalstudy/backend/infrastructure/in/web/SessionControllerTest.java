@@ -111,4 +111,34 @@ class SessionControllerTest {
                 .andExpect(jsonPath("$.averageTimeMs").value(2000.0))
                 .andExpect(jsonPath("$.overconfidenceCount").value(0));
     }
+
+    @Test
+    void getSessionSummary_SeparatesPedagogicalAccuracyFromContestScoring_ForAnuladas() throws Exception {
+        String sessId = "sess-anulada-sep-1";
+        String sql = "INSERT INTO event_store (event_id, event_type, aggregate_type, aggregate_id, session_id, occurred_at, recorded_at, event_version, schema_version, payload_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+        // 1. Definitivo correto (isCorrect=true, status="DEFINITIVO")
+        jdbcTemplate.update(sql, "e1", "ANSWER_SUBMITTED", "QUESTION", "q1", sessId, "2026-10-12T00:00:00Z", "2026-10-12T00:00:00Z", 1, "v1",
+                "{\"selectedOption\":\"A\",\"isCorrect\":true,\"concursoPoint\":1,\"gabaritoStatus\":\"DEFINITIVO\",\"confidenceLevel\":4,\"activeTimeMs\":2000}");
+
+        // 2. Definitivo incorreto (isCorrect=false, status="DEFINITIVO")
+        jdbcTemplate.update(sql, "e2", "ANSWER_SUBMITTED", "QUESTION", "q2", sessId, "2026-10-12T00:01:00Z", "2026-10-12T00:01:00Z", 1, "v1",
+                "{\"selectedOption\":\"C\",\"isCorrect\":false,\"concursoPoint\":0,\"gabaritoStatus\":\"DEFINITIVO\",\"confidenceLevel\":2,\"activeTimeMs\":3000}");
+
+        // 3. Questão Anulada pela banca (isCorrect=null, concursoPoint=1, status="ANULADA")
+        jdbcTemplate.update(sql, "e3", "ANSWER_SUBMITTED", "QUESTION", "q3", sessId, "2026-10-12T00:02:00Z", "2026-10-12T00:02:00Z", 1, "v1",
+                "{\"selectedOption\":\"B\",\"isCorrect\":null,\"concursoPoint\":1,\"gabaritoStatus\":\"ANULADA\",\"confidenceLevel\":5,\"activeTimeMs\":1000}");
+
+        mockMvc.perform(get("/api/v1/sessions/" + sessId + "/summary"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalAnswered").value(3))
+                // Acurácia pedagógica: calculada sobre os 2 itens válidos (1 acerto / 2 válidos = 50.0%)
+                .andExpect(jsonPath("$.correctCount").value(1))
+                .andExpect(jsonPath("$.accuracy").value(50.0))
+                // Pontuação de concurso: 1 ponto de q1 + 1 ponto de q3 (anulada) = 2 pontos
+                .andExpect(jsonPath("$.concursoScore").value(2))
+                .andExpect(jsonPath("$.anuladasCount").value(1))
+                // Não gera overconfidence pedagógico por ser anulada
+                .andExpect(jsonPath("$.overconfidenceCount").value(0));
+    }
 }

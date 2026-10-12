@@ -66,11 +66,13 @@ public class SessionController {
         
         int totalAnswered = payloads.size();
         if (totalAnswered == 0) {
-            return ResponseEntity.ok(new SessionSummaryDTO(0, 0, 0.0, 0.0, 0));
+            return ResponseEntity.ok(new SessionSummaryDTO(0, 0, 0.0, 0.0, 0, 0, 0));
         }
 
         int evaluatedCount = 0;
         int correctCount = 0;
+        int concursoScore = 0;
+        int anuladasCount = 0;
         long totalTimeMs = 0;
         int overconfidenceCount = 0;
 
@@ -84,7 +86,14 @@ public class SessionController {
 
                 totalTimeMs += activeTimeMs;
 
-                // Questões sem gabarito verificado são excluídas do cálculo de acurácia
+                // Questões anuladas: pontuam pelas regras do concurso, mas são EXCLUÍDAS da acurácia pedagógica
+                if ("ANULADA".equalsIgnoreCase(gabaritoStatus)) {
+                    anuladasCount++;
+                    concursoScore += 1;
+                    continue;
+                }
+
+                // Questões sem gabarito verificado também são excluídas da acurácia
                 boolean isUnverified = "AUSENTE".equalsIgnoreCase(gabaritoStatus) || 
                                        "SOB_REVISAO".equalsIgnoreCase(gabaritoStatus) || 
                                        isCorrectNode.isNull();
@@ -93,6 +102,7 @@ public class SessionController {
                     boolean isCorrect = isCorrectNode.asBoolean();
                     if (isCorrect) {
                         correctCount++;
+                        concursoScore += 1;
                     } else if (confidenceLevel == 5) {
                         overconfidenceCount++;
                     }
@@ -110,7 +120,9 @@ public class SessionController {
             correctCount,
             accuracy,
             averageTimeMs,
-            overconfidenceCount
+            overconfidenceCount,
+            concursoScore,
+            anuladasCount
         );
 
         return ResponseEntity.ok(dto);

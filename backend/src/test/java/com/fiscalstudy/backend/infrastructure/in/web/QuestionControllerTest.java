@@ -309,11 +309,16 @@ class QuestionControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(payload))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.isCorrect").value(true));
+                .andExpect(jsonPath("$.isCorrect").doesNotExist())
+                .andExpect(jsonPath("$.concursoPoint").value(1))
+                .andExpect(jsonPath("$.gabaritoStatus").value("ANULADA"));
 
         String savedPayload = jdbcTemplate.queryForObject("SELECT payload_json FROM event_store WHERE aggregate_id = 'q_anulada'", String.class);
         org.junit.jupiter.api.Assertions.assertTrue(savedPayload.contains("\"gabaritoStatus\": \"ANULADA\""));
+        org.junit.jupiter.api.Assertions.assertTrue(savedPayload.contains("\"concursoPoint\": 1"));
+        org.junit.jupiter.api.Assertions.assertTrue(savedPayload.contains("\"isCorrect\": null"));
     }
+
 
     @Test
     void submitAttempt_OnGabaritoAusente_ReturnsNullIsCorrect() throws Exception {

@@ -68,10 +68,12 @@ public class AnalyticsProjectionService {
                 acc.total++;
                 acc.totalTimeMs += activeTime;
 
-                boolean isUnverified = "AUSENTE".equalsIgnoreCase(gabaritoStatus) || 
-                                       "SOB_REVISAO".equalsIgnoreCase(gabaritoStatus) || 
-                                       isCorrectNode.isNull();
-                if (!isUnverified) {
+                // Questões anuladas ou sem gabarito verificado são EXCLUÍDAS de domínio, acurácia e calibração pedagógica
+                boolean isExcludedFromPedagogy = "ANULADA".equalsIgnoreCase(gabaritoStatus) ||
+                                                "AUSENTE".equalsIgnoreCase(gabaritoStatus) || 
+                                                "SOB_REVISAO".equalsIgnoreCase(gabaritoStatus) || 
+                                                isCorrectNode.isNull();
+                if (!isExcludedFromPedagogy) {
                     evaluatedCount++;
                     boolean isCorrect = isCorrectNode.asBoolean();
                     acc.evaluated++;

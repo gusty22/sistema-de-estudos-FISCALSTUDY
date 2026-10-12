@@ -26,25 +26,31 @@ if (n_total == 0) {
 }
 
 # 1. FILTRAGEM E PROTEÇÃO DE DADOS
-# Questões com gabarito ausente, sob revisão ou com is_correct NA
-df_evaluated <- df[!is.na(df$is_correct) & !(df$gabarito_status %in% c("AUSENTE", "SOB_REVISAO")), ]
+# Questões com gabarito ausente, sob revisão, anuladas ou com is_correct NA são excluídas da acurácia pedagógica
+df_evaluated <- df[!is.na(df$is_correct) & !(df$gabarito_status %in% c("AUSENTE", "SOB_REVISAO", "ANULADA")), ]
 n_evaluated <- nrow(df_evaluated)
 n_excluded <- n_total - n_evaluated
 
 cat("--- 1. ESTATÍSTICA DESCRITIVA GERAL ---\n")
 cat(sprintf("Tentativas totais (Atividade):         %d\n", n_total))
-cat(sprintf("Tentativas com gabarito verificado:    %d\n", n_evaluated))
+cat(sprintf("Tentativas com gabarito pedagógico:    %d\n", n_evaluated))
 cat(sprintf("Itens excluídos (sem gabarito/anul.):   %d\n", n_excluded))
 
 if (n_evaluated == 0) {
-  cat("[AVISO] Não há registros com gabarito avaliável para calcular acurácia.\n")
+  cat("[AVISO] Não há registros com gabarito avaliável para calcular acurácia pedagógica.\n")
   quit(status = 0)
 }
 
 # Converter is_correct para booleano/numérico (1 = acerto, 0 = erro)
 df_evaluated$correct_num <- ifelse(df_evaluated$is_correct == TRUE | df_evaluated$is_correct == "true", 1, 0)
 accuracy_global <- mean(df_evaluated$correct_num) * 100
-cat(sprintf("Acurácia Global:                       %.2f%%\n", accuracy_global))
+cat(sprintf("Acurácia Pedagógica Global:            %.2f%%\n", accuracy_global))
+
+# Pontuação de Concurso (Regras Oficiais do Edital: Acertos Válidos + Anuladas)
+n_anuladas <- sum(df$gabarito_status == "ANULADA", na.rm = TRUE)
+concurso_score <- sum(df_evaluated$correct_num) + n_anuladas
+cat(sprintf("Pontuação de Concurso (Edital Oficial):%d pontos (%d acertos + %d anuladas)\n",
+            concurso_score, sum(df_evaluated$correct_num), n_anuladas))
 
 # Tempo ativo
 time_sec <- df_evaluated$active_time_ms / 1000.0

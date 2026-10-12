@@ -93,7 +93,8 @@ public class QuestionController {
 
             return ResponseEntity.ok(new AttemptResultDTO(
                     result.getIsCorrect(),
-                    result.getGabaritoStatus() != null ? result.getGabaritoStatus().name() : "DEFINITIVO"
+                    result.getGabaritoStatus() != null ? result.getGabaritoStatus().name() : "DEFINITIVO",
+                    result.getConcursoPoint()
             ));
         } catch (IllegalStateException e) {
             return ResponseEntity.badRequest().build();
@@ -157,17 +158,25 @@ public class QuestionController {
         @com.fasterxml.jackson.annotation.JsonProperty("gabaritoStatus")
         public String gabaritoStatus;
 
-        public AttemptResultDTO(Boolean isCorrect, String gabaritoStatus) {
+        @com.fasterxml.jackson.annotation.JsonProperty("concursoPoint")
+        public Integer concursoPoint;
+
+        public AttemptResultDTO(Boolean isCorrect, String gabaritoStatus, Integer concursoPoint) {
             this.isCorrect = isCorrect;
             this.gabaritoStatus = gabaritoStatus;
+            this.concursoPoint = concursoPoint;
+        }
+
+        public AttemptResultDTO(Boolean isCorrect, String gabaritoStatus) {
+            this(isCorrect, gabaritoStatus, null);
         }
 
         public AttemptResultDTO(boolean isCorrect) {
-            this.isCorrect = isCorrect;
-            this.gabaritoStatus = "DEFINITIVO";
+            this(isCorrect, "DEFINITIVO", isCorrect ? 1 : 0);
         }
 
         public Boolean getIsCorrect() { return isCorrect; }
         public String getGabaritoStatus() { return gabaritoStatus; }
+        public Integer getConcursoPoint() { return concursoPoint; }
     }
 }

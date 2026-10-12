@@ -82,4 +82,34 @@ public class AnalyticsControllerTest {
                 .andExpect(content().string(containsString("question_id,selected_option,is_correct")))
                 .andExpect(content().string(containsString("\"q1\",\"A\",true,\"DEFINITIVO\",5,12000,\"Direito Tributário\",\"IBGP\",2023")));
     }
+
+    @Test
+    void getOverview_ExcludesAnuladasFromPedagogicalDomainAndAccuracy() throws Exception {
+        // Attempt 1: Definitivo correto em Tributário (q1)
+        jdbcTemplate.update("INSERT INTO event_store (event_id, event_type, aggregate_type, aggregate_id, session_id, occurred_at, recorded_at, event_version, schema_version, payload_json) " +
+                "VALUES ('e1', 'ANSWER_SUBMITTED', 'QUESTION', 'q1', 's1', '2026-10-12T01:00:00Z', '2026-10-12T01:00:00Z', 1, 'v1', " +
+                "'{\"questionId\":\"q1\",\"selectedOption\":\"A\",\"isCorrect\":true,\"concursoPoint\":1,\"gabaritoStatus\":\"DEFINITIVO\",\"confidenceLevel\":4,\"activeTimeMs\":10000}')");
+
+        // Attempt 2: Questão Anulada pela banca em Contabilidade (q2) com confiança máxima 5
+        jdbcTemplate.update("INSERT INTO event_store (event_id, event_type, aggregate_type, aggregate_id, session_id, occurred_at, recorded_at, event_version, schema_version, payload_json) " +
+                "VALUES ('e2', 'ANSWER_SUBMITTED', 'QUESTION', 'q2', 's1', '2026-10-12T01:01:00Z', '2026-10-12T01:01:00Z', 1, 'v1', " +
+                "'{\"questionId\":\"q2\",\"selectedOption\":\"A\",\"isCorrect\":null,\"concursoPoint\":1,\"gabaritoStatus\":\"ANULADA\",\"confidenceLevel\":5,\"activeTimeMs\":15000}')");
+
+        mockMvc.perform(get("/api/v1/analytics/overview"))
+                .andExpect(status().isOk())
+                // totalAnswered conta os 2 eventos registrados (atividade)
+                .andExpect(jsonPath("$.totalAnswered").value(2))
+                // evaluatedCount pedagógico conta apenas o 1 item válido (q1)
+                .andExpect(jsonPath("$.evaluatedCount").value(1))
+                .andExpect(jsonPath("$.correctCount").value(1))
+                .andExpect(jsonPath("$.errorCount").value(0))
+                .andExpect(jsonPath("$.globalAccuracy").value(100.0))
+                // Anulada NÃO gera overconfidence/calibração mesmo com confiança 5
+                .andExpect(jsonPath("$.overconfidenceCount").value(0))
+                // Contabilidade teve tentativa mas 0 itens pedagógicos avaliados (não polui taxa de acerto)
+                .andExpect(jsonPath("$.byDiscipline['Contabilidade'].evaluated").value(0))
+                .andExpect(jsonPath("$.byDiscipline['Contabilidade'].accuracy").value(0.0))
+                .andExpect(jsonPath("$.byDiscipline['Direito Tributário'].evaluated").value(1))
+                .andExpect(jsonPath("$.byDiscipline['Direito Tributário'].accuracy").value(100.0));
+    }
 }
