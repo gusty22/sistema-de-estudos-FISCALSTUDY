@@ -6,6 +6,12 @@ interface Option {
   text?: string;
 }
 
+interface SupportMaterial {
+  tipo?: string;
+  titulo?: string;
+  conteudoTexto?: string;
+}
+
 interface Question {
   questionId: string;
   statement: string;
@@ -15,6 +21,7 @@ interface Question {
     topic: string;
     board: string;
     year: number;
+    supportMaterial?: SupportMaterial;
   };
 }
 
@@ -24,7 +31,26 @@ interface SessionSummary {
   accuracy: number;
   averageTimeMs: number;
   overconfidenceCount: number;
+  concursoScore?: number;
+  anuladasCount?: number;
+  errorDistribution?: Record<string, number>;
 }
+
+interface ConcursoOption {
+  id: string;
+  nome: string;
+  orgao: string;
+  cargo: string;
+}
+
+const ERROR_TAXONOMIES = [
+  { code: 'E1', label: 'E1: Falha de Atenção' },
+  { code: 'E2', label: 'E2: Desconhecimento da Lei Seca / Teoria' },
+  { code: 'E3', label: 'E3: Interpretação de Texto' },
+  { code: 'E4', label: 'E4: Pegadinha da Banca' },
+  { code: 'E5', label: 'E5: Esquecimento de Fórmula / Regra' },
+  { code: 'E6', label: 'E6: Tempo / Chute Forçado' },
+];
 
 const QuestionViewer: React.FC = () => {
   const [sessionStarted, setSessionStarted] = useState(() => sessionStorage.getItem('fiscalstudy_sessionStarted') === 'true');
@@ -34,10 +60,20 @@ const QuestionViewer: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [confidence, setConfidence] = useState<number>(0);
-  const [feedback, setFeedback] = useState<{ isCorrect: boolean | null; gabaritoStatus?: string } | null>(null);
-  
+  const [feedback, setFeedback] = useState<{ isCorrect: boolean | null; gabaritoStatus?: string; concursoPoint?: number } | null>(null);
+
+  // Configuração da Sessão Personalizada (Fase 8)
+  const [concursos, setConcursos] = useState<ConcursoOption[]>([]);
+  const [selectedConcursoId, setSelectedConcursoId] = useState<string>(() => localStorage.getItem('fiscalstudy_active_concurso_id') || '');
   const [disciplines, setDisciplines] = useState<string[]>([]);
   const [selectedDiscipline, setSelectedDiscipline] = useState<string>('');
+  const [assuntos, setAssuntos] = useState<string[]>([]);
+  const [selectedAssunto, setSelectedAssunto] = useState<string>('');
+  const [studyMode, setStudyMode] = useState<string>('LEARNING'); // LEARNING, EXAM, RETENTION
+  const [includeAnswered, setIncludeAnswered] = useState<boolean>(false);
+  const [questionCountLimit, setQuestionCountLimit] = useState<number>(10);
+  const [selectedCausaErro, setSelectedCausaErro] = useState<string>('');
+  const [showSupportMaterial, setShowSupportMaterial] = useState<boolean>(true);
 
   const [activeTimeMs, setActiveTimeMs] = useState<number>(0);
   const [lastFocusTime, setLastFocusTime] = useState<number>(0);
@@ -53,22 +89,67 @@ const QuestionViewer: React.FC = () => {
   };
   const sessionId = useRef(getInitialSessionId()).current;
 
+  // Carrega Concursos e Disciplinas disponíveis
+  useEffect(() => {
+    fetch('http://localhost:8080/api/v1/concursos')
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data: ConcursoOption[]) => {
+        setConcursos(data || []);
+        if (!selectedConcursoId && data && data.length > 0) {
+          setSelectedConcursoId(data[0].id);
+        }
+      })
+      .catch(() => {});
+
+    fetch('http://localhost:8080/api/v1/questions/disciplines')
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => setDisciplines(data || []))
+      .catch(() => {});
+  }, [selectedConcursoId]);
+
+  // Carrega Assuntos dinamicamente quando a disciplina mudar
+  useEffect(() => {
+    if (selectedDiscipline) {
+      fetch(`http://localhost:8080/api/v1/questions/assuntos?disciplina=${encodeURIComponent(selectedDiscipline)}`)
+        .then((res) => (res.ok ? res.json() : []))
+        .then((data) => setAssuntos(data || []))
+        .catch(() => setAssuntos([]));
+    } else {
+      setAssuntos([]);
+      setSelectedAssunto('');
+    }
+  }, [selectedDiscipline]);
+
   const fetchNextQuestion = useCallback(async () => {
     setLoading(true);
     setFeedback(null);
     setSelectedOption(null);
     setConfidence(0);
+    setSelectedCausaErro('');
     try {
       let url = `http://localhost:8080/api/v1/questions/next?sessionId=${sessionId}`;
+      if (selectedConcursoId) {
+        url += `&concursoId=${encodeURIComponent(selectedConcursoId)}`;
+      }
       if (selectedDiscipline) {
         url += `&disciplina=${encodeURIComponent(selectedDiscipline)}`;
       }
+      if (selectedAssunto) {
+        url += `&assunto=${encodeURIComponent(selectedAssunto)}`;
+      }
+      if (includeAnswered) {
+        url += `&includeAnswered=true`;
+      }
+      if (studyMode) {
+        url += `&studyMode=${encodeURIComponent(studyMode)}`;
+      }
+
       const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
         setQuestion(data);
         
-        // Registrar a apresentação explicitamente (Alternativa D)
+        // Registrar a apresentação explicitamente (Append-Only Event Store)
         await fetch(`http://localhost:8080/api/v1/questions/${data.questionId}/presented`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -86,14 +167,7 @@ const QuestionViewer: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [sessionId, selectedDiscipline]);
-
-  useEffect(() => {
-    fetch('http://localhost:8080/api/v1/questions/disciplines')
-      .then(res => res.ok ? res.json() : [])
-      .then(data => setDisciplines(data))
-      .catch(() => {});
-  }, []);
+  }, [sessionId, selectedConcursoId, selectedDiscipline, selectedAssunto, includeAnswered, studyMode]);
 
   useEffect(() => {
     if (sessionStarted && !question && !sessionEnded) {
@@ -176,7 +250,8 @@ const QuestionViewer: React.FC = () => {
           selectedOption: optionLetter,
           confidenceLevel: confidence,
           activeTimeMs: finalActiveTime,
-          sessionId
+          sessionId,
+          causaErro: selectedCausaErro || undefined
         })
       });
 
@@ -189,58 +264,248 @@ const QuestionViewer: React.FC = () => {
     }
   };
 
+  // Envia ou atualiza a causa do erro pós-feedback se o estudante selecionar
+  const handleSelectCausaErroPostSubmission = async (code: string) => {
+    setSelectedCausaErro(code);
+    if (!question) return;
+    try {
+      // Reenvia attempt idempotentemente com causa do erro registrada
+      const optionLetter = selectedOption ? (selectedOption.match(/^([A-E])\)?/)?.[1] || selectedOption.charAt(0)) : 'A';
+      await fetch(`http://localhost:8080/api/v1/questions/${question.questionId}/attempts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          selectedOption: optionLetter,
+          confidenceLevel: confidence || 3,
+          activeTimeMs,
+          sessionId,
+          causaErro: code
+        })
+      });
+    } catch (e) {
+      console.error("Failed to register error cause:", e);
+    }
+  };
+
+  // TELA 1: Configuração Personalizada da Sessão (Fase 8)
   if (!sessionStarted) {
     return (
       <div className="viewer-container empty">
-        <div className="glass empty-state" style={{ maxWidth: '480px', width: '100%' }}>
-          <h2>Pronto para começar?</h2>
-          <p style={{ color: '#94a3b8', marginTop: '8px' }}>Selecione uma disciplina ou faça um simulado geral:</p>
-          <div style={{ marginTop: '16px', marginBottom: '20px' }}>
-            <select
-              value={selectedDiscipline}
-              onChange={(e) => setSelectedDiscipline(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '10px 14px',
-                borderRadius: '8px',
-                background: 'rgba(255, 255, 255, 0.08)',
-                color: '#fff',
-                border: '1px solid rgba(255, 255, 255, 0.2)',
-                fontSize: '1em',
-                outline: 'none'
-              }}
-            >
-              <option value="" style={{ background: '#1e293b', color: '#fff' }}>Todas as Disciplinas (Geral)</option>
-              {disciplines.map((d) => (
-                <option key={d} value={d} style={{ background: '#1e293b', color: '#fff' }}>{d}</option>
-              ))}
-            </select>
+        <div className="glass session-config-card">
+          <div style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '1rem' }}>
+            <h2 style={{ color: '#f8fafc', margin: 0, fontSize: '1.4rem' }}>⚙️ Nova Sessão de Estudo Personalizada</h2>
+            <p style={{ color: '#94a3b8', margin: '0.35rem 0 0', fontSize: '0.88rem' }}>
+              Defina o foco pedagógico, concurso-alvo e filtros temáticos para iniciar:
+            </p>
           </div>
-          <button className="btn" onClick={startSession}>Iniciar Estudo</button>
+
+          <div className="session-config-grid">
+            {/* Concurso Alvo */}
+            <div className="form-group">
+              <label>Concurso / Cargo Alvo</label>
+              <select
+                className="form-control"
+                value={selectedConcursoId}
+                onChange={(e) => setSelectedConcursoId(e.target.value)}
+              >
+                <option value="">Todos os Concursos (Geral)</option>
+                {concursos.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.nome} ({c.cargo || c.orgao})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Disciplina */}
+            <div className="form-group">
+              <label>Disciplina</label>
+              <select
+                className="form-control"
+                value={selectedDiscipline}
+                onChange={(e) => setSelectedDiscipline(e.target.value)}
+              >
+                <option value="">Todas as Disciplinas</option>
+                {disciplines.map((d) => (
+                  <option key={d} value={d}>
+                    {d}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="session-config-grid">
+            {/* Assunto */}
+            <div className="form-group">
+              <label>Assunto / Tópico Programático</label>
+              <select
+                className="form-control"
+                value={selectedAssunto}
+                onChange={(e) => setSelectedAssunto(e.target.value)}
+                disabled={!selectedDiscipline || assuntos.length === 0}
+              >
+                <option value="">Todos os Assuntos</option>
+                {assuntos.map((a) => (
+                  <option key={a} value={a}>
+                    {a}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Quantidade de Questões */}
+            <div className="form-group">
+              <label>Meta de Questões</label>
+              <select
+                className="form-control"
+                value={questionCountLimit}
+                onChange={(e) => setQuestionCountLimit(Number(e.target.value))}
+              >
+                <option value={5}>5 Questões (Sessão Rápida)</option>
+                <option value={10}>10 Questões (Padrão)</option>
+                <option value={20}>20 Questões (Aprofundamento)</option>
+                <option value={50}>50 Questões (Simulado Extenso)</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Modo de Estudo */}
+          <div className="form-group">
+            <label>Modo de Estudo Pedagógico</label>
+            <div className="mode-selector">
+              <button
+                type="button"
+                className={`mode-btn ${studyMode === 'LEARNING' ? 'active' : ''}`}
+                onClick={() => setStudyMode('LEARNING')}
+              >
+                📘 Aprendizagem (Feedback Imediato)
+              </button>
+              <button
+                type="button"
+                className={`mode-btn ${studyMode === 'EXAM' ? 'active' : ''}`}
+                onClick={() => setStudyMode('EXAM')}
+              >
+                ⏱️ Simulado Oficial (Tempo Ativo)
+              </button>
+              <button
+                type="button"
+                className={`mode-btn ${studyMode === 'RETENTION' ? 'active' : ''}`}
+                onClick={() => setStudyMode('RETENTION')}
+              >
+                🔄 Fixação (Revisão Espaçada)
+              </button>
+            </div>
+          </div>
+
+          {/* Opções Avançadas */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '0.25rem' }}>
+            <input
+              type="checkbox"
+              id="includeAnswered"
+              checked={includeAnswered}
+              onChange={(e) => setIncludeAnswered(e.target.checked)}
+              style={{ cursor: 'pointer', transform: 'scale(1.2)' }}
+            />
+            <label htmlFor="includeAnswered" style={{ color: '#cbd5e1', fontSize: '0.88rem', cursor: 'pointer' }}>
+              Incluir questões já respondidas anteriormente neste concurso
+            </label>
+          </div>
+
+          <button className="btn" onClick={startSession} style={{ marginTop: '0.75rem', padding: '12px 20px', fontSize: '1rem' }}>
+            🚀 Iniciar Sessão de Estudo
+          </button>
         </div>
       </div>
     );
   }
 
+  // TELA 2: Relatório Final da Sessão
   if (sessionEnded) {
     return (
       <div className="viewer-container empty">
-        <div className="glass empty-state" style={{maxWidth: '500px', width: '100%'}}>
-          <h2 style={{borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '15px', marginBottom: '20px'}}>Sessão Finalizada</h2>
+        <div className="glass empty-state" style={{ maxWidth: '620px', width: '100%', padding: '2rem' }}>
+          <h2 style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '12px', marginBottom: '16px' }}>
+            📊 Relatório da Sessão de Estudo
+          </h2>
           {summary ? (
-             <div style={{textAlign: 'left', fontSize: '1.1em'}}>
-               <p style={{display: 'flex', justifyContent: 'space-between'}}><span>Questões Respondidas:</span> <strong>{summary.totalAnswered}</strong></p>
-               <p style={{display: 'flex', justifyContent: 'space-between'}}><span>Acertos:</span> <strong>{summary.correctCount} ({summary.accuracy.toFixed(1)}%)</strong></p>
-               <p style={{display: 'flex', justifyContent: 'space-between'}}><span>Tempo Médio por Questão:</span> <strong>{(summary.averageTimeMs / 1000).toFixed(1)}s</strong></p>
-               {summary.overconfidenceCount > 0 && (
-                 <div style={{marginTop: '25px', padding: '15px', background: 'rgba(255,50,50,0.15)', border: '1px solid rgba(255,50,50,0.5)', borderRadius: '8px'}}>
-                   <h4 style={{color: '#ff6b6b', margin: '0 0 8px 0'}}>⚠️ Atenção</h4>
-                   <p style={{margin: 0, fontSize: '0.9em', lineHeight: '1.4'}}>Você demonstrou falsa fluência (confiança máxima em respostas erradas) em <strong>{summary.overconfidenceCount}</strong> questões nesta sessão.</p>
-                 </div>
-               )}
-             </div>
+            <div style={{ textAlign: 'left', fontSize: '1rem' }}>
+              <div className="summary-score-banner">
+                <div>
+                  <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Pontuação Oficial Concurso</span>
+                  <div style={{ fontSize: '1.6rem', fontWeight: 700, color: '#38bdf8' }}>
+                    {summary.concursoScore ?? summary.correctCount} / {summary.totalAnswered}
+                  </div>
+                  <small style={{ color: '#64748b', fontSize: '0.72rem' }}>Inclui pontos de anuladas pelas regras da banca</small>
+                </div>
+                <div>
+                  <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Acurácia Pedagógica Real</span>
+                  <div style={{ fontSize: '1.6rem', fontWeight: 700, color: summary.accuracy >= 70 ? '#34d399' : '#fbbf24' }}>
+                    {summary.accuracy.toFixed(1)}%
+                  </div>
+                  <small style={{ color: '#64748b', fontSize: '0.72rem' }}>Exclui questões anuladas (evidência de domínio puro)</small>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1.25rem' }}>
+                <p style={{ display: 'flex', justifyContent: 'space-between', margin: 0 }}>
+                  <span>Questões Respondidas:</span> <strong>{summary.totalAnswered}</strong>
+                </p>
+                <p style={{ display: 'flex', justifyContent: 'space-between', margin: 0 }}>
+                  <span>Acertos Efetivos:</span> <strong>{summary.correctCount}</strong>
+                </p>
+                {summary.anuladasCount !== undefined && summary.anuladasCount > 0 && (
+                  <p style={{ display: 'flex', justifyContent: 'space-between', margin: 0, color: '#fbbf24' }}>
+                    <span>Questões Anuladas:</span> <strong>{summary.anuladasCount}</strong>
+                  </p>
+                )}
+                <p style={{ display: 'flex', justifyContent: 'space-between', margin: 0 }}>
+                  <span>Tempo Médio por Questão:</span> <strong>{(summary.averageTimeMs / 1000).toFixed(1)}s</strong>
+                </p>
+              </div>
+
+              {/* Alerta de Falsa Fluência (Overconfidence) */}
+              {summary.overconfidenceCount > 0 && (
+                <div style={{ marginTop: '15px', padding: '12px', background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.5)', borderRadius: '8px' }}>
+                  <h4 style={{ color: '#f87171', margin: '0 0 6px 0', fontSize: '0.95rem' }}>⚠️ Alerta de Falsa Fluência (Overconfidence)</h4>
+                  <p style={{ margin: 0, fontSize: '0.85rem', lineHeight: '1.4' }}>
+                    Você assinalou certeza absoluta (nível 5) em <strong>{summary.overconfidenceCount}</strong> questão(ões) que estavam incorretas. Atenção redobrada a pegadinhas e conceitos mal consolidados.
+                  </p>
+                </div>
+              )}
+
+              {/* Diagnóstico de Causas de Erro Registradas */}
+              {summary.errorDistribution && Object.keys(summary.errorDistribution).length > 0 && (
+                <div style={{ marginTop: '15px', padding: '12px', background: 'rgba(15,23,42,0.6)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }}>
+                  <h4 style={{ color: '#38bdf8', margin: '0 0 8px 0', fontSize: '0.95rem' }}>🎯 Diagnóstico das Causas de Erro:</h4>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    {Object.entries(summary.errorDistribution).map(([code, count]) => {
+                      const match = ERROR_TAXONOMIES.find((t) => t.code === code);
+                      return (
+                        <span key={code} className="tax-pill active" style={{ fontSize: '0.8rem', padding: '4px 10px' }}>
+                          {match ? match.label : code}: <strong>{count}</strong>
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              <button
+                className="btn"
+                style={{ marginTop: '1.5rem', width: '100%' }}
+                onClick={() => {
+                  setSessionEnded(false);
+                  setSessionStarted(false);
+                  setQuestion(null);
+                  setSummary(null);
+                }}
+              >
+                🔄 Configurar Nova Sessão
+              </button>
+            </div>
           ) : (
-             <p>Carregando resumo...</p>
+            <p>Carregando resumo analítico...</p>
           )}
         </div>
       </div>
@@ -251,7 +516,7 @@ const QuestionViewer: React.FC = () => {
     return (
       <div className="viewer-container loading">
         <div className="spinner"></div>
-        <p>Buscando questão...</p>
+        <p>Buscando questão adaptativa...</p>
       </div>
     );
   }
@@ -261,8 +526,10 @@ const QuestionViewer: React.FC = () => {
       <div className="viewer-container empty">
         <div className="glass empty-state">
           <h2>Você concluiu todas as questões disponíveis{selectedDiscipline ? ` de ${selectedDiscipline}` : ''}!</h2>
-          <button className="btn mt-4" onClick={fetchNextQuestion}>Tentar Novamente</button>
-          <button className="btn mt-4" style={{marginLeft: '10px'}} onClick={endSession}>Encerrar Sessão</button>
+          <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', marginTop: '1.5rem' }}>
+            <button className="btn" onClick={fetchNextQuestion}>Tentar Novamente</button>
+            <button className="btn btn-secondary" onClick={endSession}>Encerrar Sessão</button>
+          </div>
         </div>
       </div>
     );
@@ -285,18 +552,53 @@ const QuestionViewer: React.FC = () => {
 
   return (
     <div className="viewer-container animate-fade-in">
-      <header className="viewer-header" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+      <header className="viewer-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div className="metadata-tags">
-          <span className="tag">{question.metadata.board}</span>
-          <span className="tag">{question.metadata.discipline}</span>
-          <span className="tag">{question.metadata.year}</span>
+          <span className="tag">{question.metadata.board || 'Banca'}</span>
+          <span className="tag">{question.metadata.discipline || 'Geral'}</span>
+          {question.metadata.topic && <span className="tag">{question.metadata.topic}</span>}
+          <span className="tag">{question.metadata.year || 2023}</span>
+          <span className="tag" style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', borderColor: 'rgba(16, 185, 129, 0.4)' }}>
+            Modo {studyMode}
+          </span>
         </div>
-        <button className="btn" style={{padding: '5px 15px', fontSize: '0.9em', background: 'transparent', border: '1px solid #fff', color: '#fff'}} onClick={endSession}>Encerrar Sessão</button>
+        <button
+          className="btn"
+          style={{ padding: '5px 15px', fontSize: '0.85rem', background: 'transparent', border: '1px solid #fff', color: '#fff' }}
+          onClick={endSession}
+        >
+          Encerrar Sessão
+        </button>
       </header>
+
+      {/* Material de Apoio Compartilhado (Fase 5 - Textos-base, tabelas, figuras) */}
+      {question.metadata?.supportMaterial && question.metadata.supportMaterial.conteudoTexto && (
+        <div className="support-material-drawer">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h4>
+              📎 {question.metadata.supportMaterial.titulo || 'Material de Apoio / Texto-Base'}
+            </h4>
+            <button
+              className="btn btn-secondary"
+              style={{ padding: '2px 8px', fontSize: '0.75rem' }}
+              onClick={() => setShowSupportMaterial((prev) => !prev)}
+            >
+              {showSupportMaterial ? 'Recolher' : 'Expandir'}
+            </button>
+          </div>
+          {showSupportMaterial && (
+            <div style={{ marginTop: '0.5rem', color: '#e2e8f0', fontSize: '0.92rem', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>
+              {question.metadata.supportMaterial.conteudoTexto}
+            </div>
+          )}
+        </div>
+      )}
 
       <main className="question-content glass">
         <div className="statement">
-          {question.statement.split('\\n').map((line, i) => <p key={i}>{line}</p>)}
+          {question.statement.split('\n').map((line, i) => (
+            <p key={i}>{line}</p>
+          ))}
         </div>
 
         <div className="options">
@@ -321,15 +623,22 @@ const QuestionViewer: React.FC = () => {
       {!feedback ? (
         <div className="interaction-bar glass animate-fade-in">
           <div className="confidence-section">
-            <span>Nível de Confiança:</span>
+            <span style={{ fontSize: '0.9rem', color: '#94a3b8' }}>Nível de Confiança:</span>
             <div className="confidence-buttons">
-              {[1, 2, 3, 4, 5].map(level => (
+              {[
+                { lvl: 1, label: '1: Chute' },
+                { lvl: 2, label: '2: Dúvida' },
+                { lvl: 3, label: '3: Parcial' },
+                { lvl: 4, label: '4: Seguro' },
+                { lvl: 5, label: '5: Certeza' },
+              ].map(({ lvl, label }) => (
                 <button 
-                  key={level} 
-                  className={`conf-btn ${confidence === level ? 'active' : ''}`}
-                  onClick={() => setConfidence(level)}
+                  key={lvl} 
+                  className={`conf-btn ${confidence === lvl ? 'active' : ''}`}
+                  onClick={() => setConfidence(lvl)}
+                  title={label}
                 >
-                  {level}
+                  {lvl}
                 </button>
               ))}
             </div>
@@ -355,9 +664,14 @@ const QuestionViewer: React.FC = () => {
               : undefined
           }
         >
-          <div className="feedback-message">
+          <div className="feedback-message" style={{ width: '100%' }}>
             {feedback.gabaritoStatus === 'ANULADA' ? (
-              <h3>✅ Questão Anulada pela Banca (ponto atribuído)</h3>
+              <div>
+                <h3>✅ Questão Anulada pela Banca Oficial</h3>
+                <p style={{ margin: '0.2rem 0', color: '#94a3b8', fontSize: '0.85rem' }}>
+                  Ponto atribuído pelas regras do concurso. Excluída da acurácia pedagógica para não produzir evidência artificial de domínio.
+                </p>
+              </div>
             ) : feedback.gabaritoStatus === 'AUSENTE' ? (
               <h3 style={{ color: '#facc15' }}>ℹ️ Resposta Registrada (Gabarito Ausente)</h3>
             ) : feedback.gabaritoStatus === 'SOB_REVISAO' ? (
@@ -365,14 +679,36 @@ const QuestionViewer: React.FC = () => {
             ) : feedback.isCorrect ? (
               <h3>✅ Resposta Correta! {feedback.gabaritoStatus === 'RETIFICADO' ? '(Gabarito Retificado)' : ''}</h3>
             ) : (
-              <h3>❌ Resposta Incorreta {feedback.gabaritoStatus === 'RETIFICADO' ? '(Gabarito Retificado)' : ''}</h3>
+              <div>
+                <h3>❌ Resposta Incorreta {feedback.gabaritoStatus === 'RETIFICADO' ? '(Gabarito Retificado)' : ''}</h3>
+                {/* Diagnóstico da Causa do Erro (Fase 8) */}
+                <div className="error-taxonomy-selector">
+                  <span style={{ fontSize: '0.82rem', color: '#fca5a5' }}>
+                    Qual foi o fator determinante para este erro?
+                  </span>
+                  <div className="taxonomy-pills">
+                    {ERROR_TAXONOMIES.map((tax) => (
+                      <button
+                        key={tax.code}
+                        type="button"
+                        className={`tax-pill ${selectedCausaErro === tax.code ? 'active' : ''}`}
+                        onClick={() => handleSelectCausaErroPostSubmission(tax.code)}
+                      >
+                        {tax.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
             )}
-            <p>
-              Confiança registrada: {confidence}/5
-              {(feedback.gabaritoStatus === 'AUSENTE' || feedback.gabaritoStatus === 'SOB_REVISAO') && ' — Não impacta cálculo de acurácia.'}
+            
+            <p style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: '#cbd5e1' }}>
+              Confiança: {confidence}/5 • Tempo: {(activeTimeMs / 1000).toFixed(1)}s
+              {(feedback.gabaritoStatus === 'AUSENTE' || feedback.gabaritoStatus === 'SOB_REVISAO') && ' — Não impacta acurácia pedagógica.'}
             </p>
           </div>
-          <button className="btn" onClick={fetchNextQuestion}>
+          
+          <button className="btn" onClick={fetchNextQuestion} style={{ marginTop: '0.75rem', alignSelf: 'flex-end' }}>
             Próxima Questão ➔
           </button>
         </div>
