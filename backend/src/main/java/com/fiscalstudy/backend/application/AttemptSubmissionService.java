@@ -18,6 +18,10 @@ public class AttemptSubmissionService {
     }
 
     public com.fiscalstudy.backend.domain.AttemptResult submitAttempt(String questionId, String selectedOption, int confidenceLevel, long activeTimeMs, String sessionId) {
+        return submitAttempt(questionId, selectedOption, confidenceLevel, activeTimeMs, sessionId, null);
+    }
+
+    public com.fiscalstudy.backend.domain.AttemptResult submitAttempt(String questionId, String selectedOption, int confidenceLevel, long activeTimeMs, String sessionId, String origin) {
         if (sessionId == null || sessionId.isBlank()) {
             throw new IllegalArgumentException("Session ID is required");
         }
@@ -86,10 +90,24 @@ public class AttemptSubmissionService {
             concursoPoint = matched ? 1 : 0;
         }
 
+        String determinedOrigin;
+        if (origin != null && !origin.isBlank()) {
+            determinedOrigin = com.fiscalstudy.backend.domain.EventOrigin.fromString(origin).name();
+        } else {
+            String lowerSession = sessionId.toLowerCase();
+            if (lowerSession.startsWith("test-") || lowerSession.startsWith("mock-")) {
+                determinedOrigin = com.fiscalstudy.backend.domain.EventOrigin.AUTOMATED_TEST.name();
+            } else if (lowerSession.startsWith("demo-") || lowerSession.startsWith("sample-")) {
+                determinedOrigin = com.fiscalstudy.backend.domain.EventOrigin.DEMONSTRATION.name();
+            } else {
+                determinedOrigin = com.fiscalstudy.backend.domain.EventOrigin.REAL_STUDY.name();
+            }
+        }
+
         String isCorrectStr = (isCorrect == null) ? "null" : String.valueOf(isCorrect);
         String payload = String.format(
-            "{\"questionId\": \"%s\", \"selectedOption\": \"%s\", \"isCorrect\": %s, \"concursoPoint\": %d, \"gabaritoStatus\": \"%s\", \"confidenceLevel\": %d, \"activeTimeMs\": %d}",
-            questionId, selectedOption, isCorrectStr, concursoPoint, status.name(), confidenceLevel, activeTimeMs
+            "{\"questionId\": \"%s\", \"selectedOption\": \"%s\", \"isCorrect\": %s, \"concursoPoint\": %d, \"gabaritoStatus\": \"%s\", \"confidenceLevel\": %d, \"activeTimeMs\": %d, \"origin\": \"%s\"}",
+            questionId, optionLetter, isCorrectStr, concursoPoint, status.name(), confidenceLevel, activeTimeMs, determinedOrigin
         );
 
         eventStoreRepository.appendEvent(

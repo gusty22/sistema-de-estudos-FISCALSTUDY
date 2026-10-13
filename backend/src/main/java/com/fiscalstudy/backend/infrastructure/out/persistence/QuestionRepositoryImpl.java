@@ -75,6 +75,15 @@ public class QuestionRepositoryImpl implements QuestionRepository {
                 com.fiscalstudy.backend.domain.GabaritoStatus gabaritoStatus = 
                         com.fiscalstudy.backend.domain.GabaritoStatus.fromString(rawStatus);
                 
+                String orgao = null;
+                try {
+                    orgao = rs.getString("orgao");
+                } catch (Exception ignored) {}
+                String cargo = null;
+                try {
+                    cargo = rs.getString("cargo");
+                } catch (Exception ignored) {}
+
                 return new Question(
                         rs.getString("id"),
                         rs.getString("enunciado"),
@@ -84,7 +93,9 @@ public class QuestionRepositoryImpl implements QuestionRepository {
                         rs.getString("disciplina"),
                         rs.getString("assunto"),
                         rs.getString("banca"),
-                        rs.getInt("ano")
+                        rs.getInt("ano"),
+                        orgao,
+                        cargo
                 );
             } catch (Exception e) {
                 throw new RuntimeException("Failed to map question", e);
@@ -152,6 +163,15 @@ public class QuestionRepositoryImpl implements QuestionRepository {
                 com.fiscalstudy.backend.domain.GabaritoStatus gabaritoStatus = 
                         com.fiscalstudy.backend.domain.GabaritoStatus.fromString(rawStatus);
                 
+                String orgao = null;
+                try {
+                    orgao = rs.getString("orgao");
+                } catch (Exception ignored) {}
+                String cargo = null;
+                try {
+                    cargo = rs.getString("cargo");
+                } catch (Exception ignored) {}
+
                 return new Question(
                         rs.getString("id"),
                         rs.getString("enunciado"),
@@ -161,7 +181,9 @@ public class QuestionRepositoryImpl implements QuestionRepository {
                         rs.getString("disciplina"),
                         rs.getString("assunto"),
                         rs.getString("banca"),
-                        rs.getInt("ano")
+                        rs.getInt("ano"),
+                        orgao,
+                        cargo
                 );
             } catch (Exception e) {
                 throw new RuntimeException("Failed to map question", e);

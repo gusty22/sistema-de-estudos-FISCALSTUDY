@@ -13,12 +13,18 @@ public class Question {
     private String topic;
     private String board;
     private Integer year;
+    private String orgao;
+    private String cargo;
 
     public Question(String id, String statement, List<String> options, String correctOption, String discipline, String topic, String board, Integer year) {
-        this(id, statement, options, correctOption, null, discipline, topic, board, year);
+        this(id, statement, options, correctOption, null, discipline, topic, board, year, null, null);
     }
 
     public Question(String id, String statement, List<String> options, String correctOption, GabaritoStatus gabaritoStatus, String discipline, String topic, String board, Integer year) {
+        this(id, statement, options, correctOption, gabaritoStatus, discipline, topic, board, year, null, null);
+    }
+
+    public Question(String id, String statement, List<String> options, String correctOption, GabaritoStatus gabaritoStatus, String discipline, String topic, String board, Integer year, String orgao, String cargo) {
         this.id = id;
         this.statement = statement;
         this.options = options;
@@ -36,6 +42,8 @@ public class Question {
         this.topic = topic;
         this.board = board;
         this.year = year;
+        this.orgao = orgao;
+        this.cargo = cargo;
     }
 
     public String getId() { return id; }
@@ -47,4 +55,6 @@ public class Question {
     public String getTopic() { return topic; }
     public String getBoard() { return board; }
     public Integer getYear() { return year; }
+    public String getOrgao() { return orgao; }
+    public String getCargo() { return cargo; }
 }

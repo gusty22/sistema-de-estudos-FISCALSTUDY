@@ -68,4 +68,40 @@ public class EventStoreRepositoryImpl implements EventStoreRepository {
         String sql = "SELECT payload_json FROM event_store WHERE event_type = ? ORDER BY occurred_at ASC";
         return jdbcTemplate.queryForList(sql, String.class, eventType);
     }
+
+    @Override
+    public java.util.List<com.fiscalstudy.backend.domain.EventRecord> getAllEvents(String eventType) {
+        String sql = "SELECT event_id, event_type, aggregate_type, aggregate_id, session_id, occurred_at, recorded_at, event_version, schema_version, payload_json " +
+                     "FROM event_store WHERE event_type = ? ORDER BY occurred_at ASC";
+        return jdbcTemplate.query(sql, (rs, rowNum) -> new com.fiscalstudy.backend.domain.EventRecord(
+                rs.getString("event_id"),
+                rs.getString("event_type"),
+                rs.getString("aggregate_type"),
+                rs.getString("aggregate_id"),
+                rs.getString("session_id"),
+                rs.getString("occurred_at"),
+                rs.getString("recorded_at"),
+                rs.getInt("event_version"),
+                rs.getString("schema_version"),
+                rs.getString("payload_json")
+        ), eventType);
+    }
+
+    @Override
+    public java.util.List<com.fiscalstudy.backend.domain.EventRecord> getAllEvents() {
+        String sql = "SELECT event_id, event_type, aggregate_type, aggregate_id, session_id, occurred_at, recorded_at, event_version, schema_version, payload_json " +
+                     "FROM event_store ORDER BY occurred_at ASC";
+        return jdbcTemplate.query(sql, (rs, rowNum) -> new com.fiscalstudy.backend.domain.EventRecord(
+                rs.getString("event_id"),
+                rs.getString("event_type"),
+                rs.getString("aggregate_type"),
+                rs.getString("aggregate_id"),
+                rs.getString("session_id"),
+                rs.getString("occurred_at"),
+                rs.getString("recorded_at"),
+                rs.getInt("event_version"),
+                rs.getString("schema_version"),
+                rs.getString("payload_json")
+        ));
+    }
 }

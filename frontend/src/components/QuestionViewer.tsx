@@ -176,7 +176,8 @@ const QuestionViewer: React.FC = () => {
           selectedOption: optionLetter,
           confidenceLevel: confidence,
           activeTimeMs: finalActiveTime,
-          sessionId
+          sessionId,
+          origin: 'REAL_STUDY'
         })
       });
 

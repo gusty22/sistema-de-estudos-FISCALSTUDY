@@ -88,7 +88,8 @@ public class QuestionController {
                     payload.getSelectedOption(),
                     payload.getConfidenceLevel(),
                     payload.getActiveTimeMs(),
-                    payload.getSessionId()
+                    payload.getSessionId(),
+                    payload.getOrigin()
             );
 
             return ResponseEntity.ok(new AttemptResultDTO(
@@ -139,6 +140,7 @@ public class QuestionController {
         private int confidenceLevel;
         private long activeTimeMs;
         private String sessionId;
+        private String origin;
 
         public String getSelectedOption() { return selectedOption; }
         public void setSelectedOption(String selectedOption) { this.selectedOption = selectedOption; }
@@ -148,6 +150,8 @@ public class QuestionController {
         public void setActiveTimeMs(long activeTimeMs) { this.activeTimeMs = activeTimeMs; }
         public String getSessionId() { return sessionId; }
         public void setSessionId(String sessionId) { this.sessionId = sessionId; }
+        public String getOrigin() { return origin; }
+        public void setOrigin(String origin) { this.origin = origin; }
     }
 
     @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)

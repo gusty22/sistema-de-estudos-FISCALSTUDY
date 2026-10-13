@@ -35,14 +35,18 @@ Existe um projeto independente denominado **`fiscalstudy-analytics`**, dedicado 
 ## 2. Contratos Formais de Integração
 
 ### Contrato A: Exportação de Tentativas para o `fiscalstudy-analytics` (Data Lake Analítico)
-- **Endpoint:** `GET /api/v1/analytics/export`  
+- **Endpoint Principal:** `GET /api/v1/analytics/export[?origin=REAL_STUDY|ALL]`  
+- **Endpoint do Manifesto:** `GET /api/v1/analytics/export/manifest[?origin=REAL_STUDY|ALL]`  
 - **Formato:** `text/csv; charset=UTF-8`  
 - **Cabeçalho Content-Disposition:** `attachment; filename="fiscalstudy_attempts.csv"`
 - **Garantias do Contrato:**
-  - Imutabilidade histórica garantida pelo `event_store`.
-  - Expurgo de itens anulados das colunas de acerto pedagógico (`is_correct = NA`).
+  - Imutabilidade histórica garantida pelo `event_store` append-only.
+  - Expurgo estrito de itens anulados e sem gabarito oficial do denominador de acurácia pedagógica (`is_correct = NA`).
   - Campo `gabarito_status` explicita o estado do gabarito oficial (`DEFINITIVO`, `PRELIMINAR`, `RETIFICADO`, `ANULADA`, `AUSENTE`, `SOB_REVISAO`).
   - Campo `concurso_point` reflete a pontuação oficial do edital (1 para acerto válido ou item anulado; 0 para erro ou item sem gabarito).
+  - Cadeia de custódia temporal preservada com `occurred_at` (ISO-8601 UTC) e `session_id` reais do banco SQLite, sem invenção de datas artificiais.
+  - Segregação de proveniência (`origin_type`): `REAL_STUDY` (estudo efetivo do aluno), `AUTOMATED_TEST` (testes automatizados), `DEMONSTRATION` (amostras ilustrativas) e `UNVERIFIED_HISTORICAL` (registros legados sem comprovação). Não há atribuição retroativa fictícia de autenticidade.
+  - Manifesto estruturado em JSON com integridade criptográfica SHA-256 de arquivo, contagens, critérios de inclusão/exclusão e declaração expressa de limitações de rastreabilidade (sistema local pessoal sem assinatura digital centralizada).
 
 ### Contrato B: Ingestão de Parâmetros Calibrados (Futuro)
 - Caso o `fiscalstudy-analytics` calibre parâmetros de dificuldade ($b_i$) ou discriminação ($a_i$), a comunicação com o FiscalStudy dar-se-á exclusivamente via arquivos estáticos versionados (`calibrated_parameters_v1.json`), consumidos de modo somente-leitura.
@@ -52,20 +56,28 @@ Existe um projeto independente denominado **`fiscalstudy-analytics`**, dedicado 
 - **Content-Type:** `text/csv; charset=UTF-8`  
 - **Content-Disposition:** `attachment; filename="fiscalstudy_attempts.csv"`
 
-
 ### Estrutura do Esquema de Dados:
 
 | Campo | Tipo | Descrição | Exemplo |
 |---|---|---|---|
-| `question_id` | String | Identificador canônico da questão | `"1"` ou `"ibgp-2023-auditor-q1"` |
+| `question_id` | String | Identificador canônico da questão | `"1"` ou `"ibgp-2023-tecnico-q1"` |
 | `selected_option` | String | Alternativa selecionada pelo estudante | `"A"` |
-| `is_correct` | Boolean / NA | Resultado da tentativa (NA se gabarito ausente) | `true`, `false`, `NA` |
-| `gabarito_status` | String | Status do gabarito oficial | `"DEFINITIVO"`, `"PRELIMINAR"`, `"ANULADA"`, `"AUSENTE"` |
+| `is_correct` | Boolean / NA | Resultado pedagógico da tentativa (NA se gabarito ausente ou anulada) | `true`, `false`, `NA` |
+| `gabarito_status` | String | Status do gabarito oficial | `"DEFINITIVO"`, `"PRELIMINAR"`, `"ANULADA"`, `"AUSENTE"`, `"SOB_REVISAO"` |
 | `confidence_level` | Integer (1..5) | Nível subjetivo de certeza informado pelo estudante | `5` |
-| `active_time_ms` | Long | Tempo em milissegundos com a tela em foco | `18500` |
+| `active_time_ms` | Long | Tempo ativo de tela em foco na resolução, em milissegundos | `18500` |
 | `discipline` | String | Disciplina do concurso | `"Direito Tributário"` |
 | `board` | String | Banca examinadora | `"IBGP"` |
 | `year` | Integer | Ano de realização da prova | `2023` |
+| `topic` | String / NA | Tópico/assunto específico | `"Imunidades"` ou `"NA"` |
+| `assunto` | String / NA | Espelho do tópico para consumo direto pelo adaptador R | `"Imunidades"` ou `"NA"` |
+| `orgao` | String / NA | Órgão demandante da prova | `"Prefeitura de Araguari"` ou `"NA"` |
+| `cargo` | String / NA | Cargo do concurso | `"Auditor Fiscal"` ou `"NA"` |
+| `event_id` | String | Identificador UUID único e imutável do evento de tentativa | `"e7a1b2c3-..."` |
+| `session_id` | String | Identificador da sessão de estudo | `"sess-2026-10-13-01"` |
+| `occurred_at` | String | Timestamp ISO-8601 UTC exato de ocorrência no cliente | `"2026-10-13T10:15:30Z"` |
+| `origin_type` | String | Classificação formal de proveniência | `"REAL_STUDY"`, `"AUTOMATED_TEST"`, `"DEMONSTRATION"`, `"UNVERIFIED_HISTORICAL"` |
+| `concurso_point` | Integer (0..1) | Pontuação formal de concurso conforme regras de edital | `1` ou `0` |
 
 ---
 

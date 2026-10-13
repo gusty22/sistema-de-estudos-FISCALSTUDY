@@ -8,4 +8,6 @@ public interface EventStoreRepository {
     boolean isSessionEnded(String sessionId);
     java.util.List<String> getEventPayloads(String sessionId, String eventType);
     java.util.List<String> getAllEventPayloads(String eventType);
+    java.util.List<EventRecord> getAllEvents(String eventType);
+    java.util.List<EventRecord> getAllEvents();
 }
