@@ -12,6 +12,12 @@ spring:
       mode: always
       schema-locations: classpath:schema.sql
 
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 50MB
+      max-request-size: 100MB
+
 fiscalstudy:
   event-origin: AUTOMATED_TEST
 

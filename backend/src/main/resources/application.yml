@@ -16,6 +16,12 @@ spring:
       mode: always
       schema-locations: classpath:schema.sql
 
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 50MB
+      max-request-size: 100MB
+
 fiscalstudy:
   # Origem atribuida pelo servidor a toda tentativa gravada por esta instancia.
   # O cliente nao pode promover eventos a REAL_STUDY.

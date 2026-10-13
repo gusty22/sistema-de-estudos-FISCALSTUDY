@@ -1,22 +1,26 @@
 package com.fiscalstudy.backend.infrastructure.in.web;
 
-import com.fiscalstudy.backend.infrastructure.in.web.dto.ImportPayloadDTO;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fiscalstudy.backend.application.IngestionPipelineService;
+import com.fiscalstudy.backend.infrastructure.in.web.dto.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.core.JsonProcessingException;
 
+@CrossOrigin(origins = "*")
 @RestController
 @RequestMapping("/api/v1/ingestion")
 public class IngestionController {
@@ -24,11 +28,140 @@ public class IngestionController {
     private static final Logger logger = LoggerFactory.getLogger(IngestionController.class);
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
+    private final IngestionPipelineService pipelineService;
 
-    public IngestionController(JdbcTemplate jdbcTemplate) {
+    public IngestionController(JdbcTemplate jdbcTemplate, IngestionPipelineService pipelineService) {
         this.jdbcTemplate = jdbcTemplate;
         this.objectMapper = new ObjectMapper();
+        this.pipelineService = pipelineService;
     }
+
+    // --- ENDPOINTS DO NOVO PIPELINE DE STAGING E IMPORTAÇÃO ---
+
+    @PostMapping("/sessions")
+    public ResponseEntity<StagingSessionDTO> createSession(@RequestBody(required = false) Map<String, Object> metadata) {
+        StagingSessionDTO session = pipelineService.createSession(metadata);
+        return ResponseEntity.ok(session);
+    }
+
+    @PostMapping("/sessions/{sessionId}/upload")
+    public ResponseEntity<StagingSessionDTO.StagingDocumentDTO> uploadDocument(
+            @PathVariable String sessionId,
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "role", defaultValue = "PROVA") String role) throws IOException {
+        StagingSessionDTO.StagingDocumentDTO doc = pipelineService.uploadFile(sessionId, file, role);
+        return ResponseEntity.ok(doc);
+    }
+
+    @PostMapping("/sessions/{sessionId}/process")
+    public ResponseEntity<StagingSessionDTO> startProcessing(@PathVariable String sessionId) {
+        StagingSessionDTO session = pipelineService.runProcessing(sessionId);
+        return ResponseEntity.ok(session);
+    }
+
+    @PostMapping("/sessions/{sessionId}/cancel")
+    public ResponseEntity<StagingSessionDTO> cancelProcessing(@PathVariable String sessionId) {
+        StagingSessionDTO session = pipelineService.cancelSession(sessionId);
+        return ResponseEntity.ok(session);
+    }
+
+    @PostMapping("/demo")
+    public ResponseEntity<StagingSessionDTO> runDemoSession(@RequestParam(value = "cargo", defaultValue = "532") String cargo) {
+        StagingSessionDTO session = pipelineService.createDemoSession(cargo);
+        return ResponseEntity.ok(session);
+    }
+
+    @GetMapping("/sessions/{sessionId}")
+    public ResponseEntity<StagingSessionDTO> getSession(@PathVariable String sessionId) {
+        StagingSessionDTO session = pipelineService.getSession(sessionId);
+        if (session == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(session);
+    }
+
+    @GetMapping("/sessions/{sessionId}/questions")
+    public ResponseEntity<List<StagingQuestionDTO>> getSessionQuestions(@PathVariable String sessionId) {
+        List<StagingQuestionDTO> questions = pipelineService.getSessionQuestions(sessionId);
+        return ResponseEntity.ok(questions);
+    }
+
+    @PutMapping("/sessions/{sessionId}/questions/{questionId}")
+    public ResponseEntity<StagingQuestionDTO> updateQuestion(
+            @PathVariable String sessionId,
+            @PathVariable String questionId,
+            @RequestBody QuestionUpdateRequestDTO req) {
+        try {
+            StagingQuestionDTO updated = pipelineService.updateQuestion(sessionId, questionId, req);
+            return ResponseEntity.ok(updated);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @PostMapping("/sessions/{sessionId}/questions/{questionId}/verify")
+    public ResponseEntity<StagingQuestionDTO> verifyQuestion(
+            @PathVariable String sessionId,
+            @PathVariable String questionId) {
+        try {
+            StagingQuestionDTO updated = pipelineService.markQuestionVerified(sessionId, questionId);
+            return ResponseEntity.ok(updated);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @PostMapping("/sessions/{sessionId}/questions/{questionId}/reject")
+    public ResponseEntity<StagingQuestionDTO> rejectQuestion(
+            @PathVariable String sessionId,
+            @PathVariable String questionId) {
+        try {
+            StagingQuestionDTO updated = pipelineService.markQuestionRejected(sessionId, questionId);
+            return ResponseEntity.ok(updated);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @GetMapping("/sessions/{sessionId}/evidence/{filename}")
+    public ResponseEntity<byte[]> getEvidenceImage(
+            @PathVariable String sessionId,
+            @PathVariable String filename) {
+        try {
+            byte[] imageBytes = pipelineService.getEvidenceImage(sessionId, filename);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.IMAGE_PNG);
+            return new ResponseEntity<>(imageBytes, headers, HttpStatus.OK);
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @PostMapping("/sessions/{sessionId}/simulate-import")
+    public ResponseEntity<ImportSimulationDTO> simulateImport(@PathVariable String sessionId) {
+        try {
+            ImportSimulationDTO sim = pipelineService.simulateImport(sessionId);
+            return ResponseEntity.ok(sim);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @PostMapping("/sessions/{sessionId}/import-confirmed")
+    public ResponseEntity<Map<String, Object>> importConfirmed(@PathVariable String sessionId) {
+        try {
+            int count = pipelineService.importVerifiedQuestions(sessionId);
+            return ResponseEntity.ok(Map.of(
+                    "status", "SUCCESS",
+                    "imported_count", count,
+                    "session_id", sessionId
+            ));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    // --- ENDPOINT ORIGINAL (PRESERVADO PARA RETROCOMPATIBILIDADE) ---
 
     @PostMapping("/import")
     public ResponseEntity<Void> importData(@RequestBody ImportPayloadDTO payload) {

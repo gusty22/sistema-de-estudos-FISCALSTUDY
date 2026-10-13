@@ -40,7 +40,16 @@
 @SET __MVNW_ARG0_NAME__=
 @SET MVNW_USERNAME=
 @SET MVNW_PASSWORD=
-@IF NOT "%__MVNW_CMD__%"=="" ("%__MVNW_CMD__%" %*)
+@SET __MVNW_EXTRA_OPTS__=
+@SET __MVNW_IS_SB__=
+@SET __MVNW_HAS_OS_NAME__=
+@FOR %%I IN (%*) DO @(
+  IF "%%~I"=="spring-boot:run" SET __MVNW_IS_SB__=1
+  IF "%%~I"=="spring-boot:start" SET __MVNW_IS_SB__=1
+  @echo "%%~I" | findstr /I "os.name" >nul && SET __MVNW_HAS_OS_NAME__=1
+)
+@IF "%__MVNW_IS_SB__%"=="1" IF NOT "%__MVNW_HAS_OS_NAME__%"=="1" SET __MVNW_EXTRA_OPTS__="-Dos.name=LocalEnv"
+@IF NOT "%__MVNW_CMD__%"=="" ("%__MVNW_CMD__%" %__MVNW_EXTRA_OPTS__% %*)
 @echo Cannot start maven from wrapper >&2 && exit /b 1
 @GOTO :EOF
 : end batch / begin powershell #>
