@@ -3,18 +3,11 @@ package com.fiscalstudy.backend.application;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fiscalstudy.backend.domain.EventStoreRepository;
-import com.fiscalstudy.backend.domain.EventRecord;
 import com.fiscalstudy.backend.domain.Question;
 import com.fiscalstudy.backend.domain.QuestionRepository;
 import com.fiscalstudy.backend.infrastructure.in.web.dto.AnalyticsOverviewDTO;
-import com.fiscalstudy.backend.infrastructure.in.web.dto.ExportManifestDTO;
 import org.springframework.stereotype.Service;
 
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.security.MessageDigest;
-import java.time.Instant;
 import java.util.*;
 
 @Service
@@ -157,36 +150,31 @@ public class AnalyticsProjectionService {
         );
     }
 
-    public String exportCsv() {
-        return exportCsv("ALL");
+    public String exportCsv(String originFilter) {
+        return exportCsv(originFilter, eventStoreRepository.getMaxRowid());
     }
 
-    public String exportCsv(String originFilter) {
-        List<EventRecord> events = eventStoreRepository.getAllEvents("ANSWER_SUBMITTED");
+    public String exportCsv(String originFilter, long maxRowid) {
+        List<com.fiscalstudy.backend.domain.EventRecord> events = eventStoreRepository.getEventsUpTo("ANSWER_SUBMITTED", maxRowid);
+
         StringBuilder sb = new StringBuilder();
         sb.append("question_id,selected_option,is_correct,gabarito_status,confidence_level,active_time_ms,discipline,board,year,topic,assunto,orgao,cargo,event_id,session_id,occurred_at,origin_type,concurso_point\n");
 
-        for (EventRecord event : events) {
+        for (com.fiscalstudy.backend.domain.EventRecord event : events) {
             try {
                 JsonNode node = objectMapper.readTree(event.getPayloadJson());
                 String questionId = node.path("questionId").asText();
                 String selectedOption = node.path("selectedOption").asText();
                 String gabaritoStatus = node.path("gabaritoStatus").asText("DEFINITIVO");
                 JsonNode isCorrectNode = node.path("isCorrect");
-                int concursoPoint = node.path("concursoPoint").asInt(0);
                 int confidence = node.path("confidenceLevel").asInt();
                 long activeTime = node.path("activeTimeMs").asLong();
+                int concursoPoint = node.path("concursoPoint").asInt(0);
 
-                // Identificação de proveniência conforme Etapa 2
-                JsonNode originNode = node.path("origin");
-                String origin;
-                if (originNode.isMissingNode() || originNode.isNull() || originNode.asText().isBlank()) {
-                    origin = "UNVERIFIED_HISTORICAL";
-                } else {
-                    origin = originNode.asText();
-                }
+                String origin = node.has("origin") && !node.path("origin").asText().isBlank()
+                        ? node.path("origin").asText().trim()
+                        : com.fiscalstudy.backend.domain.EventOrigin.UNVERIFIED_HISTORICAL.name();
 
-                // Filtragem de proveniência (ex: exportar apenas REAL_STUDY ou ALL)
                 if (originFilter != null && !originFilter.isBlank() && !originFilter.equalsIgnoreCase("ALL")) {
                     if (!origin.equalsIgnoreCase(originFilter.trim())) {
                         continue;
@@ -240,19 +228,25 @@ public class AnalyticsProjectionService {
         return sb.toString();
     }
 
-    public ExportManifestDTO generateExportManifest(String originFilter) {
-        String csvData = exportCsv(originFilter);
-        return generateExportManifest(originFilter, csvData);
+    public com.fiscalstudy.backend.infrastructure.in.web.dto.ExportManifestDTO generateExportManifest(String originFilter) {
+        long maxRowid = eventStoreRepository.getMaxRowid();
+        return generateExportManifest(originFilter, maxRowid);
     }
 
-    public ExportManifestDTO generateExportManifest(String originFilter, String csvData) {
-        byte[] bytes = csvData.getBytes(StandardCharsets.UTF_8);
+    public com.fiscalstudy.backend.infrastructure.in.web.dto.ExportManifestDTO generateExportManifest(String originFilter, long maxRowid) {
+        String csvData = exportCsv(originFilter, maxRowid);
+        return generateExportManifest(originFilter, maxRowid, csvData);
+    }
+
+    public com.fiscalstudy.backend.infrastructure.in.web.dto.ExportManifestDTO generateExportManifest(String originFilter, long maxRowid, String csvData) {
+        byte[] bytes = csvData.getBytes(java.nio.charset.StandardCharsets.UTF_8);
         String sha256 = calculateSha256(bytes);
 
         String[] lines = csvData.split("\r\n|\r|\n");
         int totalRecords = 0;
         int evaluableRecords = 0;
         int nonEvaluableRecords = 0;
+        Map<String, Integer> recordsByOrigin = new HashMap<>();
 
         if (lines.length > 1) {
             for (int i = 1; i < lines.length; i++) {
@@ -268,6 +262,10 @@ public class AnalyticsProjectionService {
                         evaluableRecords++;
                     }
                 }
+                if (parts.length >= 17) {
+                    String originVal = parts[16].replace("\"", "").trim();
+                    recordsByOrigin.merge(originVal, 1, Integer::sum);
+                }
             }
         }
 
@@ -275,8 +273,8 @@ public class AnalyticsProjectionService {
                 ? originFilter.trim()
                 : "MIXED_ORIGINS";
 
-        List<ExportManifestDTO.GeneratedFileDTO> files = List.of(
-                new ExportManifestDTO.GeneratedFileDTO(
+        List<com.fiscalstudy.backend.infrastructure.in.web.dto.ExportManifestDTO.GeneratedFileDTO> files = List.of(
+                new com.fiscalstudy.backend.infrastructure.in.web.dto.ExportManifestDTO.GeneratedFileDTO(
                         "fiscalstudy_attempts.csv",
                         "text/csv; charset=UTF-8",
                         totalRecords,
@@ -286,7 +284,7 @@ public class AnalyticsProjectionService {
         );
 
         List<String> inclusionCriteria = List.of(
-                "Eventos ANSWER_SUBMITTED registrados no log append-only (event_store)",
+                "Eventos ANSWER_SUBMITTED registrados no log append-only (event_store) com rowid <= " + maxRowid,
                 "Filtro de proveniência aplicado: " + declaredOrigin,
                 "Identificadores canônicos e metadados de questões correlacionados pelo catálogo"
         );
@@ -300,21 +298,26 @@ public class AnalyticsProjectionService {
         List<String> traceabilityLimitations = List.of(
                 "Registros históricos pré-existentes sem tag explícita de proveniência são catalogados como UNVERIFIED_HISTORICAL",
                 "Sistema pessoal local-first: não emprega autoridade certificadora externa ou infraestrutura de assinatura digital",
-                "O manifesto atesta integridade criptográfica SHA-256 e extração do SQLite local, não constituindo prova de autenticação de identidade pessoal do estudante"
+                "O manifesto atesta integridade criptográfica SHA-256 sobre bytes entregues e extração do SQLite local, não constituindo prova de autenticação de identidade pessoal do estudante"
         );
 
-        return new ExportManifestDTO(
+        return new com.fiscalstudy.backend.infrastructure.in.web.dto.ExportManifestDTO(
                 "1.0.0",
                 "1.0.0",
-                Instant.now().toString(),
+                java.time.Instant.now().toString(),
                 "db/fiscalstudy.db:event_store",
                 "default_user",
                 true,
+                "REAL_STUDY",
+                originFilter != null ? originFilter : "ALL",
                 declaredOrigin,
+                maxRowid,
                 totalRecords,
                 evaluableRecords,
                 nonEvaluableRecords,
+                recordsByOrigin,
                 files,
+                "SHA-256",
                 sha256,
                 inclusionCriteria,
                 exclusionCriteria,
@@ -323,56 +326,51 @@ public class AnalyticsProjectionService {
         );
     }
 
-    public ExportPackageResult exportPackageToDirectory(Path targetDir, String originFilter) throws java.io.IOException {
-        Files.createDirectories(targetDir);
-        String csv = exportCsv(originFilter);
-        ExportManifestDTO manifest = generateExportManifest(originFilter, csv);
+    public ExportPackageResult exportPackageToDirectory(java.nio.file.Path targetDir, String originFilter) throws java.io.IOException {
+        java.nio.file.Files.createDirectories(targetDir);
+        long snapshotRowid = eventStoreRepository.getMaxRowid();
+        String csv = exportCsv(originFilter, snapshotRowid);
+        com.fiscalstudy.backend.infrastructure.in.web.dto.ExportManifestDTO manifest = generateExportManifest(originFilter, snapshotRowid, csv);
 
-        Path csvPath = targetDir.resolve("fiscalstudy_attempts.csv");
-        Files.writeString(csvPath, csv, StandardCharsets.UTF_8);
+        java.nio.file.Path csvPath = targetDir.resolve("fiscalstudy_attempts.csv");
+        java.nio.file.Files.writeString(csvPath, csv, java.nio.charset.StandardCharsets.UTF_8);
 
-        Path manifestPath = targetDir.resolve("export_manifest.json");
+        java.nio.file.Path manifestPath = targetDir.resolve("export_manifest.json");
         String manifestJson = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(manifest);
-        Files.writeString(manifestPath, manifestJson, StandardCharsets.UTF_8);
+        java.nio.file.Files.writeString(manifestPath, manifestJson, java.nio.charset.StandardCharsets.UTF_8);
 
         return new ExportPackageResult(csvPath, manifestPath, manifest);
     }
 
-    private static String escapeCsv(String value) {
+    public static String escapeCsv(String value) {
         if (value == null) return "";
         return value.replace("\"", "\"\"");
     }
 
-    private String calculateSha256(byte[] data) {
+    public String calculateSha256(byte[] data) {
         try {
-            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-256");
             byte[] hash = md.digest(data);
-            StringBuilder hexString = new StringBuilder();
-            for (byte b : hash) {
-                String hex = Integer.toHexString(0xff & b);
-                if (hex.length() == 1) hexString.append('0');
-                hexString.append(hex);
-            }
-            return hexString.toString();
+            return java.util.HexFormat.of().formatHex(hash);
         } catch (Exception e) {
             throw new RuntimeException("SHA-256 digest unavailable", e);
         }
     }
 
     public static class ExportPackageResult {
-        private final Path csvPath;
-        private final Path manifestPath;
-        private final ExportManifestDTO manifest;
+        private final java.nio.file.Path csvPath;
+        private final java.nio.file.Path manifestPath;
+        private final com.fiscalstudy.backend.infrastructure.in.web.dto.ExportManifestDTO manifest;
 
-        public ExportPackageResult(Path csvPath, Path manifestPath, ExportManifestDTO manifest) {
+        public ExportPackageResult(java.nio.file.Path csvPath, java.nio.file.Path manifestPath, com.fiscalstudy.backend.infrastructure.in.web.dto.ExportManifestDTO manifest) {
             this.csvPath = csvPath;
             this.manifestPath = manifestPath;
             this.manifest = manifest;
         }
 
-        public Path getCsvPath() { return csvPath; }
-        public Path getManifestPath() { return manifestPath; }
-        public ExportManifestDTO getManifest() { return manifest; }
+        public java.nio.file.Path getCsvPath() { return csvPath; }
+        public java.nio.file.Path getManifestPath() { return manifestPath; }
+        public com.fiscalstudy.backend.infrastructure.in.web.dto.ExportManifestDTO getManifest() { return manifest; }
     }
 
     private static class DisciplineAccumulator {

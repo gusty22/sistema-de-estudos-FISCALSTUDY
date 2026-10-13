@@ -15,3 +15,9 @@ spring:
     init:
       mode: always
       schema-locations: classpath:schema.sql
+
+fiscalstudy:
+  # Origem atribuida pelo servidor a toda tentativa gravada por esta instancia.
+  # O cliente nao pode promover eventos a REAL_STUDY.
+  event-origin: REAL_STUDY
+

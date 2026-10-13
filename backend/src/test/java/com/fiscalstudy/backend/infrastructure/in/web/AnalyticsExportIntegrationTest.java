@@ -15,6 +15,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 
+import java.util.List;
+
 import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -248,6 +250,196 @@ public class AnalyticsExportIntegrationTest {
         }
         if (prodDb.exists()) {
             assertTrue(prodDb.length() > 0, "Operational database exists and must not be empty");
+        }
+    }
+
+    @Test
+    void clientCannotSpoofRealStudy_InTestEnvironmentOrTestSession() {
+        // 1. Tentar forçar REAL_STUDY em sessão normal em ambiente de teste (instanceOrigin = AUTOMATED_TEST)
+        attemptSubmissionService.submitAttempt("q1", "A", 5, 12000, "user-session-fake", "REAL_STUDY");
+
+        // 2. Tentar forçar REAL_STUDY em sessão prefixada como teste
+        attemptSubmissionService.submitAttempt("q1", "A", 5, 12000, "test-session-123", "REAL_STUDY");
+
+        // 3. Solicitar downgrade legítimo para DEMONSTRATION
+        attemptSubmissionService.submitAttempt("q1", "A", 5, 12000, "demo-session-456", "DEMONSTRATION");
+
+        List<String> payloads = jdbcTemplate.queryForList(
+                "SELECT payload_json FROM event_store WHERE event_type = 'ANSWER_SUBMITTED' ORDER BY rowid ASC",
+                String.class
+        );
+
+        assertTrue(payloads.get(0).contains("\"origin\": \"AUTOMATED_TEST\""),
+                "Cliente não pode elevar arbitrariamente para REAL_STUDY; prevalece a instância AUTOMATED_TEST");
+        assertTrue(payloads.get(1).contains("\"origin\": \"AUTOMATED_TEST\""),
+                "Sessão com prefixo test- é estritamente classificada como AUTOMATED_TEST");
+        assertTrue(payloads.get(2).contains("\"origin\": \"DEMONSTRATION\""),
+                "Downgrade para DEMONSTRATION é honrado pelo servidor");
+    }
+
+    @Test
+    void export_InconsistentAttemptRecordedBetweenCsvAndManifest_DetectedAndRejectedByR() throws Exception {
+        // Tentativa 1
+        attemptSubmissionService.submitAttempt("q1", "A", 5, 10000, "sess-inc-1", "AUTOMATED_TEST");
+
+        // Passo A: Consumidor obtém o CSV da exportação (contém 1 evento)
+        org.springframework.test.web.servlet.MvcResult csvResult = mockMvc.perform(get("/api/v1/analytics/export?origin=ALL"))
+                .andExpect(status().isOk())
+                .andReturn();
+        String csvContent = csvResult.getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+        byte[] csvBytes = csvContent.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        String csvSha256 = analyticsProjectionService.calculateSha256(csvBytes);
+
+        // Passo B: Uma nova tentativa é registrada NO BANCO entre a obtenção do CSV e do manifesto
+        attemptSubmissionService.submitAttempt("q2", "B", 4, 15000, "sess-inc-2", "AUTOMATED_TEST");
+
+        // Passo C: Consumidor obtém o manifesto sem snapshot (gerado sobre o banco atualizado com 2 eventos)
+        org.springframework.test.web.servlet.MvcResult manifestResult = mockMvc.perform(get("/api/v1/analytics/export/manifest?origin=ALL"))
+                .andExpect(status().isOk())
+                .andReturn();
+        String manifestJson = manifestResult.getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+        com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        com.fasterxml.jackson.databind.JsonNode manifestNode = mapper.readTree(manifestJson);
+
+        int manifestTotalRecords = manifestNode.path("total_records").asInt();
+        String manifestChecksum = manifestNode.path("checksum").asText();
+
+        // Verificação 1: O backend expressa a divergência nos metadados
+        assertEquals(2, manifestTotalRecords, "Manifesto reflete 2 eventos gravados");
+        assertNotEquals(csvSha256, manifestChecksum, "Checksum do manifesto DEVE divergir do hash do CSV obtido anteriormente");
+
+        // Verificação 2: Validação via laboratório R comprovando que o R NÃO aceita silenciosamente arquivos inconsistentes
+        Path tempDir = Files.createTempDirectory("fiscalstudy_inconsistent_test");
+        try {
+            Path csvPath = tempDir.resolve("fiscalstudy_attempts.csv");
+            Path manifestPath = tempDir.resolve("export_manifest.json");
+            Files.writeString(csvPath, csvContent, java.nio.charset.StandardCharsets.UTF_8);
+            Files.writeString(manifestPath, manifestJson, java.nio.charset.StandardCharsets.UTF_8);
+
+            String rScript = "source('C:/Users/washi/Downloads/fiscalstudy-analytics/R/provenance.R'); " +
+                    "df <- utils::read.csv('" + csvPath.toString().replace("\\", "/") + "', stringsAsFactors=FALSE); " +
+                    "manifest <- jsonlite::fromJSON('" + manifestPath.toString().replace("\\", "/") + "', simplifyVector=FALSE); " +
+                    "res <- verify_data_provenance(df, declared_provenance='PROVEN_OPERATIONAL', file_path='" + csvPath.toString().replace("\\", "/") + "', manifest=manifest); " +
+                    "cat(res$audit_verdict);";
+
+            Process process = new ProcessBuilder(
+                    "C:\\Program Files\\R\\R-4.5.1\\bin\\x64\\Rscript.exe",
+                    "-e",
+                    rScript
+            ).start();
+
+            String output = new String(process.getInputStream().readAllBytes(), java.nio.charset.StandardCharsets.UTF_8).trim();
+            process.waitFor();
+
+            assertEquals("REJEITADO_INCONSISTENCIA_MANIFESTO", output,
+                    "O laboratório R deve rejeitar explicitamente com REJEITADO_INCONSISTENCIA_MANIFESTO");
+        } finally {
+            File[] files = tempDir.toFile().listFiles();
+            if (files != null) for (File f : files) f.delete();
+            tempDir.toFile().delete();
+        }
+    }
+
+    @Test
+    void export_CoordinatedSnapshot_GuaranteesByteIdenticalConsistency() throws Exception {
+        attemptSubmissionService.submitAttempt("q1", "A", 5, 10000, "sess-snap-1", "AUTOMATED_TEST");
+
+        // Obter CSV e snapshot rowid
+        org.springframework.test.web.servlet.MvcResult csvResult = mockMvc.perform(get("/api/v1/analytics/export?origin=ALL"))
+                .andExpect(status().isOk())
+                .andReturn();
+        String csvContent = csvResult.getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+        byte[] csvBytes = csvContent.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        String csvSha256 = analyticsProjectionService.calculateSha256(csvBytes);
+
+        long snapshotRowid = jdbcTemplate.queryForObject("SELECT MAX(rowid) FROM event_store", Long.class);
+
+        // Registrar novo evento no banco
+        attemptSubmissionService.submitAttempt("q2", "B", 4, 15000, "sess-snap-2", "AUTOMATED_TEST");
+
+        // Obter manifesto especificando o snapshot anterior
+        org.springframework.test.web.servlet.MvcResult manifestResult = mockMvc.perform(
+                get("/api/v1/analytics/export/manifest?origin=ALL&snapshotRowid=" + snapshotRowid))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String manifestJson = manifestResult.getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+        com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        com.fasterxml.jackson.databind.JsonNode manifestNode = mapper.readTree(manifestJson);
+
+        assertEquals(1, manifestNode.path("total_records").asInt(), "Snapshot preserva exatamente 1 registro");
+        assertEquals(csvSha256, manifestNode.path("checksum").asText(), "Checksum do snapshot coincide byte a byte com o CSV entregue");
+    }
+
+    @Test
+    void integratedLifecycle_StudySessionToRValidation_SegregatedAsTest() throws Exception {
+        String sessionId = "test-session-lifecycle-99";
+
+        // 1. Iniciar sessão de estudo
+        jdbcTemplate.update("INSERT INTO event_store (event_id, event_type, aggregate_type, aggregate_id, session_id, occurred_at, recorded_at, event_version, schema_version, payload_json) " +
+                "VALUES ('evt-sess-start', 'STUDY_SESSION_STARTED', 'SESSION', ?, ?, '2026-10-13T10:00:00Z', '2026-10-13T10:00:00Z', 1, 'v1', '{\"sessionId\":\"" + sessionId + "\"}')",
+                sessionId, sessionId);
+
+        // 2. Apresentar uma questão válida (q1)
+        jdbcTemplate.update("INSERT INTO event_store (event_id, event_type, aggregate_type, aggregate_id, session_id, occurred_at, recorded_at, event_version, schema_version, payload_json) " +
+                "VALUES ('evt-pres-1', 'QUESTION_PRESENTED', 'QUESTION', 'q1', ?, '2026-10-13T10:00:05Z', '2026-10-13T10:00:05Z', 1, 'v1', '{\"questionId\":\"q1\",\"sessionId\":\"" + sessionId + "\"}')",
+                sessionId);
+
+        // 3. Registrar uma tentativa via serviço oficial
+        com.fiscalstudy.backend.domain.AttemptResult result = attemptSubmissionService.submitAttempt(
+                "q1", "A", 5, 14000, sessionId, "AUTOMATED_TEST"
+        );
+        assertNotNull(result);
+        assertTrue(result.getIsCorrect());
+
+        // 4. Encerrar a sessão
+        jdbcTemplate.update("INSERT INTO event_store (event_id, event_type, aggregate_type, aggregate_id, session_id, occurred_at, recorded_at, event_version, schema_version, payload_json) " +
+                "VALUES ('evt-sess-end', 'STUDY_SESSION_ENDED', 'SESSION', ?, ?, '2026-10-13T10:05:00Z', '2026-10-13T10:05:00Z', 1, 'v1', '{\"sessionId\":\"" + sessionId + "\"}')",
+                sessionId, sessionId);
+
+        // 5. Exportar os eventos e 6. Gerar o manifesto correspondente via pacote atômico
+        Path exportDir = Files.createTempDirectory("fiscalstudy_lifecycle_export");
+        try {
+            AnalyticsProjectionService.ExportPackageResult pkg =
+                    analyticsProjectionService.exportPackageToDirectory(exportDir, "ALL");
+
+            assertTrue(Files.exists(pkg.getCsvPath()));
+            assertTrue(Files.exists(pkg.getManifestPath()));
+
+            // 7. Validar os arquivos no laboratório R
+            String rScript = "source('C:/Users/washi/Downloads/fiscalstudy-analytics/R/provenance.R'); " +
+                    "source('C:/Users/washi/Downloads/fiscalstudy-analytics/R/adapter.R'); " +
+                    "df <- utils::read.csv('" + pkg.getCsvPath().toString().replace("\\", "/") + "', stringsAsFactors=FALSE); " +
+                    "manifest <- jsonlite::fromJSON('" + pkg.getManifestPath().toString().replace("\\", "/") + "', simplifyVector=FALSE); " +
+                    "val_res <- validate_operational_export(df); " +
+                    "prov_res <- verify_data_provenance(df, declared_provenance='SYNTHETIC_FIXTURE', file_path='" + pkg.getCsvPath().toString().replace("\\", "/") + "', manifest=manifest); " +
+                    "cat(sprintf('%s|%s|%s|%s', val_res$is_valid, prov_res$provenance_type, prov_res$is_real_student_data, prov_res$can_generate_student_profile));";
+
+            Process process = new ProcessBuilder(
+                    "C:\\Program Files\\R\\R-4.5.1\\bin\\x64\\Rscript.exe",
+                    "-e",
+                    rScript
+            ).start();
+
+            String rOutput = new String(process.getInputStream().readAllBytes(), java.nio.charset.StandardCharsets.UTF_8).trim();
+            process.waitFor();
+
+            // Formato esperado: TRUE|SYNTHETIC_FIXTURE|FALSE|FALSE
+            String[] parts = rOutput.split("\\|");
+            assertEquals(4, parts.length, "Saída do laboratório R deve conter 4 partes");
+            assertEquals("TRUE", parts[0], "Arquivo deve ser estruturalmente válido pelo contrato");
+            assertEquals("SYNTHETIC_FIXTURE", parts[1], "R deve classificar estritamente como SYNTHETIC_FIXTURE");
+            assertEquals("FALSE", parts[2], "R NÃO deve aceitar como dado real de estudante");
+            assertEquals("FALSE", parts[3], "R NÃO deve autorizar geração de perfil pessoal de aprendizagem");
+
+            // 8. Confirmar que o resultado não mistura dados de testes com histórico real
+            String csvText = Files.readString(pkg.getCsvPath(), java.nio.charset.StandardCharsets.UTF_8);
+            assertTrue(csvText.contains("\"AUTOMATED_TEST\""), "Evento de teste deve carregar origin_type = AUTOMATED_TEST");
+            assertFalse(csvText.contains("\"REAL_STUDY\""), "Nenhum evento sintético deste teste deve conter tag REAL_STUDY");
+        } finally {
+            File[] files = exportDir.toFile().listFiles();
+            if (files != null) for (File f : files) f.delete();
+            exportDir.toFile().delete();
         }
     }
 }

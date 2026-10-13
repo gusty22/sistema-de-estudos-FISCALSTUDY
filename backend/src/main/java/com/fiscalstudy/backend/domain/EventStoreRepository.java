@@ -8,6 +8,10 @@ public interface EventStoreRepository {
     boolean isSessionEnded(String sessionId);
     java.util.List<String> getEventPayloads(String sessionId, String eventType);
     java.util.List<String> getAllEventPayloads(String eventType);
+    /** Maior rowid atual do event_store (0 se vazio). Como o log é append-only, delimita um snapshot. */
+    long getMaxRowid();
+    /** Eventos do tipo informado com rowid <= maxRowid, em ordem determinística (occurred_at, rowid). */
+    java.util.List<EventRecord> getEventsUpTo(String eventType, long maxRowid);
     java.util.List<EventRecord> getAllEvents(String eventType);
     java.util.List<EventRecord> getAllEvents();
 }

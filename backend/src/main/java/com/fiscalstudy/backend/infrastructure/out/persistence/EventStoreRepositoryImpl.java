@@ -70,9 +70,15 @@ public class EventStoreRepositoryImpl implements EventStoreRepository {
     }
 
     @Override
-    public java.util.List<com.fiscalstudy.backend.domain.EventRecord> getAllEvents(String eventType) {
+    public long getMaxRowid() {
+        Long max = jdbcTemplate.queryForObject("SELECT COALESCE(MAX(rowid), 0) FROM event_store", Long.class);
+        return max != null ? max : 0L;
+    }
+
+    @Override
+    public java.util.List<com.fiscalstudy.backend.domain.EventRecord> getEventsUpTo(String eventType, long maxRowid) {
         String sql = "SELECT event_id, event_type, aggregate_type, aggregate_id, session_id, occurred_at, recorded_at, event_version, schema_version, payload_json " +
-                     "FROM event_store WHERE event_type = ? ORDER BY occurred_at ASC";
+                     "FROM event_store WHERE event_type = ? AND rowid <= ? ORDER BY occurred_at ASC, rowid ASC";
         return jdbcTemplate.query(sql, (rs, rowNum) -> new com.fiscalstudy.backend.domain.EventRecord(
                 rs.getString("event_id"),
                 rs.getString("event_type"),
@@ -84,13 +90,18 @@ public class EventStoreRepositoryImpl implements EventStoreRepository {
                 rs.getInt("event_version"),
                 rs.getString("schema_version"),
                 rs.getString("payload_json")
-        ), eventType);
+        ), eventType, maxRowid);
+    }
+
+    @Override
+    public java.util.List<com.fiscalstudy.backend.domain.EventRecord> getAllEvents(String eventType) {
+        return getEventsUpTo(eventType, Long.MAX_VALUE);
     }
 
     @Override
     public java.util.List<com.fiscalstudy.backend.domain.EventRecord> getAllEvents() {
         String sql = "SELECT event_id, event_type, aggregate_type, aggregate_id, session_id, occurred_at, recorded_at, event_version, schema_version, payload_json " +
-                     "FROM event_store ORDER BY occurred_at ASC";
+                     "FROM event_store ORDER BY occurred_at ASC, rowid ASC";
         return jdbcTemplate.query(sql, (rs, rowNum) -> new com.fiscalstudy.backend.domain.EventRecord(
                 rs.getString("event_id"),
                 rs.getString("event_type"),

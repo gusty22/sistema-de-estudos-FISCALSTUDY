@@ -1,8 +1,8 @@
 # FiscalStudy — Estado e Registro de Desenvolvimento
 
-> **Data de Atualização:** 2026-10-12  
+> **Data de Atualização:** 2026-10-13  
 > **Branch Atual:** `main`  
-> **Fase Vigente:** Fase 1 — Auditoria de Integridade e Hardening da V1  
+> **Fase Vigente:** Fase 1 — Auditoria de Integridade e Preparação para Sessão Piloto Real  
 
 ---
 
@@ -22,13 +22,15 @@
 | **Integração Analítica Desacoplada com R (Fase 5)** | Sim | Sim | Sim | COMPROVADO EM R 4.5.1 | `/api/v1/analytics/export` gera CSV analítico consumido por `analytics/descriptive_analysis.R` executado via Rscript Base 4.5.1, filtrando itens sem gabarito. Documentado em `docs/ANALYTICS_R_INTEGRATION.md`. |
 | **Experimento de OCR e Golden Set Principal (Fase 2)** | Sim | Sim | Sim | AUDITADO E EXECUTADO | Experimento com Windows Native OCR (`Windows.Media.Ocr.OcrEngine` pt-BR). Extrator `auditor_fiscal_extractor.py` aprimorado com detecção dinâmica de colunas (full-width vs 2 colunas), gerando as 40 questões do Golden Set com 4 anulações oficiais mapeadas em `tests/golden-set/auditor_fiscal_503_fixture.json`. |
 | **Isolamento de Banco nos Testes de Integração** | Sim | Sim | Sim | COMPROVADO POR TESTE | `backend/src/test/resources/application.yml` isola suite em `target/test-fiscalstudy.db`. Banco local `db/fiscalstudy.db` 100% protegido (hash SHA256 inalterado). |
-| **Frontend TypeScript Build & Lint com Seletor** | Sim | Sim | Sim | COMPROVADO POR BUILD | `npm run build` (`tsc -b && vite build`) compilado com sucesso em 183ms. `oxlint` executado com 0 avisos e 0 erros. |
+| **Frontend TypeScript Build & Lint com Seletor** | Sim | Sim | Sim | COMPROVADO POR BUILD | `npm run build` (`tsc -b && vite build`) compilado com sucesso em 257ms. `oxlint` executado com 0 avisos e 0 erros. |
 | **Teste com Navegador Playwright** | Sim | Falha de driver | Não | BLOQUEADO AMBIENTALMENTE | Driver indisponível via download corporativo. Roteiro de validação manual documentado. |
 | **Migração Experimental Isolada de IDs (Etapa 1)** | Sim | Sim | Sim | COMPROVADO EM TESTE ISOLADO | Executada exclusivamente em `target/experimental_migration_fiscalstudy.db`. 0 eventos órfãos, 0 duplicatas, reversão/rollback 100% comprovada. Banco operacional intocado. |
 | **Validação Documental Auditor Fiscal 503 (Etapa 2)** | Sim | Sim | Sim | AUDITADO E BLOQUEADO | Confronto da fixture com PDF original e gabarito definitivo revelou 31 problemas (10 questões com alternativas incompletas, spillovers em Q1 e Q34). Importação operacional barrada por integridade. |
 | **Separação Pontuação vs. Aprendizagem (Etapa 3)** | Sim | Sim | Sim | COMPROVADO POR TESTE | Questões anuladas excluídas rigorosamente da acurácia pedagógica, domínio e calibração de erro. Pontuação de concurso calculada separadamente (`concursoScore`). Coberto por 37 testes. |
 | **Fronteiras e Contratos do R Analytics (Etapa 4)** | Sim | Sim | Sim | FORMALIZADO E DESACOPLADO | Delimitadas responsabilidades do `fiscalstudy-analytics` externo vs. regras operacionais do FiscalStudy principal. Sobreposições documentadas; contratos A e B formalizados. |
 | **Exportação Operacional e Manifesto Verificável (Etapas 1-7)** | Sim | Sim | Sim | COMPROVADO POR TESTE E R | `AnalyticsProjectionService.java` e `AnalyticsController.java` (`/api/v1/analytics/export` e `/manifest`). Contrato enriquecido com 18 colunas, rastreamento de proveniência (`REAL_STUDY`, `DEMONSTRATION`, `AUTOMATED_TEST`, `UNVERIFIED_HISTORICAL`), manifesto criptográfico SHA-256 e teste de contrato homologado no R 4.5.1 (`run_analytics.R` e `evaluate_operational.R`). Coberto por 47 testes Java e suíte R. |
+| **Consolidação da Integração Java → R (Prioridades 1 a 5)** | Sim | Sim | Sim | COMPROVADO POR TESTE E R | Proteção local-first contra falsificação de `origin=REAL_STUDY` pelo cliente (apenas downgrade permitido; instância e sessões determinam a classe); consistência estrita CSV vs. Manifesto baseada em snapshot `snapshot_max_rowid` e hash SHA-256 calculado sobre os bytes entregues; rejeição obrigatória pelo laboratório R em caso de inconsistência (`REJEITADO_INCONSISTENCIA_MANIFESTO`); fluxo de sessão de estudo integrado validado de ponta a ponta sem misturar dados sintéticos com histórico real. Coberto por 51 testes Java (14 de integração de exportação) e 313 testes R (100% pass). |
+| **Preparação e Auditoria para Sessão Piloto Real** | Sim | Sim | Sim | COMPROVADO POR TESTES E R | Banco operacional `db/fiscalstudy.db` preservado com 38 questões válidas prontas para o usuário (0 dados falsos gerados); segregação operacional garantida; auditoria estrita no laboratório R com 4 condições de rejeição cobertas e aprovadas (manifesto sem hash, hash divergente, arquivo modificado, verificação impossível); script operacional de exportação e avaliação `scripts/export_pilot_session.ps1` disponibilizado. |
 
 ---
 
@@ -56,21 +58,26 @@
 ## 3. Testes Executados e Resultados Fatuais
 
 ### Backend (`.\mvnw test`):
-- **Total de Testes:** **37 testes executados** (0 falhas, 0 erros).
+- **Total de Testes:** **51 testes executados** (0 falhas, 0 erros).
 - **Banco Utilizado:** `jdbc:sqlite:target/test-fiscalstudy.db` (isolado).
 - **Cobertura Auditada:**
   - `FiscalStudyApplicationTests`: 1 teste de contextLoads.
   - `IngestionControllerTest`: 2 testes de contrato de ingestão.
   - `QuestionControllerTest`: 25 testes (incluindo teste específico de questão anulada retornando `isCorrect = null`, `concursoPoint = 1` e `gabaritoStatus = ANULADA`).
-  - `SessionControllerTest`: 5 testes (incluindo regressão comprovando que sessões com questões anuladas separam acurácia pedagógica de 50.0% e pontuação de concurso de 2 pontos).
-  - `AnalyticsControllerTest`: 4 testes (incluindo regressão comprovando expurgo de itens anulados de `evaluatedCount`, domínio por disciplina e calibração de overconfidence).
+  - `SessionControllerTest`: 5 testes (incluindo regressão de sessões).
+  - `AnalyticsControllerTest`: 4 testes (expurgo de anuladas de `evaluatedCount`, domínio por disciplina e calibração).
+  - `AnalyticsExportIntegrationTest`: 14 testes cobrindo proveniência, impossibilidade de spoofing de `REAL_STUDY`, rejeição de arquivos divergentes pelo laboratório R, snapshots coordenados e ciclo integrado de ponta a ponta.
 
 ### Camada Analítica com R (`Rscript.exe`):
-- Script `analytics/descriptive_analysis.R` executado via R 4.5.1 Base com sucesso em `analytics/sample_data.csv`.
-- Validações: Exclusão estrita de itens anulados e ausentes da acurácia pedagógica (68.42%), com relatório separado de Pontuação de Concurso (13 pontos).
+- Suíte completa do laboratório `fiscalstudy-analytics` executada com sucesso: **313 testes aprovados** (0 falhas, 100% PASS), incluindo validações estritas das 4 condições de integridade criptográfica:
+  1. Manifesto sem hash (`REJEITADO_MANIFESTO_SEM_HASH`).
+  2. Hashes divergentes (`REJEITADO_INCONSISTENCIA_MANIFESTO` / `CHECKSUM_MISMATCH`).
+  3. Arquivos modificados (`REJEITADO_INCONSISTENCIA_MANIFESTO` / `RECORD_COUNT_MISMATCH` / `CHECKSUM_MISMATCH`).
+  4. Impossibilidade de verificação criptográfica (`REJEITADO_ARQUIVO_INACESSIVEL_PARA_HASH` / `REJEITADO_FALHA_VERIFICACAO_CRIPTOGRAFICA`).
+- Scripts locais `analytics/descriptive_analysis.R` e `analytics/verify_provenance_test.R` executados via R 4.5.1 Base com sucesso.
 
 ### Frontend (`npm run build` & `npm run lint`):
-- `npm run build`: `tsc -b && vite build` — 18 módulos transformados, 0 erros (183ms).
+- `npm run build`: `tsc -b && vite build` — 18 módulos transformados, 0 erros (466ms).
 - `npm run lint`: `oxlint` — 0 avisos, 0 erros em 4 arquivos com 116 regras.
 
 ### Banco de Dados Local (`db/fiscalstudy.db`):
@@ -112,4 +119,6 @@ A transição das etapas experimentais para o ambiente operacional só deverá s
 | 2026-10-12 / `main` / `969c6d6` | **Fase 1, 2, 3, 4, 5 (Hardening Fino):** GabaritoStatus enum (6 estados), eliminação de falsos acertos/erros para ausente/revisão, pontuação correta de anuladas, ordenação alfabética estrita de opções (A..E), resiliência de sessão a F5 no frontend, detecção dinâmica de colunas no extrator de Auditor Fiscal | `GabaritoStatus.java`, `AttemptResult.java`, `Question.java`, `QuestionRepositoryImpl.java`, `AttemptSubmissionService.java`, `QuestionController.java`, `SessionController.java`, `AnalyticsProjectionService.java`, `AnalyticsOverviewDTO.java`, `schema.sql`, `QuestionControllerTest.java`, `SessionControllerTest.java`, `QuestionViewer.tsx`, `auditor_fiscal_extractor.py`, `auditor_fiscal_503_fixture.json`, `descriptive_analysis.R`, `DEVELOPMENT_STATUS.md` | `.\mvnw test` (35 pass, 0 fail); `npm run build` (183ms, 0 erros); `oxlint` (0 erros); Rscript Base (sucesso); SHA256 do DB operacional intocado | Suíte de 35 testes verde; estabilização robusta de ponta a ponta | Decisão do usuário sobre migração canônica e ingestão no DB operacional |
 | 2026-10-12 / `main` / Atual | **Etapas 1 a 5 (Auditoria, Separação Pedagógica e Contratos R):** Validação de convenção com suporte a órgão/caderno/turno; migração experimental em cópia isolada com rollback comprovado; auditoria documental completa da prova 503 com revelação de 31 inconsistências estruturais e veto de importação; separação estrita de pontuação de concurso e acurácia pedagógica; contratos e fronteiras do R analytics | `AttemptResult.java`, `AttemptSubmissionService.java`, `SessionController.java`, `SessionSummaryDTO.java`, `AnalyticsProjectionService.java`, `QuestionController.java`, `descriptive_analysis.R`, `QuestionControllerTest.java`, `SessionControllerTest.java`, `AnalyticsControllerTest.java`, `QUESTION_IDENTITY_MIGRATION_PROPOSAL.md`, `ANALYTICS_R_INTEGRATION.md`, `DEVELOPMENT_STATUS.md` | `.\mvnw test` (37 pass, 0 fail); `npm run build` (183ms, 0 erros); `oxlint` (0 erros); `Rscript descriptive_analysis.R` (sucesso); SHA256 do SQLite operacional intacto (`E61199F5...`) | Todas as 5 etapas concluídas; banco operacional 100% protegido; critérios objetivos estabelecidos | Aguardar autorização formal do usuário para etapas operacionais |
 | 2026-10-13 / `main` / Atual | **Exportação Operacional Verificável para o `fiscalstudy-analytics` (Etapas 1 a 7):** Ampliação do endpoint existente de exportação (`GET /api/v1/analytics/export`) com suporte a filtro de proveniência (`origin=REAL_STUDY|ALL`); novo endpoint de manifesto (`GET /api/v1/analytics/export/manifest`) com hash SHA-256 de integridade de arquivos, contagens e limitações declaradas; categorização formal de proveniência (`EventOrigin`: `REAL_STUDY`, `AUTOMATED_TEST`, `DEMONSTRATION`, `UNVERIFIED_HISTORICAL`); preservação de cadeia temporal e sessões autênticas sem invenção de datas; validação end-to-end pelo laboratório R (`run_analytics.R`, `evaluate_operational.R` e `provenance.R`) | `EventOrigin.java`, `EventRecord.java`, `ExportManifestDTO.java`, `AnalyticsProjectionService.java`, `AnalyticsController.java`, `QuestionController.java`, `AttemptSubmissionService.java`, `Question.java`, `QuestionRepositoryImpl.java`, `EventStoreRepository.java`, `EventStoreRepositoryImpl.java`, `QuestionViewer.tsx`, `AnalyticsExportIntegrationTest.java`, `ANALYTICS_R_INTEGRATION.md`, `DEVELOPMENT_STATUS.md` | `.\mvnw test` (47 pass, 0 fail); `npm run build` (sucesso, 234ms); `oxlint` (0 erros); R Base `run_analytics.R` e `evaluate_operational.R` executados com sucesso em R 4.5.1; SHA256 do SQLite operacional intacto (`E61199F5...`) | Concluído com proveniência estrita e salvaguardas epistêmicas ativas | Próximas tarefas seguras e aprovadas |
+| 2026-10-13 / `main` / Atual | **Consolidação da Integração Java → R (Prioridades 1 a 5):** Proteção contra declaração arbitrária de `origin=REAL_STUDY` pelo cliente (apenas downgrade é respeitado; instância e prefixo da sessão fixam a origem); consistência estrita baseada em snapshots (`snapshot_max_rowid`) e checksum SHA-256 calculado sobre os bytes entregues (`ETag`); laboratório R atualizado para rejeitar compulsoriamente exportações inconsistentes (`REJEITADO_INCONSISTENCIA_MANIFESTO`); fluxo de sessão de estudo integrado validado de ponta a ponta sem misturar dados de teste com histórico real | `AttemptSubmissionService.java`, `AnalyticsProjectionService.java`, `AnalyticsController.java`, `ExportManifestDTO.java`, `EventStoreRepository.java`, `EventStoreRepositoryImpl.java`, `QuestionViewer.tsx`, `AnalyticsExportIntegrationTest.java`, `provenance.R`, `evaluate_operational.R`, `DEVELOPMENT_STATUS.md` | `.\mvnw test` (51 pass, 0 fail); `npm run build` (sucesso, 466ms); `oxlint` (0 erros); Suíte R (304 pass, 0 fail, 100%); SHA256 do SQLite operacional intacto (`E61199F5...`) | Integração 100% consolidada, reproduzível, auditada e compatível | Concluído conforme critérios de aceitação |
+
 

@@ -26,17 +26,29 @@ public class AnalyticsController {
     }
 
     @GetMapping(value = "/export", produces = "text/csv")
-    public ResponseEntity<String> exportCsv(@RequestParam(required = false, defaultValue = "ALL") String origin) {
-        String csvData = analyticsProjectionService.exportCsv(origin);
+    public ResponseEntity<String> exportCsv(
+            @RequestParam(required = false, defaultValue = "ALL") String origin,
+            @RequestParam(required = false) Long snapshotRowid) {
+        String csvData = snapshotRowid != null
+                ? analyticsProjectionService.exportCsv(origin, snapshotRowid)
+                : analyticsProjectionService.exportCsv(origin);
+        byte[] bytes = csvData.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        String sha256 = analyticsProjectionService.calculateSha256(bytes);
+
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"fiscalstudy_attempts.csv\"")
+                .header(HttpHeaders.ETAG, "\"" + sha256 + "\"")
                 .contentType(MediaType.parseMediaType("text/csv; charset=UTF-8"))
                 .body(csvData);
     }
 
     @GetMapping(value = "/export/manifest", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<ExportManifestDTO> exportManifest(@RequestParam(required = false, defaultValue = "ALL") String origin) {
-        ExportManifestDTO manifest = analyticsProjectionService.generateExportManifest(origin);
+    public ResponseEntity<ExportManifestDTO> exportManifest(
+            @RequestParam(required = false, defaultValue = "ALL") String origin,
+            @RequestParam(required = false) Long snapshotRowid) {
+        ExportManifestDTO manifest = snapshotRowid != null
+                ? analyticsProjectionService.generateExportManifest(origin, snapshotRowid)
+                : analyticsProjectionService.generateExportManifest(origin);
         return ResponseEntity.ok(manifest);
     }
 }

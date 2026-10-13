@@ -3,6 +3,8 @@ package com.fiscalstudy.backend.application;
 import com.fiscalstudy.backend.domain.EventStoreRepository;
 import com.fiscalstudy.backend.domain.Question;
 import com.fiscalstudy.backend.domain.QuestionRepository;
+import com.fiscalstudy.backend.domain.EventOrigin;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import java.util.Optional;
 
@@ -11,10 +13,44 @@ public class AttemptSubmissionService {
 
     private final QuestionRepository questionRepository;
     private final EventStoreRepository eventStoreRepository;
+    private final EventOrigin instanceOrigin;
 
-    public AttemptSubmissionService(QuestionRepository questionRepository, EventStoreRepository eventStoreRepository) {
+    /**
+     * A origem de cada evento é definida pela instância do backend (fiscalstudy.event-origin),
+     * não pelo cliente. Sem configuração explícita, o evento não é declarado como estudo real.
+     */
+    public AttemptSubmissionService(QuestionRepository questionRepository,
+                                    EventStoreRepository eventStoreRepository,
+                                    @Value("${fiscalstudy.event-origin:UNVERIFIED_HISTORICAL}") String configuredOrigin) {
         this.questionRepository = questionRepository;
         this.eventStoreRepository = eventStoreRepository;
+        this.instanceOrigin = EventOrigin.fromString(configuredOrigin);
+    }
+
+    public EventOrigin getInstanceOrigin() {
+        return instanceOrigin;
+    }
+
+    /**
+     * Resolução de proveniência com salvaguarda local-first:
+     * 1. Sessões com prefixo de teste/mock/e2e são estritamente forçadas a AUTOMATED_TEST.
+     * 2. Sessões com prefixo demo/sample são forçadas a DEMONSTRATION.
+     * 3. O cliente só pode solicitar downgrade (DEMONSTRATION ou AUTOMATED_TEST).
+     * 4. Uma declaração arbitrária de REAL_STUDY vinda do cliente é ignorada, prevalecendo a configuração da instância.
+     */
+    public EventOrigin resolveOrigin(String clientHint, String sessionId) {
+        String lowerSession = (sessionId != null) ? sessionId.toLowerCase().trim() : "";
+        if (lowerSession.startsWith("test-") || lowerSession.startsWith("mock-") || lowerSession.startsWith("e2e-")) {
+            return EventOrigin.AUTOMATED_TEST;
+        }
+        if (lowerSession.startsWith("demo-") || lowerSession.startsWith("sample-")) {
+            return EventOrigin.DEMONSTRATION;
+        }
+        EventOrigin hint = (clientHint == null || clientHint.isBlank()) ? null : EventOrigin.fromString(clientHint);
+        if (hint == EventOrigin.DEMONSTRATION || hint == EventOrigin.AUTOMATED_TEST) {
+            return hint;
+        }
+        return instanceOrigin;
     }
 
     public com.fiscalstudy.backend.domain.AttemptResult submitAttempt(String questionId, String selectedOption, int confidenceLevel, long activeTimeMs, String sessionId) {
@@ -90,19 +126,7 @@ public class AttemptSubmissionService {
             concursoPoint = matched ? 1 : 0;
         }
 
-        String determinedOrigin;
-        if (origin != null && !origin.isBlank()) {
-            determinedOrigin = com.fiscalstudy.backend.domain.EventOrigin.fromString(origin).name();
-        } else {
-            String lowerSession = sessionId.toLowerCase();
-            if (lowerSession.startsWith("test-") || lowerSession.startsWith("mock-")) {
-                determinedOrigin = com.fiscalstudy.backend.domain.EventOrigin.AUTOMATED_TEST.name();
-            } else if (lowerSession.startsWith("demo-") || lowerSession.startsWith("sample-")) {
-                determinedOrigin = com.fiscalstudy.backend.domain.EventOrigin.DEMONSTRATION.name();
-            } else {
-                determinedOrigin = com.fiscalstudy.backend.domain.EventOrigin.REAL_STUDY.name();
-            }
-        }
+        String determinedOrigin = resolveOrigin(origin, sessionId).name();
 
         String isCorrectStr = (isCorrect == null) ? "null" : String.valueOf(isCorrect);
         String payload = String.format(
