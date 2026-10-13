@@ -33,20 +33,38 @@ public class QuestionRepositoryImpl implements QuestionRepository {
 
     @Override
     public Optional<Question> findNextAvailableQuestion() {
-        return findNextAvailableQuestion(null, null);
+        return findNextAvailableQuestion(null, null, null, null, false);
     }
 
     @Override
     public Optional<Question> findNextAvailableQuestion(String sessionId, String disciplina) {
+        return findNextAvailableQuestion(sessionId, null, disciplina, null, false);
+    }
+
+    @Override
+    public Optional<Question> findNextAvailableQuestion(String sessionId, String concursoId, String disciplina, String assunto, Boolean includeAnswered) {
         StringBuilder sql = new StringBuilder("SELECT * FROM questions WHERE 1=1 ");
         List<Object> params = new java.util.ArrayList<>();
+
+        if (concursoId != null && !concursoId.isBlank()) {
+            sql.append("AND (cargo LIKE ? OR orgao LIKE ? OR disciplina LIKE ?) ");
+            String pat = "%" + concursoId.trim() + "%";
+            params.add(pat);
+            params.add(pat);
+            params.add(pat);
+        }
 
         if (disciplina != null && !disciplina.isBlank()) {
             sql.append("AND disciplina = ? ");
             params.add(disciplina.trim());
         }
 
-        if (sessionId != null && !sessionId.isBlank()) {
+        if (assunto != null && !assunto.isBlank()) {
+            sql.append("AND assunto = ? ");
+            params.add(assunto.trim());
+        }
+
+        if ((includeAnswered == null || !includeAnswered) && sessionId != null && !sessionId.isBlank()) {
             sql.append("AND id NOT IN (SELECT aggregate_id FROM event_store WHERE session_id = ? AND event_type = 'ANSWER_SUBMITTED') ");
             params.add(sessionId.trim());
         }
@@ -196,6 +214,16 @@ public class QuestionRepositoryImpl implements QuestionRepository {
     @Override
     public List<String> findAllDisciplines() {
         String sql = "SELECT DISTINCT disciplina FROM questions WHERE disciplina IS NOT NULL AND TRIM(disciplina) != '' ORDER BY disciplina";
+        return jdbcTemplate.queryForList(sql, String.class);
+    }
+
+    @Override
+    public List<String> findAllAssuntos(String disciplina) {
+        if (disciplina != null && !disciplina.isBlank()) {
+            String sql = "SELECT DISTINCT assunto FROM questions WHERE disciplina = ? AND assunto IS NOT NULL AND TRIM(assunto) != '' ORDER BY assunto";
+            return jdbcTemplate.queryForList(sql, String.class, disciplina.trim());
+        }
+        String sql = "SELECT DISTINCT assunto FROM questions WHERE assunto IS NOT NULL AND TRIM(assunto) != '' ORDER BY assunto";
         return jdbcTemplate.queryForList(sql, String.class);
     }
 }

@@ -75,6 +75,7 @@ public class SessionController {
         int anuladasCount = 0;
         long totalTimeMs = 0;
         int overconfidenceCount = 0;
+        Map<String, Integer> errorDistribution = new java.util.HashMap<>();
 
         for (String payload : payloads) {
             try {
@@ -85,6 +86,11 @@ public class SessionController {
                 long activeTimeMs = node.path("activeTimeMs").asLong();
 
                 totalTimeMs += activeTimeMs;
+
+                String causaErro = node.path("causaErro").asText(null);
+                if (causaErro != null && !causaErro.isBlank() && !"null".equalsIgnoreCase(causaErro)) {
+                    errorDistribution.put(causaErro, errorDistribution.getOrDefault(causaErro, 0) + 1);
+                }
 
                 // Questões anuladas: pontuam pelas regras do concurso, mas são EXCLUÍDAS da acurácia pedagógica
                 if ("ANULADA".equalsIgnoreCase(gabaritoStatus)) {
@@ -122,7 +128,8 @@ public class SessionController {
             averageTimeMs,
             overconfidenceCount,
             concursoScore,
-            anuladasCount
+            anuladasCount,
+            errorDistribution
         );
 
         return ResponseEntity.ok(dto);

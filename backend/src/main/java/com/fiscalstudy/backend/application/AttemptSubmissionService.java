@@ -54,10 +54,14 @@ public class AttemptSubmissionService {
     }
 
     public com.fiscalstudy.backend.domain.AttemptResult submitAttempt(String questionId, String selectedOption, int confidenceLevel, long activeTimeMs, String sessionId) {
-        return submitAttempt(questionId, selectedOption, confidenceLevel, activeTimeMs, sessionId, null);
+        return submitAttempt(questionId, selectedOption, confidenceLevel, activeTimeMs, sessionId, null, null);
     }
 
     public com.fiscalstudy.backend.domain.AttemptResult submitAttempt(String questionId, String selectedOption, int confidenceLevel, long activeTimeMs, String sessionId, String origin) {
+        return submitAttempt(questionId, selectedOption, confidenceLevel, activeTimeMs, sessionId, origin, null);
+    }
+
+    public com.fiscalstudy.backend.domain.AttemptResult submitAttempt(String questionId, String selectedOption, int confidenceLevel, long activeTimeMs, String sessionId, String origin, String causaErro) {
         if (sessionId == null || sessionId.isBlank()) {
             throw new IllegalArgumentException("Session ID is required");
         }
@@ -128,10 +132,12 @@ public class AttemptSubmissionService {
 
         String determinedOrigin = resolveOrigin(origin, sessionId).name();
 
+        String causaErroStr = (causaErro != null && !causaErro.isBlank()) ? causaErro.trim() : null;
         String isCorrectStr = (isCorrect == null) ? "null" : String.valueOf(isCorrect);
         String payload = String.format(
-            "{\"questionId\": \"%s\", \"selectedOption\": \"%s\", \"isCorrect\": %s, \"concursoPoint\": %d, \"gabaritoStatus\": \"%s\", \"confidenceLevel\": %d, \"activeTimeMs\": %d, \"origin\": \"%s\"}",
-            questionId, optionLetter, isCorrectStr, concursoPoint, status.name(), confidenceLevel, activeTimeMs, determinedOrigin
+            "{\"questionId\": \"%s\", \"selectedOption\": \"%s\", \"isCorrect\": %s, \"concursoPoint\": %d, \"gabaritoStatus\": \"%s\", \"confidenceLevel\": %d, \"activeTimeMs\": %d, \"origin\": \"%s\", \"causaErro\": %s}",
+            questionId, optionLetter, isCorrectStr, concursoPoint, status.name(), confidenceLevel, activeTimeMs, determinedOrigin,
+            causaErroStr != null ? "\"" + causaErroStr.replace("\"", "\\\"") + "\"" : "null"
         );
 
         eventStoreRepository.appendEvent(

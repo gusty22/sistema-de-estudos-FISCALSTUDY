@@ -8,14 +8,19 @@ public class SessionSummaryDTO {
     private int overconfidenceCount;
     private int concursoScore;
     private int anuladasCount;
+    private java.util.Map<String, Integer> errorDistribution = new java.util.HashMap<>();
 
     public SessionSummaryDTO() {}
 
     public SessionSummaryDTO(int totalAnswered, int correctCount, double accuracy, double averageTimeMs, int overconfidenceCount) {
-        this(totalAnswered, correctCount, accuracy, averageTimeMs, overconfidenceCount, correctCount, 0);
+        this(totalAnswered, correctCount, accuracy, averageTimeMs, overconfidenceCount, correctCount, 0, new java.util.HashMap<>());
     }
 
     public SessionSummaryDTO(int totalAnswered, int correctCount, double accuracy, double averageTimeMs, int overconfidenceCount, int concursoScore, int anuladasCount) {
+        this(totalAnswered, correctCount, accuracy, averageTimeMs, overconfidenceCount, concursoScore, anuladasCount, new java.util.HashMap<>());
+    }
+
+    public SessionSummaryDTO(int totalAnswered, int correctCount, double accuracy, double averageTimeMs, int overconfidenceCount, int concursoScore, int anuladasCount, java.util.Map<String, Integer> errorDistribution) {
         this.totalAnswered = totalAnswered;
         this.correctCount = correctCount;
         this.accuracy = accuracy;
@@ -23,6 +28,7 @@ public class SessionSummaryDTO {
         this.overconfidenceCount = overconfidenceCount;
         this.concursoScore = concursoScore;
         this.anuladasCount = anuladasCount;
+        this.errorDistribution = errorDistribution != null ? errorDistribution : new java.util.HashMap<>();
     }
 
     public int getTotalAnswered() { return totalAnswered; }
@@ -45,5 +51,8 @@ public class SessionSummaryDTO {
 
     public int getAnuladasCount() { return anuladasCount; }
     public void setAnuladasCount(int anuladasCount) { this.anuladasCount = anuladasCount; }
+
+    public java.util.Map<String, Integer> getErrorDistribution() { return errorDistribution; }
+    public void setErrorDistribution(java.util.Map<String, Integer> errorDistribution) { this.errorDistribution = errorDistribution; }
 }
 

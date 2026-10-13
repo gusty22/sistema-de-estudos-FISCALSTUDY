@@ -26,8 +26,12 @@ public class QuestionController {
     @GetMapping("/next")
     public ResponseEntity<QuestionDTO> getNextQuestion(
             @RequestParam(required = false) String sessionId,
-            @RequestParam(required = false) String disciplina) {
-        Optional<Question> questionOpt = questionSelectionService.getNextQuestion(sessionId, disciplina);
+            @RequestParam(required = false) String concursoId,
+            @RequestParam(required = false) String disciplina,
+            @RequestParam(required = false) String assunto,
+            @RequestParam(required = false) Boolean includeAnswered,
+            @RequestParam(required = false) String studyMode) {
+        Optional<Question> questionOpt = questionSelectionService.getNextQuestion(sessionId, concursoId, disciplina, assunto, includeAnswered);
         
         if (questionOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
@@ -52,6 +56,12 @@ public class QuestionController {
     public ResponseEntity<List<String>> getDisciplines() {
         List<String> disciplines = questionSelectionService.getAvailableDisciplines();
         return ResponseEntity.ok(disciplines);
+    }
+
+    @GetMapping("/assuntos")
+    public ResponseEntity<List<String>> getAssuntos(@RequestParam(required = false) String disciplina) {
+        List<String> assuntos = questionSelectionService.getAvailableAssuntos(disciplina);
+        return ResponseEntity.ok(assuntos);
     }
 
     @PostMapping("/{id}/presented")
@@ -89,7 +99,8 @@ public class QuestionController {
                     payload.getConfidenceLevel(),
                     payload.getActiveTimeMs(),
                     payload.getSessionId(),
-                    payload.getOrigin()
+                    payload.getOrigin(),
+                    payload.getCausaErro()
             );
 
             return ResponseEntity.ok(new AttemptResultDTO(
@@ -141,6 +152,7 @@ public class QuestionController {
         private long activeTimeMs;
         private String sessionId;
         private String origin;
+        private String causaErro;
 
         public String getSelectedOption() { return selectedOption; }
         public void setSelectedOption(String selectedOption) { this.selectedOption = selectedOption; }
@@ -152,6 +164,8 @@ public class QuestionController {
         public void setSessionId(String sessionId) { this.sessionId = sessionId; }
         public String getOrigin() { return origin; }
         public void setOrigin(String origin) { this.origin = origin; }
+        public String getCausaErro() { return causaErro; }
+        public void setCausaErro(String causaErro) { this.causaErro = causaErro; }
     }
 
     @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)

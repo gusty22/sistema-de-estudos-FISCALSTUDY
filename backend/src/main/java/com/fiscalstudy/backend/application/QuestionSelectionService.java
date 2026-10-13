@@ -26,8 +26,16 @@ public class QuestionSelectionService {
         return questionRepository.findNextAvailableQuestion(sessionId, disciplina);
     }
 
+    public Optional<Question> getNextQuestion(String sessionId, String concursoId, String disciplina, String assunto, Boolean includeAnswered) {
+        return questionRepository.findNextAvailableQuestion(sessionId, concursoId, disciplina, assunto, includeAnswered);
+    }
+
     public java.util.List<String> getAvailableDisciplines() {
         return questionRepository.findAllDisciplines();
+    }
+
+    public java.util.List<String> getAvailableAssuntos(String disciplina) {
+        return questionRepository.findAllAssuntos(disciplina);
     }
 
     public void recordPresentation(String questionId, String sessionId) {
