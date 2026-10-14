@@ -1,0 +1,135 @@
+.pontos-chave-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.pontos-chave-hero {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(30, 41, 59, 0.7));
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-radius: 14px;
+  padding: 1.75rem;
+}
+
+.pontos-chave-hero h2 {
+  color: #fcd34d;
+  margin: 0 0 0.5rem;
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pontos-chave-hero p {
+  color: #cbd5e1;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.criterios-filter-bar {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.criterio-pill-btn {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #cbd5e1;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.criterio-pill-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.criterio-pill-btn.active {
+  background: rgba(245, 158, 11, 0.2);
+  border-color: #f59e0b;
+  color: #fde68a;
+  font-weight: 600;
+}
+
+.cloze-study-card {
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  min-height: 220px;
+  justify-content: center;
+}
+
+.cloze-text-display {
+  font-size: 1.25rem;
+  line-height: 1.8;
+  color: #f8fafc;
+  text-align: center;
+}
+
+.cloze-hidden-badge {
+  background: #f59e0b;
+  color: #0f172a;
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.4);
+}
+
+.cloze-revealed-badge {
+  background: #10b981;
+  color: #0f172a;
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 6px;
+  animation: pulse 0.3s ease;
+}
+
+.cloze-review-actions {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.btn-review-again {
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid #ef4444;
+  color: #fca5a5;
+  padding: 8px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn-review-good {
+  background: rgba(59, 130, 246, 0.2);
+  border: 1px solid #3b82f6;
+  color: #93c5fd;
+  padding: 8px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn-review-easy {
+  background: rgba(16, 185, 129, 0.2);
+  border: 1px solid #10b981;
+  color: #6ee7b7;
+  padding: 8px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}

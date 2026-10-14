@@ -1,0 +1,310 @@
+.history-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 1.5rem;
+}
+
+.history-modal-card {
+  max-width: 1050px;
+  width: 100%;
+  max-height: 90vh;
+  background: #11141c;
+  border: 1px solid #1f2738;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+}
+
+.history-modal-header {
+  padding: 1.5rem 1.75rem;
+  border-bottom: 1px solid #1f2738;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #131722;
+}
+
+.history-modal-title h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #f1f5f9;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.history-modal-subtitle {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+  color: #94a3b8;
+}
+
+.history-modal-tabs {
+  display: flex;
+  background: #0d1017;
+  border-bottom: 1px solid #1f2738;
+  padding: 0 1.5rem;
+  gap: 0.5rem;
+}
+
+.history-tab-btn {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 12px 18px;
+  color: #94a3b8;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.history-tab-btn:hover {
+  color: #f1f5f9;
+}
+
+.history-tab-btn.active {
+  color: #3b82f6;
+  border-bottom-color: #3b82f6;
+}
+
+.history-modal-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* KPI Summary Bar */
+.history-kpi-bar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem;
+}
+
+.history-kpi-item {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid #1f2738;
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.history-kpi-label {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.history-kpi-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-top: 0.2rem;
+  color: #f1f5f9;
+}
+
+/* Filter controls */
+.history-filters-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid #1f2738;
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+  align-items: center;
+}
+
+.history-filter-select {
+  background: #181d2a;
+  border: 1px solid #28334a;
+  color: #f1f5f9;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 0.82rem;
+  outline: none;
+}
+
+.history-filter-select:focus {
+  border-color: #3b82f6;
+}
+
+/* Question item list */
+.history-item-card {
+  background: #151a26;
+  border: 1px solid #212a3d;
+  border-radius: 12px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  transition: border-color 0.2s ease;
+}
+
+.history-item-card:hover {
+  border-color: #3b82f6;
+}
+
+.history-item-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.history-tags {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.htag {
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.htag-disc { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
+.htag-topic { background: rgba(139, 92, 246, 0.15); color: #c084fc; border: 1px solid rgba(139, 92, 246, 0.3); }
+.htag-board { background: rgba(255, 255, 255, 0.08); color: #cbd5e1; border: 1px solid rgba(255, 255, 255, 0.15); }
+
+.badge-result {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.result-correct { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); }
+.result-incorrect { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); }
+.result-anulada { background: rgba(234, 179, 8, 0.2); color: #facc15; border: 1px solid rgba(234, 179, 8, 0.4); }
+
+.history-statement {
+  font-size: 0.95rem;
+  color: #e2e8f0;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.history-options-box {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.25rem;
+}
+
+.history-option-row {
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.history-option-row.opt-selected {
+  background: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.history-option-row.opt-correct {
+  background: rgba(16, 185, 129, 0.15);
+  color: #6ee7b7;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.history-item-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.78rem;
+  color: #64748b;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding-top: 0.6rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* X-Ray Analytics Styles */
+.xray-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+
+@media (max-width: 768px) {
+  .xray-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.xray-card {
+  background: #151a26;
+  border: 1px solid #212a3d;
+  border-radius: 12px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.xray-card h4 {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #f1f5f9;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.xray-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.xray-table th {
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 1px solid #28334a;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.xray-table td {
+  padding: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  color: #e2e8f0;
+}
+
+.status-badge {
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.status-dominado { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+.status-evolucao { background: rgba(234, 179, 8, 0.2); color: #facc15; }
+.status-atencao { background: rgba(239, 68, 68, 0.2); color: #f87171; }
