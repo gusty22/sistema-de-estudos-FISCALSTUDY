@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import CadastroConcursoWizard from './CadastroConcursoWizard';
 import './MeusConcursos.css';
 
 export interface ConcursoItem {
@@ -12,12 +13,22 @@ export interface ConcursoItem {
   status: string; // ACTIVE, ARCHIVED
   descricao?: string;
   availableQuestionsCount?: number;
+  situacao?: string;
+  localidade?: string;
+  escolaridade?: string;
+  vagas?: number | null;
+  salario?: number | null;
+  linkEdital?: string;
+  dataProva?: string;
+  dataProvaTipo?: string;
+  datasImportantesJson?: string;
+  disponibilidadeJson?: string;
 }
 
 interface MeusConcursosProps {
   activeConcursoId: string | null;
   onSelectConcurso: (concurso: ConcursoItem) => void;
-  onNavigateToTab: (tab: 'study' | 'edital' | 'import') => void;
+  onNavigateToTab: (tab: any) => void;
 }
 
 export default function MeusConcursos({ activeConcursoId, onSelectConcurso, onNavigateToTab }: MeusConcursosProps) {
@@ -26,18 +37,9 @@ export default function MeusConcursos({ activeConcursoId, onSelectConcurso, onNa
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Modal de cadastro/edição
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
-    nome: '',
-    orgao: '',
-    banca: '',
-    ano: new Date().getFullYear().toString(),
-    cargo: '',
-    cargoCodigo: '',
-    descricao: '',
-  });
+  // Wizard state
+  const [isWizardOpen, setIsWizardOpen] = useState(false);
+  const [editingConcurso, setEditingConcurso] = useState<ConcursoItem | null>(null);
 
   const loadConcursos = async () => {
     setIsLoading(true);
@@ -65,77 +67,18 @@ export default function MeusConcursos({ activeConcursoId, onSelectConcurso, onNa
   }, [filterStatus]);
 
   const handleOpenCreate = () => {
-    setEditingId(null);
-    setFormData({
-      nome: '',
-      orgao: '',
-      banca: 'IBGP',
-      ano: '2024',
-      cargo: '',
-      cargoCodigo: '',
-      descricao: '',
-    });
-    setIsModalOpen(true);
+    setEditingConcurso(null);
+    setIsWizardOpen(true);
   };
 
   const handleOpenEdit = (c: ConcursoItem) => {
-    setEditingId(c.id);
-    setFormData({
-      nome: c.nome,
-      orgao: c.orgao,
-      banca: c.banca || '',
-      ano: c.ano ? c.ano.toString() : '',
-      cargo: c.cargo || '',
-      cargoCodigo: c.cargoCodigo || '',
-      descricao: c.descricao || '',
-    });
-    setIsModalOpen(true);
+    setEditingConcurso(c);
+    setIsWizardOpen(true);
   };
 
-  const handleSaveForm = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.nome.trim() || !formData.orgao.trim()) {
-      alert('Nome e Órgão são obrigatórios.');
-      return;
-    }
-
-    try {
-      const payload = {
-        nome: formData.nome.trim(),
-        orgao: formData.orgao.trim(),
-        banca: formData.banca.trim(),
-        ano: formData.ano ? parseInt(formData.ano, 10) : null,
-        cargo: formData.cargo.trim(),
-        cargoCodigo: formData.cargoCodigo.trim(),
-        descricao: formData.descricao.trim(),
-      };
-
-      let res: Response;
-      if (editingId) {
-        res = await fetch(`/api/v1/concursos/${editingId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-      } else {
-        res = await fetch('/api/v1/concursos', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-      }
-
-      if (!res.ok) throw new Error('Falha ao salvar dados do concurso.');
-      const saved: ConcursoItem = await res.json();
-      setIsModalOpen(false);
-      loadConcursos();
-
-      if (!editingId || editingId === activeConcursoId) {
-        onSelectConcurso(saved);
-      }
-    } catch (err: any) {
-      alert('Erro: ' + err.message);
-    }
+  const handleConcursoSaved = (saved: ConcursoItem) => {
+    loadConcursos();
+    onSelectConcurso(saved);
   };
 
   const handleToggleArchive = async (c: ConcursoItem) => {
@@ -148,6 +91,14 @@ export default function MeusConcursos({ activeConcursoId, onSelectConcurso, onNa
     } catch (e: any) {
       alert('Erro ao alterar status: ' + e.message);
     }
+  };
+
+  const getDaysRemaining = (dataProva?: string): number | null => {
+    if (!dataProva) return null;
+    const examDate = new Date(dataProva);
+    const today = new Date();
+    const diffTime = examDate.getTime() - today.getTime();
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   };
 
   return (
@@ -181,7 +132,7 @@ export default function MeusConcursos({ activeConcursoId, onSelectConcurso, onNa
           </div>
 
           <button className="btn" onClick={handleOpenCreate} style={{ padding: '8px 18px', fontSize: '0.9rem' }}>
-            + Novo Concurso
+            + Novo Concurso (5 Etapas)
           </button>
         </div>
       </div>
@@ -211,6 +162,8 @@ export default function MeusConcursos({ activeConcursoId, onSelectConcurso, onNa
       <div className="concursos-grid">
         {concursos.map((c) => {
           const isActive = c.id === activeConcursoId;
+          const daysLeft = getDaysRemaining(c.dataProva);
+
           return (
             <div key={c.id} className={`concurso-card ${isActive ? 'is-active-card' : ''}`}>
               {isActive && <div className="active-ribbon">ATIVO</div>}
@@ -218,7 +171,7 @@ export default function MeusConcursos({ activeConcursoId, onSelectConcurso, onNa
               <div>
                 <div className="concurso-card-header">
                   <span className={`concurso-status-pill status-${c.status.toLowerCase()}`}>
-                    {c.status === 'ACTIVE' ? 'Em Preparação' : 'Arquivado'}
+                    {c.status === 'ACTIVE' ? (c.situacao || 'Em Preparação') : 'Arquivado'}
                   </span>
                   <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Ano {c.ano || '—'}</span>
                 </div>
@@ -227,6 +180,24 @@ export default function MeusConcursos({ activeConcursoId, onSelectConcurso, onNa
                 <p style={{ fontSize: '0.85rem', color: '#94a3b8', margin: '0 0 1rem' }}>
                   {c.descricao || 'Sem descrição cadastrada.'}
                 </p>
+
+                {/* Days countdown banner if date is set */}
+                {daysLeft !== null && (
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    background: daysLeft > 0 ? 'rgba(59, 130, 246, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                    border: `1px solid ${daysLeft > 0 ? 'rgba(59, 130, 246, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
+                    borderRadius: '6px',
+                    padding: '6px 10px',
+                    marginBottom: '0.85rem',
+                    fontSize: '0.8rem',
+                    color: daysLeft > 0 ? '#60a5fa' : '#f87171'
+                  }}>
+                    <span>⏱️ Prova em: <strong>{daysLeft > 0 ? `${daysLeft} dias` : 'Data transcorrida'}</strong> ({new Date(c.dataProva!).toLocaleDateString('pt-BR')})</span>
+                  </div>
+                )}
 
                 <div className="concurso-meta-grid">
                   <div className="meta-chip">
@@ -244,7 +215,7 @@ export default function MeusConcursos({ activeConcursoId, onSelectConcurso, onNa
                   <div className="meta-chip">
                     <span className="meta-chip-label">Questões no Banco</span>
                     <span className="meta-chip-value" style={{ color: '#60a5fa' }}>
-                      {c.availableQuestionsCount !== undefined ? `${c.availableQuestionsCount} questões` : '—'}
+                      {c.availableQuestionsCount !== undefined ? `${c.availableQuestionsCount} questões` : '0 questões'}
                     </span>
                   </div>
                 </div>
@@ -287,7 +258,7 @@ export default function MeusConcursos({ activeConcursoId, onSelectConcurso, onNa
                     style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '0.8rem' }}
                     onClick={() => handleOpenEdit(c)}
                   >
-                    ✏️ Editar
+                    ✏️ Editar Detalhes
                   </button>
                   <button
                     style={{ background: 'transparent', border: 'none', color: c.status === 'ARCHIVED' ? '#34d399' : '#f59e0b', cursor: 'pointer', fontSize: '0.8rem', marginLeft: 'auto' }}
@@ -302,125 +273,13 @@ export default function MeusConcursos({ activeConcursoId, onSelectConcurso, onNa
         })}
       </div>
 
-      {/* Modal de Cadastro / Edição */}
-      {isModalOpen && (
-        <div className="modal-backdrop animate-fade-in" onClick={() => setIsModalOpen(false)}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <h3 style={{ color: '#f8fafc', fontSize: '1.25rem', marginTop: 0, marginBottom: '1.25rem' }}>
-              {editingId ? 'Editar Concurso' : 'Cadastrar Novo Concurso'}
-            </h3>
-
-            <form onSubmit={handleSaveForm}>
-              <div className="form-group" style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', color: '#cbd5e1', fontSize: '0.85rem', marginBottom: '0.35rem' }}>
-                  Nome Identificador *
-                </label>
-                <input
-                  className="form-control"
-                  style={{ width: '100%' }}
-                  placeholder="Ex: ISS Araguari 2023 — Auditor Fiscal"
-                  value={formData.nome}
-                  onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                  required
-                />
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-                <div className="form-group">
-                  <label style={{ display: 'block', color: '#cbd5e1', fontSize: '0.85rem', marginBottom: '0.35rem' }}>
-                    Órgão *
-                  </label>
-                  <input
-                    className="form-control"
-                    style={{ width: '100%' }}
-                    placeholder="Ex: Prefeitura de Araguari"
-                    value={formData.orgao}
-                    onChange={(e) => setFormData({ ...formData, orgao: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label style={{ display: 'block', color: '#cbd5e1', fontSize: '0.85rem', marginBottom: '0.35rem' }}>
-                    Banca
-                  </label>
-                  <input
-                    className="form-control"
-                    style={{ width: '100%' }}
-                    placeholder="Ex: IBGP, FGV, FCC"
-                    value={formData.banca}
-                    onChange={(e) => setFormData({ ...formData, banca: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-                <div className="form-group">
-                  <label style={{ display: 'block', color: '#cbd5e1', fontSize: '0.85rem', marginBottom: '0.35rem' }}>
-                    Ano
-                  </label>
-                  <input
-                    className="form-control"
-                    style={{ width: '100%' }}
-                    type="number"
-                    value={formData.ano}
-                    onChange={(e) => setFormData({ ...formData, ano: e.target.value })}
-                  />
-                </div>
-                <div className="form-group">
-                  <label style={{ display: 'block', color: '#cbd5e1', fontSize: '0.85rem', marginBottom: '0.35rem' }}>
-                    Cargo
-                  </label>
-                  <input
-                    className="form-control"
-                    style={{ width: '100%' }}
-                    placeholder="Ex: Auditor Fiscal"
-                    value={formData.cargo}
-                    onChange={(e) => setFormData({ ...formData, cargo: e.target.value })}
-                  />
-                </div>
-                <div className="form-group">
-                  <label style={{ display: 'block', color: '#cbd5e1', fontSize: '0.85rem', marginBottom: '0.35rem' }}>
-                    Código
-                  </label>
-                  <input
-                    className="form-control"
-                    style={{ width: '100%' }}
-                    placeholder="Ex: 503"
-                    value={formData.cargoCodigo}
-                    onChange={(e) => setFormData({ ...formData, cargoCodigo: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-                <label style={{ display: 'block', color: '#cbd5e1', fontSize: '0.85rem', marginBottom: '0.35rem' }}>
-                  Descrição e Notas
-                </label>
-                <textarea
-                  className="form-control"
-                  style={{ width: '100%', minHeight: '70px' }}
-                  placeholder="Informações sobre data da prova, plano de preparação ou requisitos."
-                  value={formData.descricao}
-                  onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
-                />
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => setIsModalOpen(false)}
-                >
-                  Cancelar
-                </button>
-                <button type="submit" className="btn">
-                  Salvar Concurso
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* 5-Step Progressive Wizard */}
+      <CadastroConcursoWizard
+        isOpen={isWizardOpen}
+        onClose={() => setIsWizardOpen(false)}
+        onConcursoCreated={handleConcursoSaved}
+        initialData={editingConcurso}
+      />
     </div>
   );
 }

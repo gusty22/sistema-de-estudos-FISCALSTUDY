@@ -1,19 +1,29 @@
 import { useState, useEffect } from 'react';
-import QuestionViewer from './components/QuestionViewer';
-import ImportStudio from './components/ingestion/ImportStudio';
+import Sidebar, { type NavTab } from './components/navigation/Sidebar';
+import Dashboard from './components/dashboard/Dashboard';
+import CronogramaSemanal from './components/cronograma/CronogramaSemanal';
+import CadernosSimulados, { type SimuladoConfig } from './components/simulados/CadernosSimulados';
+import CicloRevisoes from './components/revisoes/CicloRevisoes';
+import AnalyticsView from './components/analytics/AnalyticsView';
 import MeusConcursos, { type ConcursoItem } from './components/concursos/MeusConcursos';
 import EditalVerticalizado from './components/edital/EditalVerticalizado';
+import QuestionViewer from './components/QuestionViewer';
+import ImportStudio from './components/ingestion/ImportStudio';
+import CadastroConcursoWizard from './components/concursos/CadastroConcursoWizard';
 
 function App() {
-  const [activeTab, setActiveTab] = useState<'concursos' | 'study' | 'edital' | 'import'>('concursos');
+  const [activeTab, setActiveTab] = useState<NavTab>('dashboard');
   const [activeConcurso, setActiveConcurso] = useState<ConcursoItem | null>(null);
+  const [concursosList, setConcursosList] = useState<ConcursoItem[]>([]);
+  const [isWizardOpen, setIsWizardOpen] = useState(false);
 
-  // Carrega concurso ativo salvo no storage
-  useEffect(() => {
+  // Carrega concursos e concurso ativo salvo no storage
+  const loadConcursos = () => {
     const savedId = localStorage.getItem('fiscalstudy_active_concurso_id');
     fetch('/api/v1/concursos')
       .then((res) => (res.ok ? res.json() : []))
       .then((list: ConcursoItem[]) => {
+        setConcursosList(list);
         if (list.length > 0) {
           const matched = savedId ? list.find((c) => c.id === savedId) : list[0];
           const chosen = matched || list[0];
@@ -21,7 +31,11 @@ function App() {
           localStorage.setItem('fiscalstudy_active_concurso_id', chosen.id);
         }
       })
-      .catch((err) => console.error('Erro ao carregar concurso ativo:', err));
+      .catch((err) => console.error('Erro ao carregar concursos:', err));
+  };
+
+  useEffect(() => {
+    loadConcursos();
   }, []);
 
   const handleSelectConcurso = (concurso: ConcursoItem) => {
@@ -29,64 +43,82 @@ function App() {
     localStorage.setItem('fiscalstudy_active_concurso_id', concurso.id);
   };
 
-  return (
-    <div className="App">
-      <header style={{ padding: '1.25rem 1rem 0.5rem', textAlign: 'center' }}>
-        <h1 style={{ fontSize: '2.2rem', fontWeight: 800, letterSpacing: '-0.025em', background: 'linear-gradient(to right, #60a5fa, #3b82f6)', WebkitBackgroundClip: 'text', color: 'transparent', margin: 0 }}>
-          FiscalStudy
-        </h1>
-        <p style={{ color: '#94a3b8', marginTop: '0.2rem', fontSize: '0.9rem' }}>
-          Sistema Pessoal de Preparação Adaptativa para Carreiras Fiscais
-        </p>
+  const handleNavigateToStudy = (disciplina?: string) => {
+    if (disciplina) {
+      sessionStorage.setItem('fiscalstudy_filter_discipline', disciplina);
+    }
+    setActiveTab('study');
+  };
 
-        {/* Active Concurso Banner Chip */}
-        {activeConcurso && (
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(59, 130, 246, 0.12)', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: '9999px', padding: '4px 14px', marginTop: '0.6rem' }}>
-            <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Concurso Ativo:</span>
-            <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#60a5fa' }}>{activeConcurso.nome}</span>
-            <button
-              onClick={() => setActiveTab('concursos')}
-              style={{ background: 'transparent', border: 'none', color: '#cbd5e1', fontSize: '0.75rem', cursor: 'pointer', padding: '0 4px', textDecoration: 'underline' }}
-            >
-              (Trocar)
-            </button>
-          </div>
+  const handleStartSimulado = (config: SimuladoConfig) => {
+    sessionStorage.setItem('fiscalstudy_simulado_config', JSON.stringify(config));
+    setActiveTab('study');
+  };
+
+  const handleStartErrorNotebook = (errorType?: string) => {
+    if (errorType) {
+      sessionStorage.setItem('fiscalstudy_filter_error_type', errorType);
+    }
+    setActiveTab('study');
+  };
+
+  return (
+    <div className="app-container">
+      {/* Global Vertical Sidebar inspired by Track Concursos */}
+      <Sidebar
+        activeTab={activeTab}
+        onSelectTab={(tab) => setActiveTab(tab)}
+        activeConcurso={activeConcurso}
+        concursosList={concursosList}
+        onSelectConcurso={handleSelectConcurso}
+        onOpenNewConcurso={() => setIsWizardOpen(true)}
+      />
+
+      {/* Main Content View Area */}
+      <main className="main-content-area">
+        {activeTab === 'dashboard' && (
+          <Dashboard
+            activeConcurso={activeConcurso}
+            onNavigateToTab={(tab, params) => {
+              if (tab === 'study' && params?.disciplina) {
+                handleNavigateToStudy(params.disciplina);
+              } else {
+                setActiveTab(tab);
+              }
+            }}
+          />
         )}
 
-        {/* Navigation Tabs */}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '0.6rem', marginTop: '1.25rem', flexWrap: 'wrap' }}>
-          <button
-            className={`btn ${activeTab === 'concursos' ? '' : 'btn-secondary'}`}
-            style={{ padding: '8px 18px', fontSize: '0.88rem' }}
-            onClick={() => setActiveTab('concursos')}
-          >
-            🏛️ Meus Concursos
-          </button>
-          <button
-            className={`btn ${activeTab === 'study' ? '' : 'btn-secondary'}`}
-            style={{ padding: '8px 18px', fontSize: '0.88rem' }}
-            onClick={() => setActiveTab('study')}
-          >
-            📚 Sessão de Estudo
-          </button>
-          <button
-            className={`btn ${activeTab === 'edital' ? '' : 'btn-secondary'}`}
-            style={{ padding: '8px 18px', fontSize: '0.88rem' }}
-            onClick={() => setActiveTab('edital')}
-          >
-            📋 Edital Verticalizado
-          </button>
-          <button
-            className={`btn ${activeTab === 'import' ? '' : 'btn-secondary'}`}
-            style={{ padding: '8px 18px', fontSize: '0.88rem' }}
-            onClick={() => setActiveTab('import')}
-          >
-            📥 Importar Provas & Revisão
-          </button>
-        </div>
-      </header>
+        {activeTab === 'cronograma' && (
+          <CronogramaSemanal
+            activeConcurso={activeConcurso}
+            onNavigateToStudy={handleNavigateToStudy}
+          />
+        )}
 
-      <main style={{ paddingBottom: '3rem' }}>
+        {activeTab === 'edital' && (
+          <EditalVerticalizado
+            concursoId={activeConcurso?.id || 'iss-araguari-auditor-2023'}
+            concursoNome={activeConcurso?.nome || 'ISS Araguari'}
+          />
+        )}
+
+        {activeTab === 'study' && <QuestionViewer />}
+
+        {activeTab === 'simulados' && (
+          <CadernosSimulados
+            activeConcurso={activeConcurso}
+            onStartSession={handleStartSimulado}
+          />
+        )}
+
+        {activeTab === 'revisoes' && (
+          <CicloRevisoes
+            activeConcurso={activeConcurso}
+            onStartErrorNotebook={handleStartErrorNotebook}
+          />
+        )}
+
         {activeTab === 'concursos' && (
           <MeusConcursos
             activeConcursoId={activeConcurso?.id || null}
@@ -94,15 +126,23 @@ function App() {
             onNavigateToTab={(tab) => setActiveTab(tab)}
           />
         )}
-        {activeTab === 'study' && <QuestionViewer />}
-        {activeTab === 'edital' && (
-          <EditalVerticalizado
-            concursoId={activeConcurso?.id || 'iss-araguari-auditor-2023'}
-            concursoNome={activeConcurso?.nome || 'ISS Araguari'}
-          />
-        )}
+
         {activeTab === 'import' && <ImportStudio />}
+
+        {activeTab === 'analytics' && (
+          <AnalyticsView activeConcurso={activeConcurso} />
+        )}
       </main>
+
+      {/* Progressive Registration Wizard Modal */}
+      <CadastroConcursoWizard
+        isOpen={isWizardOpen}
+        onClose={() => setIsWizardOpen(false)}
+        onConcursoCreated={(newC) => {
+          loadConcursos();
+          handleSelectConcurso(newC);
+        }}
+      />
     </div>
   );
 }

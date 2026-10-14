@@ -1,0 +1,267 @@
+.cronograma-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.cronograma-header {
+  padding: 1.5rem 1.75rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-left: 4px solid #10b981;
+}
+
+.cronograma-header h2 {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #f8fafc;
+  margin: 0;
+}
+
+.cronograma-subtitle {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  margin: 0.3rem 0 0;
+}
+
+.cronograma-progress-card {
+  min-width: 200px;
+  background: #0f131c;
+  border: 1px solid #1f2738;
+  padding: 0.85rem 1.25rem;
+  border-radius: 8px;
+}
+
+.prog-metric {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.4rem;
+}
+
+.prog-val {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #10b981;
+}
+
+.prog-label {
+  font-size: 0.72rem;
+  color: #64748b;
+}
+
+.cronograma-bar {
+  width: 100%;
+  height: 6px;
+  background: #1e293b;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.cronograma-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #10b981, #34d399);
+  transition: width 0.3s ease;
+}
+
+/* Day tabs */
+.dias-tabs-bar {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.5rem;
+}
+
+@media (max-width: 900px) {
+  .dias-tabs-bar {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.dia-tab {
+  background: #111520;
+  border: 1px solid #1f2738;
+  padding: 0.75rem 0.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  transition: all 0.15s;
+}
+
+.dia-tab:hover {
+  background: #182030;
+  border-color: #3b82f6;
+}
+
+.dia-tab.active {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: #3b82f6;
+}
+
+.dia-tab-nome {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.dia-tab-horas {
+  font-size: 0.72rem;
+  color: #64748b;
+}
+
+.dia-tab-done {
+  color: #10b981;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+/* Day Content Card */
+.dia-content-card {
+  padding: 1.5rem;
+}
+
+.dia-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #1f2738;
+}
+
+.dia-header-row h3 {
+  font-size: 1.1rem;
+  color: #f1f5f9;
+  margin: 0;
+}
+
+.dia-total-badge {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  background: #0f121a;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid #1f2738;
+}
+
+.blocks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.study-block-card {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  background: #0f121a;
+  border: 1px solid #1f2738;
+  padding: 1rem 1.25rem;
+  border-radius: 10px;
+  transition: all 0.15s;
+}
+
+.study-block-card:hover {
+  border-color: #2e3b52;
+}
+
+.study-block-card.is-completed {
+  opacity: 0.65;
+  background: rgba(16, 185, 129, 0.04);
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
+.study-block-card.is-completed .block-discipline {
+  text-decoration: line-through;
+  color: #94a3b8;
+}
+
+.block-status-col input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #10b981;
+}
+
+.block-info-col {
+  flex: 1;
+}
+
+.block-top-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.25rem;
+}
+
+.block-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.type-teoria {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.type-questoes {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.type-revisao {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.block-duration {
+  font-size: 0.72rem;
+  color: #64748b;
+}
+
+.block-discipline {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #f1f5f9;
+  margin: 0;
+}
+
+.block-subject {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  margin: 0.15rem 0 0;
+}
+
+.btn-block-study {
+  background: #1e293b;
+  border: 1px solid #334155;
+  color: #cbd5e1;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-block-study:hover {
+  background: #3b82f6;
+  border-color: #3b82f6;
+  color: white;
+}
+
+.empty-day-message {
+  text-align: center;
+  padding: 2.5rem;
+  color: #64748b;
+  font-size: 0.88rem;
+}

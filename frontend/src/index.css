@@ -1,13 +1,16 @@
 :root {
-  --bg-color: #0f172a;
-  --text-color: #f8fafc;
-  --card-bg: rgba(30, 41, 59, 0.7);
-  --border-color: rgba(255, 255, 255, 0.1);
+  --bg-color: #0b0e14;
+  --bg-card: #131722;
+  --bg-card-hover: #1a2030;
+  --text-color: #f1f5f9;
+  --text-muted: #94a3b8;
+  --border-color: #1f2738;
   --primary: #3b82f6;
   --primary-hover: #2563eb;
   --success: #10b981;
   --error: #ef4444;
   --warning: #f59e0b;
+  --purple: #8b5cf6;
 }
 
 * {
@@ -19,27 +22,40 @@
 body {
   background-color: var(--bg-color);
   color: var(--text-color);
-  font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   line-height: 1.5;
   font-weight: 400;
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
 }
 
 #root {
+  min-height: 100vh;
+}
+
+.app-container {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--bg-color);
+}
+
+.main-content-area {
+  margin-left: 250px;
   flex: 1;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
+  padding: 1.5rem 2.5rem 3rem;
+  background-color: var(--bg-color);
+  overflow-y: auto;
 }
 
 /* Glassmorphism utilities */
 .glass {
-  background: var(--card-bg);
+  background: rgba(19, 23, 34, 0.75);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--border-color);
-  border-radius: 16px;
+  border-radius: 12px;
 }
 
 .btn {
