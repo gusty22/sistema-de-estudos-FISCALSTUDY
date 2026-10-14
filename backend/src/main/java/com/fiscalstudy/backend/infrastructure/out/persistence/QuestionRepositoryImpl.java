@@ -47,11 +47,37 @@ public class QuestionRepositoryImpl implements QuestionRepository {
         List<Object> params = new java.util.ArrayList<>();
 
         if (concursoId != null && !concursoId.isBlank()) {
-            sql.append("AND (cargo LIKE ? OR orgao LIKE ? OR disciplina LIKE ?) ");
-            String pat = "%" + concursoId.trim() + "%";
-            params.add(pat);
-            params.add(pat);
-            params.add(pat);
+            boolean matchedConcurso = false;
+            try {
+                List<Map<String, Object>> rows = jdbcTemplate.queryForList("SELECT banca, ano, cargo FROM concursos WHERE id = ?", concursoId.trim());
+                if (!rows.isEmpty()) {
+                    Map<String, Object> cRow = rows.get(0);
+                    Object banca = cRow.get("banca");
+                    Object ano = cRow.get("ano");
+                    Object cargo = cRow.get("cargo");
+                    if (banca != null && !String.valueOf(banca).isBlank()) {
+                        sql.append("AND banca = ? ");
+                        params.add(String.valueOf(banca));
+                    }
+                    if (ano != null) {
+                        sql.append("AND ano = ? ");
+                        params.add(ano instanceof Number ? ((Number) ano).intValue() : Integer.parseInt(String.valueOf(ano)));
+                    }
+                    if (cargo != null && !String.valueOf(cargo).isBlank()) {
+                        sql.append("AND cargo = ? ");
+                        params.add(String.valueOf(cargo));
+                    }
+                    matchedConcurso = true;
+                }
+            } catch (Exception ignored) {}
+
+            if (!matchedConcurso) {
+                sql.append("AND (cargo LIKE ? OR orgao LIKE ? OR disciplina LIKE ?) ");
+                String pat = "%" + concursoId.trim() + "%";
+                params.add(pat);
+                params.add(pat);
+                params.add(pat);
+            }
         }
 
         if (disciplina != null && !disciplina.isBlank()) {

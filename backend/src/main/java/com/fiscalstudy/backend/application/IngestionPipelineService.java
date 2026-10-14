@@ -470,10 +470,16 @@ public class IngestionPipelineService {
     }
 
     public List<StagingQuestionDTO> getSessionQuestions(String sessionId) {
+        if (!sessionQuestions.containsKey(sessionId)) {
+            loadSessionState(sessionId);
+        }
         return sessionQuestions.getOrDefault(sessionId, Collections.emptyList());
     }
 
     public StagingQuestionDTO updateQuestion(String sessionId, String questionId, QuestionUpdateRequestDTO req) {
+        if (!sessionQuestions.containsKey(sessionId)) {
+            loadSessionState(sessionId);
+        }
         List<StagingQuestionDTO> questions = sessionQuestions.get(sessionId);
         if (questions == null) {
             throw new IllegalArgumentException("Sessão não encontrada: " + sessionId);
@@ -525,6 +531,9 @@ public class IngestionPipelineService {
     }
 
     public ImportSimulationDTO simulateImport(String sessionId) {
+        if (!sessionQuestions.containsKey(sessionId)) {
+            loadSessionState(sessionId);
+        }
         List<StagingQuestionDTO> questions = sessionQuestions.get(sessionId);
         if (questions == null) {
             throw new IllegalArgumentException("Sessão não encontrada: " + sessionId);
@@ -580,6 +589,9 @@ public class IngestionPipelineService {
     }
 
     public int importVerifiedQuestions(String sessionId) {
+        if (!sessionQuestions.containsKey(sessionId)) {
+            loadSessionState(sessionId);
+        }
         List<StagingQuestionDTO> questions = sessionQuestions.get(sessionId);
         StagingSessionDTO session = getSession(sessionId);
         if (questions == null || session == null) {
