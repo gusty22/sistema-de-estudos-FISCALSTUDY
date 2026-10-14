@@ -59,7 +59,27 @@ public class EditalImportService {
                                               boolean overwrite,
                                               String versao,
                                               String tipo) {
-        return importEditalInternal(concursoId, payload, confirmadoHumano, procedenciaStatus, overwrite, versao, tipo, -1);
+        return importEditalInternal(concursoId, payload, confirmadoHumano, procedenciaStatus, overwrite, versao, tipo, null, false, false, null, null, null, -1);
+    }
+
+    /**
+     * Importação atômica estendida: suporta substituição de pré-edital por edital oficial e atualização automática da situação do concurso.
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public EditalImportSummaryDTO importEdital(String concursoId,
+                                              EditalImportPayloadDTO payload,
+                                              boolean confirmadoHumano,
+                                              String procedenciaStatus,
+                                              boolean overwrite,
+                                              String versao,
+                                              String tipo,
+                                              String titulo,
+                                              boolean replaceAllPreviousTopics,
+                                              boolean updateConcursoSituacao,
+                                              String novaSituacaoConcurso,
+                                              String dataProva,
+                                              String linkEdital) {
+        return importEditalInternal(concursoId, payload, confirmadoHumano, procedenciaStatus, overwrite, versao, tipo, titulo, replaceAllPreviousTopics, updateConcursoSituacao, novaSituacaoConcurso, dataProva, linkEdital, -1);
     }
 
     /**
@@ -74,7 +94,7 @@ public class EditalImportService {
                                                                    String versao,
                                                                    String tipo,
                                                                    int failAfterTopicIndex) {
-        return importEditalInternal(concursoId, payload, confirmadoHumano, procedenciaStatus, overwrite, versao, tipo, failAfterTopicIndex);
+        return importEditalInternal(concursoId, payload, confirmadoHumano, procedenciaStatus, overwrite, versao, tipo, null, false, false, null, null, null, failAfterTopicIndex);
     }
 
     private EditalImportSummaryDTO importEditalInternal(String concursoId,
@@ -84,6 +104,12 @@ public class EditalImportService {
                                                        boolean overwrite,
                                                        String versao,
                                                        String tipo,
+                                                       String titulo,
+                                                       boolean replaceAllPreviousTopics,
+                                                       boolean updateConcursoSituacao,
+                                                       String novaSituacaoConcurso,
+                                                       String dataProva,
+                                                       String linkEdital,
                                                        int failAfterTopicIndex) {
         if (concursoId == null || concursoId.isBlank()) {
             throw new IllegalArgumentException("O ID do concurso é obrigatório.");
@@ -119,16 +145,36 @@ public class EditalImportService {
             throw new IllegalArgumentException("Procedência SOURCE_VERIFIED exige confirmação humana e conferência explícita com o edital oficial.");
         }
 
-        // Se overwrite habilitado, expurga tópicos antigos deste edital para evitar duplicidade e registros zumbis
-        if (overwrite) {
+        // Se replaceAllPreviousTopics habilitado, limpa toda a grade anterior deste concurso (ex: pré-edital sendo substituído pelo edital oficial definitivo)
+        if (replaceAllPreviousTopics) {
+            editalRepository.deleteTopicosByConcursoId(concursoId);
+        } else if (overwrite) {
+            // Se overwrite habilitado para a versão, expurga tópicos antigos deste edital específico para evitar duplicidade
             editalRepository.deleteTopicosByEditalId(editalId);
         }
+
+        // Se solicitado, atualiza a situação do concurso (ex: EDITAL_PUBLICADO), data da prova e link oficial
+        if (updateConcursoSituacao || (novaSituacaoConcurso != null && !novaSituacaoConcurso.isBlank())) {
+            concurso.setSituacao(novaSituacaoConcurso != null && !novaSituacaoConcurso.isBlank() ? novaSituacaoConcurso : "EDITAL_PUBLICADO");
+            if (dataProva != null && !dataProva.isBlank()) {
+                concurso.setDataProva(dataProva);
+            }
+            if (linkEdital != null && !linkEdital.isBlank()) {
+                concurso.setLinkEdital(linkEdital);
+            }
+            concursoRepository.save(concurso);
+        }
+
+        // Título customizado ou padrão
+        String finalTitulo = (titulo != null && !titulo.isBlank())
+                ? titulo
+                : ("Edital Verticalizado — " + concurso.getNome());
 
         // Criação / Atualização do registro do Edital
         Edital edital = new Edital(
                 editalId,
                 concursoId,
-                "Edital Verticalizado — " + concurso.getNome(),
+                finalTitulo,
                 ver,
                 tip,
                 filename
@@ -271,14 +317,22 @@ public class EditalImportService {
 
         // Se o payload do edital foi fornecido, importa na mesma transação
         if (dto.getEditalPayload() != null) {
+            String edVersao = dto.getEditalPayload().getVersao() != null ? dto.getEditalPayload().getVersao() : "1.0";
+            String edTipo = dto.getEditalPayload().getTipo() != null ? dto.getEditalPayload().getTipo() : "ORIGINAL";
             editalSummary = importEditalInternal(
                     savedConcurso.getId(),
                     dto.getEditalPayload(),
                     dto.isConfirmadoHumano(),
                     dto.getProcedenciaStatus(),
                     true,
-                    "1.0",
-                    "ORIGINAL",
+                    edVersao,
+                    edTipo,
+                    null,
+                    false,
+                    false,
+                    null,
+                    null,
+                    null,
                     failAfterTopicIndex
             );
         }

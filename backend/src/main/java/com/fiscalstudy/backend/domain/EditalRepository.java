@@ -17,4 +17,5 @@ public interface EditalRepository {
     void deleteEdital(String id);
     List<EditalTopico> findTopicosByEditalId(String editalId);
     void confirmTopico(String id);
+    void renameDisciplina(String concursoId, String oldDisciplina, String newDisciplina);
 }

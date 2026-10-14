@@ -59,16 +59,29 @@ public class EditalController {
                 request.getProcedenciaStatus(),
                 request.isOverwrite(),
                 request.getVersao(),
-                request.getTipo()
+                request.getTipo(),
+                request.getTitulo(),
+                request.isReplaceAllPreviousTopics(),
+                request.isUpdateConcursoSituacao(),
+                request.getNovaSituacaoConcurso(),
+                request.getDataProva(),
+                request.getLinkEdital()
         );
 
         return ResponseEntity.ok(summary);
     }
 
     @GetMapping
-    public ResponseEntity<Map<String, Object>> getEditalVerticalizado(@PathVariable String concursoId) {
+    public ResponseEntity<Map<String, Object>> getEditalVerticalizado(
+            @PathVariable String concursoId,
+            @RequestParam(value = "editalId", required = false) String editalId) {
         List<Edital> editais = editalRepository.findEditaisByConcurso(concursoId);
-        List<EditalTopico> topicos = editalRepository.findTopicosByConcurso(concursoId);
+        List<EditalTopico> topicos;
+        if (editalId != null && !editalId.isBlank()) {
+            topicos = editalRepository.findTopicosByEditalId(editalId);
+        } else {
+            topicos = editalRepository.findTopicosByConcurso(concursoId);
+        }
 
         Map<String, Object> resp = new HashMap<>();
         resp.put("concursoId", concursoId);
@@ -78,6 +91,45 @@ public class EditalController {
         resp.put("totalConfirmados", topicos.stream().filter(EditalTopico::isConfirmadoHumano).count());
 
         return ResponseEntity.ok(resp);
+    }
+
+    @PutMapping("/{editalId}")
+    public ResponseEntity<Edital> updateEdital(
+            @PathVariable String concursoId,
+            @PathVariable String editalId,
+            @RequestBody Edital update) {
+        return editalRepository.findEditalById(editalId)
+                .map(existing -> {
+                    if (update.getTitulo() != null && !update.getTitulo().isBlank()) existing.setTitulo(update.getTitulo().trim());
+                    if (update.getVersao() != null && !update.getVersao().isBlank()) existing.setVersao(update.getVersao().trim());
+                    if (update.getTipo() != null && !update.getTipo().isBlank()) existing.setTipo(update.getTipo().trim());
+                    if (update.getFilename() != null && !update.getFilename().isBlank()) existing.setFilename(update.getFilename().trim());
+                    Edital saved = editalRepository.saveEdital(existing);
+                    return ResponseEntity.ok(saved);
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/{editalId}")
+    public ResponseEntity<Void> deleteEdital(
+            @PathVariable String concursoId,
+            @PathVariable String editalId) {
+        editalRepository.deleteTopicosByEditalId(editalId);
+        editalRepository.deleteEdital(editalId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/disciplines/rename")
+    public ResponseEntity<Map<String, Object>> renameDiscipline(
+            @PathVariable String concursoId,
+            @RequestBody Map<String, String> body) {
+        String oldName = body.get("oldName");
+        String newName = body.get("newName");
+        if (oldName == null || oldName.isBlank() || newName == null || newName.isBlank()) {
+            throw new IllegalArgumentException("Nomes anterior e novo da disciplina são obrigatórios.");
+        }
+        editalRepository.renameDisciplina(concursoId, oldName.trim(), newName.trim());
+        return ResponseEntity.ok(Map.of("status", "SUCCESS", "oldName", oldName.trim(), "newName", newName.trim()));
     }
 
     @PostMapping("/topics")

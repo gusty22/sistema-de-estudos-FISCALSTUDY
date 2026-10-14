@@ -11,6 +11,12 @@ public class EditalImportRequestDTO {
     private String versao = "1.0";
     private String tipo = "ORIGINAL";
     private boolean overwrite = true;
+    private String titulo;
+    private boolean replaceAllPreviousTopics = false;
+    private boolean updateConcursoSituacao = false;
+    private String novaSituacaoConcurso;
+    private String dataProva;
+    private String linkEdital;
 
     public EditalImportRequestDTO() {
     }
@@ -67,5 +73,53 @@ public class EditalImportRequestDTO {
 
     public void setOverwrite(boolean overwrite) {
         this.overwrite = overwrite;
+    }
+
+    public String getTitulo() {
+        return titulo;
+    }
+
+    public void setTitulo(String titulo) {
+        this.titulo = titulo;
+    }
+
+    public boolean isReplaceAllPreviousTopics() {
+        return replaceAllPreviousTopics;
+    }
+
+    public void setReplaceAllPreviousTopics(boolean replaceAllPreviousTopics) {
+        this.replaceAllPreviousTopics = replaceAllPreviousTopics;
+    }
+
+    public boolean isUpdateConcursoSituacao() {
+        return updateConcursoSituacao;
+    }
+
+    public void setUpdateConcursoSituacao(boolean updateConcursoSituacao) {
+        this.updateConcursoSituacao = updateConcursoSituacao;
+    }
+
+    public String getNovaSituacaoConcurso() {
+        return novaSituacaoConcurso;
+    }
+
+    public void setNovaSituacaoConcurso(String novaSituacaoConcurso) {
+        this.novaSituacaoConcurso = novaSituacaoConcurso;
+    }
+
+    public String getDataProva() {
+        return dataProva;
+    }
+
+    public void setDataProva(String dataProva) {
+        this.dataProva = dataProva;
+    }
+
+    public String getLinkEdital() {
+        return linkEdital;
+    }
+
+    public void setLinkEdital(String linkEdital) {
+        this.linkEdital = linkEdital;
     }
 }

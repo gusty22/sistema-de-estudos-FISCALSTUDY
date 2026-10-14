@@ -28,6 +28,8 @@ ingestion/output/*.txt
 
 # DB
 db/*.db*
+db/backups/
+db/*.json
 
 # Ingestion temp
 ingestion/inspection_*.json

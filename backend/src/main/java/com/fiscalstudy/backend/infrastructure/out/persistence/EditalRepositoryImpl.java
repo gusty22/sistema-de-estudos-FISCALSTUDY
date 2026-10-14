@@ -56,78 +56,7 @@ public class EditalRepositoryImpl implements EditalRepository {
         this.jdbcTemplate = jdbcTemplate;
     }
 
-    @PostConstruct
-    public void initSeedTopics() {
-        try {
-            Integer count = jdbcTemplate.queryForObject("SELECT count(*) FROM edital_topicos", Integer.class);
-            if (count != null && count == 0) {
-                logger.info("Initializing official verticalized edital topics for Araguari Auditor e Técnico");
-                String concursoIdAuditor = "iss-araguari-auditor-2023";
-                String editalIdAuditor = "edital-araguari-2023-v1";
 
-                saveEdital(new Edital(
-                        editalIdAuditor,
-                        concursoIdAuditor,
-                        "Edital Concurso Público 01/2023 — Prefeitura de Araguari/MG",
-                        "1.0",
-                        "ORIGINAL",
-                        "edital_normativo_01_2023.pdf"
-                ));
-
-                // Tópicos reais de Auditor Fiscal (ISS Araguari)
-                saveTopico(new EditalTopico(UUID.randomUUID().toString(), editalIdAuditor, concursoIdAuditor,
-                        "Direito Tributário", "Sistema Tributário Nacional", "Competência Tributária e Limitações ao Poder de Tributar",
-                        1.5, 10, "Edital 01/2023 Anexo II", 42, "Item 1.1 da Parte Específica", "EXPLICITA", true));
-
-                saveTopico(new EditalTopico(UUID.randomUUID().toString(), editalIdAuditor, concursoIdAuditor,
-                        "Direito Tributário", "Impostos Municipais", "IPTU, ISSQN e ITBI: Fato Gerador, Base de Cálculo e Alíquotas",
-                        1.5, 8, "Edital 01/2023 Anexo II", 43, "Item 1.4 da Parte Específica", "EXPLICITA", true));
-
-                saveTopico(new EditalTopico(UUID.randomUUID().toString(), editalIdAuditor, concursoIdAuditor,
-                        "Direito Tributário", "Crédito Tributário", "Lançamento, Suspensão, Extinção e Exclusão do Crédito",
-                        1.5, 6, "Edital 01/2023 Anexo II", 43, "Item 1.6 da Parte Específica", "EXPLICITA", true));
-
-                saveTopico(new EditalTopico(UUID.randomUUID().toString(), editalIdAuditor, concursoIdAuditor,
-                        "Legislação Municipal", "Código Tributário Municipal", "Normas gerais e procedimento fiscal administrativo de Araguari",
-                        1.2, 5, "Edital 01/2023 Anexo II", 45, "Item 3.1 Legislação Municipal", "EXPLICITA", true));
-
-                saveTopico(new EditalTopico(UUID.randomUUID().toString(), editalIdAuditor, concursoIdAuditor,
-                        "Língua Portuguesa", "Interpretação de Texto", "Compreensão, inferência e tipologia textual",
-                        1.0, 10, "Edital 01/2023 Anexo II", 40, "Item Conhecimentos Básicos", "EXPLICITA", true));
-
-                saveTopico(new EditalTopico(UUID.randomUUID().toString(), editalIdAuditor, concursoIdAuditor,
-                        "Raciocínio Lógico-Matemático", "Estruturas Lógicas", "Proposições, conectivos, diagramas e análise combinatória",
-                        1.0, 5, "Edital 01/2023 Anexo II", 41, "Item RLM", "EXPLICITA", true));
-
-                saveTopico(new EditalTopico(UUID.randomUUID().toString(), editalIdAuditor, concursoIdAuditor,
-                        "Contabilidade Geral e Tributária", "Demonstrações Contábeis", "Balanço Patrimonial, DRE e lançamentos fiscais",
-                        1.2, 5, "Edital 01/2023 Anexo II", 44, "Item Contabilidade", "EXPLICITA", true));
-
-                // Para Técnico Fiscal
-                String concursoIdTecnico = "iss-araguari-tecnico-2023";
-                String editalIdTecnico = "edital-tecnico-araguari-2023-v1";
-                saveEdital(new Edital(editalIdTecnico, concursoIdTecnico, "Edital 01/2023 — Técnico Fiscal", "1.0", "ORIGINAL", "edital_tecnico.pdf"));
-
-                saveTopico(new EditalTopico(UUID.randomUUID().toString(), editalIdTecnico, concursoIdTecnico,
-                        "Língua Portuguesa", "Morfossintaxe", "Classes de palavras, concordância e regência",
-                        1.0, 10, "Edital 01/2023 Anexo II", 38, "Item Português", "EXPLICITA", true));
-
-                saveTopico(new EditalTopico(UUID.randomUUID().toString(), editalIdTecnico, concursoIdTecnico,
-                        "Raciocínio Lógico-Matemático", "Análise Combinatória", "Princípio fundamental da contagem e permutações",
-                        1.0, 5, "Edital 01/2023 Anexo II", 39, "Item RLM", "EXPLICITA", true));
-
-                saveTopico(new EditalTopico(UUID.randomUUID().toString(), editalIdTecnico, concursoIdTecnico,
-                        "Noções de Informática", "Ambiente Operacional", "Sistemas de arquivos e aplicativos de escritório",
-                        1.0, 5, "Edital 01/2023 Anexo II", 39, "Item Informática", "EXPLICITA", true));
-
-                saveTopico(new EditalTopico(UUID.randomUUID().toString(), editalIdTecnico, concursoIdTecnico,
-                        "Conhecimentos Específicos", "Tributos Municipais", "Noções gerais de tributação e atendimento ao contribuinte",
-                        1.2, 20, "Edital 01/2023 Anexo II", 46, "Item Específica Técnico", "EXPLICITA", true));
-            }
-        } catch (Exception e) {
-            logger.warn("Could not check or seed verticalized edital topics: {}", e.getMessage());
-        }
-    }
 
     @Override
     public List<Edital> findEditaisByConcurso(String concursoId) {
@@ -230,5 +159,13 @@ public class EditalRepositoryImpl implements EditalRepository {
     @Override
     public void confirmTopico(String id) {
         jdbcTemplate.update("UPDATE edital_topicos SET confirmado_humano = 1, tipo_classificacao = 'CONFIRMADA' WHERE id = ?", id);
+    }
+
+    @Override
+    public void renameDisciplina(String concursoId, String oldDisciplina, String newDisciplina) {
+        jdbcTemplate.update(
+                "UPDATE edital_topicos SET disciplina = ? WHERE concurso_id = ? AND disciplina = ?",
+                newDisciplina, concursoId, oldDisciplina
+        );
     }
 }

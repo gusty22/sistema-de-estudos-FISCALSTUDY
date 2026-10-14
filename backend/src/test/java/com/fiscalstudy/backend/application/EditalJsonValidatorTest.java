@@ -18,8 +18,8 @@ class EditalJsonValidatorTest {
     }
 
     @Test
-    @DisplayName("Cenário 1: JSON completo no formato Track Concursos é validado com sucesso e preserva contagens e ordem")
-    void testValidCompleteTrackConcursosJson() {
+    @DisplayName("Cenário 1: JSON completo no formato estruturado do edital é validado com sucesso e preserva contagens e ordem")
+    void testValidCompleteEditalJson() {
         String json = "{\n" +
                 "  \"materias\": [\n" +
                 "    {\n" +
