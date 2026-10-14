@@ -197,12 +197,38 @@ public class IngestionPipelineService {
             cargoCodigo = String.valueOf(session.getMetadata().get("cargo_codigo"));
         }
 
+        session.setStatus("INSPECTING");
+        session.setStepDescription("Iniciando inspeção e análise documental geométrica");
+        session.setProgressPercent(15);
+        saveSessionState(sessionId);
+
+        // Execução genuinamente assíncrona em background via CompletableFuture
+        final File finalExamFile = examFile;
+        final File finalAnswerKeyFile = answerKeyFile;
+        final String finalCargoCodigo = cargoCodigo;
+
+        java.util.concurrent.CompletableFuture.runAsync(() -> {
+            doExecutePipeline(sessionId, finalExamFile, finalAnswerKeyFile, finalCargoCodigo, sessionDir, outputDir);
+        });
+
+        return session;
+    }
+
+    private void doExecutePipeline(
+            String sessionId,
+            File examFile,
+            File answerKeyFile,
+            String cargoCodigo,
+            Path sessionDir,
+            Path outputDir) {
+        StagingSessionDTO session = getSession(sessionId);
+        if (session == null) return;
+
         session.setStatus("EXTRACTING");
-        session.setStepDescription("Executando extração nativa e análise de layout geométrico");
+        session.setStepDescription("Executando extração nativa e análise de layout geométrico (PyMuPDF)");
         session.setProgressPercent(40);
         saveSessionState(sessionId);
 
-        // Executar pipeline python com timeout seguro e captura UTF-8
         Process process = null;
         try {
             String pythonPath = findPythonExecutable();
@@ -228,11 +254,13 @@ public class IngestionPipelineService {
             command.add("--metadata-file");
             command.add(metadataFile.toAbsolutePath().toString());
 
-            logger.info("Executing pipeline command: {}", String.join(" ", command));
+            logger.info("Executing pipeline command in background: {}", String.join(" ", command));
 
             ProcessBuilder pb = new ProcessBuilder(command);
             pb.directory(ingestionDir);
             pb.redirectErrorStream(true);
+            pb.environment().put("PYTHONIOENCODING", "utf-8");
+            pb.environment().put("PYTHONUTF8", "1");
 
             process = pb.start();
             runningProcesses.put(sessionId, process);
@@ -245,7 +273,7 @@ public class IngestionPipelineService {
                 session.setStatus("FAILED");
                 session.setErrorMessage("Tempo limite excedido: o processamento da prova ultrapassou 180 segundos e foi abortado com segurança.");
                 saveSessionState(sessionId);
-                return session;
+                return;
             }
 
             int exitCode = process.exitValue();
@@ -255,8 +283,13 @@ public class IngestionPipelineService {
                 session.setStatus("FAILED");
                 session.setErrorMessage("Falha no pipeline de extração (código " + exitCode + "): " + errorOut);
                 saveSessionState(sessionId);
-                return session;
+                return;
             }
+
+            session.setStatus("PARSING_RESULTS");
+            session.setStepDescription("Estruturando questões e vinculando ao edital verticalizado");
+            session.setProgressPercent(80);
+            saveSessionState(sessionId);
 
             // Ler pipeline_result.json gerado
             Path resultJsonPath = outputDir.resolve("pipeline_result.json");
@@ -264,7 +297,7 @@ public class IngestionPipelineService {
                 session.setStatus("FAILED");
                 session.setErrorMessage("Arquivo de resultado pipeline_result.json não foi gerado pelo pipeline Python.");
                 saveSessionState(sessionId);
-                return session;
+                return;
             }
 
             Map<String, Object> pipelineResult = objectMapper.readValue(resultJsonPath.toFile(), new TypeReference<>() {});
@@ -350,17 +383,15 @@ public class IngestionPipelineService {
             session.setProgressPercent(100);
 
             saveSessionState(sessionId);
-            return session;
         } catch (Exception e) {
             runningProcesses.remove(sessionId);
             if (process != null && process.isAlive()) {
                 process.destroyForcibly();
             }
-            logger.error("Exception during pipeline execution", e);
+            logger.error("Exception during background pipeline execution", e);
             session.setStatus("FAILED");
             session.setErrorMessage("Erro durante processamento: " + e.getMessage());
             saveSessionState(sessionId);
-            return session;
         }
     }
 

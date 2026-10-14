@@ -213,19 +213,39 @@ export default function ImportStudio() {
         });
       }
 
-      // 3. Dispara processamento documental no backend
-      setActionMessage('Executando extração nativa, análise de layout geométrico e gabarito...');
-      const finalSession = await safeFetchJson<StagingSession>(`/api/v1/ingestion/sessions/${sessionId}/process`, {
+      // 3. Dispara processamento documental no backend (retorno assíncrono imediato)
+      setActionMessage('Disparando pipeline de extração e análise documental...');
+      const initSession = await safeFetchJson<StagingSession>(`/api/v1/ingestion/sessions/${sessionId}/process`, {
         method: 'POST',
       });
-      setSession(finalSession);
+      setSession(initSession);
 
-      if (finalSession.status === 'FAILED') {
-        setProcessingError(finalSession.errorMessage || 'Falha na extração de questões do documento.');
+      // 4. Polling ativo de progresso em tempo real
+      let currentStatus = initSession.status;
+      let pollSession = initSession;
+      while (currentStatus !== 'AWAITING_REVIEW' && currentStatus !== 'FAILED' && currentStatus !== 'CANCELLED') {
+        await new Promise((r) => setTimeout(r, 1200));
+        pollSession = await safeFetchJson<StagingSession>(`/api/v1/ingestion/sessions/${sessionId}`);
+        setSession(pollSession);
+        currentStatus = pollSession.status;
+        if (pollSession.stepDescription) {
+          setActionMessage(`${pollSession.stepDescription} (${pollSession.progressPercent}%)`);
+        }
+      }
+
+      if (pollSession.status === 'FAILED') {
+        setProcessingError(pollSession.errorMessage || 'Falha na extração de questões do documento.');
+        setActionMessage(null);
         return;
       }
 
-      // 4. Carrega questões extraídas
+      if (pollSession.status === 'CANCELLED') {
+        setProcessingError('Processamento cancelado.');
+        setActionMessage(null);
+        return;
+      }
+
+      // 5. Carrega questões extraídas
       setActionMessage('Carregando questões estruturadas para o Studio...');
       const qList = await safeFetchJson<StagingQuestion[]>(`/api/v1/ingestion/sessions/${sessionId}/questions`);
       setQuestions(qList);
