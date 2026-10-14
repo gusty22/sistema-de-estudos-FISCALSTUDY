@@ -4,6 +4,7 @@ import './Sidebar.css';
 
 export type NavTab = 
   | 'dashboard' 
+  | 'maestro'
   | 'concursos' 
   | 'cronograma' 
   | 'materiais'
@@ -121,14 +122,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </button>
 
         <button
-          className={`nav-btn ${activeTab === 'cronograma' ? 'active' : ''}`}
-          onClick={() => {
-            sessionStorage.setItem('fiscalstudy_crono_mode', 'MAESTRO');
-            onSelectTab('cronograma');
-          }}
+          className={`nav-btn ${activeTab === 'maestro' ? 'active' : ''}`}
+          onClick={() => onSelectTab('maestro')}
+          style={activeTab === 'maestro' ? {
+            background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(239, 68, 68, 0.25))',
+            borderLeft: '3px solid #f59e0b',
+            color: '#f59e0b'
+          } : {}}
         >
           <span className="nav-icon">⚡</span>
-          <span className="nav-text">Maestro (Modo Batalha)</span>
+          <span className="nav-text" style={{ fontWeight: 700 }}>Maestro (Modo Batalha)</span>
+        </button>
+
+        <button
+          className={`nav-btn ${activeTab === 'cronograma' ? 'active' : ''}`}
+          onClick={() => onSelectTab('cronograma')}
+        >
+          <span className="nav-icon">📅</span>
+          <span className="nav-text">Cronograma & Ciclos</span>
         </button>
 
         <button

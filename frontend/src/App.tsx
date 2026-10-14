@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Sidebar, { type NavTab } from './components/navigation/Sidebar';
 import Dashboard from './components/dashboard/Dashboard';
 import CronogramaSemanal from './components/cronograma/CronogramaSemanal';
+import { MaestroBattleView } from './components/cronograma/MaestroBattleView';
 import CadernosSimulados, { type SimuladoConfig } from './components/simulados/CadernosSimulados';
 import CicloRevisoes from './components/revisoes/CicloRevisoes';
 import AnalyticsView from './components/analytics/AnalyticsView';
@@ -102,10 +103,21 @@ function App() {
           />
         )}
 
+        {activeTab === 'maestro' && (
+          <MaestroBattleView
+            concursoId={activeConcurso?.id || ''}
+            concursoNome={activeConcurso?.nome || 'Concurso Ativo'}
+            onNavigateToStudy={handleNavigateToStudy}
+            onNavigateToTab={(tab) => setActiveTab(tab as NavTab)}
+            onSwitchToWeekly={() => setActiveTab('cronograma')}
+          />
+        )}
+
         {activeTab === 'cronograma' && (
           <CronogramaSemanal
             activeConcurso={activeConcurso}
             onNavigateToStudy={handleNavigateToStudy}
+            onNavigateToTab={(tab) => setActiveTab(tab as NavTab)}
           />
         )}
 

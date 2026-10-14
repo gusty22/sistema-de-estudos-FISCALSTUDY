@@ -265,6 +265,110 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeConcurso, onNavigate
         )}
       </div>
 
+      {/* BANNER HEROICO: O MAESTRO DO CICLO DIÁRIO */}
+      <div 
+        className="glass animate-fade-in" 
+        style={{ 
+          padding: '1.4rem 1.75rem', 
+          borderRadius: '16px', 
+          border: '1px solid rgba(245, 158, 11, 0.45)', 
+          background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(239, 68, 68, 0.1) 50%, rgba(15, 23, 42, 0.95) 100%)',
+          boxShadow: '0 10px 35px rgba(245, 158, 11, 0.15)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '1.25rem',
+          margin: '0 0 1.5rem 0'
+        }}
+      >
+        <div style={{ maxWidth: '650px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+            <span style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#f59e0b', background: 'rgba(245, 158, 11, 0.25)', padding: '3px 10px', borderRadius: '4px' }}>
+              ⚡ O Maestro do Ciclo Diário • Micro-Orquestração
+            </span>
+            <span style={{ fontSize: '0.75rem', color: '#38bdf8', fontWeight: 600 }}>Sem Calendário Estático</span>
+          </div>
+          <h3 style={{ color: '#f8fafc', fontSize: '1.35rem', margin: '0.2rem 0 0.4rem 0', fontWeight: 800 }}>
+            "Tenho 3 horas hoje" — O Maestro assume o controle total
+          </h3>
+          <p style={{ color: '#cbd5e1', fontSize: '0.92rem', margin: 0, lineHeight: 1.5 }}>
+            A Interface de Batalha mostra <strong>apenas a próxima ação imediata</strong> com roteiro mastigado: Anki SRS (15 min) ➔ Priming Cognitivo (10 min) ➔ Teoria Hiperfocada (50 min) ➔ Descanso Obrigatório (10 min).
+          </p>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-end' }}>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={() => {
+                sessionStorage.setItem('fiscalstudy_maestro_hours', '180');
+                onNavigateToTab('maestro');
+              }}
+              style={{
+                background: 'linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)',
+                color: '#fff',
+                border: 'none',
+                padding: '12px 22px',
+                fontSize: '0.95rem',
+                fontWeight: 800,
+                borderRadius: '10px',
+                cursor: 'pointer',
+                boxShadow: '0 4px 20px rgba(245, 158, 11, 0.45)',
+                transition: 'all 0.2s ease',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 26px rgba(245, 158, 11, 0.6)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(245, 158, 11, 0.45)'; }}
+            >
+              <span>⚡ "Tenho 3 horas hoje"</span>
+              <span>→</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                sessionStorage.setItem('fiscalstudy_maestro_hours', '120');
+                onNavigateToTab('maestro');
+              }}
+              style={{
+                background: 'rgba(255, 255, 255, 0.08)',
+                color: '#f8fafc',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                padding: '12px 18px',
+                fontSize: '0.88rem',
+                fontWeight: 700,
+                borderRadius: '10px',
+                cursor: 'pointer'
+              }}
+            >
+              2 horas
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                sessionStorage.setItem('fiscalstudy_maestro_hours', '60');
+                onNavigateToTab('maestro');
+              }}
+              style={{
+                background: 'rgba(255, 255, 255, 0.08)',
+                color: '#f8fafc',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                padding: '12px 18px',
+                fontSize: '0.88rem',
+                fontWeight: 700,
+                borderRadius: '10px',
+                cursor: 'pointer'
+              }}
+            >
+              1 hora
+            </button>
+          </div>
+          <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>Clique para assumir a Interface de Batalha Imediata</span>
+        </div>
+      </div>
+
       {/* 5 Top KPIs Row */}
       <div className="kpi-grid">
         {/* KPI 1: Horas de Estudo */}
@@ -443,67 +547,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeConcurso, onNavigate
         </div>
       )}
 
-      {/* BANNER TÁTICO: O MAESTRO DO CICLO DIÁRIO */}
-      <div 
-        className="glass animate-fade-in" 
-        style={{ 
-          padding: '1.25rem 1.5rem', 
-          borderRadius: '14px', 
-          border: '1px solid rgba(245, 158, 11, 0.4)', 
-          background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, rgba(239, 68, 68, 0.08) 50%, rgba(15, 23, 42, 0.9) 100%)',
-          boxShadow: '0 8px 32px rgba(245, 158, 11, 0.1)',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '1rem',
-          margin: '1.25rem 0'
-        }}
-      >
-        <div style={{ maxWidth: '680px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-            <span style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#f59e0b', background: 'rgba(245, 158, 11, 0.2)', padding: '2px 8px', borderRadius: '4px' }}>
-              ⚡ Modo Batalha • Micro-Orquestração Diária
-            </span>
-            <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Eliminação Total de Carga Decisória</span>
-          </div>
-          <h3 style={{ color: '#f8fafc', fontSize: '1.25rem', margin: '0.2rem 0 0.4rem 0', fontWeight: 700 }}>
-            "Tenho 3 horas hoje": O Maestro assume o comando da sua sessão
-          </h3>
-          <p style={{ color: '#cbd5e1', fontSize: '0.9rem', margin: 0, lineHeight: 1.5 }}>
-            A Interface de Batalha exibe <strong>apenas a próxima ação imediata</strong> com roteiro mastigado: Anki SRS (15 min) ➔ Priming Cognitivo (10 min) ➔ Teoria Hiperfocada (50 min) ➔ Descanso Obrigatório (10 min).
-          </p>
-        </div>
-
-        <button
-          type="button"
-          onClick={() => {
-            sessionStorage.setItem('fiscalstudy_crono_mode', 'MAESTRO');
-            onNavigateToTab('cronograma');
-          }}
-          style={{
-            background: 'linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)',
-            color: '#fff',
-            border: 'none',
-            padding: '12px 24px',
-            fontSize: '0.95rem',
-            fontWeight: 800,
-            borderRadius: '10px',
-            cursor: 'pointer',
-            boxShadow: '0 4px 18px rgba(245, 158, 11, 0.4)',
-            transition: 'all 0.2s ease',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 24px rgba(245, 158, 11, 0.6)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 18px rgba(245, 158, 11, 0.4)'; }}
-        >
-          <span>⚡ Assumir Modo Batalha de Hoje</span>
-          <span>→</span>
-        </button>
-      </div>
-
       {/* CENTRAL CARD: "O Que Estudar Agora?" */}
       {recommendation ? (
         <div className="recommendation-card glass">
@@ -533,11 +576,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeConcurso, onNavigate
                 className="btn btn-rec-action"
                 style={{ background: 'linear-gradient(135deg, #f59e0b, #ef4444)', color: '#fff', fontWeight: 700 }}
                 onClick={() => {
-                  sessionStorage.setItem('fiscalstudy_crono_mode', 'MAESTRO');
-                  onNavigateToTab('cronograma');
+                  sessionStorage.setItem('fiscalstudy_maestro_hours', '180');
+                  onNavigateToTab('maestro');
                 }}
               >
-                ⚡ Entrar no Modo Batalha
+                ⚡ "Tenho 3 Horas": Modo Batalha
               </button>
               <button
                 className="btn btn-secondary"

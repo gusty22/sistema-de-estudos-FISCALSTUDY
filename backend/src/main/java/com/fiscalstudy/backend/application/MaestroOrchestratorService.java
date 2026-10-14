@@ -206,10 +206,13 @@ public class MaestroOrchestratorService {
                     Map.of("totalQuestoes", 5, "modo", "PRIMING")
             ));
 
+            String focoTeoria = ("Atos Administrativos".equalsIgnoreCase(assunto) || "Direito Administrativo".equalsIgnoreCase(disciplina))
+                    ? "atributos do ato"
+                    : "atributos e requisitos de '" + assunto + "'";
             passos.add(new MaestroStepDTO(
                     3, 6, 50, "TEORIA",
                     "Teoria Hiperfocada",
-                    String.format("Passo 3 (50 min): Teoria. Vá para o %s, páginas %d a %d. Foque apenas nos atributos e requisitos de '%s'. Ignore a jurisprudência por enquanto.", materialDoc, pagIni, pagFim, assunto),
+                    String.format("Passo 3 (50 min): Teoria. Vá para o %s, páginas %d a %d. Foque apenas nos %s. Ignore a jurisprudência por enquanto.", materialDoc, pagIni, pagFim, focoTeoria),
                     disciplina, assunto,
                     "Preenchimento das lacunas expostas durante o priming", "LER_MATERIAL",
                     Map.of("materialDoc", materialDoc, "paginaInicio", pagIni, "paginaFim", pagFim)
