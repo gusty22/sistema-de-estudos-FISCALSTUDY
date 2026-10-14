@@ -2,6 +2,8 @@ spring:
   datasource:
     url: jdbc:sqlite:../db/fiscalstudy.db
     driver-class-name: org.sqlite.JDBC
+    hikari:
+      connection-init-sql: "PRAGMA journal_mode = WAL; PRAGMA synchronous = NORMAL; PRAGMA foreign_keys = ON;"
   jpa:
     database-platform: org.hibernate.community.dialect.SQLiteDialect
     hibernate:

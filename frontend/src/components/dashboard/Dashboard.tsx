@@ -26,7 +26,41 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeConcurso, onNavigate
   const [topics, setTopics] = useState<EditalTopic[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Fetch real statistics & topics
+  // Estados Cognitivos Módulo 1 & 2
+  const [timeMetrics, setTimeMetrics] = useState<{
+    totalHours: number;
+    heHours: number;
+    hreHours: number;
+    hrePercent: number;
+    isHreThresholdExceeded: boolean;
+    hreAlertMessage: string;
+  } | null>(null);
+
+  const [robinHoodCycle, setRobinHoodCycle] = useState<{
+    blocos: Array<{
+      sequenceOrder: number;
+      type: string;
+      disciplina: string;
+      duracaoMinutos: number;
+      nivelDominioEstrelas: number;
+      horasAlocadasDisciplina: number;
+      horasTransferidasRobinHood: number;
+      mensagemEuDoPassado: string;
+    }>;
+    recalibracaoObrigatoria: boolean;
+    resumoRobinHood: Record<string, string>;
+  } | null>(null);
+
+  const [marcouAcabou, setMarcouAcabou] = useState<{
+    totalSwitches: number;
+    correctToWrongCount: number;
+    wrongToCorrectCount: number;
+    netPointsScore: number;
+    correctToWrongPercent: number;
+    marcouAcabouAdvice: string;
+  } | null>(null);
+
+  // Fetch real statistics, topics & cognitive metrics
   useEffect(() => {
     if (!activeConcurso) return;
     setIsLoading(true);
@@ -49,6 +83,30 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeConcurso, onNavigate
             studyHoursWeek: data.totalHours,
           }));
         }
+      })
+      .catch(() => {});
+
+    // Fetch cognitive time metrics (HE vs HRE)
+    fetch(`/api/v1/cognitive/time-metrics?concursoId=${encodeURIComponent(activeConcurso.id)}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data) setTimeMetrics(data);
+      })
+      .catch(() => {});
+
+    // Fetch Robin Hood study cycle
+    fetch(`/api/v1/cycle/robin-hood?concursoId=${encodeURIComponent(activeConcurso.id)}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data) setRobinHoodCycle(data);
+      })
+      .catch(() => {});
+
+    // Fetch Answer Switch Tracker ("Marcou, Acabou")
+    fetch('/api/v1/cognitive/marcou-acabou')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data) setMarcouAcabou(data);
       })
       .catch(() => {});
 
@@ -303,6 +361,161 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeConcurso, onNavigate
           </div>
         </div>
       </div>
+
+      {/* SEÇÃO COGNITIVA: HE vs HRE & AUDITORIA DE TEMPO */}
+      {timeMetrics && (
+        <div className={`cognitive-time-card glass ${timeMetrics.isHreThresholdExceeded ? 'border-amber-alert' : ''}`}>
+          <div className="card-section-title">
+            <div className="flex-row-center gap-2">
+              <span className="icon-pulse">⏳</span>
+              <h4>Balanço de Tempo Cognitivo: HE (Raiz) vs HRE (Operacional)</h4>
+            </div>
+            <span className="kpi-tag-sub">Princípio da Mínima Ação / Anti-Fricção</span>
+          </div>
+
+          <div className="time-metrics-grid">
+            <div className="metric-box he-box">
+              <span className="metric-label">HE Líquida (Ativa / Raiz)</span>
+              <span className="metric-value text-emerald">{timeMetrics.heHours}h</span>
+              <span className="metric-sub">Leitura investigativa, questões e simulados</span>
+            </div>
+            <div className="metric-box hre-box">
+              <span className="metric-label">HRE (Operacional)</span>
+              <span className={`metric-value ${timeMetrics.isHreThresholdExceeded ? 'text-amber' : 'text-slate'}`}>
+                {timeMetrics.hreHours}h ({timeMetrics.hrePercent}%)
+              </span>
+              <span className="metric-sub">Organização, flashcards e configurações</span>
+            </div>
+          </div>
+
+          {/* Barra de Proporção HE vs HRE */}
+          <div className="he-ratio-bar-container">
+            <div
+              className="he-fill"
+              style={{ width: `${Math.max(100 - timeMetrics.hrePercent, 0)}%` }}
+              title={`HE Ativa: ${(100 - timeMetrics.hrePercent).toFixed(1)}%`}
+            />
+            <div
+              className="hre-fill"
+              style={{ width: `${timeMetrics.hrePercent}%` }}
+              title={`HRE Operacional: ${timeMetrics.hrePercent}%`}
+            />
+          </div>
+
+          {/* Banner de Alerta se HRE > 15% */}
+          <div className={`time-alert-banner ${timeMetrics.isHreThresholdExceeded ? 'alert-warning' : 'alert-success'}`}>
+            <span>{timeMetrics.hreAlertMessage}</span>
+          </div>
+        </div>
+      )}
+
+      {/* SEÇÃO COGNITIVA: CICLO DE ESTUDOS DINÂMICO (LEI DE ROBIN HOOD) */}
+      {robinHoodCycle && robinHoodCycle.blocos.length > 0 && (
+        <div className="robin-hood-card glass">
+          <div className="card-section-title">
+            <div className="flex-row-center gap-2">
+              <span>🏹</span>
+              <div>
+                <h4>Ciclo de Estudos Dinâmico (Lei de Robin Hood)</h4>
+                <p className="card-sub-info">
+                  Fila circular contínua • Horas transferidas de matérias ricas (4-5★) para pobres (0-2★)
+                </p>
+              </div>
+            </div>
+            <button
+              className="btn btn-secondary btn-sm"
+              onClick={() => onNavigateToTab('cronograma')}
+              title="Ajustar disponibilidade ou recalibrar ciclo"
+            >
+              🔄 Replanejar Ciclo
+            </button>
+          </div>
+
+          {robinHoodCycle.recalibracaoObrigatoria && (
+            <div className="recalibration-warning-banner">
+              ⚠️ <strong>Recalibração Obrigatória:</strong> Você completou 4 ciclos! Atualize suas estrelas de domínio por matéria para o algoritmo recalcular a distribuição justa de horas.
+            </div>
+          )}
+
+          {/* Fila Circular de Blocos */}
+          <div className="cycle-blocks-queue">
+            {robinHoodCycle.blocos.slice(0, 6).map((bloco, idx) => {
+              const isFirst = idx === 0;
+              return (
+                <div key={idx} className={`cycle-block-pill ${isFirst ? 'active-next-block' : ''}`}>
+                  <div className="block-pill-header">
+                    <span className="block-order">#{bloco.sequenceOrder}</span>
+                    <span className="block-stars">
+                      {bloco.type === 'ESTUDO_REGULAR'
+                        ? '★'.repeat(bloco.nivelDominioEstrelas) + '☆'.repeat(5 - bloco.nivelDominioEstrelas)
+                        : '🎯'}
+                    </span>
+                  </div>
+                  <strong className="block-discipline">{bloco.disciplina}</strong>
+                  <span className="block-duration">{bloco.duracaoMinutos} min</span>
+
+                  {bloco.horasTransferidasRobinHood > 0.1 && (
+                    <span className="badge-robin-hood-gain" title="Horas recebidas via Robin Hood">
+                      +{bloco.horasTransferidasRobinHood.toFixed(1)}h
+                    </span>
+                  )}
+                  {bloco.horasTransferidasRobinHood < -0.1 && (
+                    <span className="badge-robin-hood-loss" title="Horas transferidas para matérias fracas">
+                      {bloco.horasTransferidasRobinHood.toFixed(1)}h
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Mensagem para o Eu do Futuro (Handoff do Passado) */}
+          {robinHoodCycle.blocos[0]?.mensagemEuDoPassado && (
+            <div className="future-self-handoff-box">
+              <span className="handoff-tag">💬 Mensagem do seu Eu do Passado para este bloco:</span>
+              <p className="handoff-text">"{robinHoodCycle.blocos[0].mensagemEuDoPassado}"</p>
+              <button
+                className="btn btn-rec-action btn-sm"
+                onClick={() => onNavigateToTab('study', { disciplina: robinHoodCycle.blocos[0].disciplina })}
+              >
+                ▶ Iniciar Bloco: {robinHoodCycle.blocos[0].disciplina}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* SEÇÃO COGNITIVA: RASTREADOR "MARCOU, ACABOU" (ANSWER SWITCH TRACKER) */}
+      {marcouAcabou && marcouAcabou.totalSwitches > 0 && (
+        <div className="marcou-acabou-card glass">
+          <div className="card-section-title">
+            <div className="flex-row-center gap-2">
+              <span>🎯</span>
+              <h4>Auditoria Comportamental: Regra do "Marcou, Acabou"</h4>
+            </div>
+            <span className={`badge-score-impact ${marcouAcabou.netPointsScore >= 0 ? 'impact-positive' : 'impact-negative'}`}>
+              Saldo Líquido: {marcouAcabou.netPointsScore > 0 ? `+${marcouAcabou.netPointsScore}` : marcouAcabou.netPointsScore} pts
+            </span>
+          </div>
+
+          <p className="marcou-acabou-desc">{marcouAcabou.marcouAcabouAdvice}</p>
+
+          <div className="switches-mini-stats">
+            <div className="mini-stat">
+              <span className="mini-num text-red">{marcouAcabou.correctToWrongCount}</span>
+              <span className="mini-lbl">Trocou Certo ➔ Errado</span>
+            </div>
+            <div className="mini-stat">
+              <span className="mini-num text-emerald">{marcouAcabou.wrongToCorrectCount}</span>
+              <span className="mini-lbl">Trocou Errado ➔ Certo</span>
+            </div>
+            <div className="mini-stat">
+              <span className="mini-num">{marcouAcabou.totalSwitches}</span>
+              <span className="mini-lbl">Total de Trocas</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Bottom Grid: Quick Actions & Priority Disciplines */}
       <div className="dashboard-bottom-grid">

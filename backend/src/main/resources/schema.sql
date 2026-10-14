@@ -169,3 +169,19 @@ CREATE TABLE IF NOT EXISTS topic_material_links (
     anotacoes TEXT,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Visão domain_events apontando para event_store imutável
+CREATE VIEW IF NOT EXISTS domain_events AS
+SELECT event_id, event_type, aggregate_type, aggregate_id, session_id, occurred_at, recorded_at, event_version, schema_version, payload_json
+FROM event_store;
+
+-- Lista de Distrações / Brain Dump (Modo Monge / Anti-AIDA Ctrl+D)
+CREATE TABLE IF NOT EXISTS student_distractions (
+    id TEXT PRIMARY KEY,
+    session_id TEXT,
+    concurso_id TEXT,
+    distraction_text TEXT NOT NULL,
+    resolved INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+

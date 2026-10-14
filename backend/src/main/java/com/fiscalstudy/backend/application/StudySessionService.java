@@ -42,6 +42,8 @@ public class StudySessionService {
         Number paginasLidas = (Number) sessionData.getOrDefault("paginasLidas", 0);
         Number questoesFeitas = (Number) sessionData.getOrDefault("questoesFeitas", 0);
         String modo = (String) sessionData.getOrDefault("modo", "CRONOMETRO"); // CRONOMETRO, POMODORO, MANUAL
+        String activityType = (String) sessionData.getOrDefault("activityType", "HE"); // HE (raiz/ativo) ou HRE (operacional)
+        String nextSessionHandoff = (String) sessionData.get("nextSessionHandoff");
         String notas = (String) sessionData.get("notas");
 
         // Atualiza progresso do material se materialId e páginas lidas foram fornecidos
@@ -65,6 +67,8 @@ public class StudySessionService {
         payloadMap.put("paginasLidas", paginasLidas.intValue());
         payloadMap.put("questoesFeitas", questoesFeitas.intValue());
         payloadMap.put("modo", modo);
+        payloadMap.put("activityType", activityType);
+        payloadMap.put("nextSessionHandoff", nextSessionHandoff);
         payloadMap.put("notas", notas);
         payloadMap.put("origin", instanceOrigin.name());
 

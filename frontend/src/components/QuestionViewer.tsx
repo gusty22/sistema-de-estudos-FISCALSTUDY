@@ -75,8 +75,94 @@ const QuestionViewer: React.FC = () => {
   const [selectedCausaErro, setSelectedCausaErro] = useState<string>('');
   const [showSupportMaterial, setShowSupportMaterial] = useState<boolean>(true);
 
+  // Estados Cognitivos Módulo 1, 2 e 3
+  const [showBrainDump, setShowBrainDump] = useState(false);
+  const [brainDumpText, setBrainDumpText] = useState('');
+  const [brainDumpSavedMsg, setBrainDumpSavedMsg] = useState('');
+  const [showHandoffModal, setShowHandoffModal] = useState(false);
+  const [nextSessionHandoff, setNextSessionHandoff] = useState('');
+  const [sessionActivityType, setSessionActivityType] = useState<'HE' | 'HRE'>('HE');
+
   const [activeTimeMs, setActiveTimeMs] = useState<number>(0);
   const [lastFocusTime, setLastFocusTime] = useState<number>(0);
+
+  // Atalho de Teclado Ctrl+D para Brain Dump (Lista de Distrações Anti-AIDA)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'd' || e.key === 'D')) {
+        e.preventDefault();
+        setShowBrainDump((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  const handleSelectOption = (opt: string) => {
+    if (feedback) return;
+    if (selectedOption && selectedOption !== opt) {
+      const fromLetter = selectedOption.match(/^([A-E])\)?/)?.[1] || selectedOption.charAt(0);
+      const toLetter = opt.match(/^([A-E])\)?/)?.[1] || opt.charAt(0);
+      fetch('http://localhost:8080/api/v1/cognitive/switch-answer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId,
+          questionId: question?.questionId,
+          fromOption: fromLetter,
+          toOption: toLetter,
+          timeSpentSeconds: Math.round(activeTimeMs / 1000)
+        })
+      }).catch(() => {});
+    }
+    setSelectedOption(opt);
+  };
+
+  const handleSaveBrainDump = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!brainDumpText.trim()) return;
+    try {
+      await fetch('http://localhost:8080/api/v1/cognitive/distractions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId,
+          concursoId: selectedConcursoId,
+          distractionText: brainDumpText.trim()
+        })
+      });
+      setBrainDumpSavedMsg('Distração arquivada! Mente limpa para continuar.');
+      setBrainDumpText('');
+      setTimeout(() => {
+        setBrainDumpSavedMsg('');
+        setShowBrainDump(false);
+      }, 1200);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const confirmEndSessionWithHandoff = async () => {
+    setShowHandoffModal(false);
+    try {
+      await fetch('http://localhost:8080/api/v1/study-sessions/record', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId,
+          concursoId: selectedConcursoId,
+          disciplina: question?.metadata?.discipline || selectedDiscipline || 'Geral',
+          durationSeconds: Math.round(activeTimeMs / 1000),
+          questoesFeitas: 1,
+          activityType: sessionActivityType,
+          nextSessionHandoff: nextSessionHandoff.trim()
+        })
+      });
+    } catch (e) {
+      console.error("Failed to record study session handoff", e);
+    }
+    endSession();
+  };
   
   // Create or retrieve session ID with persistence across page reloads
   const getInitialSessionId = () => {
@@ -562,13 +648,23 @@ const QuestionViewer: React.FC = () => {
             Modo {studyMode}
           </span>
         </div>
-        <button
-          className="btn"
-          style={{ padding: '5px 15px', fontSize: '0.85rem', background: 'transparent', border: '1px solid #fff', color: '#fff' }}
-          onClick={endSession}
-        >
-          Encerrar Sessão
-        </button>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <button
+            className="btn btn-secondary"
+            style={{ padding: '5px 12px', fontSize: '0.8rem', background: '#1e293b', border: '1px solid #334155' }}
+            onClick={() => setShowBrainDump(true)}
+            title="Lista de Distrações / Brain Dump (Ctrl+D)"
+          >
+            🧠 Brain Dump (Ctrl+D)
+          </button>
+          <button
+            className="btn"
+            style={{ padding: '5px 15px', fontSize: '0.85rem', background: 'transparent', border: '1px solid #fff', color: '#fff' }}
+            onClick={() => setShowHandoffModal(true)}
+          >
+            Encerrar Sessão
+          </button>
+        </div>
       </header>
 
       {/* Material de Apoio Compartilhado (Fase 5 - Textos-base, tabelas, figuras) */}
@@ -610,7 +706,7 @@ const QuestionViewer: React.FC = () => {
               <div 
                 key={idx} 
                 className={`option-card ${isSelected ? 'selected' : ''} ${feedback && isSelected ? (isUnverifiedGabarito ? 'selected' : (feedback.isCorrect ? 'correct' : 'incorrect')) : ''} ${feedback ? 'disabled' : ''}`}
-                onClick={() => !feedback && setSelectedOption(opt)}
+                onClick={() => handleSelectOption(opt)}
               >
                 <div className="option-marker">{letter}</div>
                 <div className="option-text">{opt.replace(/^([A-E])\)?\s*/, '')}</div>
@@ -711,6 +807,120 @@ const QuestionViewer: React.FC = () => {
           <button className="btn" onClick={fetchNextQuestion} style={{ marginTop: '0.75rem', alignSelf: 'flex-end' }}>
             Próxima Questão ➔
           </button>
+        </div>
+      )}
+
+      {/* MODAL COGNITIVO 1: Brain Dump / Lista de Distrações (Ctrl+D) */}
+      {showBrainDump && (
+        <div className="modal-backdrop animate-fade-in" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+          <div className="glass modal-card" style={{ maxWidth: 480, width: '90%', padding: '1.5rem', borderRadius: 12, background: '#0f172a', border: '1px solid #334155' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+              <h3 style={{ margin: 0, color: '#f8fafc', fontSize: '1.1rem' }}>🧠 Brain Dump (Modo Monge)</h3>
+              <button
+                onClick={() => setShowBrainDump(false)}
+                style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '1.2rem', cursor: 'pointer' }}
+              >
+                ✕
+              </button>
+            </div>
+            <p style={{ color: '#94a3b8', fontSize: '0.82rem', margin: '0 0 1rem', lineHeight: '1.4' }}>
+              Despeje qualquer pensamento intrusivo ou tarefa pendente em 3 segundos. Ela será arquivada e ocultada para você não perder o foco na questão atual.
+            </p>
+            {brainDumpSavedMsg ? (
+              <div style={{ padding: '0.75rem', background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', borderRadius: 8, textAlign: 'center', fontWeight: 600 }}>
+                {brainDumpSavedMsg}
+              </div>
+            ) : (
+              <form onSubmit={handleSaveBrainDump}>
+                <input
+                  type="text"
+                  autoFocus
+                  className="form-control"
+                  style={{ width: '100%', padding: '0.65rem 0.85rem', background: '#0b0e17', border: '1px solid #3b82f6', color: '#fff', borderRadius: 6, marginBottom: '0.75rem' }}
+                  placeholder="Ex: Pagar boleto da internet; responder João no WhatsApp..."
+                  value={brainDumpText}
+                  onChange={(e) => setBrainDumpText(e.target.value)}
+                />
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                  <button type="button" className="btn btn-secondary" onClick={() => setShowBrainDump(false)} style={{ padding: '5px 12px' }}>
+                    Cancelar
+                  </button>
+                  <button type="submit" className="btn btn-primary" style={{ padding: '5px 15px' }}>
+                    Arquivar & Focar (Enter)
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* MODAL COGNITIVO 2: Mensagem para o Eu do Futuro (next_session_handoff) & Tipo de Hora */}
+      {showHandoffModal && (
+        <div className="modal-backdrop animate-fade-in" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+          <div className="glass modal-card" style={{ maxWidth: 520, width: '90%', padding: '1.75rem', borderRadius: 12, background: '#0f172a', border: '1px solid #3b82f6' }}>
+            <h3 style={{ margin: '0 0 0.5rem', color: '#f8fafc', fontSize: '1.25rem' }}>
+              ✉️ Mensagem para o Seu Eu do Futuro
+            </h3>
+            <p style={{ color: '#94a3b8', fontSize: '0.85rem', margin: '0 0 1rem', lineHeight: '1.4' }}>
+              O que o seu "eu" do próximo ciclo precisa saber imediatamente ao abrir esta disciplina?
+            </p>
+
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{ display: 'block', fontSize: '0.8rem', color: '#cbd5e1', marginBottom: '0.3rem', fontWeight: 600 }}>
+                Classificação da Hora:
+              </label>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button
+                  type="button"
+                  className={`btn ${sessionActivityType === 'HE' ? 'btn-primary' : 'btn-secondary'}`}
+                  style={{ flex: 1, padding: '6px', fontSize: '0.8rem' }}
+                  onClick={() => setSessionActivityType('HE')}
+                >
+                  ⚡ HE (Estudo Ativo / Raiz)
+                </button>
+                <button
+                  type="button"
+                  className={`btn ${sessionActivityType === 'HRE' ? 'btn-primary' : 'btn-secondary'}`}
+                  style={{ flex: 1, padding: '6px', fontSize: '0.8rem' }}
+                  onClick={() => setSessionActivityType('HRE')}
+                >
+                  🗂️ HRE (Operacional)
+                </button>
+              </div>
+            </div>
+
+            <div style={{ marginBottom: '1.25rem' }}>
+              <label style={{ display: 'block', fontSize: '0.8rem', color: '#cbd5e1', marginBottom: '0.3rem', fontWeight: 600 }}>
+                Handoff para o Próximo Bloco:
+              </label>
+              <textarea
+                className="form-control"
+                rows={3}
+                style={{ width: '100%', padding: '0.65rem', background: '#0b0e17', border: '1px solid #334155', color: '#fff', borderRadius: 6, fontSize: '0.85rem' }}
+                placeholder="Ex: Parou na pág. 34 do PDF 03; iniciar fazendo as questões múltiplos de 3 do final do capítulo..."
+                value={nextSessionHandoff}
+                onChange={(e) => setNextSessionHandoff(e.target.value)}
+              />
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setShowHandoffModal(false)}
+              >
+                Continuar Estudando
+              </button>
+              <button
+                type="button"
+                className="btn btn-rec-action"
+                onClick={confirmEndSessionWithHandoff}
+              >
+                Salvar Recado & Encerrar Sessão
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

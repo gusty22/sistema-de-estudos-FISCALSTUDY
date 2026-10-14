@@ -477,3 +477,313 @@
   font-size: 0.75rem;
   color: #64748b;
 }
+
+/* ==========================================================================
+   Estilos Cognitivos (Módulo 1 & 2): HE vs HRE, Robin Hood e Marcou Acabou
+   ========================================================================== */
+
+/* Card de Balanço HE vs HRE */
+.cognitive-time-card {
+  padding: 1.25rem 1.5rem;
+  border-radius: 12px;
+  background: #111624;
+  border: 1px solid #1e293b;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.cognitive-time-card.border-amber-alert {
+  border-color: rgba(245, 158, 11, 0.5);
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.08);
+}
+
+.flex-row-center {
+  display: flex;
+  align-items: center;
+}
+
+.gap-2 {
+  gap: 0.5rem;
+}
+
+.time-metrics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.metric-box {
+  background: #0b0e17;
+  padding: 0.85rem 1.15rem;
+  border-radius: 8px;
+  border: 1px solid #1a2234;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.metric-label {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.metric-value {
+  font-size: 1.6rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.text-emerald {
+  color: #10b981;
+}
+
+.text-amber {
+  color: #f59e0b;
+}
+
+.text-slate {
+  color: #94a3b8;
+}
+
+.text-red {
+  color: #ef4444;
+}
+
+.metric-sub {
+  font-size: 0.72rem;
+  color: #64748b;
+}
+
+.he-ratio-bar-container {
+  height: 8px;
+  background: #1e293b;
+  border-radius: 9999px;
+  display: flex;
+  overflow: hidden;
+}
+
+.he-fill {
+  background: linear-gradient(90deg, #10b981 0%, #3b82f6 100%);
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.hre-fill {
+  background: #64748b;
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.time-alert-banner {
+  padding: 0.65rem 1rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.time-alert-banner.alert-warning {
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: #fbbf24;
+}
+
+.time-alert-banner.alert-success {
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  color: #34d399;
+}
+
+/* Card Ciclo de Estudos Robin Hood */
+.robin-hood-card {
+  padding: 1.25rem 1.5rem;
+  border-radius: 12px;
+  background: #111624;
+  border: 1px solid #1e293b;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.btn-sm {
+  padding: 4px 10px;
+  font-size: 0.75rem;
+}
+
+.recalibration-warning-banner {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #f87171;
+  padding: 0.65rem 1rem;
+  border-radius: 6px;
+  font-size: 0.82rem;
+}
+
+.cycle-blocks-queue {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.75rem;
+}
+
+.cycle-block-pill {
+  background: #0b0e17;
+  border: 1px solid #1a2234;
+  padding: 0.75rem 0.85rem;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  position: relative;
+  transition: all 0.2s;
+}
+
+.cycle-block-pill.active-next-block {
+  border-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.06);
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.15);
+}
+
+.block-pill-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.7rem;
+}
+
+.block-order {
+  color: #64748b;
+  font-weight: 700;
+}
+
+.block-stars {
+  color: #eab308;
+  letter-spacing: 1px;
+}
+
+.block-discipline {
+  font-size: 0.82rem;
+  color: #f1f5f9;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.block-duration {
+  font-size: 0.72rem;
+  color: #94a3b8;
+}
+
+.badge-robin-hood-gain {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  align-self: flex-start;
+}
+
+.badge-robin-hood-loss {
+  background: rgba(148, 163, 184, 0.1);
+  color: #94a3b8;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  align-self: flex-start;
+}
+
+.future-self-handoff-box {
+  background: #0b0e17;
+  border: 1px dashed rgba(59, 130, 246, 0.35);
+  padding: 0.85rem 1.15rem;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.handoff-tag {
+  font-size: 0.72rem;
+  color: #60a5fa;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.handoff-text {
+  font-size: 0.85rem;
+  color: #e2e8f0;
+  margin: 0;
+  font-style: italic;
+}
+
+/* Card Marcou, Acabou */
+.marcou-acabou-card {
+  padding: 1.25rem 1.5rem;
+  border-radius: 12px;
+  background: #111624;
+  border: 1px solid #1e293b;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.badge-score-impact {
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.impact-positive {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.impact-negative {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.marcou-acabou-desc {
+  font-size: 0.85rem;
+  color: #cbd5e1;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.switches-mini-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+}
+
+.mini-stat {
+  background: #0b0e17;
+  padding: 0.65rem 0.85rem;
+  border-radius: 6px;
+  border: 1px solid #1a2234;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.mini-num {
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.mini-lbl {
+  font-size: 0.68rem;
+  color: #94a3b8;
+  text-align: center;
+}
+
