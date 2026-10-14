@@ -1,8 +1,12 @@
 package com.fiscalstudy.backend.infrastructure.in.web;
 
+import com.fiscalstudy.backend.application.EditalImportService;
 import com.fiscalstudy.backend.domain.Concurso;
 import com.fiscalstudy.backend.domain.ConcursoRepository;
 import com.fiscalstudy.backend.infrastructure.in.web.dto.ConcursoDTO;
+import com.fiscalstudy.backend.infrastructure.in.web.dto.ConcursoWithEditalCreateDTO;
+import com.fiscalstudy.backend.infrastructure.in.web.dto.ConcursoWithEditalResponseDTO;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,9 +20,16 @@ import java.util.stream.Collectors;
 public class ConcursoController {
 
     private final ConcursoRepository concursoRepository;
+    private final EditalImportService editalImportService;
 
     public ConcursoController(ConcursoRepository concursoRepository) {
+        this(concursoRepository, null);
+    }
+
+    @Autowired
+    public ConcursoController(ConcursoRepository concursoRepository, EditalImportService editalImportService) {
         this.concursoRepository = concursoRepository;
+        this.editalImportService = editalImportService;
     }
 
     @GetMapping
@@ -57,6 +68,12 @@ public class ConcursoController {
 
         Concurso saved = concursoRepository.save(c);
         return ResponseEntity.ok(new ConcursoDTO(saved, concursoRepository.countAvailableQuestions(saved.getId())));
+    }
+
+    @PostMapping("/with-edital")
+    public ResponseEntity<ConcursoWithEditalResponseDTO> createConcursoWithEdital(@RequestBody ConcursoWithEditalCreateDTO dto) {
+        ConcursoWithEditalResponseDTO response = editalImportService.createConcursoWithEdital(dto, -1);
+        return ResponseEntity.ok(response);
     }
 
     @PutMapping("/{id}")

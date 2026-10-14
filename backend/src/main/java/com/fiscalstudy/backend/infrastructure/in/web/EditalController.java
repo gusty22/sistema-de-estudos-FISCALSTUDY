@@ -1,8 +1,13 @@
 package com.fiscalstudy.backend.infrastructure.in.web;
 
+import com.fiscalstudy.backend.application.EditalImportService;
 import com.fiscalstudy.backend.domain.Edital;
 import com.fiscalstudy.backend.domain.EditalRepository;
 import com.fiscalstudy.backend.domain.EditalTopico;
+import com.fiscalstudy.backend.infrastructure.in.web.dto.EditalImportRequestDTO;
+import com.fiscalstudy.backend.infrastructure.in.web.dto.EditalImportSummaryDTO;
+import com.fiscalstudy.backend.infrastructure.in.web.dto.EditalValidationResultDTO;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -18,9 +23,46 @@ import java.util.*;
 public class EditalController {
 
     private final EditalRepository editalRepository;
+    private final EditalImportService editalImportService;
 
     public EditalController(EditalRepository editalRepository) {
+        this(editalRepository, null);
+    }
+
+    @Autowired
+    public EditalController(EditalRepository editalRepository, EditalImportService editalImportService) {
         this.editalRepository = editalRepository;
+        this.editalImportService = editalImportService;
+    }
+
+    @PostMapping(value = "/validate-json", consumes = {"application/json", "text/plain", "*/*"})
+    public ResponseEntity<EditalValidationResultDTO> validateEditalJsonContextual(
+            @PathVariable String concursoId,
+            @RequestBody String rawJson) {
+        // Valida estrutura em memória
+        EditalValidationResultDTO result = editalImportService.validateJson(rawJson);
+        return ResponseEntity.ok(result);
+    }
+
+    @PostMapping("/import-json")
+    public ResponseEntity<EditalImportSummaryDTO> importEditalJson(
+            @PathVariable String concursoId,
+            @RequestBody EditalImportRequestDTO request) {
+        if (request == null || request.getPayload() == null) {
+            throw new IllegalArgumentException("Payload do edital é obrigatório.");
+        }
+
+        EditalImportSummaryDTO summary = editalImportService.importEdital(
+                concursoId,
+                request.getPayload(),
+                request.isConfirmadoHumano(),
+                request.getProcedenciaStatus(),
+                request.isOverwrite(),
+                request.getVersao(),
+                request.getTipo()
+        );
+
+        return ResponseEntity.ok(summary);
     }
 
     @GetMapping

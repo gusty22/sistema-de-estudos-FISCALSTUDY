@@ -30,6 +30,9 @@ public class ConcursoControllerTest {
     private ConcursoRepository concursoRepository;
 
     @MockBean
+    private com.fiscalstudy.backend.application.EditalImportService editalImportService;
+
+    @MockBean
     private JdbcTemplate jdbcTemplate;
 
     @Test

@@ -155,7 +155,7 @@ public class EditalRepositoryImpl implements EditalRepository {
     @Override
     public List<EditalTopico> findTopicosByConcurso(String concursoId) {
         return jdbcTemplate.query(
-                "SELECT * FROM edital_topicos WHERE concurso_id = ? ORDER BY disciplina ASC, peso DESC, assunto ASC",
+                "SELECT * FROM edital_topicos WHERE concurso_id = ? ORDER BY CASE WHEN pagina_origem IS NOT NULL THEN pagina_origem ELSE 99999 END ASC, disciplina ASC, peso DESC, assunto ASC",
                 topicoRowMapper,
                 concursoId
         );
@@ -201,6 +201,30 @@ public class EditalRepositoryImpl implements EditalRepository {
     @Override
     public void deleteTopico(String id) {
         jdbcTemplate.update("DELETE FROM edital_topicos WHERE id = ?", id);
+    }
+
+    @Override
+    public void deleteTopicosByEditalId(String editalId) {
+        jdbcTemplate.update("DELETE FROM edital_topicos WHERE edital_id = ?", editalId);
+    }
+
+    @Override
+    public void deleteTopicosByConcursoId(String concursoId) {
+        jdbcTemplate.update("DELETE FROM edital_topicos WHERE concurso_id = ?", concursoId);
+    }
+
+    @Override
+    public void deleteEdital(String id) {
+        jdbcTemplate.update("DELETE FROM editais WHERE id = ?", id);
+    }
+
+    @Override
+    public List<EditalTopico> findTopicosByEditalId(String editalId) {
+        return jdbcTemplate.query(
+                "SELECT * FROM edital_topicos WHERE edital_id = ? ORDER BY pagina_origem ASC, disciplina ASC, assunto ASC",
+                topicoRowMapper,
+                editalId
+        );
     }
 
     @Override

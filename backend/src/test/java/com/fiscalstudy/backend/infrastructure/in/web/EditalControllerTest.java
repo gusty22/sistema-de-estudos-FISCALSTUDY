@@ -32,6 +32,9 @@ public class EditalControllerTest {
     private EditalRepository editalRepository;
 
     @MockBean
+    private com.fiscalstudy.backend.application.EditalImportService editalImportService;
+
+    @MockBean
     private JdbcTemplate jdbcTemplate;
 
     @Test

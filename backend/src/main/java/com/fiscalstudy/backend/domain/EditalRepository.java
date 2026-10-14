@@ -12,5 +12,9 @@ public interface EditalRepository {
     Optional<EditalTopico> findTopicoById(String id);
     EditalTopico saveTopico(EditalTopico topico);
     void deleteTopico(String id);
+    void deleteTopicosByEditalId(String editalId);
+    void deleteTopicosByConcursoId(String concursoId);
+    void deleteEdital(String id);
+    List<EditalTopico> findTopicosByEditalId(String editalId);
     void confirmTopico(String id);
 }
