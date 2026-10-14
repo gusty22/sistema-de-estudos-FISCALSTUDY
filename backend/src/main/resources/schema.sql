@@ -104,3 +104,68 @@ CREATE TABLE IF NOT EXISTS question_support_materials (
     material_id TEXT NOT NULL,
     PRIMARY KEY(question_id, material_id)
 );
+
+-- Rotina semanal e modo de planejamento do estudante
+CREATE TABLE IF NOT EXISTS student_routines (
+    id TEXT PRIMARY KEY,
+    concurso_id TEXT NOT NULL,
+    modo_planejamento TEXT DEFAULT 'SEMANAL', -- SEMANAL, CICLO
+    horas_segunda REAL DEFAULT 3.0,
+    horas_terca REAL DEFAULT 3.0,
+    horas_quarta REAL DEFAULT 3.0,
+    horas_quinta REAL DEFAULT 3.0,
+    horas_sexta REAL DEFAULT 3.0,
+    horas_sabado REAL DEFAULT 5.0,
+    horas_domingo REAL DEFAULT 4.0,
+    ciclo_disciplinas_json TEXT,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Compromissos fixos da rotina (trabalho, faculdade, academia, etc.)
+CREATE TABLE IF NOT EXISTS routine_commitments (
+    id TEXT PRIMARY KEY,
+    titulo TEXT NOT NULL,
+    dia_semana TEXT NOT NULL, -- SEGUNDA, TERCA, QUARTA, QUINTA, SEXTA, SABADO, DOMINGO, TODOS_DIAS_UTEIS
+    hora_inicio TEXT,
+    hora_fim TEXT,
+    tipo TEXT DEFAULT 'TRABALHO', -- TRABALHO, FACULDADE, ACADEMIA, FAMILIA, OUTRO
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Exceções e imprevistos na rotina (redução ou ampliação pontual de tempo)
+CREATE TABLE IF NOT EXISTS routine_exceptions (
+    id TEXT PRIMARY KEY,
+    data TEXT NOT NULL, -- YYYY-MM-DD
+    tipo TEXT NOT NULL, -- INDISPONIBILIDADE, TEMPO_EXTRA
+    horas REAL NOT NULL,
+    motivo TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Biblioteca de materiais de estudo didáticos (livros, PDFs, cursos, videoaulas, lei seca)
+CREATE TABLE IF NOT EXISTS study_materials (
+    id TEXT PRIMARY KEY,
+    concurso_id TEXT,
+    disciplina TEXT NOT NULL,
+    titulo TEXT NOT NULL,
+    autor TEXT,
+    formato TEXT NOT NULL DEFAULT 'PDF', -- PDF, LIVRO, VIDEO, LEI_SECA, LINK
+    total_paginas INTEGER DEFAULT 0,
+    pagina_atual INTEGER DEFAULT 0,
+    url_ou_caminho TEXT,
+    notas TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Vínculo entre tópicos do edital e materiais didáticos com progresso de páginas
+CREATE TABLE IF NOT EXISTS topic_material_links (
+    id TEXT PRIMARY KEY,
+    topico_id TEXT NOT NULL,
+    material_id TEXT NOT NULL,
+    pagina_inicio INTEGER,
+    pagina_fim INTEGER,
+    paginas_lidas INTEGER DEFAULT 0,
+    status TEXT DEFAULT 'NAO_INICIADO', -- NAO_INICIADO, EM_ANDAMENTO, CONCLUIDO
+    anotacoes TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
