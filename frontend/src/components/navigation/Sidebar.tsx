@@ -11,8 +11,13 @@ export type NavTab =
   | 'study' 
   | 'simulados' 
   | 'revisoes' 
+  | 'digitaltwin'
   | 'import' 
-  | 'analytics';
+  | 'analytics'
+  | 'feynman'
+  | 'metodoera'
+  | 'pontoschave'
+  | 'premortem';
 
 interface SidebarProps {
   activeTab: NavTab;
@@ -117,10 +122,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         <button
           className={`nav-btn ${activeTab === 'cronograma' ? 'active' : ''}`}
-          onClick={() => onSelectTab('cronograma')}
+          onClick={() => {
+            sessionStorage.setItem('fiscalstudy_crono_mode', 'MAESTRO');
+            onSelectTab('cronograma');
+          }}
         >
-          <span className="nav-icon">📅</span>
-          <span className="nav-text">Cronograma & Ciclos</span>
+          <span className="nav-icon">⚡</span>
+          <span className="nav-text">Maestro (Modo Batalha)</span>
         </button>
 
         <button
@@ -154,6 +162,47 @@ export const Sidebar: React.FC<SidebarProps> = ({
         >
           <span className="nav-icon">🔄</span>
           <span className="nav-text">Ciclo de Revisões & Erros</span>
+        </button>
+
+        <button
+          className={`nav-btn ${activeTab === 'digitaltwin' ? 'active' : ''}`}
+          onClick={() => onSelectTab('digitaltwin')}
+        >
+          <span className="nav-icon">🧠</span>
+          <span className="nav-text">Gêmeo Digital (Lucas)</span>
+        </button>
+
+        <div className="nav-section-title">CIÊNCIA COGNITIVA & MÉTODOS</div>
+        <button
+          className={`nav-btn ${activeTab === 'metodoera' ? 'active' : ''}`}
+          onClick={() => onSelectTab('metodoera')}
+        >
+          <span className="nav-icon">⚡</span>
+          <span className="nav-text">Método ERA</span>
+        </button>
+
+        <button
+          className={`nav-btn ${activeTab === 'feynman' ? 'active' : ''}`}
+          onClick={() => onSelectTab('feynman')}
+        >
+          <span className="nav-icon">🔬</span>
+          <span className="nav-text">Sessão Feynman</span>
+        </button>
+
+        <button
+          className={`nav-btn ${activeTab === 'pontoschave' ? 'active' : ''}`}
+          onClick={() => onSelectTab('pontoschave')}
+        >
+          <span className="nav-icon">🎯</span>
+          <span className="nav-text">Pontos-Chave (SRS)</span>
+        </button>
+
+        <button
+          className={`nav-btn ${activeTab === 'premortem' ? 'active' : ''}`}
+          onClick={() => onSelectTab('premortem')}
+        >
+          <span className="nav-icon">🔮</span>
+          <span className="nav-text">Pré-Mortem (Gary Klein)</span>
         </button>
 
         <div className="nav-section-title">GESTÃO & INGESTÃO</div>

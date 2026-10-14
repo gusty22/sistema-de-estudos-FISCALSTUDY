@@ -1,4 +1,4 @@
-/* CronogramaSemanal.css - Enhanced with Track Concursos Cycle and Routine Support */
+/* CronogramaSemanal.css - Adaptive Cycle and Routine Support */
 
 .cronograma-container {
   display: flex;
@@ -292,7 +292,7 @@
 }
 
 /* ========================================================
-   CICLO DE ESTUDOS VIEW (Inspirado no Track Concursos)
+   CICLO DE ESTUDOS VIEW ADAPTATIVO
    ======================================================== */
 .ciclo-container {
   display: flex;

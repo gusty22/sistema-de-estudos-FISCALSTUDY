@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import type { ConcursoItem } from '../concursos/MeusConcursos';
+import { QuestionHistoryModal } from './QuestionHistoryModal';
 import './Dashboard.css';
 
 interface DashboardProps {
@@ -21,10 +22,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeConcurso, onNavigate
     totalCorrect: 0,
     accuracyRate: 0,
     accuracyCalibrated: false, // true only if >= 30 questions
-    studyHoursWeek: 12.5, // simulated from sessions or default
+    studyHoursWeek: 0.0,
   });
   const [topics, setTopics] = useState<EditalTopic[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [historyModalInitialTab, setHistoryModalInitialTab] = useState<'history' | 'xray'>('history');
 
   // Estados Cognitivos Módulo 1 & 2
   const [timeMetrics, setTimeMetrics] = useState<{
@@ -60,6 +63,23 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeConcurso, onNavigate
     marcouAcabouAdvice: string;
   } | null>(null);
 
+  const [latestHandoff, setLatestHandoff] = useState<string | null>(null);
+
+  const [digitalTwinSummary, setDigitalTwinSummary] = useState<{
+    horasLiquidasAcumuladas: number;
+    metaHorasAprovacao: number;
+    progressoMetaPct: number;
+    velocidadeLeituraMedia: number;
+    velocidadeQuestoesMedia: number;
+    rendimentoMedioBlocos: number;
+    saudeNeuralMediaPct: number;
+    simulacaoRecente?: {
+      notaProjetadaHojePct: number;
+      notaCorteConcursoPct: number;
+      gapCompetitivoPct: number;
+    };
+  } | null>(null);
+
   // Fetch real statistics, topics & cognitive metrics
   useEffect(() => {
     if (!activeConcurso) return;
@@ -73,7 +93,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeConcurso, onNavigate
       })
       .catch((err) => console.warn('Erro ao buscar tópicos do edital:', err));
 
-    // Fetch study session summary for real tracked hours
+    // Fetch study session summary for real tracked hours & latest handoff
     fetch(`/api/v1/study-sessions/summary?concursoId=${encodeURIComponent(activeConcurso.id)}`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
@@ -82,6 +102,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeConcurso, onNavigate
             ...prev,
             studyHoursWeek: data.totalHours,
           }));
+        }
+        if (data && data.latestHandoff) {
+          setLatestHandoff(data.latestHandoff);
         }
       })
       .catch(() => {});
@@ -107,6 +130,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeConcurso, onNavigate
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data) setMarcouAcabou(data);
+      })
+      .catch(() => {});
+
+    // Fetch Digital Twin status (Lucas telemetry + simulation)
+    fetch(`/api/v1/digital-twin/status?concursoId=${encodeURIComponent(activeConcurso.id)}&concursoNome=${encodeURIComponent(activeConcurso.nome)}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data) setDigitalTwinSummary(data);
       })
       .catch(() => {});
 
@@ -151,10 +182,28 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeConcurso, onNavigate
     }
   } catch (e) {}
 
+  // Strategic disciplines derived directly from real edital topics without mocks
+  const strategicDisciplines = useMemo(() => {
+    if (!topics || topics.length === 0) return [];
+    const map = new Map<string, { nome: string; peso: number; questoes: number }>();
+    topics.forEach((t) => {
+      const existing = map.get(t.disciplina) || { nome: t.disciplina, peso: 1.0, questoes: 0 };
+      existing.peso = Math.max(existing.peso, t.peso || 1.0);
+      existing.questoes += (t.questoesPrevistas || 0);
+      map.set(t.disciplina, existing);
+    });
+    return Array.from(map.values())
+      .sort((a, b) => (b.peso !== a.peso ? b.peso - a.peso : b.questoes - a.questoes))
+      .map((d) => ({
+        ...d,
+        status: d.peso >= 2.0 ? 'Crítica' : d.peso >= 1.5 ? 'Alta' : 'Média',
+      }));
+  }, [topics]);
+
   // "O Que Estudar Agora?" Recommendation Engine (Deterministic MVT)
   // Recommends top priority based on edital topics and lowest recent accuracy or unstudied topic
   const getRecommendation = () => {
-    if (topics.length > 0) {
+    if (topics && topics.length > 0) {
       // Pick highest weight topic
       const sorted = [...topics].sort((a, b) => (b.peso || 1) - (a.peso || 1));
       const topTopic = sorted[0];
@@ -166,13 +215,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeConcurso, onNavigate
         motivo: `Maior peso programático (${topTopic.peso || '1.0'}) no edital oficial com questões no banco.`,
       };
     }
-    return {
-      disciplina: 'Legislação Tributária Municipal & Direito Tributário',
-      assunto: 'Impostos Municipais (ISSQN, IPTU, ITBI)',
-      atividade: 'Resolução de Questões com Justificativa e Classificação de Erros',
-      tempoMinutos: 45,
-      motivo: 'Disciplina central de maior recorrência em concursos de Auditoria e Fiscalização.',
-    };
+    return null;
   };
 
   const recommendation = getRecommendation();
@@ -194,7 +237,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeConcurso, onNavigate
             </span>
           </div>
           <p className="contest-desc">
-            {activeConcurso?.cargo || 'Cargo Fiscal'} • {activeConcurso?.orgao || 'Órgão Oficial'} • Banca {activeConcurso?.banca || 'N/D'}
+            {activeConcurso
+              ? `${activeConcurso.cargo || 'Cargo Fiscal'} • ${activeConcurso.orgao || 'Órgão Oficial'} • Banca ${activeConcurso.banca || 'N/D'}`
+              : 'Cadastre seu primeiro concurso ou selecione um existente no menu lateral.'}
           </p>
         </div>
 
@@ -240,24 +285,46 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeConcurso, onNavigate
           </div>
         </div>
 
-        {/* KPI 2: Questões Resolvidas */}
-        <div className="kpi-card glass">
+        {/* KPI 2: Questões Resolvidas (Clickable Traceability) */}
+        <div
+          className="kpi-card glass kpi-card-clickable"
+          onClick={() => {
+            setHistoryModalInitialTab('history');
+            setIsHistoryModalOpen(true);
+          }}
+          style={{ cursor: 'pointer', transition: 'all 0.2s ease' }}
+          title="Clique para auditar cada questão respondida com enunciado, resposta e tempo gasto"
+        >
           <div className="kpi-header">
             <span className="kpi-icon">📝</span>
             <span className="kpi-title">Questões Feitas</span>
+            <span style={{ marginLeft: 'auto', fontSize: '0.75rem', color: '#38bdf8', fontWeight: 600 }}>
+              🔍 Histórico
+            </span>
           </div>
           <div className="kpi-body">
             <span className="kpi-value">{stats.totalQuestionsSolved}</span>
             <span className="kpi-subtitle">respostas registradas</span>
           </div>
-          <span className="kpi-tag-sub">Event Store Append-Only</span>
+          <span className="kpi-tag-sub">Rastreabilidade Total • Clique para auditar</span>
         </div>
 
-        {/* KPI 3: Taxa de Acerto Geral */}
-        <div className="kpi-card glass">
+        {/* KPI 3: Taxa de Acerto Geral (Clickable X-Ray) */}
+        <div
+          className="kpi-card glass kpi-card-clickable"
+          onClick={() => {
+            setHistoryModalInitialTab('xray');
+            setIsHistoryModalOpen(true);
+          }}
+          style={{ cursor: 'pointer', transition: 'all 0.2s ease' }}
+          title="Clique para abrir o Raio-X de desempenho detalhado por disciplina e tópicos críticos"
+        >
           <div className="kpi-header">
             <span className="kpi-icon">🎯</span>
             <span className="kpi-title">Taxa de Acerto</span>
+            <span style={{ marginLeft: 'auto', fontSize: '0.75rem', color: '#38bdf8', fontWeight: 600 }}>
+              🔬 Raio-X
+            </span>
           </div>
           <div className="kpi-body">
             {stats.accuracyCalibrated ? (
@@ -316,51 +383,200 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeConcurso, onNavigate
         </div>
       </div>
 
-      {/* CENTRAL CARD: "O Que Estudar Agora?" */}
-      <div className="recommendation-card glass">
-        <div className="rec-glow-accent" />
-        <div className="rec-header">
-          <div className="rec-badge">
-            <span className="pulse-dot" />
-            <span>PRESCRIÇÃO ADAPTATIVA MVT</span>
-          </div>
-          <span className="rec-timer">⏱️ Duração Sugerida: {recommendation.tempoMinutos} min</span>
+      {/* Mensagem para o Eu do Futuro (Último Handoff Gravado) */}
+      {latestHandoff && (
+        <div className="glass future-self-handoff-box animate-fade-in" style={{ padding: '1rem 1.25rem', border: '1px solid #38bdf8', borderRadius: '12px', background: 'rgba(56, 189, 248, 0.08)' }}>
+          <span className="handoff-tag" style={{ color: '#38bdf8', fontWeight: 700, fontSize: '0.85rem' }}>
+            📬 Mensagem do Seu Eu do Passado (Onde você parou):
+          </span>
+          <p style={{ margin: '0.4rem 0 0', color: '#f8fafc', fontSize: '1.05rem', fontWeight: 500 }}>
+            "{latestHandoff}"
+          </p>
         </div>
+      )}
 
-        <div className="rec-content">
-          <div className="rec-main">
-            <span className="rec-discipline">{recommendation.disciplina}</span>
-            <h3 className="rec-subject">{recommendation.assunto}</h3>
-            <p className="rec-activity">
-              🎯 <strong>Atividade:</strong> {recommendation.atividade}
-            </p>
-            <div className="rec-reason">
-              💡 <strong>Por que este tópico?</strong> {recommendation.motivo}
+      {/* Banner de Destaque: Gêmeo Digital & Limiar Estatístico de Aprovação (Método Lucas) */}
+      {digitalTwinSummary && (
+        <div className="glass animate-fade-in" style={{ padding: '1.25rem 1.5rem', borderRadius: '12px', border: '1px solid rgba(139, 92, 246, 0.35)', background: 'radial-gradient(circle at top left, rgba(139, 92, 246, 0.12) 0%, rgba(15, 23, 42, 0.85) 100%)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '0.75rem' }}>
+            <div>
+              <span style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#c084fc' }}>
+                🧠 Gêmeo Digital Cognitivo (Método Lucas)
+              </span>
+              <h3 style={{ color: '#f8fafc', fontSize: '1.2rem', margin: '0.2rem 0 0 0' }}>
+                {digitalTwinSummary.horasLiquidasAcumuladas}h de 3.100h Líquidas ({digitalTwinSummary.progressoMetaPct}%) • {digitalTwinSummary.simulacaoRecente ? `Nota Projetada na Prova Hoje: ${digitalTwinSummary.simulacaoRecente.notaProjetadaHojePct}%` : 'Simulação de Prova Ativa'}
+              </h3>
+            </div>
+
+            <button
+              type="button"
+              className="btn btn-sm"
+              style={{ background: '#7c3aed', color: '#fff', border: 'none', padding: '0.5rem 1rem', fontWeight: 700, borderRadius: '6px', cursor: 'pointer' }}
+              onClick={() => onNavigateToTab('digitaltwin')}
+            >
+              🚀 Abrir Gêmeo Digital & Roteiro do Dia →
+            </button>
+          </div>
+
+          <div style={{ width: '100%', height: '8px', background: '#1e293b', borderRadius: '4px', overflow: 'hidden', marginBottom: '0.75rem' }}>
+            <div style={{ height: '100%', width: `${Math.min(100, digitalTwinSummary.progressoMetaPct)}%`, background: 'linear-gradient(90deg, #7c3aed 0%, #38bdf8 50%, #10b981 100%)', borderRadius: '4px' }} />
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '0.75rem' }}>
+            <div style={{ background: '#0a0f1d', padding: '8px 12px', borderRadius: '6px', border: '1px solid #1e293b' }}>
+              <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>📖 Velocidade Leitura</span>
+              <strong style={{ display: 'block', color: '#38bdf8', fontSize: '1rem' }}>{digitalTwinSummary.velocidadeLeituraMedia} pág/h</strong>
+            </div>
+            <div style={{ background: '#0a0f1d', padding: '8px 12px', borderRadius: '6px', border: '1px solid #1e293b' }}>
+              <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>⚡ Velocidade Resolução</span>
+              <strong style={{ display: 'block', color: '#fbbf24', fontSize: '1rem' }}>{digitalTwinSummary.velocidadeQuestoesMedia} quest/h</strong>
+            </div>
+            <div style={{ background: '#0a0f1d', padding: '8px 12px', borderRadius: '6px', border: '1px solid #1e293b' }}>
+              <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>🎯 Rendimento Médio ("Nota")</span>
+              <strong style={{ display: 'block', color: '#34d399', fontSize: '1rem' }}>{digitalTwinSummary.rendimentoMedioBlocos}%</strong>
+            </div>
+            <div style={{ background: '#0a0f1d', padding: '8px 12px', borderRadius: '6px', border: '1px solid #1e293b' }}>
+              <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>🔬 Saúde Neural Ebbinghaus</span>
+              <strong style={{ display: 'block', color: '#c084fc', fontSize: '1rem' }}>{digitalTwinSummary.saudeNeuralMediaPct}%</strong>
             </div>
           </div>
+        </div>
+      )}
 
-          <div className="rec-actions">
-            <button
-              className="btn btn-rec-action"
-              onClick={() => onNavigateToTab('study', { disciplina: recommendation.disciplina })}
-            >
-              ▶ Praticar Questões
-            </button>
-            <button
-              className="btn btn-secondary"
-              onClick={() => onNavigateToTab('materiais')}
-            >
-              📚 Ver Teoria / Material
-            </button>
-            <button
-              className="btn btn-secondary"
-              onClick={() => onNavigateToTab('cronograma')}
-            >
-              📅 Ver Cronograma
-            </button>
+      {/* BANNER TÁTICO: O MAESTRO DO CICLO DIÁRIO */}
+      <div 
+        className="glass animate-fade-in" 
+        style={{ 
+          padding: '1.25rem 1.5rem', 
+          borderRadius: '14px', 
+          border: '1px solid rgba(245, 158, 11, 0.4)', 
+          background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, rgba(239, 68, 68, 0.08) 50%, rgba(15, 23, 42, 0.9) 100%)',
+          boxShadow: '0 8px 32px rgba(245, 158, 11, 0.1)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '1rem',
+          margin: '1.25rem 0'
+        }}
+      >
+        <div style={{ maxWidth: '680px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+            <span style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#f59e0b', background: 'rgba(245, 158, 11, 0.2)', padding: '2px 8px', borderRadius: '4px' }}>
+              ⚡ Modo Batalha • Micro-Orquestração Diária
+            </span>
+            <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Eliminação Total de Carga Decisória</span>
+          </div>
+          <h3 style={{ color: '#f8fafc', fontSize: '1.25rem', margin: '0.2rem 0 0.4rem 0', fontWeight: 700 }}>
+            "Tenho 3 horas hoje": O Maestro assume o comando da sua sessão
+          </h3>
+          <p style={{ color: '#cbd5e1', fontSize: '0.9rem', margin: 0, lineHeight: 1.5 }}>
+            A Interface de Batalha exibe <strong>apenas a próxima ação imediata</strong> com roteiro mastigado: Anki SRS (15 min) ➔ Priming Cognitivo (10 min) ➔ Teoria Hiperfocada (50 min) ➔ Descanso Obrigatório (10 min).
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => {
+            sessionStorage.setItem('fiscalstudy_crono_mode', 'MAESTRO');
+            onNavigateToTab('cronograma');
+          }}
+          style={{
+            background: 'linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)',
+            color: '#fff',
+            border: 'none',
+            padding: '12px 24px',
+            fontSize: '0.95rem',
+            fontWeight: 800,
+            borderRadius: '10px',
+            cursor: 'pointer',
+            boxShadow: '0 4px 18px rgba(245, 158, 11, 0.4)',
+            transition: 'all 0.2s ease',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 24px rgba(245, 158, 11, 0.6)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 18px rgba(245, 158, 11, 0.4)'; }}
+        >
+          <span>⚡ Assumir Modo Batalha de Hoje</span>
+          <span>→</span>
+        </button>
+      </div>
+
+      {/* CENTRAL CARD: "O Que Estudar Agora?" */}
+      {recommendation ? (
+        <div className="recommendation-card glass">
+          <div className="rec-glow-accent" />
+          <div className="rec-header">
+            <div className="rec-badge">
+              <span className="pulse-dot" />
+              <span>PRESCRIÇÃO ADAPTATIVA MVT</span>
+            </div>
+            <span className="rec-timer">⏱️ Duração Sugerida: {recommendation.tempoMinutos} min</span>
+          </div>
+
+          <div className="rec-content">
+            <div className="rec-main">
+              <span className="rec-discipline">{recommendation.disciplina}</span>
+              <h3 className="rec-subject">{recommendation.assunto}</h3>
+              <p className="rec-activity">
+                🎯 <strong>Atividade:</strong> {recommendation.atividade}
+              </p>
+              <div className="rec-reason">
+                💡 <strong>Por que este tópico?</strong> {recommendation.motivo}
+              </div>
+            </div>
+
+            <div className="rec-actions">
+              <button
+                className="btn btn-rec-action"
+                style={{ background: 'linear-gradient(135deg, #f59e0b, #ef4444)', color: '#fff', fontWeight: 700 }}
+                onClick={() => {
+                  sessionStorage.setItem('fiscalstudy_crono_mode', 'MAESTRO');
+                  onNavigateToTab('cronograma');
+                }}
+              >
+                ⚡ Entrar no Modo Batalha
+              </button>
+              <button
+                className="btn btn-secondary"
+                onClick={() => onNavigateToTab('study', { disciplina: recommendation.disciplina })}
+              >
+                ▶ Praticar Questões
+              </button>
+              <button
+                className="btn btn-secondary"
+                onClick={() => onNavigateToTab('materiais')}
+              >
+                📚 Ver Teoria / Material
+              </button>
+              <button
+                className="btn btn-secondary"
+                onClick={() => onNavigateToTab('cronograma')}
+              >
+                📅 Ver Cronograma
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      ) : (
+        <div className="recommendation-card glass" style={{ textAlign: 'center', padding: '2rem' }}>
+          <h3 style={{ margin: '0 0 0.5rem', color: '#f8fafc', fontSize: '1.15rem' }}>
+            📋 Nenhuma matéria/tópico cadastrado no edital ainda
+          </h3>
+          <p style={{ margin: '0 0 1rem', color: '#94a3b8', fontSize: '0.9rem' }}>
+            Cadastre os tópicos ou importe o edital do concurso para gerar prescrições de estudo automáticas baseadas em pesos reais e incidência de prova.
+          </p>
+          <button
+            className="btn btn-primary"
+            onClick={() => onNavigateToTab('edital')}
+            style={{ padding: '8px 20px' }}
+          >
+            Estruturar Edital Verticalizado
+          </button>
+        </div>
+      )}
 
       {/* SEÇÃO COGNITIVA: HE vs HRE & AUDITORIA DE TEMPO */}
       {timeMetrics && (
@@ -527,31 +743,38 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeConcurso, onNavigate
           </div>
 
           <div className="disciplines-list">
-            {[
-              { nome: 'Legislação Tributária Municipal/Estadual', peso: 2.0, questoes: 25, status: 'Crítica' },
-              { nome: 'Direito Tributário', peso: 2.0, questoes: 20, status: 'Crítica' },
-              { nome: 'Contabilidade Geral e Avançada', peso: 1.5, questoes: 15, status: 'Alta' },
-              { nome: 'Direito Constitucional e Administrativo', peso: 1.0, questoes: 10, status: 'Média' },
-              { nome: 'Auditoria Fiscal', peso: 1.5, questoes: 15, status: 'Alta' },
-            ].map((d, i) => (
-              <div key={i} className="discipline-item">
-                <div className="disc-info">
-                  <span className="disc-name">{d.nome}</span>
-                  <span className="disc-meta">Peso: {d.peso} • {d.questoes} questões previstas</span>
+            {strategicDisciplines.length > 0 ? (
+              strategicDisciplines.map((d, i) => (
+                <div key={i} className="discipline-item">
+                  <div className="disc-info">
+                    <span className="disc-name">{d.nome}</span>
+                    <span className="disc-meta">Peso: {d.peso}x • ~{d.questoes > 0 ? d.questoes : 10} questões previstas</span>
+                  </div>
+                  <div className="disc-badge-container">
+                    <span className={`disc-badge ${d.status === 'Crítica' ? 'badge-critical' : 'badge-high'}`}>
+                      {d.status}
+                    </span>
+                    <button
+                      className="btn-disc-study"
+                      onClick={() => onNavigateToTab('study', { disciplina: d.nome })}
+                    >
+                      Praticar
+                    </button>
+                  </div>
                 </div>
-                <div className="disc-badge-container">
-                  <span className={`disc-badge ${d.status === 'Crítica' ? 'badge-critical' : 'badge-high'}`}>
-                    {d.status}
-                  </span>
-                  <button
-                    className="btn-disc-study"
-                    onClick={() => onNavigateToTab('study', { disciplina: d.nome })}
-                  >
-                    Praticar
-                  </button>
-                </div>
+              ))
+            ) : (
+              <div style={{ padding: '2rem 1rem', textAlign: 'center', color: '#94a3b8' }}>
+                <p style={{ margin: 0, fontSize: '0.88rem' }}>Nenhuma matéria cadastrada no edital ainda.</p>
+                <button
+                  className="btn btn-secondary"
+                  style={{ marginTop: '0.75rem', fontSize: '0.8rem', padding: '6px 12px' }}
+                  onClick={() => onNavigateToTab('edital')}
+                >
+                  📋 Estruturar Edital Verticalizado
+                </button>
               </div>
-            ))}
+            )}
           </div>
         </div>
 
@@ -582,8 +805,40 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeConcurso, onNavigate
             <button className="quick-action-btn" onClick={() => onNavigateToTab('revisoes')}>
               <span className="quick-action-icon">🔄</span>
               <div className="quick-action-text">
-                <strong>Caderno de Erros (E1 a E6)</strong>
+                <strong>Caderno de Erros (5 Taxonomias)</strong>
                 <span>Refazer questões com causa mapeada</span>
+              </div>
+            </button>
+
+            <button className="quick-action-btn" onClick={() => onNavigateToTab('metodoera')}>
+              <span className="quick-action-icon">⚡</span>
+              <div className="quick-action-text">
+                <strong>Método ERA</strong>
+                <span>Explorar, Estudar, Revisar, Avaliar</span>
+              </div>
+            </button>
+
+            <button className="quick-action-btn" onClick={() => onNavigateToTab('feynman')}>
+              <span className="quick-action-icon">🔬</span>
+              <div className="quick-action-text">
+                <strong>Sessão Feynman</strong>
+                <span>Reconstrução ativa em Tela Limpa</span>
+              </div>
+            </button>
+
+            <button className="quick-action-btn" onClick={() => onNavigateToTab('pontoschave')}>
+              <span className="quick-action-icon">🎯</span>
+              <div className="quick-action-text">
+                <strong>Pontos-Chave (Cloze SRS)</strong>
+                <span>Omissão de palavras nos 5 critérios</span>
+              </div>
+            </button>
+
+            <button className="quick-action-btn" onClick={() => onNavigateToTab('premortem')}>
+              <span className="quick-action-icon">🔮</span>
+              <div className="quick-action-text">
+                <strong>Pré-Mortem (Gary Klein)</strong>
+                <span>Simulação de fracasso e vacina mental</span>
               </div>
             </button>
 
@@ -597,6 +852,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeConcurso, onNavigate
           </div>
         </div>
       </div>
+
+      {/* Modal de Rastreabilidade Total & Raio-X */}
+      <QuestionHistoryModal
+        isOpen={isHistoryModalOpen}
+        onClose={() => setIsHistoryModalOpen(false)}
+        activeConcursoId={activeConcurso?.id}
+        activeConcursoNome={activeConcurso?.nome}
+        initialTab={historyModalInitialTab}
+        onNavigateToStudy={(disc) => onNavigateToTab('study', { disciplina: disc })}
+      />
     </div>
   );
 };

@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import type { ConcursoItem } from '../concursos/MeusConcursos';
+import { MaestroBattleView } from './MaestroBattleView';
 import './CronogramaSemanal.css';
 
 interface CronogramaProps {
   activeConcurso: ConcursoItem | null;
-  onNavigateToStudy: (disciplina: string) => void;
+  onNavigateToStudy: (disciplina: string, assunto?: string) => void;
+  onNavigateToTab?: (tab: string) => void;
 }
 
 interface StudyBlock {
@@ -32,8 +34,10 @@ const AUTO_COLOR_PALETTE = [
   '#9c27b0', '#ff5722', '#009688', '#795548', '#3f51b5'
 ];
 
-export const CronogramaSemanal: React.FC<CronogramaProps> = ({ activeConcurso, onNavigateToStudy }) => {
-  const [mode, setMode] = useState<'SEMANAL' | 'CICLO'>('SEMANAL');
+export const CronogramaSemanal: React.FC<CronogramaProps> = ({ activeConcurso, onNavigateToStudy, onNavigateToTab }) => {
+  const [mode, setMode] = useState<'MAESTRO' | 'SEMANAL' | 'CICLO'>(() => {
+    return (sessionStorage.getItem('fiscalstudy_crono_mode') as any) || 'MAESTRO';
+  });
   const [selectedDia, setSelectedDia] = useState<string>('Segunda');
   const [isRoutineOpen, setIsRoutineOpen] = useState(false);
 
@@ -58,29 +62,53 @@ export const CronogramaSemanal: React.FC<CronogramaProps> = ({ activeConcurso, o
   const [newCommitHoraIni, setNewCommitHoraIni] = useState('08:00');
   const [newCommitHoraFim, setNewCommitHoraFim] = useState('17:00');
 
-  // Study blocks
-  const [blocks, setBlocks] = useState<StudyBlock[]>([
-    { id: '1', dia: 'Segunda', disciplina: 'Direito Tributário', assunto: 'Princípios e Limitações Constitucionais', tipo: 'TEORIA', duracaoMinutos: 60, concluido: true },
-    { id: '2', dia: 'Segunda', disciplina: 'Legislação Tributária', assunto: 'ISSQN — Fato Gerador e Alíquotas', tipo: 'QUESTOES', duracaoMinutos: 90, concluido: true },
-    { id: '3', dia: 'Segunda', disciplina: 'Língua Portuguesa', assunto: 'Interpretação e Concordância Verbal', tipo: 'REVISAO', duracaoMinutos: 30, concluido: false },
+  // Study blocks - initialized to empty array without mocks
+  const [blocks, setBlocks] = useState<StudyBlock[]>([]);
 
-    { id: '4', dia: 'Terça', disciplina: 'Contabilidade Geral', assunto: 'Balanço Patrimonial e DRE', tipo: 'TEORIA', duracaoMinutos: 90, concluido: false },
-    { id: '5', dia: 'Terça', disciplina: 'Direito Constitucional', assunto: 'Direitos e Garantias Fundamentais', tipo: 'QUESTOES', duracaoMinutos: 60, concluido: false },
+  const handleGenerateBlocksFromCycle = () => {
+    if (cycleItems.length === 0) return;
+    const generated: StudyBlock[] = [];
+    const diasSemana = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
+    const hoursPerDay: Record<string, number> = {
+      'Segunda': routineHours.horasSegunda,
+      'Terça': routineHours.horasTerca,
+      'Quarta': routineHours.horasQuarta,
+      'Quinta': routineHours.horasQuinta,
+      'Sexta': routineHours.horasSexta,
+      'Sábado': routineHours.horasSabado,
+      'Domingo': routineHours.horasDomingo,
+    };
 
-    { id: '6', dia: 'Quarta', disciplina: 'Direito Administrativo', assunto: 'Atos Administrativos e Poderes', tipo: 'TEORIA', duracaoMinutos: 60, concluido: false },
-    { id: '7', dia: 'Quarta', disciplina: 'Legislação Tributária', assunto: 'IPTU e ITBI — Regras Municipais', tipo: 'QUESTOES', duracaoMinutos: 90, concluido: false },
+    let cycleIndex = 0;
+    let blockIdCounter = 1;
 
-    { id: '8', dia: 'Quinta', disciplina: 'Auditoria Fiscal', assunto: 'Técnicas e Procedimentos de Auditoria', tipo: 'TEORIA', duracaoMinutos: 60, concluido: false },
-    { id: '9', dia: 'Quinta', disciplina: 'Direito Tributário', assunto: 'Crédito Tributário e Lançamento', tipo: 'QUESTOES', duracaoMinutos: 90, concluido: false },
+    diasSemana.forEach((dia) => {
+      const dailyHours = hoursPerDay[dia] || 0;
+      let remainingMinutes = Math.round(dailyHours * 60);
 
-    { id: '10', dia: 'Sexta', disciplina: 'Contabilidade Avançada', assunto: 'Demonstração dos Fluxos de Caixa (DFC)', tipo: 'TEORIA', duracaoMinutos: 60, concluido: false },
-    { id: '11', dia: 'Sexta', disciplina: 'Raciocínio Lógico & Matemática', assunto: 'Probabilidade e Equivalências', tipo: 'QUESTOES', duracaoMinutos: 60, concluido: false },
+      while (remainingMinutes >= 45 && cycleItems.length > 0) {
+        const item = cycleItems[cycleIndex % cycleItems.length];
+        const blockDuration = Math.min(remainingMinutes, item.blocoMinutos || 60);
+        const tipo: 'TEORIA' | 'QUESTOES' | 'REVISAO' =
+          (blockIdCounter % 3 === 1) ? 'TEORIA' : (blockIdCounter % 3 === 2) ? 'QUESTOES' : 'REVISAO';
 
-    { id: '12', dia: 'Sábado', disciplina: 'Simulado Semanal de Questões', assunto: 'Prova Completa de Conhecimentos Específicos', tipo: 'QUESTOES', duracaoMinutos: 180, concluido: false },
-    { id: '13', dia: 'Sábado', disciplina: 'Caderno de Erros', assunto: 'Refazer questões erradas na semana', tipo: 'REVISAO', duracaoMinutos: 60, concluido: false },
+        generated.push({
+          id: `gen-${blockIdCounter++}`,
+          dia,
+          disciplina: item.disciplina,
+          assunto: `Estudo guiado do edital (${item.totalTopicos || 1} tópicos)`,
+          tipo,
+          duracaoMinutos: blockDuration,
+          concluido: false,
+        });
 
-    { id: '14', dia: 'Domingo', disciplina: 'Ciclo de Revisão Espaçada', assunto: 'Revisão dos resumos e flashcards da semana', tipo: 'REVISAO', duracaoMinutos: 120, concluido: false },
-  ]);
+        remainingMinutes -= blockDuration;
+        cycleIndex++;
+      }
+    });
+
+    setBlocks(generated);
+  };
 
   const loadRoutineData = () => {
     if (!activeConcurso?.id) return;
@@ -215,14 +243,30 @@ export const CronogramaSemanal: React.FC<CronogramaProps> = ({ activeConcurso, o
       <div className="crono-mode-bar">
         <div className="crono-mode-pills">
           <button
+            className={`crono-mode-pill ${mode === 'MAESTRO' ? 'active' : ''}`}
+            onClick={() => {
+              setMode('MAESTRO');
+              sessionStorage.setItem('fiscalstudy_crono_mode', 'MAESTRO');
+            }}
+            style={mode === 'MAESTRO' ? { background: 'linear-gradient(135deg, #f59e0b, #ef4444)', color: '#fff', boxShadow: '0 0 15px rgba(245, 158, 11, 0.4)' } : {}}
+          >
+            ⚡ Maestro (Modo Batalha)
+          </button>
+          <button
             className={`crono-mode-pill ${mode === 'SEMANAL' ? 'active' : ''}`}
-            onClick={() => setMode('SEMANAL')}
+            onClick={() => {
+              setMode('SEMANAL');
+              sessionStorage.setItem('fiscalstudy_crono_mode', 'SEMANAL');
+            }}
           >
             🗓️ Grade Semanal
           </button>
           <button
             className={`crono-mode-pill ${mode === 'CICLO' ? 'active' : ''}`}
-            onClick={() => setMode('CICLO')}
+            onClick={() => {
+              setMode('CICLO');
+              sessionStorage.setItem('fiscalstudy_crono_mode', 'CICLO');
+            }}
           >
             🔄 Ciclo de Estudos Contínuo
           </button>
@@ -232,6 +276,20 @@ export const CronogramaSemanal: React.FC<CronogramaProps> = ({ activeConcurso, o
           ⚙️ Configurar Rotina ({totalHorasPlanejadas}h/sem)
         </button>
       </div>
+
+      {/* MODE 0: MAESTRO (INTERFACE DE BATALHA IMEDIATA) */}
+      {mode === 'MAESTRO' && (
+        <MaestroBattleView
+          concursoId={activeConcurso?.id || ''}
+          concursoNome={activeConcurso?.nome || 'Concurso Ativo'}
+          onNavigateToStudy={(disciplina, assunto) => onNavigateToStudy(disciplina || '', assunto)}
+          onNavigateToTab={onNavigateToTab}
+          onSwitchToWeekly={() => {
+            setMode('SEMANAL');
+            sessionStorage.setItem('fiscalstudy_crono_mode', 'SEMANAL');
+          }}
+        />
+      )}
 
       {/* MODE 1: CRONOGRAMA SEMANAL */}
       {mode === 'SEMANAL' && (
@@ -267,47 +325,69 @@ export const CronogramaSemanal: React.FC<CronogramaProps> = ({ activeConcurso, o
             </div>
 
             <div className="blocks-list">
-              {blocksDoDia.map((block) => (
-                <div
-                  key={block.id}
-                  className={`study-block-card ${block.concluido ? 'is-completed' : ''}`}
-                >
-                  <div className="block-status-col">
-                    <input
-                      type="checkbox"
-                      checked={block.concluido}
-                      onChange={() => toggleConcluido(block.id)}
-                      title="Marcar como concluído"
-                    />
-                  </div>
-
-                  <div className="block-info-col">
-                    <div className="block-top-meta">
-                      <span className={`block-badge type-${block.tipo.toLowerCase()}`}>
-                        {block.tipo}
-                      </span>
-                      <span className="block-duration">⏱️ {block.duracaoMinutos} min</span>
-                    </div>
-                    <h4 className="block-discipline">{block.disciplina}</h4>
-                    <p className="block-subject">{block.assunto}</p>
-                  </div>
-
-                  <div className="block-actions-col">
+              {blocksDoDia.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '40px 20px', color: '#94a3b8' }}>
+                  <p style={{ fontSize: '15px', marginBottom: '8px', color: '#f1f5f9' }}>
+                    📭 Nenhum bloco de estudo agendado para {selectedDia}-feira.
+                  </p>
+                  <p style={{ fontSize: '13px', maxWidth: '460px', margin: '0 auto 16px auto', color: '#94a3b8' }}>
+                    {cycleItems.length > 0
+                      ? 'Você pode gerar automaticamente a distribuição dos blocos semanais a partir do seu ciclo de estudos proporcional.'
+                      : 'Cadastre matérias no edital do concurso para gerar automaticamente seu ciclo e cronograma semanal.'}
+                  </p>
+                  {cycleItems.length > 0 && (
                     <button
-                      className="btn-block-study"
-                      onClick={() => onNavigateToStudy(block.disciplina)}
+                      className="btn-add-material"
+                      style={{ padding: '8px 16px', fontSize: '13px', margin: '0 auto' }}
+                      onClick={handleGenerateBlocksFromCycle}
                     >
-                      ▶ Praticar Questões
+                      ⚡ Gerar Blocos Automáticos do Ciclo
                     </button>
-                  </div>
+                  )}
                 </div>
-              ))}
+              ) : (
+                blocksDoDia.map((block) => (
+                  <div
+                    key={block.id}
+                    className={`study-block-card ${block.concluido ? 'is-completed' : ''}`}
+                  >
+                    <div className="block-status-col">
+                      <input
+                        type="checkbox"
+                        checked={block.concluido}
+                        onChange={() => toggleConcluido(block.id)}
+                        title="Marcar como concluído"
+                      />
+                    </div>
+
+                    <div className="block-info-col">
+                      <div className="block-top-meta">
+                        <span className={`block-badge type-${block.tipo.toLowerCase()}`}>
+                          {block.tipo}
+                        </span>
+                        <span className="block-duration">⏱️ {block.duracaoMinutos} min</span>
+                      </div>
+                      <h4 className="block-discipline">{block.disciplina}</h4>
+                      <p className="block-subject">{block.assunto}</p>
+                    </div>
+
+                    <div className="block-actions-col">
+                      <button
+                        className="btn-block-study"
+                        onClick={() => onNavigateToStudy(block.disciplina)}
+                      >
+                        ▶ Praticar Questões
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </>
       )}
 
-      {/* MODE 2: CICLO DE ESTUDOS (TRACK CONCURSOS) */}
+      {/* MODE 2: CICLO DE ESTUDOS ADAPTATIVO */}
       {mode === 'CICLO' && (
         <div className="ciclo-container animate-fade-in">
           <div className="ciclo-hero-card">
