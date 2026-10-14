@@ -39,6 +39,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeConcurso, onNavigate
       })
       .catch((err) => console.warn('Erro ao buscar tópicos do edital:', err));
 
+    // Fetch study session summary for real tracked hours
+    fetch(`/api/v1/study-sessions/summary?concursoId=${encodeURIComponent(activeConcurso.id)}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && data.totalHours !== undefined) {
+          setStats((prev) => ({
+            ...prev,
+            studyHoursWeek: data.totalHours,
+          }));
+        }
+      })
+      .catch(() => {});
+
     // Fetch analytics / overview
     fetch('/api/v1/analytics/overview')
       .then((res) => (res.ok ? res.json() : null))
@@ -273,7 +286,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeConcurso, onNavigate
               className="btn btn-rec-action"
               onClick={() => onNavigateToTab('study', { disciplina: recommendation.disciplina })}
             >
-              ▶ Estudar Agora
+              ▶ Praticar Questões
+            </button>
+            <button
+              className="btn btn-secondary"
+              onClick={() => onNavigateToTab('materiais')}
+            >
+              📚 Ver Teoria / Material
             </button>
             <button
               className="btn btn-secondary"

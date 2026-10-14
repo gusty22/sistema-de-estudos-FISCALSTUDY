@@ -6,6 +6,7 @@ export type NavTab =
   | 'dashboard' 
   | 'concursos' 
   | 'cronograma' 
+  | 'materiais'
   | 'edital' 
   | 'study' 
   | 'simulados' 
@@ -119,7 +120,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
           onClick={() => onSelectTab('cronograma')}
         >
           <span className="nav-icon">📅</span>
-          <span className="nav-text">Cronograma Semanal</span>
+          <span className="nav-text">Cronograma & Ciclos</span>
+        </button>
+
+        <button
+          className={`nav-btn ${activeTab === 'materiais' ? 'active' : ''}`}
+          onClick={() => onSelectTab('materiais')}
+        >
+          <span className="nav-icon">📚</span>
+          <span className="nav-text">Biblioteca & Teoria</span>
         </button>
 
         <div className="nav-section-title">PRÁTICA & RESOLUÇÃO</div>

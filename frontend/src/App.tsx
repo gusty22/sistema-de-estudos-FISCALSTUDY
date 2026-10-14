@@ -10,6 +10,8 @@ import EditalVerticalizado from './components/edital/EditalVerticalizado';
 import QuestionViewer from './components/QuestionViewer';
 import ImportStudio from './components/ingestion/ImportStudio';
 import CadastroConcursoWizard from './components/concursos/CadastroConcursoWizard';
+import { BibliotecaMateriais } from './components/materiais/BibliotecaMateriais';
+import { StudyTimerFab } from './components/timer/StudyTimerFab';
 
 function App() {
   const [activeTab, setActiveTab] = useState<NavTab>('dashboard');
@@ -96,6 +98,13 @@ function App() {
           />
         )}
 
+        {activeTab === 'materiais' && (
+          <BibliotecaMateriais
+            activeConcurso={activeConcurso}
+            onNavigateToStudy={handleNavigateToStudy}
+          />
+        )}
+
         {activeTab === 'edital' && (
           <EditalVerticalizado
             concursoId={activeConcurso?.id || 'iss-araguari-auditor-2023'}
@@ -133,6 +142,12 @@ function App() {
           <AnalyticsView activeConcurso={activeConcurso} />
         )}
       </main>
+
+      {/* Global Floating Study Timer & Pomodoro FAB */}
+      <StudyTimerFab
+        activeConcurso={activeConcurso}
+        onSessionSaved={() => loadConcursos()}
+      />
 
       {/* Progressive Registration Wizard Modal */}
       <CadastroConcursoWizard

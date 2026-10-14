@@ -1,0 +1,348 @@
+/* StudyTimerFab.css - Floating Study Timer & Pomodoro */
+
+.study-timer-fab {
+  position: fixed;
+  bottom: 28px;
+  right: 32px;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #4f8ef7, #7c5cfc);
+  border: none;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(79, 142, 247, 0.45);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1000;
+  user-select: none;
+}
+
+.study-timer-fab:hover {
+  transform: scale(1.08) translateY(-2px);
+  box-shadow: 0 12px 32px rgba(79, 142, 247, 0.65);
+}
+
+.study-timer-fab.is-running {
+  animation: fabPulse 2s ease-in-out infinite;
+  background: linear-gradient(135deg, #3ecf8e, #27a06b);
+  box-shadow: 0 8px 24px rgba(62, 207, 142, 0.45);
+}
+
+@keyframes fabPulse {
+  0%, 100% {
+    box-shadow: 0 8px 24px rgba(62, 207, 142, 0.45);
+  }
+  50% {
+    box-shadow: 0 12px 36px rgba(62, 207, 142, 0.75);
+    transform: scale(1.04);
+  }
+}
+
+.fab-time-badge {
+  position: absolute;
+  top: -10px;
+  right: -8px;
+  background: #1a1e2a;
+  border: 1px solid #3ecf8e;
+  color: #3ecf8e;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 12px;
+  white-space: nowrap;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+}
+
+/* Modal Popup Overlay */
+.timer-popup-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  z-index: 1100;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 32px 32px 90px 32px;
+}
+
+.timer-popup-card {
+  width: 360px;
+  background: rgba(19, 22, 30, 0.96);
+  border: 1px solid #2e3347;
+  border-radius: 18px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(79, 142, 247, 0.15);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Header */
+.timer-popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  background: #1a1e2a;
+  border-bottom: 1px solid #252836;
+}
+
+.timer-popup-title {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: #e8eaf2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.timer-close-btn {
+  background: transparent;
+  border: none;
+  color: #a1a6c2;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  transition: all 0.15s;
+}
+
+.timer-close-btn:hover {
+  color: #f55a5a;
+  background: rgba(245, 90, 90, 0.12);
+}
+
+/* Mode Switcher */
+.timer-mode-switcher {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-bottom: 1px solid #252836;
+}
+
+.timer-mode-btn {
+  padding: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  background: transparent;
+  border: none;
+  color: #a1a6c2;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.timer-mode-btn:first-child {
+  border-right: 1px solid #252836;
+}
+
+.timer-mode-btn.active {
+  color: #4f8ef7;
+  background: rgba(79, 142, 247, 0.08);
+  box-shadow: inset 0 -2px 0 #4f8ef7;
+}
+
+/* Body */
+.timer-popup-body {
+  padding: 20px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Display Clock */
+.timer-display-box {
+  text-align: center;
+  background: #13161e;
+  border: 1px solid #252836;
+  border-radius: 14px;
+  padding: 18px 12px;
+  position: relative;
+  overflow: hidden;
+}
+
+.timer-display-digits {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 44px;
+  font-weight: 900;
+  color: #e8eaf2;
+  letter-spacing: 1px;
+  line-height: 1;
+}
+
+.timer-display-digits.pomodoro-work {
+  color: #4f8ef7;
+}
+
+.timer-display-digits.pomodoro-break {
+  color: #3ecf8e;
+}
+
+.timer-display-state {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #a1a6c2;
+  margin-top: 8px;
+}
+
+/* Selectors */
+.timer-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.timer-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #a1a6c2;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.timer-select,
+.timer-input {
+  background: #1a1e2a;
+  border: 1px solid #2e3347;
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: #e8eaf2;
+  font-size: 12px;
+  font-weight: 600;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.timer-select:focus,
+.timer-input:focus {
+  border-color: #4f8ef7;
+}
+
+.timer-pomo-options {
+  display: flex;
+  gap: 8px;
+}
+
+.timer-pomo-pill {
+  flex: 1;
+  padding: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #1a1e2a;
+  border: 1px solid #2e3347;
+  border-radius: 6px;
+  color: #a1a6c2;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+}
+
+.timer-pomo-pill.active {
+  border-color: #4f8ef7;
+  background: rgba(79, 142, 247, 0.12);
+  color: #4f8ef7;
+}
+
+/* Controls */
+.timer-controls-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.timer-btn {
+  flex: 1;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  border: 1px solid transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.15s;
+}
+
+.timer-btn-primary {
+  background: linear-gradient(135deg, #4f8ef7, #7c5cfc);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(79, 142, 247, 0.35);
+}
+
+.timer-btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(79, 142, 247, 0.5);
+}
+
+.timer-btn-pause {
+  background: #f5874a;
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(245, 135, 74, 0.35);
+}
+
+.timer-btn-secondary {
+  background: #1a1e2a;
+  border-color: #2e3347;
+  color: #a1a6c2;
+}
+
+.timer-btn-secondary:hover {
+  border-color: #f55a5a;
+  color: #f55a5a;
+}
+
+.timer-btn-save {
+  background: #27a06b;
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(39, 160, 107, 0.35);
+}
+
+.timer-btn-save:hover {
+  transform: translateY(-1px);
+  background: #3ecf8e;
+}
+
+/* Save Session Sheet inside Modal */
+.timer-save-sheet {
+  background: #1a1e2a;
+  border: 1px solid #2e3347;
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.save-stats-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.save-stat-label {
+  font-size: 11px;
+  color: #a1a6c2;
+  margin-bottom: 4px;
+}

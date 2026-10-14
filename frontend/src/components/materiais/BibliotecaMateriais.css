@@ -1,0 +1,325 @@
+/* BibliotecaMateriais.css */
+
+.biblioteca-container {
+  padding: 32px;
+  max-width: 1400px;
+  margin: 0 auto;
+  min-height: 100vh;
+}
+
+.biblioteca-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 24px 28px;
+  border-radius: 16px;
+  margin-bottom: 24px;
+}
+
+.biblioteca-header h2 {
+  font-size: 24px;
+  font-weight: 800;
+  color: #e8eaf2;
+  letter-spacing: -0.5px;
+  margin-bottom: 6px;
+}
+
+.biblioteca-subtitle {
+  font-size: 13px;
+  color: #a1a6c2;
+  line-height: 1.5;
+}
+
+.biblioteca-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.btn-add-material {
+  background: linear-gradient(135deg, #4f8ef7, #7c5cfc);
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(79, 142, 247, 0.35);
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-add-material:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(79, 142, 247, 0.5);
+}
+
+/* Disciplines Filter Bar */
+.materiais-filter-bar {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  margin-bottom: 24px;
+}
+
+.filter-chip {
+  padding: 8px 16px;
+  border-radius: 20px;
+  background: #1a1e2a;
+  border: 1px solid #2e3347;
+  color: #a1a6c2;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+
+.filter-chip:hover {
+  border-color: #4f8ef7;
+  color: #e8eaf2;
+}
+
+.filter-chip.active {
+  background: rgba(79, 142, 247, 0.15);
+  border-color: #4f8ef7;
+  color: #4f8ef7;
+}
+
+/* Grid of Materials */
+.materiais-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+}
+
+.material-card {
+  background: rgba(19, 22, 30, 0.9);
+  border: 1px solid #252836;
+  border-radius: 14px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+  transition: all 0.2s;
+}
+
+.material-card:hover {
+  border-color: #4f8ef7;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+}
+
+.mat-top-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.mat-format-badge {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  text-transform: uppercase;
+}
+
+.mat-format-badge.format-pdf { background: rgba(245, 90, 90, 0.15); color: #f55a5a; border: 1px solid rgba(245, 90, 90, 0.3); }
+.mat-format-badge.format-livro { background: rgba(79, 142, 247, 0.15); color: #4f8ef7; border: 1px solid rgba(79, 142, 247, 0.3); }
+.mat-format-badge.format-video { background: rgba(245, 135, 74, 0.15); color: #f5874a; border: 1px solid rgba(245, 135, 74, 0.3); }
+.mat-format-badge.format-lei_seca { background: rgba(62, 207, 142, 0.15); color: #3ecf8e; border: 1px solid rgba(62, 207, 142, 0.3); }
+
+.mat-disc-badge {
+  font-size: 11px;
+  font-weight: 700;
+  color: #a1a6c2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mat-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #e8eaf2;
+  margin-bottom: 4px;
+  line-height: 1.35;
+}
+
+.mat-author {
+  font-size: 12px;
+  color: #a1a6c2;
+}
+
+/* Progress bar */
+.mat-progress-box {
+  background: #13161e;
+  border: 1px solid #252836;
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.mat-progress-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 700;
+  color: #a1a6c2;
+  margin-bottom: 8px;
+}
+
+.mat-progress-labels strong {
+  color: #e8eaf2;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.mat-progress-track {
+  height: 6px;
+  background: #1a1e2a;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.mat-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4f8ef7, #3ecf8e);
+  border-radius: 6px;
+  transition: width 0.4s ease;
+}
+
+.mat-actions-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.btn-update-page {
+  flex: 1;
+  background: #1a1e2a;
+  border: 1px solid #2e3347;
+  color: #e8eaf2;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-update-page:hover {
+  border-color: #4f8ef7;
+  color: #4f8ef7;
+}
+
+.btn-open-caderno {
+  background: rgba(79, 142, 247, 0.12);
+  border: 1px solid rgba(79, 142, 247, 0.3);
+  color: #4f8ef7;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-open-caderno:hover {
+  background: #4f8ef7;
+  color: #ffffff;
+}
+
+/* Modal Form */
+.mat-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(6px);
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.mat-modal-card {
+  width: min(540px, 100%);
+  background: #13161e;
+  border: 1px solid #2e3347;
+  border-radius: 16px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.8);
+  overflow: hidden;
+}
+
+.mat-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: #1a1e2a;
+  border-bottom: 1px solid #252836;
+}
+
+.mat-modal-header h3 {
+  font-size: 15px;
+  font-weight: 800;
+  color: #e8eaf2;
+}
+
+.mat-modal-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.mat-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.mat-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mat-input-group label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #a1a6c2;
+  text-transform: uppercase;
+}
+
+.mat-input-group input,
+.mat-input-group select {
+  background: #1a1e2a;
+  border: 1px solid #2e3347;
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: #e8eaf2;
+  font-size: 13px;
+  outline: none;
+}
+
+.mat-input-group input:focus,
+.mat-input-group select:focus {
+  border-color: #4f8ef7;
+}
+
+.mat-modal-footer {
+  padding: 16px 20px;
+  background: #1a1e2a;
+  border-top: 1px solid #252836;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
