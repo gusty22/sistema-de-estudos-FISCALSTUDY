@@ -73,41 +73,8 @@ public class ConcursoRepositoryImpl implements ConcursoRepository {
     }
 
     @PostConstruct
-    public void initDefaultConcursos() {
+    public void init() {
         ensureSchemaUpdated();
-        try {
-            Integer count = jdbcTemplate.queryForObject("SELECT count(*) FROM concursos", Integer.class);
-            if (count != null && count == 0) {
-                logger.info("Initializing default official concursos: Araguari Auditor e Técnico");
-                String now = Instant.now().toString();
-
-                save(new Concurso(
-                        "iss-araguari-auditor-2023",
-                        "ISS Araguari 2023 — Auditor Fiscal",
-                        "Prefeitura Municipal de Araguari - MG",
-                        "IBGP",
-                        2023,
-                        "Auditor Fiscal da Receita Municipal",
-                        "503",
-                        "ACTIVE",
-                        "Concurso oficial para Auditor Fiscal da Receita Municipal de Araguari/MG."
-                ));
-
-                save(new Concurso(
-                        "iss-araguari-tecnico-2023",
-                        "ISS Araguari 2023 — Técnico Fiscal",
-                        "Prefeitura Municipal de Araguari - MG",
-                        "IBGP",
-                        2023,
-                        "Técnico Fiscal da Receita Municipal",
-                        "532",
-                        "ACTIVE",
-                        "Concurso oficial para Técnico Fiscal da Receita Municipal de Araguari/MG (Prova aplicada)."
-                ));
-            }
-        } catch (Exception e) {
-            logger.warn("Could not check or seed default concursos: {}", e.getMessage());
-        }
     }
 
     @Override

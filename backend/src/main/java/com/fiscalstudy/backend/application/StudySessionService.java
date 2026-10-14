@@ -46,13 +46,29 @@ public class StudySessionService {
         String nextSessionHandoff = (String) sessionData.get("nextSessionHandoff");
         String notas = (String) sessionData.get("notas");
 
+        Number paginaInicio = (Number) sessionData.get("paginaInicio");
+        Number paginaFim = (Number) sessionData.get("paginaFim");
+        int finalPaginasLidas = paginasLidas != null ? paginasLidas.intValue() : 0;
+        if (paginaInicio != null && paginaFim != null && paginaFim.intValue() >= paginaInicio.intValue()) {
+            finalPaginasLidas = Math.max(finalPaginasLidas, paginaFim.intValue() - paginaInicio.intValue() + 1);
+        }
+
+        Number questoesAcertadas = (Number) sessionData.get("questoesAcertadas");
+        int qFeitas = questoesFeitas != null ? questoesFeitas.intValue() : 0;
+        int qAcertadas = questoesAcertadas != null ? Math.min(qFeitas, questoesAcertadas.intValue()) : 0;
+        double rendimentoPct = qFeitas > 0 ? Math.round(((qAcertadas * 100.0) / qFeitas) * 10.0) / 10.0 : 0.0;
+
+        double hoursDuration = durationSec.doubleValue() / 3600.0;
+        double velPagsHora = hoursDuration > 0 ? Math.round((finalPaginasLidas / hoursDuration) * 10.0) / 10.0 : 0.0;
+        double velQuestoesHora = hoursDuration > 0 ? Math.round((qFeitas / hoursDuration) * 10.0) / 10.0 : 0.0;
+
         // Atualiza progresso do material se materialId e páginas lidas foram fornecidos
-        if (materialId != null && !materialId.isBlank() && paginasLidas != null && paginasLidas.intValue() > 0) {
+        if (materialId != null && !materialId.isBlank() && finalPaginasLidas > 0) {
             Optional<StudyMaterial> matOpt = studyMaterialRepository.findById(materialId);
             if (matOpt.isPresent()) {
                 StudyMaterial mat = matOpt.get();
                 mat.setPaginaAtual(Math.min(mat.getTotalPaginas() > 0 ? mat.getTotalPaginas() : Integer.MAX_VALUE,
-                        mat.getPaginaAtual() + paginasLidas.intValue()));
+                        mat.getPaginaAtual() + finalPaginasLidas));
                 studyMaterialRepository.save(mat);
             }
         }
@@ -64,8 +80,14 @@ public class StudySessionService {
         payloadMap.put("topicoId", topicoId);
         payloadMap.put("materialId", materialId);
         payloadMap.put("durationSeconds", durationSec.intValue());
-        payloadMap.put("paginasLidas", paginasLidas.intValue());
-        payloadMap.put("questoesFeitas", questoesFeitas.intValue());
+        payloadMap.put("paginaInicio", paginaInicio);
+        payloadMap.put("paginaFim", paginaFim);
+        payloadMap.put("paginasLidas", finalPaginasLidas);
+        payloadMap.put("questoesFeitas", qFeitas);
+        payloadMap.put("questoesAcertadas", qAcertadas);
+        payloadMap.put("rendimentoPercentual", rendimentoPct);
+        payloadMap.put("velocidadePaginasPorHora", velPagsHora);
+        payloadMap.put("velocidadeQuestoesPorHora", velQuestoesHora);
         payloadMap.put("modo", modo);
         payloadMap.put("activityType", activityType);
         payloadMap.put("nextSessionHandoff", nextSessionHandoff);
@@ -97,9 +119,13 @@ public class StudySessionService {
     public Map<String, Object> getStudyTimeSummary(String concursoId) {
         List<String> payloads = eventStoreRepository.getAllEventPayloads("STUDY_SESSION_RECORDED");
         long totalSeconds = 0;
+        long heSeconds = 0;
+        long hreSeconds = 0;
         int totalPaginas = 0;
         int totalQuestoes = 0;
+        int totalQuestoesAcertadas = 0;
         Map<String, Long> secondsPorDisciplina = new LinkedHashMap<>();
+        String latestHandoff = null;
 
         for (String p : payloads) {
             try {
@@ -111,20 +137,56 @@ public class StudySessionService {
                 Number dur = (Number) map.getOrDefault("durationSeconds", 0);
                 Number pags = (Number) map.getOrDefault("paginasLidas", 0);
                 Number qsts = (Number) map.getOrDefault("questoesFeitas", 0);
+                Number qAcert = (Number) map.getOrDefault("questoesAcertadas", 0);
                 String disc = (String) map.getOrDefault("disciplina", "Geral");
+                String activityType = (String) map.getOrDefault("activityType", "HE");
+                String handoff = (String) map.get("nextSessionHandoff");
+                if (handoff != null && !handoff.isBlank()) {
+                    latestHandoff = handoff;
+                }
 
                 long s = dur != null ? dur.longValue() : 0L;
                 totalSeconds += s;
+                if ("HRE".equalsIgnoreCase(activityType)) {
+                    hreSeconds += s;
+                } else {
+                    heSeconds += s;
+                }
                 totalPaginas += pags != null ? pags.intValue() : 0;
                 totalQuestoes += qsts != null ? qsts.intValue() : 0;
+                totalQuestoesAcertadas += qAcert != null ? qAcert.intValue() : 0;
 
                 secondsPorDisciplina.put(disc, secondsPorDisciplina.getOrDefault(disc, 0L) + s);
             } catch (Exception ignored) {}
         }
 
+        double hrePercentage = totalSeconds > 0 ? Math.round(((hreSeconds * 100.0) / totalSeconds) * 10.0) / 10.0 : 0.0;
+        boolean hreAlert = hrePercentage > 15.0;
+
+        double totalHours = Math.round((totalSeconds / 3600.0) * 10.0) / 10.0;
+        double thresholdTargetHours = 3100.0; // Limiar estatístico de aprovação
+        double progressTowardsThresholdPct = Math.min(100.0, Math.round(((totalHours / thresholdTargetHours) * 100.0) * 10.0) / 10.0);
+
+        double totalHoursDouble = totalSeconds / 3600.0;
+        double avgPagesPerHour = totalHoursDouble > 0 ? Math.round((totalPaginas / totalHoursDouble) * 10.0) / 10.0 : 0.0;
+        double avgQuestionsPerHour = totalHoursDouble > 0 ? Math.round((totalQuestoes / totalHoursDouble) * 10.0) / 10.0 : 0.0;
+        double overallScorePct = totalQuestoes > 0 ? Math.round(((totalQuestoesAcertadas * 100.0) / totalQuestoes) * 10.0) / 10.0 : 0.0;
+
         Map<String, Object> summary = new LinkedHashMap<>();
         summary.put("totalSeconds", totalSeconds);
-        summary.put("totalHours", Math.round((totalSeconds / 3600.0) * 10.0) / 10.0);
+        summary.put("totalHours", totalHours);
+        summary.put("thresholdTargetHours", thresholdTargetHours);
+        summary.put("progressTowardsThresholdPct", progressTowardsThresholdPct);
+        summary.put("avgPagesPerHour", avgPagesPerHour);
+        summary.put("avgQuestionsPerHour", avgQuestionsPerHour);
+        summary.put("overallScorePct", overallScorePct);
+        summary.put("heSeconds", heSeconds);
+        summary.put("heHours", Math.round((heSeconds / 3600.0) * 10.0) / 10.0);
+        summary.put("hreSeconds", hreSeconds);
+        summary.put("hreHours", Math.round((hreSeconds / 3600.0) * 10.0) / 10.0);
+        summary.put("hrePercentage", hrePercentage);
+        summary.put("hreAlert", hreAlert);
+        summary.put("latestHandoff", latestHandoff);
         summary.put("totalPaginas", totalPaginas);
         summary.put("totalQuestoes", totalQuestoes);
         summary.put("secondsPorDisciplina", secondsPorDisciplina);

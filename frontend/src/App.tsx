@@ -12,6 +12,11 @@ import ImportStudio from './components/ingestion/ImportStudio';
 import CadastroConcursoWizard from './components/concursos/CadastroConcursoWizard';
 import { BibliotecaMateriais } from './components/materiais/BibliotecaMateriais';
 import { StudyTimerFab } from './components/timer/StudyTimerFab';
+import { PreMortemView } from './components/cognitive/PreMortemView';
+import { SessaoFeynmanView } from './components/cognitive/SessaoFeynmanView';
+import { MetodoEraView } from './components/cognitive/MetodoEraView';
+import { PontosChaveView } from './components/cognitive/PontosChaveView';
+import { DigitalTwinView } from './components/digitaltwin/DigitalTwinView';
 
 function App() {
   const [activeTab, setActiveTab] = useState<NavTab>('dashboard');
@@ -31,6 +36,9 @@ function App() {
           const chosen = matched || list[0];
           setActiveConcurso(chosen);
           localStorage.setItem('fiscalstudy_active_concurso_id', chosen.id);
+        } else {
+          setActiveConcurso(null);
+          localStorage.removeItem('fiscalstudy_active_concurso_id');
         }
       })
       .catch((err) => console.error('Erro ao carregar concursos:', err));
@@ -45,9 +53,12 @@ function App() {
     localStorage.setItem('fiscalstudy_active_concurso_id', concurso.id);
   };
 
-  const handleNavigateToStudy = (disciplina?: string) => {
+  const handleNavigateToStudy = (disciplina?: string, assunto?: string) => {
     if (disciplina) {
       sessionStorage.setItem('fiscalstudy_filter_discipline', disciplina);
+    }
+    if (assunto) {
+      sessionStorage.setItem('fiscalstudy_filter_assunto', assunto);
     }
     setActiveTab('study');
   };
@@ -66,7 +77,7 @@ function App() {
 
   return (
     <div className="app-container">
-      {/* Global Vertical Sidebar inspired by Track Concursos */}
+      {/* Global Vertical Sidebar */}
       <Sidebar
         activeTab={activeTab}
         onSelectTab={(tab) => setActiveTab(tab)}
@@ -107,8 +118,10 @@ function App() {
 
         {activeTab === 'edital' && (
           <EditalVerticalizado
-            concursoId={activeConcurso?.id || 'iss-araguari-auditor-2023'}
-            concursoNome={activeConcurso?.nome || 'ISS Araguari'}
+            concursoId={activeConcurso?.id || ''}
+            concursoNome={activeConcurso?.nome || 'Nenhum Concurso Selecionado'}
+            onNavigateToStudy={(disc, ass) => handleNavigateToStudy(disc, ass)}
+            onNavigateToTab={(tab) => setActiveTab(tab as NavTab)}
           />
         )}
 
@@ -125,6 +138,14 @@ function App() {
           <CicloRevisoes
             activeConcurso={activeConcurso}
             onStartErrorNotebook={handleStartErrorNotebook}
+            onNavigateToStudy={(disc, ass) => handleNavigateToStudy(disc, ass)}
+          />
+        )}
+
+        {activeTab === 'digitaltwin' && (
+          <DigitalTwinView
+            activeConcurso={activeConcurso}
+            onNavigateToStudy={handleNavigateToStudy}
           />
         )}
 
@@ -141,6 +162,11 @@ function App() {
         {activeTab === 'analytics' && (
           <AnalyticsView activeConcurso={activeConcurso} />
         )}
+
+        {activeTab === 'metodoera' && <MetodoEraView />}
+        {activeTab === 'feynman' && <SessaoFeynmanView />}
+        {activeTab === 'pontoschave' && <PontosChaveView />}
+        {activeTab === 'premortem' && <PreMortemView />}
       </main>
 
       {/* Global Floating Study Timer & Pomodoro FAB */}

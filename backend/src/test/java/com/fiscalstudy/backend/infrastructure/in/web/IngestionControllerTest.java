@@ -34,6 +34,9 @@ public class IngestionControllerTest {
     @MockBean
     private IngestionPipelineService pipelineService;
 
+    @MockBean
+    private com.fiscalstudy.backend.application.StagingDatabaseService stagingDatabaseService;
+
     @Test
     public void testImportDataReturns200() throws Exception {
         String jsonPayload = "{\"version\":\"v1\",\"source\":\"test\",\"data\":{}}";

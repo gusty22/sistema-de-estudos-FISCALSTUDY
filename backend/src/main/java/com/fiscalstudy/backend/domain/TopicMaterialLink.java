@@ -9,6 +9,7 @@ public class TopicMaterialLink {
     private int paginasLidas;
     private String status; // NAO_INICIADO, EM_ANDAMENTO, CONCLUIDO
     private String anotacoes;
+    private Double confidenceScore = 1.0;
     private String createdAt;
 
     // Campos de visualização enriquecidos (join)
@@ -30,6 +31,7 @@ public class TopicMaterialLink {
         this.status = status != null ? status : "NAO_INICIADO";
         this.anotacoes = anotacoes;
         this.createdAt = createdAt;
+        this.confidenceScore = 1.0;
     }
 
     public String getId() { return id; }
@@ -70,4 +72,7 @@ public class TopicMaterialLink {
 
     public String getDisciplina() { return disciplina; }
     public void setDisciplina(String disciplina) { this.disciplina = disciplina; }
+
+    public Double getConfidenceScore() { return confidenceScore != null ? confidenceScore : 1.0; }
+    public void setConfidenceScore(Double confidenceScore) { this.confidenceScore = confidenceScore; }
 }

@@ -26,6 +26,47 @@ export const BibliotecaMateriais: React.FC<BibliotecaMateriaisProps> = ({ active
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPageId, setEditingPageId] = useState<string | null>(null);
   const [tempPageInput, setTempPageInput] = useState<number>(0);
+  const [linkingMaterialId, setLinkingMaterialId] = useState<string | null>(null);
+  const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
+
+  const handleAutoLinkMaterial = async (matId: string) => {
+    setLinkingMaterialId(matId);
+    setFeedbackMsg(null);
+    try {
+      const res = await fetch(`/api/v1/materials/${matId}/auto-link`, { method: 'POST' });
+      if (res.ok) {
+        const data = await res.json();
+        setFeedbackMsg(`✓ Vinculação concluída: ${data.totalLinksCreated || 0} associações criadas com tópicos do edital!`);
+      } else {
+        setFeedbackMsg('⚠️ Falha ao auto-vincular material ao edital.');
+      }
+    } catch {
+      setFeedbackMsg('⚠️ Erro de conexão ao auto-vincular.');
+    } finally {
+      setLinkingMaterialId(null);
+      setTimeout(() => setFeedbackMsg(null), 5000);
+    }
+  };
+
+  const handleAutoLinkAll = async () => {
+    if (!activeConcurso?.id) return;
+    setLinkingMaterialId('ALL');
+    setFeedbackMsg(null);
+    try {
+      const res = await fetch(`/api/v1/materials/auto-link-all?concursoId=${encodeURIComponent(activeConcurso.id)}`, { method: 'POST' });
+      if (res.ok) {
+        const data = await res.json();
+        setFeedbackMsg(`✓ Auto-vinculação em lote concluída: ${data.totalLinksCreated || 0} associações criadas!`);
+      } else {
+        setFeedbackMsg('⚠️ Falha ao processar auto-vinculação em lote.');
+      }
+    } catch {
+      setFeedbackMsg('⚠️ Erro de conexão ao auto-vincular materiais.');
+    } finally {
+      setLinkingMaterialId(null);
+      setTimeout(() => setFeedbackMsg(null), 5000);
+    }
+  };
 
   // Form state
   const [formTitulo, setFormTitulo] = useState('');
@@ -119,12 +160,29 @@ export const BibliotecaMateriais: React.FC<BibliotecaMateriaisProps> = ({ active
             Catálogo de livros, PDFs, legislação seca e apostilas associados ao edital de {activeConcurso?.nome || 'seu concurso'}
           </p>
         </div>
-        <div className="biblioteca-actions">
+        <div className="biblioteca-actions" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          {activeConcurso?.id && (
+            <button
+              className="btn-add-material"
+              style={{ background: '#1e293b', border: '1px solid #3b82f6', color: '#60a5fa' }}
+              disabled={linkingMaterialId === 'ALL'}
+              onClick={handleAutoLinkAll}
+              title="Analisa o conteúdo dos materiais e associa aos tópicos do edital"
+            >
+              ⚡ {linkingMaterialId === 'ALL' ? 'Analisando...' : 'Auto-Vincular Todos ao Edital'}
+            </button>
+          )}
           <button className="btn-add-material" onClick={() => setIsModalOpen(true)}>
             + Cadastrar Material Didático
           </button>
         </div>
       </div>
+
+      {feedbackMsg && (
+        <div className="glass" style={{ borderLeft: '4px solid #3b82f6', padding: '12px 16px', marginBottom: '16px', background: 'rgba(59, 130, 246, 0.1)', color: '#93c5fd', fontSize: '13px' }}>
+          {feedbackMsg}
+        </div>
+      )}
 
       {/* Filter Chips */}
       {uniqueDisciplinas.length > 1 && (
@@ -223,6 +281,16 @@ export const BibliotecaMateriais: React.FC<BibliotecaMateriaisProps> = ({ active
                     📖 Atualizar Pág.
                   </button>
                 )}
+
+                <button
+                  className="btn-open-caderno"
+                  style={{ background: 'rgba(59, 130, 246, 0.1)', borderColor: '#3b82f6', color: '#60a5fa' }}
+                  disabled={linkingMaterialId === mat.id}
+                  onClick={() => handleAutoLinkMaterial(mat.id)}
+                  title="Analisar conteúdo e associar aos tópicos do edital"
+                >
+                  ⚡ {linkingMaterialId === mat.id ? '...' : 'Auto-Vincular'}
+                </button>
 
                 <button
                   className="btn-open-caderno"

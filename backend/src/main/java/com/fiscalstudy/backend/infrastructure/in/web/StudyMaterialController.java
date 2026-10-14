@@ -63,9 +63,17 @@ public class StudyMaterialController {
         return ResponseEntity.ok(materialService.saveLink(link));
     }
 
-    @DeleteMapping("/links/{id}")
-    public ResponseEntity<Void> deleteLink(@PathVariable String id) {
-        materialService.deleteLink(id);
-        return ResponseEntity.noContent().build();
+    @PostMapping("/{id}/auto-link")
+    public ResponseEntity<List<TopicMaterialLink>> autoLinkMaterial(
+            @PathVariable String id,
+            @RequestParam(required = false) String concursoId,
+            @RequestBody(required = false) java.util.Map<String, String> body) {
+        String contentText = body != null ? body.get("contentText") : null;
+        return ResponseEntity.ok(materialService.autoLinkMaterialToTopics(id, concursoId, contentText));
+    }
+
+    @PostMapping("/auto-link-all")
+    public ResponseEntity<List<TopicMaterialLink>> autoLinkAll(@RequestParam(required = false) String concursoId) {
+        return ResponseEntity.ok(materialService.autoLinkAllMaterials(concursoId));
     }
 }

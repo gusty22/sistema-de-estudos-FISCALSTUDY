@@ -27,8 +27,13 @@ export const StudyTimerFab: React.FC<StudyTimerFabProps> = ({ activeConcurso, on
 
   // Save session inputs
   const [isSaving, setIsSaving] = useState(false);
+  const [activityType, setActivityType] = useState<'HE' | 'HRE'>('HE');
+  const [nextSessionHandoff, setNextSessionHandoff] = useState<string>('');
+  const [paginaInicio, setPaginaInicio] = useState<number | ''>('');
+  const [paginaFim, setPaginaFim] = useState<number | ''>('');
   const [paginasLidas, setPaginasLidas] = useState<number>(0);
   const [questoesFeitas, setQuestoesFeitas] = useState<number>(0);
+  const [questoesAcertadas, setQuestoesAcertadas] = useState<number | ''>('');
   const [notas, setNotas] = useState<string>('');
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
 
@@ -38,12 +43,13 @@ export const StudyTimerFab: React.FC<StudyTimerFabProps> = ({ activeConcurso, on
   useEffect(() => {
     if (!activeConcurso?.id) return;
 
-    fetch(`/api/v1/editais/topicos?concursoId=${encodeURIComponent(activeConcurso.id)}`)
+    fetch(`/api/v1/concursos/${encodeURIComponent(activeConcurso.id)}/edital`)
       .then(res => res.json())
       .then(data => {
-        if (Array.isArray(data) && data.length > 0) {
-          setTopicos(data);
-          const uniqueDiscs = Array.from(new Set(data.map((t: any) => t.disciplina))).filter(Boolean) as string[];
+        const topicosList = Array.isArray(data) ? data : (data?.topicos || []);
+        if (Array.isArray(topicosList) && topicosList.length > 0) {
+          setTopicos(topicosList);
+          const uniqueDiscs = Array.from(new Set(topicosList.map((t: any) => t.disciplina))).filter(Boolean) as string[];
           setDisciplinas(uniqueDiscs);
           if (uniqueDiscs.length > 0 && !selectedDisciplina) {
             setSelectedDisciplina(uniqueDiscs[0]);
@@ -161,9 +167,14 @@ export const StudyTimerFab: React.FC<StudyTimerFabProps> = ({ activeConcurso, on
       topicoId: selectedTopicoId || null,
       materialId: selectedMaterialId || null,
       durationSeconds: Math.max(0, duration),
+      paginaInicio: paginaInicio !== '' ? Number(paginaInicio) : null,
+      paginaFim: paginaFim !== '' ? Number(paginaFim) : null,
       paginasLidas: Number(paginasLidas) || 0,
       questoesFeitas: Number(questoesFeitas) || 0,
+      questoesAcertadas: questoesAcertadas !== '' ? Number(questoesAcertadas) : null,
       modo: mode,
+      activityType: activityType,
+      nextSessionHandoff: nextSessionHandoff.trim() || null,
       notas: notas || null
     };
 
@@ -175,13 +186,17 @@ export const StudyTimerFab: React.FC<StudyTimerFabProps> = ({ activeConcurso, on
       });
 
       if (res.ok) {
-        setSaveSuccess('✓ Sessão de estudo gravada com sucesso!');
+        setSaveSuccess('✓ Sessão de estudo e micro-telemetria gravadas com sucesso!');
         setIsRunning(false);
         setIsSaving(false);
         setSeconds(0);
+        setPaginaInicio('');
+        setPaginaFim('');
         setPaginasLidas(0);
         setQuestoesFeitas(0);
+        setQuestoesAcertadas('');
         setNotas('');
+        setNextSessionHandoff('');
         if (onSessionSaved) onSessionSaved();
         setTimeout(() => {
           setSaveSuccess(null);
@@ -337,29 +352,115 @@ export const StudyTimerFab: React.FC<StudyTimerFabProps> = ({ activeConcurso, on
               {/* Save Session Drawer */}
               {isSaving && (
                 <div className="timer-save-sheet">
-                  <div className="save-stats-row">
-                    <div className="timer-form-group">
-                      <label className="save-stat-label">Páginas Lidas</label>
-                      <input
-                        type="number"
-                        min="0"
-                        className="timer-input"
-                        placeholder="Ex: 15"
-                        value={paginasLidas || ''}
-                        onChange={(e) => setPaginasLidas(parseInt(e.target.value, 10) || 0)}
-                      />
+                  {/* Micro-Telemetria de Estudo (Método Lucas) */}
+                  <div style={{ background: '#0a0f1d', padding: '10px', borderRadius: '8px', border: '1px solid #1e293b', marginBottom: '10px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <span style={{ fontSize: '11px', fontWeight: 800, color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        📊 Micro-Telemetria do Bloco (Método Lucas)
+                      </span>
                     </div>
-                    <div className="timer-form-group">
-                      <label className="save-stat-label">Questões Feitas</label>
-                      <input
-                        type="number"
-                        min="0"
-                        className="timer-input"
-                        placeholder="Ex: 20"
-                        value={questoesFeitas || ''}
-                        onChange={(e) => setQuestoesFeitas(parseInt(e.target.value, 10) || 0)}
-                      />
+
+                    {/* Linha Páginas: Início, Fim e Lidas */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px', marginBottom: '8px' }}>
+                      <div className="timer-form-group" style={{ margin: 0 }}>
+                        <label className="save-stat-label" style={{ fontSize: '10px' }}>Pág. Inicial</label>
+                        <input
+                          type="number"
+                          min="0"
+                          className="timer-input"
+                          placeholder="Ex: 1"
+                          style={{ padding: '4px 6px', fontSize: '12px' }}
+                          value={paginaInicio}
+                          onChange={(e) => {
+                            const val = e.target.value === '' ? '' : parseInt(e.target.value, 10);
+                            setPaginaInicio(val);
+                            if (typeof val === 'number' && typeof paginaFim === 'number' && paginaFim >= val) {
+                              setPaginasLidas(paginaFim - val + 1);
+                            }
+                          }}
+                        />
+                      </div>
+                      <div className="timer-form-group" style={{ margin: 0 }}>
+                        <label className="save-stat-label" style={{ fontSize: '10px' }}>Pág. Final</label>
+                        <input
+                          type="number"
+                          min="0"
+                          className="timer-input"
+                          placeholder="Ex: 25"
+                          style={{ padding: '4px 6px', fontSize: '12px' }}
+                          value={paginaFim}
+                          onChange={(e) => {
+                            const val = e.target.value === '' ? '' : parseInt(e.target.value, 10);
+                            setPaginaFim(val);
+                            if (typeof paginaInicio === 'number' && typeof val === 'number' && val >= paginaInicio) {
+                              setPaginasLidas(val - paginaInicio + 1);
+                            }
+                          }}
+                        />
+                      </div>
+                      <div className="timer-form-group" style={{ margin: 0 }}>
+                        <label className="save-stat-label" style={{ fontSize: '10px' }}>Total Págs</label>
+                        <input
+                          type="number"
+                          min="0"
+                          className="timer-input"
+                          style={{ padding: '4px 6px', fontSize: '12px', background: '#1e293b' }}
+                          value={paginasLidas || ''}
+                          onChange={(e) => setPaginasLidas(parseInt(e.target.value, 10) || 0)}
+                        />
+                      </div>
                     </div>
+
+                    {/* Linha Questões: Feitas e Acertadas */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '8px' }}>
+                      <div className="timer-form-group" style={{ margin: 0 }}>
+                        <label className="save-stat-label" style={{ fontSize: '10px' }}>Questões Feitas</label>
+                        <input
+                          type="number"
+                          min="0"
+                          className="timer-input"
+                          placeholder="Ex: 20"
+                          style={{ padding: '4px 6px', fontSize: '12px' }}
+                          value={questoesFeitas || ''}
+                          onChange={(e) => setQuestoesFeitas(parseInt(e.target.value, 10) || 0)}
+                        />
+                      </div>
+                      <div className="timer-form-group" style={{ margin: 0 }}>
+                        <label className="save-stat-label" style={{ fontSize: '10px' }}>Acertos ("Nota")</label>
+                        <input
+                          type="number"
+                          min="0"
+                          className="timer-input"
+                          placeholder="Ex: 17"
+                          style={{ padding: '4px 6px', fontSize: '12px' }}
+                          value={questoesAcertadas}
+                          onChange={(e) => setQuestoesAcertadas(e.target.value === '' ? '' : parseInt(e.target.value, 10))}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Indicadores em Tempo Real */}
+                    {(() => {
+                      const dur = mode === 'POMODORO' ? (isBreak ? 0 : pomoPreset * 60 - seconds) : seconds;
+                      const hrs = Math.max(0.0008, dur / 3600.0);
+                      const velPags = paginasLidas > 0 ? (paginasLidas / hrs).toFixed(1) : '0';
+                      const velQsts = questoesFeitas > 0 ? (questoesFeitas / hrs).toFixed(1) : '0';
+                      const nota = questoesFeitas > 0 && typeof questoesAcertadas === 'number'
+                        ? ((questoesAcertadas / questoesFeitas) * 100).toFixed(0)
+                        : null;
+
+                      return (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', background: 'rgba(56, 189, 248, 0.08)', padding: '6px 8px', borderRadius: '6px', fontSize: '11px' }}>
+                          <span title="Velocidade de Leitura">📖 <strong>{velPags}</strong> pág/h</span>
+                          <span title="Velocidade de Resolução">⚡ <strong>{velQsts}</strong> quest/h</span>
+                          {nota !== null && (
+                            <span style={{ color: Number(nota) >= 80 ? '#34d399' : '#fbbf24' }}>
+                              🎯 <strong>{nota}%</strong> acerto
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   {filteredMaterials.length > 0 && (
@@ -377,6 +478,41 @@ export const StudyTimerFab: React.FC<StudyTimerFabProps> = ({ activeConcurso, on
                       </select>
                     </div>
                   )}
+
+                  <div className="timer-form-group">
+                    <label className="save-stat-label">Tipo de Estudo (Regra de Negócio Caderno 2)</label>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                      <button
+                        type="button"
+                        className={`timer-btn ${activityType === 'HE' ? 'timer-btn-primary' : 'timer-btn-secondary'}`}
+                        style={{ padding: '6px 8px', fontSize: '11px', textAlign: 'center' }}
+                        onClick={() => setActivityType('HE')}
+                        title="Hora de Estudo Raiz: Estudo ativo puro (questões, fórmulas de cabeça, resumo por abstração)"
+                      >
+                        🔥 HE (Estudo Raiz)
+                      </button>
+                      <button
+                        type="button"
+                        className={`timer-btn ${activityType === 'HRE' ? 'timer-btn-primary' : 'timer-btn-secondary'}`}
+                        style={{ padding: '6px 8px', fontSize: '11px', textAlign: 'center' }}
+                        onClick={() => setActivityType('HRE')}
+                        title="Hora Relacionada ao Estudo: Tarefas operacionais (organizar pastas, cartões, resumos prontos)"
+                      >
+                        ⚙️ HRE (Operacional)
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="timer-form-group">
+                    <label className="save-stat-label">📬 Mensagem para o Eu do Futuro (Próxima Sessão)</label>
+                    <input
+                      type="text"
+                      className="timer-input"
+                      placeholder="Ex: Parou na pág 42; resolver ímpares do tópico X"
+                      value={nextSessionHandoff}
+                      onChange={(e) => setNextSessionHandoff(e.target.value)}
+                    />
+                  </div>
 
                   <div className="timer-form-group">
                     <label className="save-stat-label">Notas e Resumo da Sessão</label>

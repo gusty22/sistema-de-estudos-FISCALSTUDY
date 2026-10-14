@@ -62,6 +62,15 @@ public class AttemptSubmissionService {
     }
 
     public com.fiscalstudy.backend.domain.AttemptResult submitAttempt(String questionId, String selectedOption, int confidenceLevel, long activeTimeMs, String sessionId, String origin, String causaErro) {
+        return submitAttempt(questionId, selectedOption, confidenceLevel, activeTimeMs, sessionId, origin, causaErro, false, false);
+    }
+
+    public com.fiscalstudy.backend.domain.AttemptResult submitAttempt(String questionId, String selectedOption, int confidenceLevel, long activeTimeMs, String sessionId, String origin, String causaErro, Boolean naCordaBamba, Boolean pensouContrario) {
+        return submitAttempt(questionId, selectedOption, confidenceLevel, activeTimeMs, sessionId, origin, causaErro, naCordaBamba, pensouContrario, null, null, null, null, null, null, null);
+    }
+
+    public com.fiscalstudy.backend.domain.AttemptResult submitAttempt(String questionId, String selectedOption, int confidenceLevel, long activeTimeMs, String sessionId, String origin, String causaErro, Boolean naCordaBamba, Boolean pensouContrario,
+                                                                       Long tempoLeituraMs, Long tempoHesitacaoMs, Integer trocasOpcaoCount, Double distanciaCursorPx, Double friccaoCognitivaScore, Boolean chuteEducadoDetectado, String fluenciaNeurologica) {
         if (sessionId == null || sessionId.isBlank()) {
             throw new IllegalArgumentException("Session ID is required");
         }
@@ -134,10 +143,23 @@ public class AttemptSubmissionService {
 
         String causaErroStr = (causaErro != null && !causaErro.isBlank()) ? causaErro.trim() : null;
         String isCorrectStr = (isCorrect == null) ? "null" : String.valueOf(isCorrect);
-        String payload = String.format(
-            "{\"questionId\": \"%s\", \"selectedOption\": \"%s\", \"isCorrect\": %s, \"concursoPoint\": %d, \"gabaritoStatus\": \"%s\", \"confidenceLevel\": %d, \"activeTimeMs\": %d, \"origin\": \"%s\", \"causaErro\": %s}",
+        boolean cordaBambaVal = Boolean.TRUE.equals(naCordaBamba);
+        boolean pensouContrarioVal = Boolean.TRUE.equals(pensouContrario);
+
+        long leituraVal = tempoLeituraMs != null ? tempoLeituraMs : activeTimeMs;
+        long hesitacaoVal = tempoHesitacaoMs != null ? tempoHesitacaoMs : 0L;
+        int trocasVal = trocasOpcaoCount != null ? trocasOpcaoCount : 0;
+        double distanciaVal = distanciaCursorPx != null ? distanciaCursorPx : 0.0;
+        double friccaoVal = friccaoCognitivaScore != null ? friccaoCognitivaScore : 0.0;
+        boolean chuteVal = Boolean.TRUE.equals(chuteEducadoDetectado);
+        String fluenciaVal = (fluenciaNeurologica != null && !fluenciaNeurologica.isBlank()) ? fluenciaNeurologica : (friccaoVal > 0.6 ? "CHUTE_EDUCADO_PROVAVEL" : (friccaoVal > 0.3 ? "FRICCAO_MODERADA" : "ALTA_FLUENCIA"));
+
+        String payload = String.format(java.util.Locale.US,
+            "{\"questionId\": \"%s\", \"selectedOption\": \"%s\", \"isCorrect\": %s, \"concursoPoint\": %d, \"gabaritoStatus\": \"%s\", \"confidenceLevel\": %d, \"activeTimeMs\": %d, \"origin\": \"%s\", \"causaErro\": %s, \"naCordaBamba\": %b, \"pensouContrario\": %b, \"tempoLeituraMs\": %d, \"tempoHesitacaoMs\": %d, \"trocasOpcaoCount\": %d, \"distanciaCursorPx\": %.2f, \"friccaoCognitivaScore\": %.3f, \"chuteEducadoDetectado\": %b, \"fluenciaNeurologica\": \"%s\"}",
             questionId, optionLetter, isCorrectStr, concursoPoint, status.name(), confidenceLevel, activeTimeMs, determinedOrigin,
-            causaErroStr != null ? "\"" + causaErroStr.replace("\"", "\\\"") + "\"" : "null"
+            causaErroStr != null ? "\"" + causaErroStr.replace("\"", "\\\"") + "\"" : "null",
+            cordaBambaVal, pensouContrarioVal,
+            leituraVal, hesitacaoVal, trocasVal, distanciaVal, friccaoVal, chuteVal, fluenciaVal
         );
 
         eventStoreRepository.appendEvent(

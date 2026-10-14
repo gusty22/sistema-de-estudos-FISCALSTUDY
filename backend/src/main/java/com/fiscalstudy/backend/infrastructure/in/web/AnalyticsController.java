@@ -14,15 +14,38 @@ import org.springframework.web.bind.annotation.*;
 public class AnalyticsController {
 
     private final AnalyticsProjectionService analyticsProjectionService;
+    private final com.fiscalstudy.backend.application.QuestionHistoryService questionHistoryService;
 
-    public AnalyticsController(AnalyticsProjectionService analyticsProjectionService) {
+    public AnalyticsController(AnalyticsProjectionService analyticsProjectionService,
+                               com.fiscalstudy.backend.application.QuestionHistoryService questionHistoryService) {
         this.analyticsProjectionService = analyticsProjectionService;
+        this.questionHistoryService = questionHistoryService;
     }
 
     @GetMapping("/overview")
     public ResponseEntity<AnalyticsOverviewDTO> getOverview() {
         AnalyticsOverviewDTO overview = analyticsProjectionService.computeOverview();
         return ResponseEntity.ok(overview);
+    }
+
+    @GetMapping("/question-history")
+    public ResponseEntity<com.fiscalstudy.backend.infrastructure.in.web.dto.QuestionHistoryDTO.Response> getQuestionHistory(
+            @RequestParam(required = false) String concursoId,
+            @RequestParam(required = false) String disciplina,
+            @RequestParam(required = false) String topic,
+            @RequestParam(required = false) String result,
+            @RequestParam(required = false) String period,
+            @RequestParam(required = false, defaultValue = "100") Integer limit,
+            @RequestParam(required = false, defaultValue = "0") Integer offset
+    ) {
+        return ResponseEntity.ok(questionHistoryService.getQuestionHistory(concursoId, disciplina, topic, result, period, limit, offset));
+    }
+
+    @GetMapping("/performance-xray")
+    public ResponseEntity<com.fiscalstudy.backend.infrastructure.in.web.dto.PerformanceXRayDTO> getPerformanceXRay(
+            @RequestParam(required = false) String concursoId
+    ) {
+        return ResponseEntity.ok(questionHistoryService.getPerformanceXRay(concursoId));
     }
 
     @GetMapping(value = "/export", produces = "text/csv")

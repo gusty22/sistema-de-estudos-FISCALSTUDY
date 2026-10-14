@@ -100,7 +100,16 @@ public class QuestionController {
                     payload.getActiveTimeMs(),
                     payload.getSessionId(),
                     payload.getOrigin(),
-                    payload.getCausaErro()
+                    payload.getCausaErro(),
+                    payload.getNaCordaBamba(),
+                    payload.getPensouContrario(),
+                    payload.getTempoLeituraMs(),
+                    payload.getTempoHesitacaoMs(),
+                    payload.getTrocasOpcaoCount(),
+                    payload.getDistanciaCursorPx(),
+                    payload.getFriccaoCognitivaScore(),
+                    payload.getChuteEducadoDetectado(),
+                    payload.getFluenciaNeurologica()
             );
 
             return ResponseEntity.ok(new AttemptResultDTO(
@@ -153,6 +162,15 @@ public class QuestionController {
         private String sessionId;
         private String origin;
         private String causaErro;
+        private Boolean naCordaBamba;
+        private Boolean pensouContrario;
+        private Long tempoLeituraMs;
+        private Long tempoHesitacaoMs;
+        private Integer trocasOpcaoCount;
+        private Double distanciaCursorPx;
+        private Double friccaoCognitivaScore;
+        private Boolean chuteEducadoDetectado;
+        private String fluenciaNeurologica;
 
         public String getSelectedOption() { return selectedOption; }
         public void setSelectedOption(String selectedOption) { this.selectedOption = selectedOption; }
@@ -166,6 +184,24 @@ public class QuestionController {
         public void setOrigin(String origin) { this.origin = origin; }
         public String getCausaErro() { return causaErro; }
         public void setCausaErro(String causaErro) { this.causaErro = causaErro; }
+        public Boolean getNaCordaBamba() { return naCordaBamba; }
+        public void setNaCordaBamba(Boolean naCordaBamba) { this.naCordaBamba = naCordaBamba; }
+        public Boolean getPensouContrario() { return pensouContrario; }
+        public void setPensouContrario(Boolean pensouContrario) { this.pensouContrario = pensouContrario; }
+        public Long getTempoLeituraMs() { return tempoLeituraMs; }
+        public void setTempoLeituraMs(Long tempoLeituraMs) { this.tempoLeituraMs = tempoLeituraMs; }
+        public Long getTempoHesitacaoMs() { return tempoHesitacaoMs; }
+        public void setTempoHesitacaoMs(Long tempoHesitacaoMs) { this.tempoHesitacaoMs = tempoHesitacaoMs; }
+        public Integer getTrocasOpcaoCount() { return trocasOpcaoCount; }
+        public void setTrocasOpcaoCount(Integer trocasOpcaoCount) { this.trocasOpcaoCount = trocasOpcaoCount; }
+        public Double getDistanciaCursorPx() { return distanciaCursorPx; }
+        public void setDistanciaCursorPx(Double distanciaCursorPx) { this.distanciaCursorPx = distanciaCursorPx; }
+        public Double getFriccaoCognitivaScore() { return friccaoCognitivaScore; }
+        public void setFriccaoCognitivaScore(Double friccaoCognitivaScore) { this.friccaoCognitivaScore = friccaoCognitivaScore; }
+        public Boolean getChuteEducadoDetectado() { return chuteEducadoDetectado; }
+        public void setChuteEducadoDetectado(Boolean chuteEducadoDetectado) { this.chuteEducadoDetectado = chuteEducadoDetectado; }
+        public String getFluenciaNeurologica() { return fluenciaNeurologica; }
+        public void setFluenciaNeurologica(String fluenciaNeurologica) { this.fluenciaNeurologica = fluenciaNeurologica; }
     }
 
     @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)

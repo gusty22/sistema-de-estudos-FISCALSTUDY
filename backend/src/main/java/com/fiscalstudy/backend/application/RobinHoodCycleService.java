@@ -51,15 +51,16 @@ public class RobinHoodCycleService {
         // Carregar disciplinas do concurso a partir de edital_topicos
         List<DisciplineProfile> profiles = loadDisciplineProfiles(concursoId);
 
-        // Se não houver disciplinas cadastradas no concurso, criar conjunto base para demonstração
+        // Se não houver disciplinas cadastradas no concurso, retorna ciclo vazio honesto (sem dados simulados)
         if (profiles.isEmpty()) {
-            profiles = List.of(
-                    new DisciplineProfile("Direito Tributário", 2.0, 20, 50.0, 4, "JURIDICA"),
-                    new DisciplineProfile("Contabilidade Geral", 2.0, 20, 50.0, 3, "FISCAL"),
-                    new DisciplineProfile("Tecnologia da Informação", 3.0, 25, 60.0, 1, "TI"),
-                    new DisciplineProfile("Legislação Tributária", 2.5, 25, 60.0, 2, "FISCAL"),
-                    new DisciplineProfile("Direito Administrativo", 1.0, 10, 50.0, 5, "JURIDICA"),
-                    new DisciplineProfile("Português", 1.0, 15, 50.0, 3, "GERAL")
+            return new RobinHoodCycleResult(
+                    concursoId,
+                    hours,
+                    duration,
+                    Collections.emptyList(),
+                    0,
+                    false,
+                    Map.of("status", "Nenhuma disciplina cadastrada no edital para este concurso. Cadastre o edital para gerar o ciclo adaptativo.")
             );
         }
 

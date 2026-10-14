@@ -49,10 +49,10 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ activeConcurso }) 
             accuracyRate: res.globalAccuracy !== undefined ? res.globalAccuracy : (total > 0 ? (correct / total) * 100 : 0),
             calibrated: total >= 30,
             quadrantes: {
-              altaConfiancaAcerto: res.wellCalibratedCount || Math.round(correct * 0.7),
-              altaConfiancaErro: res.overconfidenceCount || Math.round((total - correct) * 0.35),
-              baixaConfiancaAcerto: res.underconfidenceCount || Math.round(correct * 0.3),
-              baixaConfiancaErro: Math.max(0, (total - correct) - (res.overconfidenceCount || 0)),
+              altaConfiancaAcerto: res.wellCalibratedCount ?? 0,
+              altaConfiancaErro: res.overconfidenceCount ?? 0,
+              baixaConfiancaAcerto: res.underconfidenceCount ?? 0,
+              baixaConfiancaErro: res.lowConfidenceErrorCount ?? Math.max(0, (total - correct) - (res.overconfidenceCount || 0)),
             },
           });
         }

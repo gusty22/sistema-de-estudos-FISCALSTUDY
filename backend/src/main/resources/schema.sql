@@ -185,3 +185,112 @@ CREATE TABLE IF NOT EXISTS student_distractions (
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Pré-Mortem de Gary Klein (Antecipação de falhas e planos de contingência)
+CREATE TABLE IF NOT EXISTS pre_mortems (
+    id TEXT PRIMARY KEY,
+    concurso_id TEXT,
+    titulo TEXT NOT NULL,
+    data_prevista TEXT,
+    cenario_fracasso TEXT NOT NULL,
+    causa_1 TEXT,
+    acao_1 TEXT,
+    causa_2 TEXT,
+    acao_2 TEXT,
+    causa_3 TEXT,
+    acao_3 TEXT,
+    status TEXT DEFAULT 'ATIVO',
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Sessões Feynman em Tela Limpa (Reconstrução ativa e identificação de lacunas)
+CREATE TABLE IF NOT EXISTS feynman_sessions (
+    id TEXT PRIMARY KEY,
+    concurso_id TEXT,
+    disciplina TEXT NOT NULL,
+    topico TEXT NOT NULL,
+    reconstruction_text TEXT NOT NULL,
+    lacunas_identificadas TEXT,
+    tempo_minutos INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Material de Pontos-Chave (Cloze Deletion / Omissão com base nos 5 critérios críticos)
+CREATE TABLE IF NOT EXISTS ponto_chave_cards (
+    id TEXT PRIMARY KEY,
+    concurso_id TEXT,
+    disciplina TEXT NOT NULL,
+    topico TEXT NOT NULL,
+    criterio TEXT NOT NULL, -- MAIS_CAI, MAIS_DIFICIL, MAIS_ERRA, MAIS_ESQUECE, PEGADINHA_BANCA
+    cloze_text TEXT NOT NULL,
+    explicacao TEXT,
+    artigo_ou_referencia TEXT,
+    taxa_acerto REAL DEFAULT 0.0,
+    proxima_revisao TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Sessões Teóricas pelo Método ERA (Explorar, Estudar, Revisar, Avaliar)
+CREATE TABLE IF NOT EXISTS metodo_era_sessions (
+    id TEXT PRIMARY KEY,
+    concurso_id TEXT,
+    disciplina TEXT NOT NULL,
+    topico TEXT NOT NULL,
+    etapa TEXT NOT NULL, -- EXPLORAR, ESTUDAR, REVISAR, AVALIAR, CONCLUIDO
+    tempo_explorar_segundos INTEGER DEFAULT 0,
+    tempo_estudar_segundos INTEGER DEFAULT 0,
+    tempo_revisar_segundos INTEGER DEFAULT 0,
+    questoes_avaliar_feitas INTEGER DEFAULT 0,
+    anotacoes_excecoes TEXT,
+    resumo_raiz_abstracao TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Pontes de Colisão de Domínios (Intercalação de estruturas conceituais profundas)
+CREATE TABLE IF NOT EXISTS cross_domain_bridges (
+    id TEXT PRIMARY KEY,
+    dominio_a_disciplina TEXT NOT NULL,
+    dominio_a_topico TEXT NOT NULL,
+    dominio_b_disciplina TEXT NOT NULL,
+    dominio_b_topico TEXT NOT NULL,
+    conceito_fronteira TEXT NOT NULL,
+    desafio_prompt TEXT NOT NULL,
+    max_caracteres INTEGER DEFAULT 140,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Respostas de Síntese Ativa das Pontes de Colisão de Domínios
+CREATE TABLE IF NOT EXISTS cross_domain_responses (
+    id TEXT PRIMARY KEY,
+    bridge_id TEXT NOT NULL,
+    session_id TEXT NOT NULL,
+    active_output_text TEXT NOT NULL,
+    tempo_resposta_segundos INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(bridge_id) REFERENCES cross_domain_bridges(id)
+);
+
+-- Auditoria de Erros Críticos via Técnica de Feynman Constrangida (Fail-safe)
+CREATE TABLE IF NOT EXISTS critical_error_feynman_audits (
+    id TEXT PRIMARY KEY,
+    question_id TEXT NOT NULL,
+    session_id TEXT NOT NULL,
+    selected_option TEXT NOT NULL,
+    pegadinha_explicacao TEXT NOT NULL,
+    regra_correta_explicacao TEXT NOT NULL,
+    status_validacao TEXT DEFAULT 'VALIDADO',
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Execuções em Modo Sombra para Algoritmos de Planejamento (Shadow Mode)
+CREATE TABLE IF NOT EXISTS shadow_mode_runs (
+    id TEXT PRIMARY KEY,
+    occurred_at TEXT NOT NULL,
+    active_policy TEXT NOT NULL,
+    shadow_policy TEXT NOT NULL,
+    active_recommendation_json TEXT NOT NULL,
+    shadow_recommendation_json TEXT NOT NULL,
+    divergence_score REAL DEFAULT 0.0,
+    divergence_rationale TEXT
+);
+
+

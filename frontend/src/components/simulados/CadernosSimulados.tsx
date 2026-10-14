@@ -15,6 +15,8 @@ export interface SimuladoConfig {
   quantidade: number;
   filtroResolucao: 'TODAS' | 'APENAS_ERRADAS' | 'NAO_RESOLVIDAS';
   tempoMinutos?: number;
+  chaosModeEnabled?: boolean;
+  stressFatigueSimulation?: boolean;
 }
 
 export const CadernosSimulados: React.FC<CadernosSimuladosProps> = ({
@@ -23,28 +25,41 @@ export const CadernosSimulados: React.FC<CadernosSimuladosProps> = ({
 }) => {
   const [modo, setModo] = useState<'TREINO' | 'SIMULADO'>('SIMULADO');
   const [titulo, setTitulo] = useState('Simulado Geral Focado — Prova Objetiva');
-  const [banca, setBanca] = useState(activeConcurso?.banca || 'IBGP');
+  const [banca, setBanca] = useState(activeConcurso?.banca || 'TODAS');
   const [quantidade, setQuantidade] = useState(30);
   const [filtroResolucao, setFiltroResolucao] = useState<'TODAS' | 'APENAS_ERRADAS' | 'NAO_RESOLVIDAS'>('TODAS');
-  const [selectedDisciplinas, setSelectedDisciplinas] = useState<string[]>([
-    'Legislação Tributária',
-    'Direito Tributário',
-    'Contabilidade Geral',
-    'Língua Portuguesa',
-  ]);
+  const [selectedDisciplinas, setSelectedDisciplinas] = useState<string[]>([]);
   const [tempoMinutos, setTempoMinutos] = useState(90);
+  const [disciplinasDisponiveis, setDisciplinasDisponiveis] = useState<string[]>([]);
+  const [chaosModeEnabled, setChaosModeEnabled] = useState(false);
+  const [stressFatigueSimulation, setStressFatigueSimulation] = useState(false);
 
-  const disciplinasDisponiveis = [
-    'Legislação Tributária',
-    'Direito Tributário',
-    'Contabilidade Geral e Avançada',
-    'Auditoria Fiscal',
-    'Direito Administrativo',
-    'Direito Constitucional',
-    'Língua Portuguesa',
-    'Raciocínio Lógico & Matemática',
-    'Tecnologia da Informação & Banco de Dados',
-  ];
+  React.useEffect(() => {
+    if (!activeConcurso?.id) return;
+    if (activeConcurso.banca) {
+      setBanca(activeConcurso.banca);
+    }
+    fetch(`/api/v1/concursos/${activeConcurso.id}/edital`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && Array.isArray(data.topicos)) {
+          const discs = Array.from(new Set(data.topicos.map((t: any) => t.disciplina))).filter(Boolean) as string[];
+          if (discs.length > 0) {
+            setDisciplinasDisponiveis(discs);
+            setSelectedDisciplinas(discs.slice(0, Math.min(4, discs.length)));
+            return;
+          }
+        }
+        fetch(`/api/v1/materials?concursoId=${encodeURIComponent(activeConcurso.id)}`)
+          .then((res) => (res.ok ? res.json() : []))
+          .then((mats: any[]) => {
+            const matDiscs = Array.from(new Set(mats.map((m: any) => m.disciplina))).filter(Boolean) as string[];
+            setDisciplinasDisponiveis(matDiscs);
+            setSelectedDisciplinas(matDiscs.slice(0, Math.min(4, matDiscs.length)));
+          });
+      })
+      .catch(() => {});
+  }, [activeConcurso?.id]);
 
   const toggleDisciplina = (disc: string) => {
     if (selectedDisciplinas.includes(disc)) {
@@ -68,6 +83,8 @@ export const CadernosSimulados: React.FC<CadernosSimuladosProps> = ({
       quantidade,
       filtroResolucao,
       tempoMinutos: modo === 'SIMULADO' ? tempoMinutos : undefined,
+      chaosModeEnabled,
+      stressFatigueSimulation,
     });
   };
 
@@ -139,11 +156,15 @@ export const CadernosSimulados: React.FC<CadernosSimuladosProps> = ({
                 onChange={(e) => setBanca(e.target.value)}
                 className="custom-select"
               >
-                <option value="IBGP">IBGP (Oficial Araguari)</option>
+                <option value="TODAS">Todas as Bancas</option>
+                {activeConcurso?.banca && activeConcurso.banca !== 'TODAS' && (
+                  <option value={activeConcurso.banca}>{activeConcurso.banca} (Banca do Concurso)</option>
+                )}
                 <option value="FGV">FGV (Fundação Getulio Vargas)</option>
                 <option value="Cebraspe">Cebraspe / CESPE</option>
                 <option value="FCC">FCC (Carlos Chagas)</option>
-                <option value="TODAS">Todas as Bancas</option>
+                <option value="Vunesp">Vunesp</option>
+                <option value="IBGP">IBGP</option>
               </select>
             </div>
 
@@ -202,6 +223,34 @@ export const CadernosSimulados: React.FC<CadernosSimuladosProps> = ({
               </div>
             </div>
           )}
+
+          {/* Inoculação de Estresse (Chaos Engineering) */}
+          <div className="form-group-custom" style={{ marginTop: '1.25rem', padding: '0.85rem', background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.35)', borderRadius: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#f87171', fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.4rem' }}>
+              <span>⚡ Inoculação de Estresse (Chaos Engineering)</span>
+            </div>
+            <p style={{ margin: '0 0 0.65rem', fontSize: '0.78rem', color: '#cbd5e1', lineHeight: '1.4' }}>
+              Treinamento de resiliência psicológica: injeta quebras de ritmo propositais com questões de dificuldade extrema/desproporcional no meio de blocos moderados.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.82rem', color: '#fca5a5', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={chaosModeEnabled}
+                  onChange={(e) => setChaosModeEnabled(e.target.checked)}
+                />
+                <span>Ativar Quebra de Ritmo (Injeção de 3 questões de choque emocional)</span>
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.82rem', color: '#fca5a5', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={stressFatigueSimulation}
+                  onChange={(e) => setStressFatigueSimulation(e.target.checked)}
+                />
+                <span>Simulação de Fadiga Neuro-Cognitiva (Exaustão e Textos Densos)</span>
+              </label>
+            </div>
+          </div>
         </div>
 
         {/* Right Column: Disciplines Selection & Summary */}
@@ -212,19 +261,25 @@ export const CadernosSimulados: React.FC<CadernosSimuladosProps> = ({
           </p>
 
           <div className="disciplines-chips-grid">
-            {disciplinasDisponiveis.map((disc) => {
-              const isSelected = selectedDisciplinas.includes(disc);
-              return (
-                <button
-                  key={disc}
-                  className={`disc-selector-chip ${isSelected ? 'selected' : ''}`}
-                  onClick={() => toggleDisciplina(disc)}
-                >
-                  <span className="check-box">{isSelected ? '✓' : '+'}</span>
-                  <span>{disc}</span>
-                </button>
-              );
-            })}
+            {disciplinasDisponiveis.length === 0 ? (
+              <div style={{ gridColumn: '1 / -1', padding: '16px', color: '#94a3b8', fontSize: '13px', textAlign: 'center' }}>
+                Nenhuma disciplina cadastrada no edital deste concurso. Adicione tópicos no Edital Verticalizado para montar cadernos filtrados por matéria.
+              </div>
+            ) : (
+              disciplinasDisponiveis.map((disc) => {
+                const isSelected = selectedDisciplinas.includes(disc);
+                return (
+                  <button
+                    key={disc}
+                    className={`disc-selector-chip ${isSelected ? 'selected' : ''}`}
+                    onClick={() => toggleDisciplina(disc)}
+                  >
+                    <span className="check-box">{isSelected ? '✓' : '+'}</span>
+                    <span>{disc}</span>
+                  </button>
+                );
+              })
+            )}
           </div>
 
           <div className="caderno-preview-box">

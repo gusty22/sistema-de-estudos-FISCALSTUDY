@@ -19,6 +19,26 @@ interface SupportMaterial {
   paginaFim?: number;
 }
 
+export interface StagingFile {
+  id: string;
+  relPath: string;
+  filename: string;
+  fileSizeBytes: number;
+  sha256: string;
+  totalPages: number;
+  hasSelectableText: boolean;
+  isScanned: boolean;
+  docFamily: string;
+  banca: string;
+  ano: number | null;
+  orgao: string;
+  cargo: string;
+  status: string;
+  questionCount: number;
+  verifiedCount: number;
+  needsReviewCount: number;
+}
+
 interface StagingQuestion {
   id: string;
   numeroOriginal: number;
@@ -96,6 +116,12 @@ export default function ImportStudio() {
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [processingError, setProcessingError] = useState<string | null>(null);
 
+  // Staging Acervo Discovery
+  const [stagingFiles, setStagingFiles] = useState<StagingFile[]>([]);
+  const [selectedStagingFile, setSelectedStagingFile] = useState<StagingFile | null>(null);
+  const [stagingSearch, setStagingSearch] = useState<string>('');
+  const [activeTab, setActiveTab] = useState<'ACERVO' | 'UPLOAD'>('ACERVO');
+
   // Helper defensivo para chamadas HTTP
   async function safeFetchJson<T>(url: string, init?: RequestInit): Promise<T> {
     let res: Response;
@@ -158,6 +184,41 @@ export default function ImportStudio() {
       active = false;
     };
   }, []);
+
+  const loadStagingFiles = () => {
+    safeFetchJson<StagingFile[]>('/api/v1/ingestion/staging-files')
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setStagingFiles(data);
+        }
+      })
+      .catch((err) => console.error('Erro ao buscar arquivos do staging:', err));
+  };
+
+  useEffect(() => {
+    loadStagingFiles();
+  }, []);
+
+  const handleSelectStagingFile = async (file: StagingFile) => {
+    setIsProcessing(true);
+    setSelectedStagingFile(file);
+    setSession(null);
+    setActionMessage(`Carregando questões do caderno: ${file.filename}...`);
+    try {
+      const qList = await safeFetchJson<StagingQuestion[]>(`/api/v1/ingestion/staging-files/${file.id}/questions`);
+      setQuestions(qList);
+      if (qList.length > 0) {
+        setActiveQuestionId(qList[0].id);
+      } else {
+        setActiveQuestionId(null);
+      }
+    } catch (err: any) {
+      alert('Erro ao carregar questões do caderno: ' + err.message);
+    } finally {
+      setIsProcessing(false);
+      setActionMessage(null);
+    }
+  };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -326,8 +387,14 @@ export default function ImportStudio() {
   const [editalTopicos, setEditalTopicos] = useState<{ id: string; disciplina: string; assunto: string; subassunto?: string }[]>([]);
 
   useEffect(() => {
-    safeFetchJson<any[]>('/api/v1/editais/topicos?concursoId=ibgp-araguari-2023-auditor')
-      .then((data) => setEditalTopicos(data || []))
+    const activeConcursoId = localStorage.getItem('fiscalstudy_active_concurso_id');
+    if (!activeConcursoId) return;
+    safeFetchJson<any>(`/api/v1/concursos/${activeConcursoId}/edital`)
+      .then((data) => {
+        if (data && Array.isArray(data.topicos)) {
+          setEditalTopicos(data.topicos);
+        }
+      })
       .catch(() => {});
   }, []);
 
@@ -419,9 +486,13 @@ export default function ImportStudio() {
   };
 
   const handleSaveCorrections = async () => {
-    if (!session || !activeQuestion) return;
+    if (!activeQuestion) return;
     try {
-      const res = await fetch(`/api/v1/ingestion/sessions/${session.sessionId}/questions/${activeQuestion.id}`, {
+      const url = session
+        ? `/api/v1/ingestion/sessions/${session.sessionId}/questions/${activeQuestion.id}`
+        : `/api/v1/ingestion/staging-questions/${activeQuestion.id}`;
+
+      const res = await fetch(url, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -450,15 +521,17 @@ export default function ImportStudio() {
   };
 
   const handleMarkVerified = async () => {
-    if (!session || !activeQuestion) return;
+    if (!activeQuestion) return;
     try {
-      const res = await fetch(
-        `/api/v1/ingestion/sessions/${session.sessionId}/questions/${activeQuestion.id}/verify`,
-        { method: 'POST' }
-      );
+      const url = session
+        ? `/api/v1/ingestion/sessions/${session.sessionId}/questions/${activeQuestion.id}/verify`
+        : `/api/v1/ingestion/staging-questions/${activeQuestion.id}/verify`;
+
+      const res = await fetch(url, { method: 'POST' });
       if (res.ok) {
         const verifiedQ: StagingQuestion = await res.json();
         setQuestions((prev) => prev.map((q) => (q.id === verifiedQ.id ? verifiedQ : q)));
+        loadStagingFiles();
       }
     } catch (e: any) {
       alert('Erro: ' + e.message);
@@ -466,10 +539,14 @@ export default function ImportStudio() {
   };
 
   const handleMarkRejected = async (type: 'RECUPERAVEL' | 'DEFINITIVA' = 'RECUPERAVEL') => {
-    if (!session || !activeQuestion) return;
+    if (!activeQuestion) return;
     try {
       // Atualiza tipo de rejeição
-      await fetch(`/api/v1/ingestion/sessions/${session.sessionId}/questions/${activeQuestion.id}`, {
+      const putUrl = session
+        ? `/api/v1/ingestion/sessions/${session.sessionId}/questions/${activeQuestion.id}`
+        : `/api/v1/ingestion/staging-questions/${activeQuestion.id}`;
+
+      await fetch(putUrl, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -478,14 +555,16 @@ export default function ImportStudio() {
         }),
       });
 
-      const res = await fetch(
-        `/api/v1/ingestion/sessions/${session.sessionId}/questions/${activeQuestion.id}/reject`,
-        { method: 'POST' }
-      );
+      const postUrl = session
+        ? `/api/v1/ingestion/sessions/${session.sessionId}/questions/${activeQuestion.id}/reject`
+        : `/api/v1/ingestion/staging-questions/${activeQuestion.id}/reject`;
+
+      const res = await fetch(postUrl, { method: 'POST' });
       if (res.ok) {
         const rejectedQ: StagingQuestion = await res.json();
         rejectedQ.rejectionType = type;
         setQuestions((prev) => prev.map((q) => (q.id === rejectedQ.id ? rejectedQ : q)));
+        loadStagingFiles();
       }
     } catch (e: any) {
       alert('Erro: ' + e.message);
@@ -493,32 +572,66 @@ export default function ImportStudio() {
   };
 
   const handleSimulateImport = async () => {
-    if (!session) return;
-    try {
-      const res = await fetch(`/api/v1/ingestion/sessions/${session.sessionId}/simulate-import`, {
-        method: 'POST',
-      });
-      if (res.ok) {
-        const simData: ImportSimulation = await res.json();
-        setSimulationData(simData);
-        setIsSimulationOpen(true);
+    if (session) {
+      try {
+        const res = await fetch(`/api/v1/ingestion/sessions/${session.sessionId}/simulate-import`, {
+          method: 'POST',
+        });
+        if (res.ok) {
+          const simData: ImportSimulation = await res.json();
+          setSimulationData(simData);
+          setIsSimulationOpen(true);
+        }
+      } catch (e: any) {
+        alert('Erro na simulação: ' + e.message);
       }
-    } catch (e: any) {
-      alert('Erro na simulação: ' + e.message);
+    } else if (selectedStagingFile) {
+      const verified = questions.filter((q) => q.status === 'SOURCE_VERIFIED' || q.status === 'STRUCTURALLY_VALID').length;
+      const needsRev = questions.filter((q) => q.status === 'NEEDS_REVIEW').length;
+      const rej = questions.filter((q) => q.status === 'REJECTED').length;
+      const simData: ImportSimulation = {
+        mode: 'TEST_MODE_DRY_RUN (Acervo Staging)',
+        totalStagingQuestions: questions.length,
+        verifiedReadyToImport: verified,
+        needsReviewCount: needsRev,
+        rejectedCount: rej,
+        collidingExistingQuestions: 0,
+        collidingQuestionIds: [],
+        warnings: needsRev > 0 ? [`${needsRev} questões ainda requerem revisão humana antes de publicação`] : [],
+        safeToImport: verified > 0,
+        byDiscipline: {},
+      };
+      setSimulationData(simData);
+      setIsSimulationOpen(true);
     }
   };
 
   const handleConfirmedImport = async () => {
-    if (!session) return;
-    if (!confirm('Deseja realmente importar as questões aprovadas para o repositório seguro?')) return;
+    if (!session && !selectedStagingFile) return;
+    if (!confirm('Deseja realmente publicar as questões verificadas no repositório seguro com backup físico automático prévio?')) return;
     try {
-      const res = await fetch(`/api/v1/ingestion/sessions/${session.sessionId}/import-confirmed`, {
-        method: 'POST',
-      });
-      if (res.ok) {
-        const result = await res.json();
-        alert(`Importação concluída com sucesso! ${result.imported_count} questões verificadas salvas.`);
-        setIsSimulationOpen(false);
+      if (session) {
+        const res = await fetch(`/api/v1/ingestion/sessions/${session.sessionId}/import-confirmed`, {
+          method: 'POST',
+        });
+        if (res.ok) {
+          const result = await res.json();
+          alert(`Importação concluída com sucesso! ${result.imported_count} questões verificadas salvas.`);
+          setIsSimulationOpen(false);
+        }
+      } else if (selectedStagingFile) {
+        const res = await fetch(`/api/v1/ingestion/staging-publish?fileId=${selectedStagingFile.id}`, {
+          method: 'POST',
+        });
+        if (res.ok) {
+          const result = await res.json();
+          alert(`Publicação autorizada concluída com sucesso!\n• Questões publicadas: ${result.published_count || 0}\n• Backup gerado: ${result.backup_path || 'Verificado'}`);
+          setIsSimulationOpen(false);
+          loadStagingFiles();
+        } else {
+          const err = await res.json();
+          alert('Erro ao publicar: ' + (err.error || 'Falha na publicação'));
+        }
       }
     } catch (e: any) {
       alert('Erro na importação: ' + e.message);
@@ -575,7 +688,7 @@ export default function ImportStudio() {
           <p>Extração fiel à fonte com isolamento de layout, rastreabilidade e verificação visual lado a lado</p>
         </div>
         <div className="header-actions">
-          {session && questions.length > 0 && (
+          {(session || selectedStagingFile) && questions.length > 0 && (
             <>
               <button
                 className="btn btn-secondary"
@@ -601,33 +714,182 @@ export default function ImportStudio() {
       </div>
 
       {/* Preset Banner */}
-      <div className="preset-banner glass">
-        <div className="preset-info">
-          <strong>⚡ Validação Imediata com o Golden Set Oficial</strong>
-          <span>
-            Teste em 1 clique a Questão 15 do cargo 532 (higienização de rabiscos, separação do cabeçalho de Informática e alerta matemático de 336 vs 3.360 anagramas).
-          </span>
+      {(!session && !selectedStagingFile || questions.length === 0) && (
+        <div className="preset-banner glass">
+          <div className="preset-info">
+            <strong>⚡ Validação Imediata com o Golden Set Oficial</strong>
+            <span>
+              Teste em 1 clique a Questão 15 do cargo 532 (higienização de rabiscos, separação do cabeçalho de Informática e alerta matemático de 336 vs 3.360 anagramas).
+            </span>
+          </div>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button
+              className="btn btn-secondary"
+              onClick={() => handleRunDemoPreset('532')}
+              disabled={isProcessing}
+            >
+              Carregar Técnico Fiscal (532)
+            </button>
+            <button
+              className="btn btn-secondary"
+              onClick={() => handleRunDemoPreset('503')}
+              disabled={isProcessing}
+            >
+              Carregar Auditor Fiscal (503)
+            </button>
+          </div>
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button
-            className="btn btn-secondary"
-            onClick={() => handleRunDemoPreset('532')}
-            disabled={isProcessing}
-          >
-            Carregar Técnico Fiscal (532)
-          </button>
-          <button
-            className="btn btn-secondary"
-            onClick={() => handleRunDemoPreset('503')}
-            disabled={isProcessing}
-          >
-            Carregar Auditor Fiscal (503)
-          </button>
-        </div>
-      </div>
+      )}
 
-      {/* Section 1: Upload & Configuration (Show if no active questions or explicitly adding) */}
-      {(!session || questions.length === 0) && (
+      {/* Mode Switcher Tabs */}
+      {(!session && !selectedStagingFile || questions.length === 0) && (
+        <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem' }}>
+          <button
+            className={`btn ${activeTab === 'ACERVO' ? '' : 'btn-secondary'}`}
+            style={activeTab === 'ACERVO' ? { background: '#0284c7', color: '#fff', fontWeight: 600 } : {}}
+            onClick={() => setActiveTab('ACERVO')}
+          >
+            📚 Acervo Digital em Staging ({stagingFiles.length} Provas Catalogadas)
+          </button>
+          <button
+            className={`btn ${activeTab === 'UPLOAD' ? '' : 'btn-secondary'}`}
+            style={activeTab === 'UPLOAD' ? { background: '#0284c7', color: '#fff', fontWeight: 600 } : {}}
+            onClick={() => setActiveTab('UPLOAD')}
+          >
+            📤 Upload Manual / Nova Sessão Local
+          </button>
+        </div>
+      )}
+
+      {/* Acervo Browser View */}
+      {(!session && !selectedStagingFile || questions.length === 0) && activeTab === 'ACERVO' && (
+        <div className="upload-card glass animate-fade-in" style={{ marginBottom: '1.5rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '1rem' }}>
+            <div>
+              <h3 style={{ fontSize: '1.15rem', color: '#f8fafc', margin: 0 }}>
+                Catálogo de Documentos do Acervo (Isolamento Staging)
+              </h3>
+              <p style={{ color: '#94a3b8', fontSize: '0.85rem', margin: '0.25rem 0 0' }}>
+                Selecione qualquer caderno de prova para abrir o visualizador de auditoria lado a lado com a evidência PDF original.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              <span className="stat-pill pill-valid" style={{ fontSize: '0.8rem' }}>
+                {stagingFiles.filter((f) => f.questionCount > 0).length} Provas Processadas
+              </span>
+              <span className="stat-pill pill-total" style={{ fontSize: '0.8rem' }}>
+                {stagingFiles.reduce((acc, f) => acc + f.questionCount, 0)} Questões Extraídas
+              </span>
+              <button
+                className="btn btn-secondary"
+                onClick={loadStagingFiles}
+                style={{ padding: '4px 10px', fontSize: '0.8rem' }}
+                title="Recarregar catálogo"
+              >
+                🔄 Atualizar
+              </button>
+            </div>
+          </div>
+
+          {/* Search Filter */}
+          <div style={{ marginBottom: '1rem' }}>
+            <input
+              type="text"
+              className="form-control"
+              placeholder="🔍 Filtrar por Banca (ex: FGV, IBGP, CONSULPAM), Ano, Cargo ou nome do arquivo..."
+              value={stagingSearch}
+              onChange={(e) => setStagingSearch(e.target.value)}
+              style={{ width: '100%', padding: '0.6rem 1rem', fontSize: '0.9rem' }}
+            />
+          </div>
+
+          {/* Files List Table */}
+          <div style={{ maxHeight: '420px', overflowY: 'auto', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
+              <thead>
+                <tr style={{ background: 'rgba(15, 23, 42, 0.7)', borderBottom: '1px solid rgba(255,255,255,0.1)', color: '#94a3b8' }}>
+                  <th style={{ padding: '0.75rem 1rem' }}>Documento / Prova</th>
+                  <th style={{ padding: '0.75rem 1rem' }}>Banca</th>
+                  <th style={{ padding: '0.75rem 1rem' }}>Ano</th>
+                  <th style={{ padding: '0.75rem 1rem' }}>Cargo</th>
+                  <th style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>Questões Extraídas</th>
+                  <th style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>Ação</th>
+                </tr>
+              </thead>
+              <tbody>
+                {stagingFiles
+                  .filter((f) => {
+                    if (!stagingSearch.trim()) return true;
+                    const q = stagingSearch.toLowerCase();
+                    return (
+                      f.filename.toLowerCase().includes(q) ||
+                      (f.banca && f.banca.toLowerCase().includes(q)) ||
+                      (f.cargo && f.cargo.toLowerCase().includes(q)) ||
+                      (f.ano && String(f.ano).includes(q))
+                    );
+                  })
+                  .slice(0, 100)
+                  .map((f) => (
+                    <tr
+                      key={f.id}
+                      style={{
+                        borderBottom: '1px solid rgba(255,255,255,0.05)',
+                        background: f.questionCount > 0 ? 'rgba(56, 189, 248, 0.03)' : 'transparent',
+                      }}
+                    >
+                      <td style={{ padding: '0.75rem 1rem', color: '#f8fafc', fontWeight: 500 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <span>📄</span>
+                          <span title={f.filename} style={{ maxWidth: '320px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {f.filename}
+                          </span>
+                        </div>
+                      </td>
+                      <td style={{ padding: '0.75rem 1rem' }}>
+                        <span className="suggestion-chip" style={{ fontSize: '0.75rem' }}>
+                          {f.banca || 'N/A'}
+                        </span>
+                      </td>
+                      <td style={{ padding: '0.75rem 1rem', color: '#cbd5e1' }}>
+                        {f.ano || '—'}
+                      </td>
+                      <td style={{ padding: '0.75rem 1rem', color: '#cbd5e1', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {f.cargo || '—'}
+                      </td>
+                      <td style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>
+                        {f.questionCount > 0 ? (
+                          <span style={{ color: '#38bdf8', fontWeight: 600 }}>
+                            {f.questionCount} questões
+                            {f.verifiedCount > 0 && ` (${f.verifiedCount} verificadas)`}
+                          </span>
+                        ) : (
+                          <span style={{ color: '#64748b' }}>Aguardando extração</span>
+                        )}
+                      </td>
+                      <td style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>
+                        <button
+                          className="btn"
+                          disabled={f.questionCount === 0 || isProcessing}
+                          onClick={() => handleSelectStagingFile(f)}
+                          style={{
+                            padding: '4px 12px',
+                            fontSize: '0.8rem',
+                            background: f.questionCount > 0 ? '#0284c7' : '#334155',
+                          }}
+                        >
+                          {f.questionCount > 0 ? '👁️ Auditar Prova' : 'Sem questões'}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Section 1: Upload & Configuration (Show if in UPLOAD mode and no active questions) */}
+      {(!session && !selectedStagingFile || questions.length === 0) && activeTab === 'UPLOAD' && (
         <div className="upload-card glass">
           <h3 style={{ fontSize: '1.1rem', color: '#f8fafc', marginBottom: '0.5rem' }}>
             1. Selecionar Documentos do Computador
@@ -803,6 +1065,32 @@ export default function ImportStudio() {
       {/* Section 2: Review Studio Side-by-Side (When questions are loaded) */}
       {questions.length > 0 && (
         <div className="review-studio">
+          {/* Active File/Session Information Banner */}
+          <div className="glass" style={{ padding: '0.75rem 1.25rem', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderLeft: '4px solid #0284c7' }}>
+            <div>
+              <span style={{ fontSize: '0.75rem', color: '#38bdf8', fontWeight: 700, textTransform: 'uppercase' }}>
+                {selectedStagingFile ? '📚 Caderno do Acervo em Auditoria:' : '📤 Sessão Manual / Upload:'}
+              </span>
+              <h4 style={{ margin: '0.2rem 0 0', color: '#f8fafc', fontSize: '1.05rem' }}>
+                {selectedStagingFile ? selectedStagingFile.filename : 'Upload Direto'}
+              </h4>
+              <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
+                {selectedStagingFile
+                  ? `${selectedStagingFile.banca || 'Banca'} • ${selectedStagingFile.ano || ''} • ${selectedStagingFile.cargo || ''}`
+                  : `${banca} • ${ano} • ${cargo}`}
+              </span>
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              <button
+                className="btn btn-secondary"
+                onClick={handleResetSession}
+                style={{ fontSize: '0.85rem', padding: '6px 14px' }}
+              >
+                ← Voltar ao Catálogo do Acervo
+              </button>
+            </div>
+          </div>
+
           {/* Stats Bar */}
           <div className="studio-stats-bar glass">
             <div className="stat-item">
@@ -903,11 +1191,26 @@ export default function ImportStudio() {
                       className="evidence-img"
                       style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top center' }}
                     />
+                  ) : activeQuestion ? (
+                    <img
+                      src={`/api/v1/ingestion/staging-questions/${activeQuestion.id}/evidence-image`}
+                      alt="Página da prova original"
+                      className="evidence-img"
+                      style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top center' }}
+                      onError={(e) => {
+                        (e.target as HTMLElement).style.display = 'none';
+                        const fallback = (e.target as HTMLElement).nextElementSibling as HTMLElement;
+                        if (fallback) fallback.style.display = 'block';
+                      }}
+                    />
                   ) : (
                     <div style={{ padding: '3rem', color: '#64748b', textAlign: 'center' }}>
                       Visualização de página não disponível para este formato.
                     </div>
                   )}
+                  <div style={{ display: 'none', padding: '3rem', color: '#64748b', textAlign: 'center' }}>
+                    Visualização de página não disponível para este documento.
+                  </div>
                 </div>
               </div>
 

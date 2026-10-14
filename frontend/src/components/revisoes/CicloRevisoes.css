@@ -163,6 +163,8 @@
   font-weight: 800;
   color: white;
   flex-shrink: 0;
+  overflow: hidden;
+  text-align: center;
 }
 
 .tax-info {

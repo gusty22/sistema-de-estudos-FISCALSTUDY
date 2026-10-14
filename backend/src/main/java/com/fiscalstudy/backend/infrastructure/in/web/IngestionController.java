@@ -29,11 +29,15 @@ public class IngestionController {
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
     private final IngestionPipelineService pipelineService;
+    private final com.fiscalstudy.backend.application.StagingDatabaseService stagingDatabaseService;
 
-    public IngestionController(JdbcTemplate jdbcTemplate, IngestionPipelineService pipelineService) {
+    public IngestionController(JdbcTemplate jdbcTemplate, 
+                               IngestionPipelineService pipelineService,
+                               com.fiscalstudy.backend.application.StagingDatabaseService stagingDatabaseService) {
         this.jdbcTemplate = jdbcTemplate;
         this.objectMapper = new ObjectMapper();
         this.pipelineService = pipelineService;
+        this.stagingDatabaseService = stagingDatabaseService;
     }
 
     // --- ENDPOINTS DO NOVO PIPELINE DE STAGING E IMPORTAÇÃO ---
@@ -158,6 +162,77 @@ public class IngestionController {
             ));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
+        }
+    }
+
+    // --- ENDPOINTS DE CONSULTA E AUDITORIA DO ACERVO EM STAGING ---
+
+    @GetMapping("/staging-files")
+    public ResponseEntity<List<StagingFileDTO>> getStagingFiles() {
+        List<StagingFileDTO> files = stagingDatabaseService.listStagingFiles();
+        return ResponseEntity.ok(files);
+    }
+
+    @GetMapping("/staging-files/{fileId}/questions")
+    public ResponseEntity<List<StagingQuestionDTO>> getQuestionsForStagingFile(@PathVariable String fileId) {
+        List<StagingQuestionDTO> questions = stagingDatabaseService.getQuestionsForFile(fileId);
+        return ResponseEntity.ok(questions);
+    }
+
+    @PutMapping("/staging-questions/{questionId}")
+    public ResponseEntity<StagingQuestionDTO> updateStagingQuestion(
+            @PathVariable String questionId,
+            @RequestBody QuestionUpdateRequestDTO req) {
+        try {
+            StagingQuestionDTO updated = stagingDatabaseService.updateStagingQuestion(questionId, req);
+            return ResponseEntity.ok(updated);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @PostMapping("/staging-questions/{questionId}/verify")
+    public ResponseEntity<StagingQuestionDTO> verifyStagingQuestion(@PathVariable String questionId) {
+        try {
+            StagingQuestionDTO updated = stagingDatabaseService.verifyStagingQuestion(questionId);
+            return ResponseEntity.ok(updated);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @PostMapping("/staging-questions/{questionId}/reject")
+    public ResponseEntity<StagingQuestionDTO> rejectStagingQuestion(@PathVariable String questionId) {
+        try {
+            StagingQuestionDTO updated = stagingDatabaseService.rejectStagingQuestion(questionId);
+            return ResponseEntity.ok(updated);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @GetMapping("/staging-questions/{questionId}/evidence-image")
+    public ResponseEntity<byte[]> getQuestionEvidenceImage(@PathVariable String questionId) {
+        try {
+            byte[] imageBytes = stagingDatabaseService.renderEvidenceForQuestion(questionId);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.IMAGE_PNG);
+            return new ResponseEntity<>(imageBytes, headers, HttpStatus.OK);
+        } catch (Exception e) {
+            logger.warn("Could not render evidence for question {}: {}", questionId, e.getMessage());
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @PostMapping("/staging-publish")
+    public ResponseEntity<Map<String, Object>> publishStaging(
+            @RequestParam(required = false) String fileId,
+            @RequestParam(defaultValue = "false") boolean includeStructurallyValid) {
+        try {
+            Map<String, Object> result = stagingDatabaseService.publishToOperationalDb(fileId, includeStructurallyValid);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 

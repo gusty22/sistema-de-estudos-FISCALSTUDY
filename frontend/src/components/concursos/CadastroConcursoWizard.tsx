@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import type { ConcursoItem } from './MeusConcursos';
+import { EDITAL_EXTRACTION_PROMPT } from '../../constants/editalPromptMestre';
 import './CadastroConcursoWizard.css';
 
 interface CadastroConcursoWizardProps {
@@ -66,10 +67,10 @@ export const CadastroConcursoWizard: React.FC<CadastroConcursoWizardProps> = ({
     banca: initialData?.banca || 'FGV',
     ano: initialData?.ano ? String(initialData.ano) : String(new Date().getFullYear()),
     situacao: initialData?.situacao || 'EDITAL_PUBLICADO',
-    localidade: initialData?.localidade || 'MG',
-    escolaridade: initialData?.escolaridade || 'Superior em Qualquer Área',
-    vagas: initialData?.vagas ? String(initialData.vagas) : '10',
-    salario: initialData?.salario ? String(initialData.salario) : '15000',
+    localidade: initialData?.localidade || '',
+    escolaridade: initialData?.escolaridade || 'Superior',
+    vagas: initialData?.vagas ? String(initialData.vagas) : '',
+    salario: initialData?.salario ? String(initialData.salario) : '',
     descricao: initialData?.descricao || '',
 
     dataProva: initialData?.dataProva || '',
@@ -94,6 +95,15 @@ export const CadastroConcursoWizard: React.FC<CadastroConcursoWizardProps> = ({
   // Step 3 & 4: Edital State
   const [rawJsonText, setRawJsonText] = useState<string>('');
   const [docOrigem, setDocOrigem] = useState<string>('edital.pdf');
+  const [editalTipo, setEditalTipo] = useState<'OFICIAL' | 'PRE_EDITAL_ANTERIOR'>('OFICIAL');
+  const [editalReferencia, setEditalReferencia] = useState<string>('');
+  const [copiedPrompt, setCopiedPrompt] = useState<boolean>(false);
+
+  const handleCopyPromptMestre = () => {
+    navigator.clipboard.writeText(EDITAL_EXTRACTION_PROMPT);
+    setCopiedPrompt(true);
+    setTimeout(() => setCopiedPrompt(false), 3000);
+  };
   const [validationResult, setValidationResult] = useState<{
     valid: boolean;
     status: string;
@@ -359,7 +369,10 @@ export const CadastroConcursoWizard: React.FC<CadastroConcursoWizardProps> = ({
       materias.length > 0
         ? {
             versao: '1.0',
-            docOrigem: docOrigem || 'edital.pdf',
+            docOrigem: editalTipo === 'PRE_EDITAL_ANTERIOR' && editalReferencia.trim()
+              ? `Pré-Edital: ${editalReferencia.trim()}`
+              : (docOrigem || 'edital.pdf'),
+            tipo: editalTipo,
             materias: materias,
           }
         : null;
@@ -468,7 +481,7 @@ export const CadastroConcursoWizard: React.FC<CadastroConcursoWizardProps> = ({
                     type="text"
                     value={formData.nome}
                     onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                    placeholder="Ex: ISS Araguari — Auditor Fiscal"
+                    placeholder="Ex: Auditor Fiscal da Receita Estadual 2024"
                   />
                 </div>
                 <div className="form-group">
@@ -477,7 +490,7 @@ export const CadastroConcursoWizard: React.FC<CadastroConcursoWizardProps> = ({
                     type="text"
                     value={formData.orgao}
                     onChange={(e) => setFormData({ ...formData, orgao: e.target.value })}
-                    placeholder="Ex: Prefeitura Municipal de Araguari"
+                    placeholder="Ex: Secretaria da Fazenda Estadual"
                   />
                 </div>
               </div>
@@ -628,10 +641,85 @@ export const CadastroConcursoWizard: React.FC<CadastroConcursoWizardProps> = ({
           {/* STEP 3: IMPORTAÇÃO DO EDITAL JSON */}
           {step === 3 && (
             <div className="step-panel animate-fade-in">
-              <h4 className="panel-title">3. Importação do Edital (Formato Track Concursos)</h4>
-              <p className="panel-help">
-                Cole o JSON do edital verticalizado estruturado em <code>materias → topicos → subtopicos</code> ou faça upload do arquivo <code>.json</code>.
-              </p>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '0.5rem' }}>
+                <div>
+                  <h4 className="panel-title" style={{ margin: 0 }}>3. Importação do Conteúdo Programático do Edital</h4>
+                  <p className="panel-help" style={{ margin: '0.25rem 0 0' }}>
+                    Cole o JSON estruturado em <code>materias → topicos → subtopicos</code> ou faça upload do arquivo <code>.json</code>.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={handleCopyPromptMestre}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                    padding: '8px 14px',
+                    fontSize: '0.82rem',
+                    background: copiedPrompt ? 'rgba(16, 185, 129, 0.2)' : 'rgba(59, 130, 246, 0.15)',
+                    borderColor: copiedPrompt ? '#10b981' : '#3b82f6',
+                    color: copiedPrompt ? '#34d399' : '#60a5fa',
+                  }}
+                  title="Copiar prompt completo para colar no Gemini ou ChatGPT junto com o texto do seu edital"
+                >
+                  📋 {copiedPrompt ? '✓ Prompt Mestre Copiado!' : 'Copiar Prompt Mestre de Extração'}
+                </button>
+              </div>
+
+              {/* Seletor: Edital Oficial vs Pré-Edital / Concurso Anterior */}
+              <div style={{
+                background: 'rgba(15, 23, 42, 0.6)',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                borderRadius: '8px',
+                padding: '0.85rem 1rem',
+                margin: '0.75rem 0',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.5rem'
+              }}>
+                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#cbd5e1' }}>
+                  Natureza do Edital a ser Importado:
+                </span>
+                <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', fontSize: '0.85rem', color: editalTipo === 'OFICIAL' ? '#f8fafc' : '#94a3b8' }}>
+                    <input
+                      type="radio"
+                      name="editalTipoWizard"
+                      value="OFICIAL"
+                      checked={editalTipo === 'OFICIAL'}
+                      onChange={() => setEditalTipo('OFICIAL')}
+                    />
+                    <span>📄 Edital Oficial Publicado (Certame Atual)</span>
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', fontSize: '0.85rem', color: editalTipo === 'PRE_EDITAL_ANTERIOR' ? '#f8fafc' : '#94a3b8' }}>
+                    <input
+                      type="radio"
+                      name="editalTipoWizard"
+                      value="PRE_EDITAL_ANTERIOR"
+                      checked={editalTipo === 'PRE_EDITAL_ANTERIOR'}
+                      onChange={() => setEditalTipo('PRE_EDITAL_ANTERIOR')}
+                    />
+                    <span>📌 Edital de Concurso Anterior (Referência Pré-Edital)</span>
+                  </label>
+                </div>
+                {editalTipo === 'PRE_EDITAL_ANTERIOR' && (
+                  <div style={{ marginTop: '0.25rem' }}>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="Ex: Concurso Anterior 2021 (Banca FGV / Órgão Oficial)"
+                      value={editalReferencia}
+                      onChange={(e) => setEditalReferencia(e.target.value)}
+                      style={{ maxWidth: '460px', fontSize: '0.85rem' }}
+                    />
+                    <small style={{ color: '#94a3b8', fontSize: '0.74rem', marginTop: '3px', display: 'block' }}>
+                      Seu ciclo e matérias serão preparados com base no edital anterior até a publicação oficial.
+                    </small>
+                  </div>
+                )}
+              </div>
 
               <div className="wizard-info-banner">
                 ℹ️ <strong>Compatibilidade Total:</strong> O FiscalStudy preserva integralmente nomes, ordem original e IDs de origem sem inventar dados. A validação opera em memória antes de qualquer gravação.
