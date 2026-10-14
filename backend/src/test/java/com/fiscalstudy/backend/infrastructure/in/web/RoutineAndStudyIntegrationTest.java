@@ -38,10 +38,19 @@ public class RoutineAndStudyIntegrationTest {
     @Autowired
     private EditalRepository editalRepository;
 
+    @Autowired
+    private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+
     private String testConcursoId;
 
     @BeforeEach
     void setUp() {
+        jdbcTemplate.execute("DELETE FROM routine_commitments");
+        jdbcTemplate.execute("DELETE FROM routine_exceptions");
+        jdbcTemplate.execute("DELETE FROM student_routines");
+        jdbcTemplate.execute("DELETE FROM topic_material_links");
+        jdbcTemplate.execute("DELETE FROM study_materials");
+
         testConcursoId = "test-concurso-" + UUID.randomUUID();
         Concurso concurso = new Concurso();
         concurso.setId(testConcursoId);
