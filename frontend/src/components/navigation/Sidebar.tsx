@@ -68,6 +68,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 📅 Prova: {new Date(activeConcurso.dataProva).toLocaleDateString('pt-BR')}
               </div>
             )}
+            <button
+              className={`concurso-edital-btn ${activeTab === 'edital' ? 'active' : ''}`}
+              onClick={() => onSelectTab('edital')}
+              title="Acessar o Edital Verticalizado deste concurso"
+            >
+              📋 Ver Edital Verticalizado
+            </button>
           </div>
         ) : (
           <div className="no-active-concurso">
@@ -113,14 +120,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
         >
           <span className="nav-icon">📅</span>
           <span className="nav-text">Cronograma Semanal</span>
-        </button>
-
-        <button
-          className={`nav-btn ${activeTab === 'edital' ? 'active' : ''}`}
-          onClick={() => onSelectTab('edital')}
-        >
-          <span className="nav-icon">📋</span>
-          <span className="nav-text">Edital Verticalizado</span>
         </button>
 
         <div className="nav-section-title">PRÁTICA & RESOLUÇÃO</div>

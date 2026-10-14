@@ -138,7 +138,7 @@ function App() {
       <CadastroConcursoWizard
         isOpen={isWizardOpen}
         onClose={() => setIsWizardOpen(false)}
-        onConcursoCreated={(newC) => {
+        onConcursoCreated={(newC: ConcursoItem) => {
           loadConcursos();
           handleSelectConcurso(newC);
         }}
