@@ -61,6 +61,9 @@ public class FiscalStudyMultiConcursoAcceptanceTest {
         jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS concursos (" +
                 "id TEXT PRIMARY KEY, nome TEXT NOT NULL, orgao TEXT NOT NULL, banca TEXT, " +
                 "ano INTEGER, cargo TEXT, cargo_codigo TEXT, status TEXT DEFAULT 'ACTIVE', descricao TEXT, " +
+                "situacao TEXT DEFAULT 'PREVISTO', localidade TEXT, escolaridade TEXT, vagas INTEGER, salario REAL, " +
+                "link_edital TEXT, data_prova TEXT, data_prova_tipo TEXT DEFAULT 'INFORMADA_PELO_USUARIO', " +
+                "datas_importantes_json TEXT, disponibilidade_json TEXT, " +
                 "created_at TEXT DEFAULT CURRENT_TIMESTAMP, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)");
 
         jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS editais (" +

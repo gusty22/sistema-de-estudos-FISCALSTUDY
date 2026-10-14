@@ -71,6 +71,16 @@ public class ConcursoController {
                     if (update.getCargoCodigo() != null) existing.setCargoCodigo(update.getCargoCodigo());
                     if (update.getDescricao() != null) existing.setDescricao(update.getDescricao());
                     if (update.getStatus() != null) existing.setStatus(update.getStatus());
+                    if (update.getSituacao() != null) existing.setSituacao(update.getSituacao());
+                    if (update.getLocalidade() != null) existing.setLocalidade(update.getLocalidade());
+                    if (update.getEscolaridade() != null) existing.setEscolaridade(update.getEscolaridade());
+                    if (update.getVagas() != null) existing.setVagas(update.getVagas());
+                    if (update.getSalario() != null) existing.setSalario(update.getSalario());
+                    if (update.getLinkEdital() != null) existing.setLinkEdital(update.getLinkEdital());
+                    if (update.getDataProva() != null) existing.setDataProva(update.getDataProva());
+                    if (update.getDataProvaTipo() != null) existing.setDataProvaTipo(update.getDataProvaTipo());
+                    if (update.getDatasImportantesJson() != null) existing.setDatasImportantesJson(update.getDatasImportantesJson());
+                    if (update.getDisponibilidadeJson() != null) existing.setDisponibilidadeJson(update.getDisponibilidadeJson());
 
                     Concurso saved = concursoRepository.save(existing);
                     return ResponseEntity.ok(new ConcursoDTO(saved, concursoRepository.countAvailableQuestions(saved.getId())));

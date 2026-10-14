@@ -41,6 +41,16 @@ CREATE TABLE IF NOT EXISTS concursos (
     cargo_codigo TEXT,
     status TEXT DEFAULT 'ACTIVE', -- ACTIVE, ARCHIVED
     descricao TEXT,
+    situacao TEXT DEFAULT 'PREVISTO', -- PREVISTO, AUTORIZADO, COMISSAO_FORMADA, BANCA_DEFINIDA, EDITAL_PUBLICADO, INSCRICOES_ABERTAS, PROVA_AGENDADA, PROVA_REALIZADA, ENCERRADO
+    localidade TEXT,
+    escolaridade TEXT,
+    vagas INTEGER,
+    salario REAL,
+    link_edital TEXT,
+    data_prova TEXT,
+    data_prova_tipo TEXT DEFAULT 'INFORMADA_PELO_USUARIO', -- OFICIAL, PREVISTA, INFORMADA_PELO_USUARIO
+    datas_importantes_json TEXT,
+    disponibilidade_json TEXT,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT DEFAULT CURRENT_TIMESTAMP
 );

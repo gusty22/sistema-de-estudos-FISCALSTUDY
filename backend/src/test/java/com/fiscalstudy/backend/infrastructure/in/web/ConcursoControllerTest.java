@@ -70,6 +70,29 @@ public class ConcursoControllerTest {
     }
 
     @Test
+    public void testCreateProgressiveConcursoWithDatesAndDisponibilidadeReturns200() throws Exception {
+        Concurso c = new Concurso("iss-sefaz-mg", "SEFAZ-MG 2024", "SEFAZ MG", "FGV", 2024, "Auditor Fiscal", "101", "ACTIVE", "Novo");
+        c.setSituacao("COMISSAO_FORMADA");
+        c.setLocalidade("Belo Horizonte - MG");
+        c.setVagas(150);
+        c.setDataProva("2024-11-20");
+        c.setDataProvaTipo("PREVISTA");
+        c.setDatasImportantesJson("[{\"tipo\":\"PREVISAO_EDITAL\",\"data\":\"2024-08-01\",\"tipoData\":\"PREVISTA\"}]");
+        c.setDisponibilidadeJson("{\"horasDiarias\":4,\"diasSemana\":[\"SEG\",\"TER\",\"QUA\",\"QUI\",\"SEX\"]}");
+        when(concursoRepository.save(any())).thenReturn(c);
+
+        mockMvc.perform(post("/api/v1/concursos")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"nome\":\"SEFAZ-MG 2024\",\"orgao\":\"SEFAZ MG\",\"situacao\":\"COMISSAO_FORMADA\",\"vagas\":150,\"dataProva\":\"2024-11-20\",\"dataProvaTipo\":\"PREVISTA\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nome").value("SEFAZ-MG 2024"))
+                .andExpect(jsonPath("$.situacao").value("COMISSAO_FORMADA"))
+                .andExpect(jsonPath("$.vagas").value(150))
+                .andExpect(jsonPath("$.dataProva").value("2024-11-20"))
+                .andExpect(jsonPath("$.dataProvaTipo").value("PREVISTA"));
+    }
+
+    @Test
     public void testCreateConcursoWithoutNomeReturns400() throws Exception {
         mockMvc.perform(post("/api/v1/concursos")
                 .contentType(MediaType.APPLICATION_JSON)

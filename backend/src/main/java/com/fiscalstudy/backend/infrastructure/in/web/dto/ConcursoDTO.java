@@ -15,6 +15,16 @@ public class ConcursoDTO {
     private String createdAt;
     private String updatedAt;
     private long availableQuestionsCount;
+    private String situacao;
+    private String localidade;
+    private String escolaridade;
+    private Integer vagas;
+    private Double salario;
+    private String linkEdital;
+    private String dataProva;
+    private String dataProvaTipo;
+    private String datasImportantesJson;
+    private String disponibilidadeJson;
 
     public ConcursoDTO() {}
 
@@ -31,6 +41,16 @@ public class ConcursoDTO {
         this.createdAt = c.getCreatedAt();
         this.updatedAt = c.getUpdatedAt();
         this.availableQuestionsCount = availableQuestionsCount;
+        this.situacao = c.getSituacao();
+        this.localidade = c.getLocalidade();
+        this.escolaridade = c.getEscolaridade();
+        this.vagas = c.getVagas();
+        this.salario = c.getSalario();
+        this.linkEdital = c.getLinkEdital();
+        this.dataProva = c.getDataProva();
+        this.dataProvaTipo = c.getDataProvaTipo();
+        this.datasImportantesJson = c.getDatasImportantesJson();
+        this.disponibilidadeJson = c.getDisponibilidadeJson();
     }
 
     public String getId() {
@@ -127,5 +147,85 @@ public class ConcursoDTO {
 
     public void setAvailableQuestionsCount(long availableQuestionsCount) {
         this.availableQuestionsCount = availableQuestionsCount;
+    }
+
+    public String getSituacao() {
+        return situacao;
+    }
+
+    public void setSituacao(String situacao) {
+        this.situacao = situacao;
+    }
+
+    public String getLocalidade() {
+        return localidade;
+    }
+
+    public void setLocalidade(String localidade) {
+        this.localidade = localidade;
+    }
+
+    public String getEscolaridade() {
+        return escolaridade;
+    }
+
+    public void setEscolaridade(String escolaridade) {
+        this.escolaridade = escolaridade;
+    }
+
+    public Integer getVagas() {
+        return vagas;
+    }
+
+    public void setVagas(Integer vagas) {
+        this.vagas = vagas;
+    }
+
+    public Double getSalario() {
+        return salario;
+    }
+
+    public void setSalario(Double salario) {
+        this.salario = salario;
+    }
+
+    public String getLinkEdital() {
+        return linkEdital;
+    }
+
+    public void setLinkEdital(String linkEdital) {
+        this.linkEdital = linkEdital;
+    }
+
+    public String getDataProva() {
+        return dataProva;
+    }
+
+    public void setDataProva(String dataProva) {
+        this.dataProva = dataProva;
+    }
+
+    public String getDataProvaTipo() {
+        return dataProvaTipo;
+    }
+
+    public void setDataProvaTipo(String dataProvaTipo) {
+        this.dataProvaTipo = dataProvaTipo;
+    }
+
+    public String getDatasImportantesJson() {
+        return datasImportantesJson;
+    }
+
+    public void setDatasImportantesJson(String datasImportantesJson) {
+        this.datasImportantesJson = datasImportantesJson;
+    }
+
+    public String getDisponibilidadeJson() {
+        return disponibilidadeJson;
+    }
+
+    public void setDisponibilidadeJson(String disponibilidadeJson) {
+        this.disponibilidadeJson = disponibilidadeJson;
     }
 }
