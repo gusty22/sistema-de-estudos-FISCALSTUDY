@@ -129,6 +129,20 @@ public class MaestroOrchestratorService {
         boolean isVideoAula = mediaRouting != null && "VIDEOAULA".equals(mediaRouting.getVeiculo());
         int pagDestino = (mediaRouting != null && mediaRouting.getPaginaSugerida() != null) ? mediaRouting.getPaginaSugerida() : pagIni;
 
+        // Verifica se há prescrição de Estudo Reverso concluída para este assunto
+        Map<String, Object> reverseSession = null;
+        try {
+            List<Map<String, Object>> revRows = jdbcTemplate.queryForList(
+                    "SELECT prescricao_recorte_texto, pagina_inicio_recorte, pagina_fim_recorte, paginas_puladas, erros_questoes_numeros " +
+                    "FROM reverse_engineering_sessions WHERE disciplina = ? AND assunto = ? AND status = 'CONCLUIDA' " +
+                    "ORDER BY created_at DESC LIMIT 1",
+                    disciplina, assunto
+            );
+            if (!revRows.isEmpty()) {
+                reverseSession = revRows.get(0);
+            }
+        } catch (Exception ignored) {}
+
         // 6. Orquestração Proporcional dos Passos baseada no tempo disponível
         List<MaestroStepDTO> passos = new ArrayList<>();
 
@@ -143,25 +157,36 @@ public class MaestroOrchestratorService {
                     Map.of("cardsAtrasados", cardsAtrasados, "retencaoAtual", retencaoAtual, "metaRetencao", metaRetencao)
             ));
 
-            if (isVideoAula) {
-                passos.add(new MaestroStepDTO(
-                        2, 3, 35, "VIDEO_AULA",
-                        "Videoaula Recomendada (Visual da Mecânica)",
-                        "Passo 2 (35 min): Assista à videoaula do bloco 1 ao 3 (velocidade 1.5x). Esta matéria exige compreensão visual da mecânica.",
-                        disciplina, assunto,
-                        "Compreensão visual da mecânica operacional antes da fixação", "ASSISTIR_VIDEO",
-                        Map.of("veiculo", "VIDEOAULA", "velocidade", "1.5x", "blocoInicio", 1, "blocoFim", 3)
-                ));
-            } else {
-                passos.add(new MaestroStepDTO(
-                        2, 3, 35, "TEORIA",
-                        "Teoria Hiperfocada (PDF Direto)",
-                        String.format("Passo 2 (35 min): Vá direto para o %s, página %d. Videoaula aqui é perda de tempo.", materialDoc, pagDestino),
-                        disciplina, assunto,
-                        "Absorção conceitual direta sem divagações", "LER_MATERIAL",
-                        Map.of("veiculo", "PDF_LEITURA", "materialDoc", materialDoc, "paginaInicio", pagDestino, "paginaFim", Math.max(pagDestino + 15, pagFim))
-                ));
-            }
+        if (isVideoAula) {
+            passos.add(new MaestroStepDTO(
+                    2, 3, 35, "VIDEO_AULA",
+                    "Videoaula Recomendada (Visual da Mecânica)",
+                    "Passo 2 (35 min): Assista à videoaula do bloco 1 ao 3 (velocidade 1.5x). Esta matéria exige compreensão visual da mecânica.",
+                    disciplina, assunto,
+                    "Compreensão visual da mecânica operacional antes da fixação", "ASSISTIR_VIDEO",
+                    Map.of("veiculo", "VIDEOAULA", "velocidade", "1.5x", "blocoInicio", 1, "blocoFim", 3)
+            ));
+        } else if (reverseSession != null && reverseSession.get("prescricao_recorte_texto") != null) {
+            int pIni = reverseSession.get("pagina_inicio_recorte") != null ? ((Number) reverseSession.get("pagina_inicio_recorte")).intValue() : 16;
+            int pFim = reverseSession.get("pagina_fim_recorte") != null ? ((Number) reverseSession.get("pagina_fim_recorte")).intValue() : 22;
+            passos.add(new MaestroStepDTO(
+                    2, 3, 35, "TEORIA_RECORTADA",
+                    "Teoria Recortada (Estudo Reverso)",
+                    String.format("Passo 2 (35 min): Teoria Recortada. %s", reverseSession.get("prescricao_recorte_texto")),
+                    disciplina, assunto,
+                    "Leitura cirúrgica apenas das páginas de exceções jurisprudenciais", "LER_MATERIAL",
+                    Map.of("veiculo", "PDF_LEITURA", "materialDoc", materialDoc, "paginaInicio", pIni, "paginaFim", pFim, "modo", "ESTUDO_REVERSO")
+            ));
+        } else {
+            passos.add(new MaestroStepDTO(
+                    2, 3, 35, "TEORIA",
+                    "Teoria Hiperfocada (PDF Direto)",
+                    String.format("Passo 2 (35 min): Vá direto para o %s, página %d. Videoaula aqui é perda de tempo.", materialDoc, pagDestino),
+                    disciplina, assunto,
+                    "Absorção conceitual direta sem divagações", "LER_MATERIAL",
+                    Map.of("veiculo", "PDF_LEITURA", "materialDoc", materialDoc, "paginaInicio", pagDestino, "paginaFim", Math.max(pagDestino + 15, pagFim))
+            ));
+        }
 
             passos.add(new MaestroStepDTO(
                     3, 3, 10, "DESCANSO",
@@ -260,6 +285,17 @@ public class MaestroOrchestratorService {
                         disciplina, assunto,
                         "Compreensão visual da mecânica operacional antes da fixação", "ASSISTIR_VIDEO",
                         Map.of("veiculo", "VIDEOAULA", "velocidade", "1.5x", "blocoInicio", 1, "blocoFim", 3, "assunto", assunto)
+                ));
+            } else if (reverseSession != null && reverseSession.get("prescricao_recorte_texto") != null) {
+                int pIni = reverseSession.get("pagina_inicio_recorte") != null ? ((Number) reverseSession.get("pagina_inicio_recorte")).intValue() : 16;
+                int pFim = reverseSession.get("pagina_fim_recorte") != null ? ((Number) reverseSession.get("pagina_fim_recorte")).intValue() : 22;
+                passos.add(new MaestroStepDTO(
+                        3, 6, 50, "TEORIA_RECORTADA",
+                        "Teoria Recortada (Estudo Reverso)",
+                        String.format("Passo 3 (50 min): Teoria Recortada. %s", reverseSession.get("prescricao_recorte_texto")),
+                        disciplina, assunto,
+                        "Leitura cirúrgica apenas das páginas de exceções jurisprudenciais", "LER_MATERIAL",
+                        Map.of("veiculo", "PDF_LEITURA", "materialDoc", materialDoc, "paginaInicio", pIni, "paginaFim", pFim, "modo", "ESTUDO_REVERSO")
                 ));
             } else {
                 passos.add(new MaestroStepDTO(

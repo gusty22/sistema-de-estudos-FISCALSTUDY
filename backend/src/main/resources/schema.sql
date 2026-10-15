@@ -327,6 +327,31 @@ CREATE TABLE IF NOT EXISTS cognitive_lock_records (
     resolved_at TEXT
 );
 
+-- Sessões de Engenharia Reversa / Estudo Reverso Orientado
+CREATE TABLE IF NOT EXISTS reverse_engineering_sessions (
+    id TEXT PRIMARY KEY,
+    session_id TEXT NOT NULL,
+    concurso_id TEXT,
+    disciplina TEXT NOT NULL,
+    assunto TEXT NOT NULL,
+    banca TEXT NOT NULL,
+    nivel_topico TEXT NOT NULL DEFAULT 'INTERMEDIARIO', -- INTERMEDIARIO, AVANCADO
+    total_questoes INTEGER NOT NULL DEFAULT 5,
+    questoes_resolvidas INTEGER NOT NULL DEFAULT 0,
+    questoes_corretas INTEGER NOT NULL DEFAULT 0,
+    erros_questoes_numeros TEXT,
+    alternativas_eliminadas_json TEXT,
+    pegadinhas_detectadas_json TEXT,
+    prescricao_recorte_texto TEXT,
+    pdf_doc_nome TEXT,
+    pagina_inicio_recorte INTEGER DEFAULT 16,
+    pagina_fim_recorte INTEGER DEFAULT 22,
+    paginas_puladas INTEGER DEFAULT 15,
+    status TEXT NOT NULL DEFAULT 'EM_ANDAMENTO', -- EM_ANDAMENTO, CONCLUIDA
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    completed_at TEXT
+);
+
 
 
 
