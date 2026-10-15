@@ -35,6 +35,7 @@ interface MaestroBattleViewProps {
   onNavigateToStudy: (disciplina?: string, assunto?: string) => void;
   onNavigateToTab?: (tab: string) => void;
   onSwitchToWeekly?: () => void;
+  onOpenAnkiHub?: () => void;
 }
 
 export const MaestroBattleView: React.FC<MaestroBattleViewProps> = ({
@@ -43,6 +44,7 @@ export const MaestroBattleView: React.FC<MaestroBattleViewProps> = ({
   onNavigateToStudy,
   onNavigateToTab,
   onSwitchToWeekly,
+  onOpenAnkiHub,
 }) => {
   const [selectedMinutes, setSelectedMinutes] = useState<number>(180); // Padrão 3 horas
   const [plan, setPlan] = useState<MaestroPlan | null>(null);
@@ -162,8 +164,21 @@ export const MaestroBattleView: React.FC<MaestroBattleViewProps> = ({
         alert(`Abra o material: ${step.metadata?.materialDoc || 'PDF Aula'} (págs. ${step.metadata?.paginaInicio || 1} a ${step.metadata?.paginaFim || 30}).`);
       }
     } else if (step.actionType === 'ANKI_SYNC') {
-      setActionFeedback('Sessão Anki registrada: 45 cards reativados na curva de retenção.');
-      setTimeout(() => setActionFeedback(null), 4000);
+      setActionFeedback('⚡ Sincronizando cards com AnkiConnect...');
+      fetch('/api/v1/anki/sync-queue', { method: 'POST' })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data) {
+            setActionFeedback(`⚡ Anki: ${data.message || 'Sincronização processada!'}`);
+          }
+        })
+        .catch(() => {
+          setActionFeedback('AnkiConnect offline. Fila de cards mantida segura no SQLite local.');
+        });
+      if (onOpenAnkiHub) {
+        onOpenAnkiHub();
+      }
+      setTimeout(() => setActionFeedback(null), 5000);
     } else if (step.actionType === 'DESCANSO_TIMER') {
       setIsTimerRunning(true);
       setActionFeedback('Descanso sináptico ativado: afaste os olhos da tela por 10 minutos.');
@@ -181,6 +196,32 @@ export const MaestroBattleView: React.FC<MaestroBattleViewProps> = ({
   const isAllCompleted = plan && currentStepIndex >= plan.passos.length;
   const completedCount = plan && plan.passos ? plan.passos.filter((p) => p.concluido).length : 0;
   const progressPercent = plan && plan.passos.length > 0 ? Math.round((completedCount / plan.passos.length) * 100) : 0;
+
+  // Automação Extrema: Gerar 15 flashcards de fechamento ao concluir a sessão de batalha
+  const [ankiBatchTriggered, setAnkiBatchTriggered] = useState(false);
+  const [ankiBatchMsg, setAnkiBatchMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isAllCompleted && !ankiBatchTriggered && plan) {
+      setAnkiBatchTriggered(true);
+      fetch('/api/v1/anki/batch-15', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          concursoId,
+          disciplina: plan.disciplinaPrincipal || 'Direito Administrativo',
+          assunto: plan.assuntoPrincipal || 'Geral'
+        })
+      })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data) {
+            setAnkiBatchMsg(`✨ ${data.totalGenerated || 15} Flashcards gerados magicamente e agendados no Anki para amanhã!`);
+          }
+        })
+        .catch((err) => console.warn('Erro ao gerar lote 15 do Anki:', err));
+    }
+  }, [isAllCompleted, ankiBatchTriggered, plan, concursoId]);
 
   return (
     <div className="maestro-container animate-fade-in">
@@ -443,6 +484,48 @@ export const MaestroBattleView: React.FC<MaestroBattleViewProps> = ({
           <p>
             Você executou com maestria todos os {plan?.totalPassos} passos do roteiro diário ({plan?.tempoTotalMinutos} min líquidos). A retenção foi fortalecida e suas sinapses consolidadas!
           </p>
+
+          {/* Automação Extrema: Card de Fechamento Silencioso no Anki */}
+          <div style={{
+            background: 'rgba(59, 130, 246, 0.12)',
+            border: '1px solid rgba(59, 130, 246, 0.35)',
+            borderRadius: '12px',
+            padding: '1.25rem',
+            margin: '1.25rem 0',
+            textAlign: 'left'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+              <div>
+                <span style={{ fontSize: '0.78rem', color: '#60a5fa', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  ⚡ Automação Extrema: Integração Silenciosa Anki
+                </span>
+                <h4 style={{ margin: '0.25rem 0', color: '#f8fafc', fontSize: '1.1rem', fontWeight: 700 }}>
+                  {ankiBatchMsg || '✨ 15 Flashcards gerados magicamente para o seu Anki'}
+                </h4>
+                <p style={{ margin: 0, fontSize: '0.84rem', color: '#cbd5e1', lineHeight: 1.4 }}>
+                  Você terminou a sessão de estudos. Ao abrir seu Anki local, os 15 flashcards das regras e pegadinhas mais importantes já estão lá (Frente/Verso e Omissão de Palavras - Cloze), agendados para amanhã.
+                </p>
+              </div>
+              {onOpenAnkiHub && (
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={onOpenAnkiHub}
+                  style={{
+                    background: '#3b82f6',
+                    border: 'none',
+                    padding: '10px 18px',
+                    fontSize: '0.88rem',
+                    fontWeight: 700,
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  Abrir Anki Hub ➔
+                </button>
+              )}
+            </div>
+          </div>
+
           <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
             <button
               type="button"

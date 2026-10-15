@@ -293,4 +293,25 @@ CREATE TABLE IF NOT EXISTS shadow_mode_runs (
     divergence_rationale TEXT
 );
 
+-- Integração Silenciosa com Anki (AnkiConnect & Fila Local de Flashcards)
+CREATE TABLE IF NOT EXISTS anki_flashcards (
+    id TEXT PRIMARY KEY,
+    session_id TEXT,
+    concurso_id TEXT,
+    disciplina TEXT NOT NULL,
+    assunto TEXT NOT NULL,
+    card_type TEXT NOT NULL DEFAULT 'BASIC', -- BASIC, CLOZE
+    front_or_text TEXT NOT NULL,
+    back_or_extra TEXT,
+    deck_name TEXT NOT NULL,
+    anki_note_id INTEGER,
+    sync_status TEXT NOT NULL DEFAULT 'PENDING_ANKI', -- PENDING_ANKI, SYNCED, ERROR
+    source_type TEXT NOT NULL, -- QUESTION_ERROR, PDF_PARAGRAPH, SESSION_SYNTHESIS
+    source_id TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    synced_at TEXT,
+    error_message TEXT
+);
+
+
 

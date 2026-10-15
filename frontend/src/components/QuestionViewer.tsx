@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import './QuestionViewer.css';
 import { CrossDomainBridgeModal } from './cognitive/CrossDomainBridgeModal';
+import { AnkiHubModal } from './anki/AnkiHubModal';
 
 interface Option {
   label?: string;
@@ -117,6 +118,25 @@ const QuestionViewer: React.FC = () => {
 
   // Colisão de Domínios Modal
   const [showCrossDomainModal, setShowCrossDomainModal] = useState(false);
+
+  // Automação Extrema: Integração Silenciosa AnkiConnect
+  const [isAnkiModalOpen, setIsAnkiModalOpen] = useState(false);
+  const [ankiStatus, setAnkiStatus] = useState<{ connected: boolean; pendingQueueCount: number } | null>(null);
+
+  const refreshAnkiStatus = () => {
+    fetch('/api/v1/anki/status')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data) {
+          setAnkiStatus({ connected: !!data.connected, pendingQueueCount: data.pendingQueueCount || 0 });
+        }
+      })
+      .catch(() => {});
+  };
+
+  useEffect(() => {
+    refreshAnkiStatus();
+  }, []);
 
   // Simulado / Inoculação de Estresse (Chaos Engineering)
   const [simuladoConfig] = useState<any>(() => {
@@ -476,6 +496,7 @@ const QuestionViewer: React.FC = () => {
         if (result.isCorrect === false) {
           setFeynmanAuditRequired(true);
           setFeynmanAuditCompleted(false);
+          refreshAnkiStatus();
         }
       }
     } catch (error) {
@@ -719,6 +740,34 @@ const QuestionViewer: React.FC = () => {
                 </div>
               )}
 
+              {/* Fechamento da Sessão: Integração Silenciosa Anki */}
+              <div style={{
+                marginTop: '15px',
+                padding: '14px',
+                background: 'rgba(59, 130, 246, 0.12)',
+                border: '1px solid rgba(59, 130, 246, 0.35)',
+                borderRadius: '10px'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+                  <div style={{ maxWidth: '420px' }}>
+                    <h4 style={{ color: '#60a5fa', margin: '0 0 4px 0', fontSize: '0.95rem' }}>
+                      ⚡ Fechamento de Sessão: Flashcards Anki
+                    </h4>
+                    <p style={{ margin: 0, fontSize: '0.82rem', color: '#cbd5e1', lineHeight: 1.4 }}>
+                      As regras dos erros que você cometeu foram convertidas silenciosamente em perguntas curtas e diretas, agendadas para amanhã no seu Anki.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    style={{ padding: '8px 14px', fontSize: '0.82rem', background: '#3b82f6', whiteSpace: 'nowrap' }}
+                    onClick={() => setIsAnkiModalOpen(true)}
+                  >
+                    Ver Cards no Anki Hub ➔
+                  </button>
+                </div>
+              </div>
+
               <button
                 className="btn"
                 style={{ marginTop: '1.5rem', width: '100%' }}
@@ -801,6 +850,27 @@ const QuestionViewer: React.FC = () => {
           </span>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            style={{
+              padding: '5px 12px',
+              fontSize: '0.8rem',
+              background: '#1e293b',
+              border: ankiStatus?.connected ? '1px solid #10b981' : '1px solid #f59e0b',
+              color: ankiStatus?.connected ? '#6ee7b7' : '#fcd34d',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}
+            onClick={() => setIsAnkiModalOpen(true)}
+            title="Integração Silenciosa AnkiConnect • Clique para abrir o Anki Hub"
+          >
+            <span>⚡</span>
+            <span>
+              {ankiStatus?.connected ? 'AnkiConnect: Online' : `Anki: ${ankiStatus?.pendingQueueCount || 0} na Fila`}
+            </span>
+          </button>
           <button
             className="btn btn-secondary"
             style={{ padding: '5px 12px', fontSize: '0.8rem', background: '#1e293b', border: '1px solid #3b82f6', color: '#93c5fd' }}
@@ -1072,6 +1142,35 @@ const QuestionViewer: React.FC = () => {
                     ))}
                   </div>
                 </div>
+
+                {/* Automação Extrema: Integração Silenciosa AnkiConnect */}
+                <div style={{
+                  margin: '0.75rem 0',
+                  padding: '0.65rem 0.95rem',
+                  background: 'rgba(59, 130, 246, 0.12)',
+                  border: '1px solid rgba(59, 130, 246, 0.35)',
+                  borderRadius: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '0.75rem',
+                  flexWrap: 'wrap'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{ fontSize: '1.1rem' }}>⚡</span>
+                    <span style={{ fontSize: '0.83rem', color: '#93c5fd', lineHeight: 1.4 }}>
+                      <strong>Flashcard gerado silenciosamente:</strong> A regra que você errou foi sintetizada em pergunta curta e enviada para o seu Anki (agendado para amanhã).
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    style={{ padding: '4px 10px', fontSize: '0.75rem', whiteSpace: 'nowrap', border: '1px solid #3b82f6', color: '#60a5fa' }}
+                    onClick={() => setIsAnkiModalOpen(true)}
+                  >
+                    Ver no Anki Hub ➔
+                  </button>
+                </div>
               </div>
             )}
             
@@ -1290,6 +1389,16 @@ const QuestionViewer: React.FC = () => {
         onClose={() => setShowCrossDomainModal(false)}
         disciplinaFiltro={question?.metadata?.discipline || selectedDiscipline}
         sessionId={sessionId}
+      />
+
+      {/* Automação Extrema: AnkiConnect Modal Hub */}
+      <AnkiHubModal
+        isOpen={isAnkiModalOpen}
+        onClose={() => {
+          setIsAnkiModalOpen(false);
+          refreshAnkiStatus();
+        }}
+        activeConcursoId={selectedConcursoId}
       />
     </div>
   );

@@ -6,6 +6,7 @@ import './Dashboard.css';
 interface DashboardProps {
   activeConcurso: ConcursoItem | null;
   onNavigateToTab: (tab: any, params?: any) => void;
+  onOpenAnkiHub?: () => void;
 }
 
 interface EditalTopic {
@@ -16,7 +17,7 @@ interface EditalTopic {
   questoesPrevistas: number;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ activeConcurso, onNavigateToTab }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ activeConcurso, onNavigateToTab, onOpenAnkiHub }) => {
   const [stats, setStats] = useState({
     totalQuestionsSolved: 0,
     totalCorrect: 0,
@@ -364,8 +365,31 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeConcurso, onNavigate
             >
               1 hora
             </button>
+            {onOpenAnkiHub && (
+              <button
+                type="button"
+                onClick={onOpenAnkiHub}
+                style={{
+                  background: 'rgba(59, 130, 246, 0.18)',
+                  color: '#93c5fd',
+                  border: '1px solid rgba(59, 130, 246, 0.45)',
+                  padding: '12px 18px',
+                  fontSize: '0.88rem',
+                  fontWeight: 700,
+                  borderRadius: '10px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+                title="Automação Extrema: Integração Silenciosa com AnkiConnect"
+              >
+                <span>⚡</span>
+                <span>Anki Hub</span>
+              </button>
+            )}
           </div>
-          <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>Clique para assumir a Interface de Batalha Imediata</span>
+          <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>Clique para assumir a Interface de Batalha Imediata ou gerenciar Flashcards Anki</span>
         </div>
       </div>
 

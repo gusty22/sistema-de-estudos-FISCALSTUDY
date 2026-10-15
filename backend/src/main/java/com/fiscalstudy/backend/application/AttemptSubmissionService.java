@@ -14,17 +14,23 @@ public class AttemptSubmissionService {
     private final QuestionRepository questionRepository;
     private final EventStoreRepository eventStoreRepository;
     private final EventOrigin instanceOrigin;
+    private final AnkiIntegrationService ankiIntegrationService;
 
-    /**
-     * A origem de cada evento é definida pela instância do backend (fiscalstudy.event-origin),
-     * não pelo cliente. Sem configuração explícita, o evento não é declarado como estudo real.
-     */
     public AttemptSubmissionService(QuestionRepository questionRepository,
                                     EventStoreRepository eventStoreRepository,
                                     @Value("${fiscalstudy.event-origin:UNVERIFIED_HISTORICAL}") String configuredOrigin) {
+        this(questionRepository, eventStoreRepository, configuredOrigin, null);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public AttemptSubmissionService(QuestionRepository questionRepository,
+                                    EventStoreRepository eventStoreRepository,
+                                    @Value("${fiscalstudy.event-origin:UNVERIFIED_HISTORICAL}") String configuredOrigin,
+                                    AnkiIntegrationService ankiIntegrationService) {
         this.questionRepository = questionRepository;
         this.eventStoreRepository = eventStoreRepository;
         this.instanceOrigin = EventOrigin.fromString(configuredOrigin);
+        this.ankiIntegrationService = ankiIntegrationService;
     }
 
     public EventOrigin getInstanceOrigin() {
@@ -171,6 +177,13 @@ public class AttemptSubmissionService {
                 "v1",
                 payload
         );
+
+        // Automação Extrema: Integração Silenciosa com Anki quando o estudante erra a questão
+        if (Boolean.FALSE.equals(isCorrect) && ankiIntegrationService != null) {
+            try {
+                ankiIntegrationService.generateFromQuestionError(question, optionLetter, causaErroStr, sessionId);
+            } catch (Exception ignored) {}
+        }
 
         return new com.fiscalstudy.backend.domain.AttemptResult(isCorrect, status, concursoPoint);
     }

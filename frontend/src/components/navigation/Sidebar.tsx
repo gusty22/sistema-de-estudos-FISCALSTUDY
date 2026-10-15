@@ -27,6 +27,7 @@ interface SidebarProps {
   concursosList: ConcursoItem[];
   onSelectConcurso: (c: ConcursoItem) => void;
   onOpenNewConcurso: () => void;
+  onOpenAnkiHub?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -36,6 +37,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   concursosList,
   onSelectConcurso,
   onOpenNewConcurso,
+  onOpenAnkiHub,
 }) => {
   return (
     <aside className="sidebar">
@@ -207,6 +209,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <span className="nav-icon">🎯</span>
           <span className="nav-text">Pontos-Chave (SRS)</span>
         </button>
+
+        {onOpenAnkiHub && (
+          <button
+            type="button"
+            className="nav-btn"
+            onClick={onOpenAnkiHub}
+            title="Automação Extrema: Integração Silenciosa com o Anki"
+            style={{ borderLeft: '3px solid #3b82f6', background: 'rgba(59, 130, 246, 0.08)' }}
+          >
+            <span className="nav-icon">⚡</span>
+            <span className="nav-text" style={{ color: '#93c5fd' }}>Anki Hub (Silencioso)</span>
+          </button>
+        )}
 
         <button
           className={`nav-btn ${activeTab === 'premortem' ? 'active' : ''}`}

@@ -18,12 +18,14 @@ import { SessaoFeynmanView } from './components/cognitive/SessaoFeynmanView';
 import { MetodoEraView } from './components/cognitive/MetodoEraView';
 import { PontosChaveView } from './components/cognitive/PontosChaveView';
 import { DigitalTwinView } from './components/digitaltwin/DigitalTwinView';
+import { AnkiHubModal } from './components/anki/AnkiHubModal';
 
 function App() {
   const [activeTab, setActiveTab] = useState<NavTab>('dashboard');
   const [activeConcurso, setActiveConcurso] = useState<ConcursoItem | null>(null);
   const [concursosList, setConcursosList] = useState<ConcursoItem[]>([]);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
+  const [isAnkiModalOpen, setIsAnkiModalOpen] = useState(false);
 
   // Carrega concursos e concurso ativo salvo no storage
   const loadConcursos = () => {
@@ -86,6 +88,7 @@ function App() {
         concursosList={concursosList}
         onSelectConcurso={handleSelectConcurso}
         onOpenNewConcurso={() => setIsWizardOpen(true)}
+        onOpenAnkiHub={() => setIsAnkiModalOpen(true)}
       />
 
       {/* Main Content View Area */}
@@ -93,6 +96,7 @@ function App() {
         {activeTab === 'dashboard' && (
           <Dashboard
             activeConcurso={activeConcurso}
+            onOpenAnkiHub={() => setIsAnkiModalOpen(true)}
             onNavigateToTab={(tab, params) => {
               if (tab === 'study' && params?.disciplina) {
                 handleNavigateToStudy(params.disciplina);
@@ -110,6 +114,7 @@ function App() {
             onNavigateToStudy={handleNavigateToStudy}
             onNavigateToTab={(tab) => setActiveTab(tab as NavTab)}
             onSwitchToWeekly={() => setActiveTab('cronograma')}
+            onOpenAnkiHub={() => setIsAnkiModalOpen(true)}
           />
         )}
 
@@ -195,6 +200,13 @@ function App() {
           loadConcursos();
           handleSelectConcurso(newC);
         }}
+      />
+
+      {/* Automação Extrema: AnkiConnect Modal Hub */}
+      <AnkiHubModal
+        isOpen={isAnkiModalOpen}
+        onClose={() => setIsAnkiModalOpen(false)}
+        activeConcursoId={activeConcurso?.id}
       />
     </div>
   );
