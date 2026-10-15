@@ -49,24 +49,25 @@ public class QuestionRepositoryImpl implements QuestionRepository {
         if (concursoId != null && !concursoId.isBlank()) {
             boolean matchedConcurso = false;
             try {
-                List<Map<String, Object>> rows = jdbcTemplate.queryForList("SELECT banca, ano, cargo FROM concursos WHERE id = ?", concursoId.trim());
+                List<Map<String, Object>> rows = jdbcTemplate.queryForList("SELECT banca, ano, cargo, orgao FROM concursos WHERE id = ?", concursoId.trim());
                 if (!rows.isEmpty()) {
                     Map<String, Object> cRow = rows.get(0);
-                    Object banca = cRow.get("banca");
-                    Object ano = cRow.get("ano");
                     Object cargo = cRow.get("cargo");
-                    if (banca != null && !String.valueOf(banca).isBlank()) {
-                        sql.append("AND banca = ? ");
-                        params.add(String.valueOf(banca));
-                    }
-                    if (ano != null) {
-                        sql.append("AND ano = ? ");
-                        params.add(ano instanceof Number ? ((Number) ano).intValue() : Integer.parseInt(String.valueOf(ano)));
-                    }
+                    Object orgao = cRow.get("orgao");
+
+                    sql.append("AND (");
+                    sql.append("disciplina IN (SELECT DISTINCT disciplina FROM edital_topicos WHERE concurso_id = ?) ");
+                    params.add(concursoId.trim());
+
                     if (cargo != null && !String.valueOf(cargo).isBlank()) {
-                        sql.append("AND cargo = ? ");
-                        params.add(String.valueOf(cargo));
+                        sql.append("OR LOWER(cargo) LIKE ? ");
+                        params.add("%" + String.valueOf(cargo).trim().toLowerCase() + "%");
                     }
+                    if (orgao != null && !String.valueOf(orgao).isBlank()) {
+                        sql.append("OR LOWER(orgao) LIKE ? ");
+                        params.add("%" + String.valueOf(orgao).trim().toLowerCase() + "%");
+                    }
+                    sql.append(") ");
                     matchedConcurso = true;
                 }
             } catch (Exception ignored) {}
@@ -81,13 +82,15 @@ public class QuestionRepositoryImpl implements QuestionRepository {
         }
 
         if (disciplina != null && !disciplina.isBlank()) {
-            sql.append("AND disciplina = ? ");
+            sql.append("AND (LOWER(disciplina) = LOWER(?) OR LOWER(disciplina) LIKE ?) ");
             params.add(disciplina.trim());
+            params.add("%" + disciplina.trim().toLowerCase() + "%");
         }
 
         if (assunto != null && !assunto.isBlank()) {
-            sql.append("AND assunto = ? ");
+            sql.append("AND (LOWER(assunto) = LOWER(?) OR LOWER(assunto) LIKE ?) ");
             params.add(assunto.trim());
+            params.add("%" + assunto.trim().toLowerCase() + "%");
         }
 
         if ((includeAnswered == null || !includeAnswered) && sessionId != null && !sessionId.isBlank()) {
@@ -239,17 +242,35 @@ public class QuestionRepositoryImpl implements QuestionRepository {
 
     @Override
     public List<String> findAllDisciplines() {
-        String sql = "SELECT DISTINCT disciplina FROM questions WHERE disciplina IS NOT NULL AND TRIM(disciplina) != '' ORDER BY disciplina";
+        String sql = """
+            SELECT DISTINCT disciplina FROM (
+                SELECT disciplina FROM questions WHERE disciplina IS NOT NULL AND TRIM(disciplina) != ''
+                UNION
+                SELECT disciplina FROM edital_topicos WHERE disciplina IS NOT NULL AND TRIM(disciplina) != ''
+            ) ORDER BY disciplina
+        """;
         return jdbcTemplate.queryForList(sql, String.class);
     }
 
     @Override
     public List<String> findAllAssuntos(String disciplina) {
         if (disciplina != null && !disciplina.isBlank()) {
-            String sql = "SELECT DISTINCT assunto FROM questions WHERE disciplina = ? AND assunto IS NOT NULL AND TRIM(assunto) != '' ORDER BY assunto";
-            return jdbcTemplate.queryForList(sql, String.class, disciplina.trim());
+            String sql = """
+                SELECT DISTINCT assunto FROM (
+                    SELECT assunto FROM questions WHERE LOWER(disciplina) = LOWER(?) AND assunto IS NOT NULL AND TRIM(assunto) != ''
+                    UNION
+                    SELECT assunto FROM edital_topicos WHERE LOWER(disciplina) = LOWER(?) AND assunto IS NOT NULL AND TRIM(assunto) != ''
+                ) ORDER BY assunto
+            """;
+            return jdbcTemplate.queryForList(sql, String.class, disciplina.trim(), disciplina.trim());
         }
-        String sql = "SELECT DISTINCT assunto FROM questions WHERE assunto IS NOT NULL AND TRIM(assunto) != '' ORDER BY assunto";
+        String sql = """
+            SELECT DISTINCT assunto FROM (
+                SELECT assunto FROM questions WHERE assunto IS NOT NULL AND TRIM(assunto) != ''
+                UNION
+                SELECT assunto FROM edital_topicos WHERE assunto IS NOT NULL AND TRIM(assunto) != ''
+            ) ORDER BY assunto
+        """;
         return jdbcTemplate.queryForList(sql, String.class);
     }
 }

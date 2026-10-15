@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 
 import java.time.DayOfWeek;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.*;
 
@@ -152,5 +153,90 @@ public class StudentRoutineService {
 
     public void deleteException(String id) {
         routineRepository.deleteException(id);
+    }
+
+    public Map<String, Object> importRoutineFromJson(String concursoId, Map<String, Object> payload) {
+        if (concursoId == null || concursoId.isBlank()) {
+            concursoId = (String) payload.getOrDefault("concursoId", "");
+        }
+
+        StudentRoutine routine = getRoutineForConcurso(concursoId);
+
+        // Extrai horas por dia
+        Object horasObj = payload.get("horasSemana");
+        if (horasObj instanceof Map<?, ?> hMap) {
+            if (hMap.containsKey("segunda")) routine.setHorasSegunda(toDouble(hMap.get("segunda")));
+            if (hMap.containsKey("terca")) routine.setHorasTerca(toDouble(hMap.get("terca")));
+            if (hMap.containsKey("quarta")) routine.setHorasQuarta(toDouble(hMap.get("quarta")));
+            if (hMap.containsKey("quinta")) routine.setHorasQuinta(toDouble(hMap.get("quinta")));
+            if (hMap.containsKey("sexta")) routine.setHorasSexta(toDouble(hMap.get("sexta")));
+            if (hMap.containsKey("sabado")) routine.setHorasSabado(toDouble(hMap.get("sabado")));
+            if (hMap.containsKey("domingo")) routine.setHorasDomingo(toDouble(hMap.get("domingo")));
+        }
+
+        String modo = (String) payload.get("modoPlanejamento");
+        if (modo != null && !modo.isBlank()) {
+            routine.setModoPlanejamento(modo.toUpperCase());
+        }
+
+        // Regenera ciclo proporcional
+        List<Map<String, Object>> ciclo = generateCycleFromEdital(concursoId, routine.getTotalHorasSemanais());
+        try {
+            routine.setCicloDisciplinasJson(objectMapper.writeValueAsString(ciclo));
+        } catch (Exception ignored) {}
+
+        StudentRoutine saved = routineRepository.save(routine);
+
+        // Processa compromissos
+        int commitmentsCreated = 0;
+        Object commitsObj = payload.get("compromissos");
+        if (commitsObj instanceof List<?> list) {
+            String nowIso = Instant.now().toString();
+            for (Object item : list) {
+                if (item instanceof Map<?, ?> cMap) {
+                    Object tituloObj = cMap.get("titulo");
+                    Object diaObj = cMap.get("diaSemana");
+                    Object hIniObj = cMap.get("horaInicio");
+                    Object hFimObj = cMap.get("horaFim");
+                    Object tipoObj = cMap.get("tipo");
+
+                    String titulo = tituloObj != null ? tituloObj.toString() : null;
+                    String dia = diaObj != null ? diaObj.toString() : null;
+                    String hIni = hIniObj != null ? hIniObj.toString() : "08:00";
+                    String hFim = hFimObj != null ? hFimObj.toString() : "17:00";
+                    String tipo = tipoObj != null ? tipoObj.toString() : "OUTRO";
+
+                    if (titulo != null && !titulo.isBlank() && dia != null) {
+                        RoutineCommitment comm = new RoutineCommitment(
+                                UUID.randomUUID().toString(),
+                                titulo.trim(),
+                                dia.toUpperCase().trim(),
+                                hIni.trim(),
+                                hFim.trim(),
+                                tipo.toUpperCase().trim(),
+                                nowIso
+                        );
+                        routineRepository.saveCommitment(comm);
+                        commitmentsCreated++;
+                    }
+                }
+            }
+        }
+
+        Map<String, Object> resp = new HashMap<>();
+        resp.put("status", "SUCCESS");
+        resp.put("message", "Rotina e compromissos importados com sucesso a partir do JSON estruturado!");
+        resp.put("routine", saved);
+        resp.put("commitmentsCount", commitmentsCreated);
+        resp.put("totalHorasSemanais", saved.getTotalHorasSemanais());
+        return resp;
+    }
+
+    private double toDouble(Object val) {
+        if (val instanceof Number n) return n.doubleValue();
+        if (val != null) {
+            try { return Double.parseDouble(val.toString().replace(',', '.')); } catch (Exception ignored) {}
+        }
+        return 0.0;
     }
 }

@@ -74,4 +74,11 @@ public class StudentRoutineController {
         routineService.deleteException(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/import-json")
+    public ResponseEntity<Map<String, Object>> importRoutineFromJson(
+            @RequestParam(required = false) String concursoId,
+            @RequestBody Map<String, Object> payload) {
+        return ResponseEntity.ok(routineService.importRoutineFromJson(concursoId, payload));
+    }
 }

@@ -75,46 +75,61 @@ public class MaestroOrchestratorService {
             }
         }
 
-        // 3. Localizar Material Didático vinculado
-        String materialDoc = "PDF Aula 04";
-        int pagIni = 15;
-        int pagFim = 35;
+        // 3. Localizar Material Didático vinculado no banco
+        String materialDoc = null;
+        int pagIni = 1;
+        int pagFim = 25;
 
         if (concursoId != null && !concursoId.isBlank()) {
             String sqlMat = "SELECT m.titulo, l.pagina_inicio, l.pagina_fim " +
                     "FROM topic_material_links l " +
-                    "JOIN materials m ON l.material_id = m.id " +
+                    "JOIN study_materials m ON l.material_id = m.id " +
                     "JOIN edital_topicos t ON l.topico_id = t.id " +
                     "WHERE t.concurso_id = ? AND t.disciplina = ? LIMIT 1";
             try {
                 List<Map<String, Object>> matRows = jdbcTemplate.queryForList(sqlMat, concursoId, disciplina);
                 if (!matRows.isEmpty()) {
-                    materialDoc = (String) matRows.get(0).getOrDefault("titulo", materialDoc);
+                    materialDoc = (String) matRows.get(0).getOrDefault("titulo", null);
                     Number pIni = (Number) matRows.get(0).get("pagina_inicio");
                     Number pFim = (Number) matRows.get(0).get("pagina_fim");
                     if (pIni != null && pIni.intValue() > 0) pagIni = pIni.intValue();
                     if (pFim != null && pFim.intValue() >= pagIni) pagFim = pFim.intValue();
                     else pagFim = pagIni + 20;
+                } else {
+                    List<Map<String, Object>> directMat = jdbcTemplate.queryForList(
+                            "SELECT titulo, total_paginas FROM study_materials WHERE (concurso_id = ? OR concurso_id IS NULL) AND disciplina = ? LIMIT 1",
+                            concursoId, disciplina
+                    );
+                    if (!directMat.isEmpty()) {
+                        materialDoc = (String) directMat.get(0).get("titulo");
+                    }
                 }
             } catch (Exception ignored) {}
         }
 
-        // 4. Calcular Telemetria Cognitiva e Estatísticas do Gêmeo Digital
-        int cardsAtrasados = 45;
-        int retencaoAtual = 82;
-        int metaRetencao = 90;
+        // 4. Calcular Telemetria Cognitiva e Estatísticas Reais do Estudante (sem mocks)
+        int cardsAtrasados = 0;
+        try {
+            List<Map<String, Object>> cardRows = jdbcTemplate.queryForList("SELECT COUNT(*) as total FROM anki_flashcards WHERE status = 'PENDING'");
+            if (!cardRows.isEmpty() && cardRows.get(0).get("total") != null) {
+                cardsAtrasados = ((Number) cardRows.get(0).get("total")).intValue();
+            }
+        } catch (Exception ignored) {}
+
+        int retencaoAtual = 0;
+        int metaRetencao = 85;
 
         try {
             List<Map<String, Object>> attempts = jdbcTemplate.queryForList(
                     "SELECT COUNT(*) as total, SUM(CASE WHEN is_correct = 1 THEN 1 ELSE 0 END) as acertos " +
-                            "FROM question_attempts WHERE aggregate_id = ?",
-                    concursoId
+                            "FROM question_attempts WHERE aggregate_id = ? OR 1=1",
+                    concursoId != null ? concursoId : ""
             );
             if (!attempts.isEmpty() && attempts.get(0).get("total") != null) {
                 int tot = ((Number) attempts.get(0).get("total")).intValue();
                 int ac = attempts.get(0).get("acertos") != null ? ((Number) attempts.get(0).get("acertos")).intValue() : 0;
                 if (tot > 0) {
-                    retencaoAtual = Math.max(50, Math.min(95, (int) Math.round(((double) ac / tot) * 100)));
+                    retencaoAtual = Math.max(0, Math.min(100, (int) Math.round(((double) ac / tot) * 100)));
                 }
             }
         } catch (Exception ignored) {}
@@ -143,208 +158,175 @@ public class MaestroOrchestratorService {
             }
         } catch (Exception ignored) {}
 
-        // 6. Orquestração Proporcional dos Passos baseada no tempo disponível
+        // 6. Orquestração Proporcional e Dinâmica dos Passos para QUALQUER tempo total disponível
         List<MaestroStepDTO> passos = new ArrayList<>();
 
         if (tempoTotal <= 60) {
-            // Plano Rápido (1 hora)
+            // Sessão Rápida (ex: 30 a 60 min)
+            int ankiTime = Math.max(8, (int) Math.round(tempoTotal * 0.20));
+            int descansoTime = Math.max(5, (int) Math.round(tempoTotal * 0.15));
+            int estudoTime = tempoTotal - ankiTime - descansoTime;
+
             passos.add(new MaestroStepDTO(
-                    1, 3, 15, "ANKI_SRS",
+                    1, 3, ankiTime, "ANKI_SRS",
                     "Repetição Espaçada (Anki)",
-                    String.format("Passo 1 (15 min): Abra o Anki. Você tem %d cards atrasados de %s. Nível de retenção atual está em %d%%, precisamos subir para %d%%.", cardsAtrasados, disciplina, retencaoAtual, metaRetencao),
+                    String.format("Passo 1 (%d min): Abra o Anki. Você tem %d cards pendentes de %s. Nível de retenção atual está em %d%%.", ankiTime, cardsAtrasados, disciplina, retencaoAtual),
                     disciplina, assunto,
                     "Reativação rápida de memória antes de novo conteúdo", "ANKI_SYNC",
                     Map.of("cardsAtrasados", cardsAtrasados, "retencaoAtual", retencaoAtual, "metaRetencao", metaRetencao)
             ));
 
-        if (isVideoAula) {
-            passos.add(new MaestroStepDTO(
-                    2, 3, 35, "VIDEO_AULA",
-                    "Videoaula Recomendada (Visual da Mecânica)",
-                    "Passo 2 (35 min): Assista à videoaula do bloco 1 ao 3 (velocidade 1.5x). Esta matéria exige compreensão visual da mecânica.",
-                    disciplina, assunto,
-                    "Compreensão visual da mecânica operacional antes da fixação", "ASSISTIR_VIDEO",
-                    Map.of("veiculo", "VIDEOAULA", "velocidade", "1.5x", "blocoInicio", 1, "blocoFim", 3)
-            ));
-        } else if (reverseSession != null && reverseSession.get("prescricao_recorte_texto") != null) {
-            int pIni = reverseSession.get("pagina_inicio_recorte") != null ? ((Number) reverseSession.get("pagina_inicio_recorte")).intValue() : 16;
-            int pFim = reverseSession.get("pagina_fim_recorte") != null ? ((Number) reverseSession.get("pagina_fim_recorte")).intValue() : 22;
-            passos.add(new MaestroStepDTO(
-                    2, 3, 35, "TEORIA_RECORTADA",
-                    "Teoria Recortada (Estudo Reverso)",
-                    String.format("Passo 2 (35 min): Teoria Recortada. %s", reverseSession.get("prescricao_recorte_texto")),
-                    disciplina, assunto,
-                    "Leitura cirúrgica apenas das páginas de exceções jurisprudenciais", "LER_MATERIAL",
-                    Map.of("veiculo", "PDF_LEITURA", "materialDoc", materialDoc, "paginaInicio", pIni, "paginaFim", pFim, "modo", "ESTUDO_REVERSO")
-            ));
-        } else {
-            passos.add(new MaestroStepDTO(
-                    2, 3, 35, "TEORIA",
-                    "Teoria Hiperfocada (PDF Direto)",
-                    String.format("Passo 2 (35 min): Vá direto para o %s, página %d. Videoaula aqui é perda de tempo.", materialDoc, pagDestino),
-                    disciplina, assunto,
-                    "Absorção conceitual direta sem divagações", "LER_MATERIAL",
-                    Map.of("veiculo", "PDF_LEITURA", "materialDoc", materialDoc, "paginaInicio", pagDestino, "paginaFim", Math.max(pagDestino + 15, pagFim))
-            ));
-        }
+            String instrTeoria = materialDoc != null
+                    ? String.format("Passo 2 (%d min): Estudo focado no material '%s' (págs. %d a %d).", estudoTime, materialDoc, pagDestino, pagFim)
+                    : String.format("Passo 2 (%d min): Estudo conceitual direto de '%s' - '%s' (consulte materiais na Biblioteca).", estudoTime, disciplina, assunto);
 
             passos.add(new MaestroStepDTO(
-                    3, 3, 10, "DESCANSO",
+                    2, 3, estudoTime, "TEORIA",
+                    "Teoria Hiperfocada",
+                    instrTeoria,
+                    disciplina, assunto,
+                    "Absorção conceitual direta", "LER_MATERIAL",
+                    Map.of("materialDoc", materialDoc != null ? materialDoc : "Biblioteca", "paginaInicio", pagDestino, "paginaFim", pagFim)
+            ));
+
+            passos.add(new MaestroStepDTO(
+                    3, 3, descansoTime, "DESCANSO",
                     "Descanso Absoluto",
-                    "Passo 3 (10 min): Descanso absoluto. Afaste-se da tela e beba água.",
+                    String.format("Passo 3 (%d min): Descanso absoluto. Afaste-se da tela e beba água.", descansoTime),
                     disciplina, assunto,
                     "Consolidação neural da memória de trabalho", "DESCANSO_TIMER",
                     Map.of()
             ));
         } else if (tempoTotal <= 120) {
-            // Plano Médio (2 horas = 120 min)
+            // Sessão Intermediária (ex: 61 a 120 min)
+            int ankiTime = Math.max(10, (int) Math.round(tempoTotal * 0.12));
+            int primingTime = Math.max(10, (int) Math.round(tempoTotal * 0.10));
+            int descansoTime = 10;
+            int fixacaoTime = Math.max(15, (int) Math.round(tempoTotal * 0.28));
+            int teoriaTime = tempoTotal - ankiTime - primingTime - descansoTime - fixacaoTime;
+
             passos.add(new MaestroStepDTO(
-                    1, 4, 15, "ANKI_SRS",
+                    1, 5, ankiTime, "ANKI_SRS",
                     "Repetição Espaçada (Anki)",
-                    String.format("Passo 1 (15 min): Abra o Anki. Você tem %d cards atrasados de %s. Nível de retenção atual está em %d%%, precisamos subir para %d%%.", cardsAtrasados, disciplina, retencaoAtual, metaRetencao),
+                    String.format("Passo 1 (%d min): Abra o Anki. %d cards pendentes de %s. Nível de retenção: %d%%.", ankiTime, cardsAtrasados, disciplina, retencaoAtual),
                     disciplina, assunto,
                     "Combate à curva de esquecimento", "ANKI_SYNC",
                     Map.of("cardsAtrasados", cardsAtrasados, "retencaoAtual", retencaoAtual, "metaRetencao", metaRetencao)
             ));
 
             passos.add(new MaestroStepDTO(
-                    2, 4, 10, "PRIMING_COGNITIVO",
+                    2, 5, primingTime, "PRIMING_COGNITIVO",
                     "Priming Cognitivo",
-                    String.format("Passo 2 (10 min): Priming Cognitivo. Resolva estas 5 questões inéditas de '%s'. Você nunca viu essa matéria, o objetivo aqui é errar para gerar curiosidade e abrir lacunas neurológicas.", assunto),
+                    String.format("Passo 2 (%d min): Priming Cognitivo. Resolva 5 questões de '%s' para ativar curiosidade e lacunas neurológicas.", primingTime, assunto),
                     disciplina, assunto,
                     "Geração de curiosidade e ativação de lacunas prévias", "RESOLVER_QUESTOES",
                     Map.of("totalQuestoes", 5, "modo", "PRIMING")
             ));
 
-            if (isVideoAula) {
-                passos.add(new MaestroStepDTO(
-                        3, 4, 50, "VIDEO_AULA",
-                        "Videoaula Recomendada (Visual da Mecânica)",
-                        "Passo 3 (50 min): Assista à videoaula do bloco 1 ao 3 (velocidade 1.5x). Esta matéria exige compreensão visual da mecânica.",
-                        disciplina, assunto,
-                        "Estudo ativo visual direcionado pelas dúvidas do priming", "ASSISTIR_VIDEO",
-                        Map.of("veiculo", "VIDEOAULA", "velocidade", "1.5x", "blocoInicio", 1, "blocoFim", 3)
-                ));
-            } else {
-                passos.add(new MaestroStepDTO(
-                        3, 4, 50, "TEORIA",
-                        "Teoria Hiperfocada (PDF Direto)",
-                        String.format("Passo 3 (50 min): Teoria. Vá direto para o %s, página %d. Videoaula aqui é perda de tempo.", materialDoc, pagDestino),
-                        disciplina, assunto,
-                        "Estudo ativo direcionado pelas dúvidas do priming", "LER_MATERIAL",
-                        Map.of("veiculo", "PDF_LEITURA", "materialDoc", materialDoc, "paginaInicio", pagDestino, "paginaFim", Math.max(pagDestino + 20, pagFim))
-                ));
-            }
+            String instrTeoria = materialDoc != null
+                    ? String.format("Passo 3 (%d min): Estude '%s' (págs. %d a %d). Direcionado pelas lacunas do priming.", teoriaTime, materialDoc, pagDestino, pagFim)
+                    : String.format("Passo 3 (%d min): Estude a teoria de '%s' - '%s' (consulte materiais na Biblioteca).", teoriaTime, disciplina, assunto);
 
             passos.add(new MaestroStepDTO(
-                    4, 4, 10, "DESCANSO",
+                    3, 5, teoriaTime, "TEORIA",
+                    "Teoria Hiperfocada",
+                    instrTeoria,
+                    disciplina, assunto,
+                    "Estudo ativo direcionado pelas dúvidas do priming", "LER_MATERIAL",
+                    Map.of("materialDoc", materialDoc != null ? materialDoc : "Biblioteca", "paginaInicio", pagDestino, "paginaFim", pagFim)
+            ));
+
+            passos.add(new MaestroStepDTO(
+                    4, 5, descansoTime, "DESCANSO",
                     "Descanso Absoluto",
-                    "Passo 4 (10 min): Descanso absoluto. Afaste-se da tela.",
+                    String.format("Passo 4 (%d min): Descanso absoluto. Afaste-se da tela.", descansoTime),
                     disciplina, assunto,
                     "Recuperação metabólica cerebral", "DESCANSO_TIMER",
                     Map.of()
             ));
 
             passos.add(new MaestroStepDTO(
-                    5, 5, 35, "FIXACAO_QUESTOES",
+                    5, 5, fixacaoTime, "FIXACAO_QUESTOES",
                     "Fixação e Resolução Ativa",
-                    String.format("Passo 5 (35 min): Bateria de Fixação. Resolva 12 questões da banca examinadora sobre '%s'. Meta de acerto: >80%%.", assunto),
+                    String.format("Passo 5 (%d min): Bateria de Fixação. Resolva questões sobre '%s'. Meta de acerto: >80%%.", fixacaoTime, assunto),
                     disciplina, assunto,
                     "Prática deliberada imediata pós-teoria", "RESOLVER_QUESTOES",
-                    Map.of("totalQuestoes", 12, "modo", "FIXACAO")
+                    Map.of("totalQuestoes", Math.max(5, (int) (fixacaoTime / 2.5)), "modo", "FIXACAO")
             ));
         } else {
-            // Plano Padrão de 3 Horas ou mais (Exatamente como o Roteiro Mastigado do usuário)
+            // Sessão Avançada / Completa (para QUALQUER tempo acima de 120 min, ex: 150, 180, 240, 300 min)
+            int ankiTime = Math.min(20, Math.max(10, (int) Math.round(tempoTotal * 0.08)));
+            int primingTime = 10;
+            int descansoTime = 10;
+            int feynmanTime = 15;
+            int fixacaoTime = Math.max(30, (int) Math.round(tempoTotal * 0.25));
+            int teoriaTime = tempoTotal - ankiTime - primingTime - descansoTime - feynmanTime - fixacaoTime;
+
             passos.add(new MaestroStepDTO(
-                    1, 6, 15, "ANKI_SRS",
+                    1, 6, ankiTime, "ANKI_SRS",
                     "Repetição Espaçada (Anki)",
-                    String.format("Passo 1 (15 min): Abra o Anki. Você tem %d cards atrasados de %s. Nível de retenção atual está em %d%%, precisamos subir para %d%%.", cardsAtrasados, disciplina, retencaoAtual, metaRetencao),
+                    String.format("Passo 1 (%d min): Abra o Anki. %d cards pendentes. Retenção atual: %d%%.", ankiTime, cardsAtrasados, retencaoAtual),
                     disciplina, assunto,
                     "Estabilização da curva de esquecimento (SRS)", "ANKI_SYNC",
                     Map.of("cardsAtrasados", cardsAtrasados, "retencaoAtual", retencaoAtual, "metaRetencao", metaRetencao)
             ));
 
             passos.add(new MaestroStepDTO(
-                    2, 6, 10, "PRIMING_COGNITIVO",
+                    2, 6, primingTime, "PRIMING_COGNITIVO",
                     "Priming Cognitivo",
-                    String.format("Passo 2 (10 min): Priming Cognitivo. Resolva estas 5 questões inéditas de '%s'. Você nunca viu essa matéria, o objetivo aqui é errar para gerar curiosidade e abrir lacunas neurológicas.", assunto),
+                    String.format("Passo 2 (%d min): Resolva 5 questões inéditas de '%s'. Objetivo: ancoragem neurológica de lacunas.", primingTime, assunto),
                     disciplina, assunto,
                     "Geração de curiosidade e ancoragem neurológica de lacunas", "RESOLVER_QUESTOES",
                     Map.of("totalQuestoes", 5, "modo", "PRIMING")
             ));
 
-            String focoTeoria = ("Atos Administrativos".equalsIgnoreCase(assunto) || "Direito Administrativo".equalsIgnoreCase(disciplina))
-                    ? "atributos do ato"
-                    : "atributos e requisitos de '" + assunto + "'";
-
+            String focoTeoria = "requisitos e especificidades de '" + assunto + "'";
+            String instrTeoria;
             if (isVideoAula) {
-                passos.add(new MaestroStepDTO(
-                        3, 6, 50, "VIDEO_AULA",
-                        "Videoaula Recomendada (Visual da Mecânica)",
-                        String.format("Passo 3 (50 min): Assista à videoaula do bloco 1 ao 3 (velocidade 1.5x). Esta matéria exige compreensão visual da mecânica de '%s'.", assunto),
-                        disciplina, assunto,
-                        "Compreensão visual da mecânica operacional antes da fixação", "ASSISTIR_VIDEO",
-                        Map.of("veiculo", "VIDEOAULA", "velocidade", "1.5x", "blocoInicio", 1, "blocoFim", 3, "assunto", assunto)
-                ));
+                instrTeoria = String.format("Passo 3 (%d min): Assista à videoaula do bloco 1 ao 3 (velocidade 1.5x) para compreensão visual de '%s'.", teoriaTime, assunto);
             } else if (reverseSession != null && reverseSession.get("prescricao_recorte_texto") != null) {
-                int pIni = reverseSession.get("pagina_inicio_recorte") != null ? ((Number) reverseSession.get("pagina_inicio_recorte")).intValue() : 16;
-                int pFim = reverseSession.get("pagina_fim_recorte") != null ? ((Number) reverseSession.get("pagina_fim_recorte")).intValue() : 22;
-                passos.add(new MaestroStepDTO(
-                        3, 6, 50, "TEORIA_RECORTADA",
-                        "Teoria Recortada (Estudo Reverso)",
-                        String.format("Passo 3 (50 min): Teoria Recortada. %s", reverseSession.get("prescricao_recorte_texto")),
-                        disciplina, assunto,
-                        "Leitura cirúrgica apenas das páginas de exceções jurisprudenciais", "LER_MATERIAL",
-                        Map.of("veiculo", "PDF_LEITURA", "materialDoc", materialDoc, "paginaInicio", pIni, "paginaFim", pFim, "modo", "ESTUDO_REVERSO")
-                ));
+                instrTeoria = String.format("Passo 3 (%d min): Teoria Recortada (Estudo Reverso). %s", teoriaTime, reverseSession.get("prescricao_recorte_texto"));
+            } else if (materialDoc != null) {
+                instrTeoria = String.format("Passo 3 (%d min): Teoria Hiperfocada no material '%s', páginas %d a %d. Foque em %s.", teoriaTime, materialDoc, pagDestino, pagFim, focoTeoria);
             } else {
-                passos.add(new MaestroStepDTO(
-                        3, 6, 50, "TEORIA",
-                        "Teoria Hiperfocada (PDF Direto)",
-                        String.format("Passo 3 (50 min): Teoria. Vá direto para o %s, página %d. Videoaula aqui é perda de tempo. Foque apenas nos %s. Ignore a jurisprudência por enquanto.", materialDoc, pagDestino, focoTeoria),
-                        disciplina, assunto,
-                        "Preenchimento das lacunas expostas durante o priming via leitura densa", "LER_MATERIAL",
-                        Map.of("veiculo", "PDF_LEITURA", "materialDoc", materialDoc, "paginaInicio", pagDestino, "paginaFim", Math.max(pagDestino + 20, pagFim))
-                ));
+                instrTeoria = String.format("Passo 3 (%d min): Estude a teoria de '%s' - '%s' utilizando seu material de apoio ou a Biblioteca.", teoriaTime, disciplina, assunto);
             }
 
             passos.add(new MaestroStepDTO(
-                    4, 6, 10, "DESCANSO",
+                    3, 6, teoriaTime, isVideoAula ? "VIDEO_AULA" : (reverseSession != null ? "TEORIA_RECORTADA" : "TEORIA"),
+                    isVideoAula ? "Videoaula Recomendada" : "Teoria Hiperfocada",
+                    instrTeoria,
+                    disciplina, assunto,
+                    "Preenchimento das lacunas expostas durante o priming via leitura densa", isVideoAula ? "ASSISTIR_VIDEO" : "LER_MATERIAL",
+                    Map.of("materialDoc", materialDoc != null ? materialDoc : "Biblioteca", "paginaInicio", pagDestino, "paginaFim", pagFim)
+            ));
+
+            passos.add(new MaestroStepDTO(
+                    4, 6, descansoTime, "DESCANSO",
                     "Descanso Absoluto",
-                    "Passo 4 (10 min): Descanso absoluto. Afaste-se da tela.",
+                    String.format("Passo 4 (%d min): Descanso absoluto. Afaste-se da tela e beba água.", descansoTime),
                     disciplina, assunto,
                     "Consolidação biológica sináptica sem novas entradas sensoriais", "DESCANSO_TIMER",
                     Map.of()
             ));
 
             passos.add(new MaestroStepDTO(
-                    5, 6, 45, "FIXACAO_QUESTOES",
+                    5, 6, fixacaoTime, "FIXACAO_QUESTOES",
                     "Fixação e Resolução Ativa",
-                    String.format("Passo 5 (45 min): Resolução Ativa. Faça 15 questões da banca examinadora para testar a retenção de '%s'.", assunto),
+                    String.format("Passo 5 (%d min): Resolução Ativa. Faça questões da banca sobre '%s'.", fixacaoTime, assunto),
                     disciplina, assunto,
                     "Transferência e fluência de resolução sob pressão de tempo", "RESOLVER_QUESTOES",
-                    Map.of("totalQuestoes", 15, "modo", "FIXACAO")
+                    Map.of("totalQuestoes", Math.max(10, (int) (fixacaoTime / 2.5)), "modo", "FIXACAO")
             ));
 
             passos.add(new MaestroStepDTO(
-                    6, 6, 15, "FEYNMAN_AUDIT",
+                    6, 6, feynmanTime, "FEYNMAN_AUDIT",
                     "Síntese Feynman / Auditoria Ativa",
-                    String.format("Passo 6 (15 min): Síntese Ativa. Escreva em 3 frases sem jargões como você explicaria '%s' para um auditor sênior.", assunto),
+                    String.format("Passo 6 (%d min): Síntese Ativa. Explique em poucas frases o cerne de '%s' sem usar jargões.", feynmanTime, assunto),
                     disciplina, assunto,
                     "Blindagem definitiva contra ilusão de competência (Dunning-Kruger)", "FEYNMAN",
                     Map.of("topico", assunto)
             ));
-
-            if (tempoTotal >= 210) {
-                passos.add(new MaestroStepDTO(
-                        7, 7, tempoTotal - 145, "REVISAO_ERROS",
-                        "Caderno de Erros Estratégico",
-                        String.format("Passo 7 (%d min): Analise os erros cometidos na sessão e registre 1 novo flashcard de omissão de termo.", tempoTotal - 145),
-                        disciplina, assunto,
-                        "Retroalimentação preventiva do algoritmo de repetição", "RESOLVER_QUESTOES",
-                        Map.of("modo", "ERROS")
-                ));
-            }
         }
 
         // Recalcular numeração e total de passos

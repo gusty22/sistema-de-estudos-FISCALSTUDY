@@ -34,12 +34,69 @@ const AUTO_COLOR_PALETTE = [
   '#9c27b0', '#ff5722', '#009688', '#795548', '#3f51b5'
 ];
 
+export const GEMINI_ROUTINE_PROMPT = `Você é um planejador de rotina e especialista em cronogramas de estudo para concursos fiscais.
+Eu vou descrever minhas atividades semanais, horários de trabalho, compromissos pessoais, sono e janelas livres.
+Sua missão é calcular exatamente quantas horas líquidas de estudo realista eu tenho por dia e formatar em um JSON rigoroso para o FiscalStudy Core.
+
+Siga estritamente esta estrutura JSON (retorne APENAS o JSON válido, sem texto antes ou depois):
+
+{
+  "concursoId": "<ID_DO_CONCURSO_ATIVO>",
+  "modoPlanejamento": "MAESTRO",
+  "horasSemana": {
+    "segunda": 3.5,
+    "terca": 3.5,
+    "quarta": 3.0,
+    "quinta": 4.0,
+    "sexta": 3.0,
+    "sabado": 6.0,
+    "domingo": 4.0
+  },
+  "compromissos": [
+    {
+      "titulo": "Trabalho Presencial",
+      "diaSemana": "SEGUNDA",
+      "horaInicio": "08:00",
+      "horaFim": "17:00",
+      "tipo": "TRABALHO"
+    },
+    {
+      "titulo": "Academia / Treino",
+      "diaSemana": "TERCA",
+      "horaInicio": "18:00",
+      "horaFim": "19:00",
+      "tipo": "SAUDE"
+    }
+  ],
+  "observacoes": "Rotina equilibrada preservando sono reparador."
+}
+
+Regras das Variáveis:
+1. 'horasSemana': Números decimais representando horas líquidas disponíveis para estudo em cada dia (ex: 3.5 = 3 horas e 30 minutos). Mínimo 0, máximo 16.
+2. 'diaSemana': Deve ser um dos valores: "SEGUNDA", "TERCA", "QUARTA", "QUINTA", "SEXTA", "SABADO", "DOMINGO".
+3. 'tipo': Deve ser um dos valores: "TRABALHO", "FACULDADE", "FAMILIA", "SAUDE", "OUTRO".
+4. 'horaInicio' e 'horaFim': Formato 24h "HH:mm" (ex: "08:00", "17:30").
+5. 'modoPlanejamento': "MAESTRO" (Interface de Batalha com micro-passos), "SEMANAL" (Grade de blocos) ou "CICLO" (Ciclo proporcional).
+
+Minhas Atividades da Semana:
+[Substitua com suas atividades reais:
+- Trabalho de segunda a sexta das 08h às 17h
+- Almoço das 12h às 13h
+- Academia seg, qua e sex das 18h às 19h
+- Fins de semana livres para estudar mais
+- Durmo cerca de 7h30 por noite]`;
+
 export const CronogramaSemanal: React.FC<CronogramaProps> = ({ activeConcurso, onNavigateToStudy, onNavigateToTab }) => {
   const [mode, setMode] = useState<'MAESTRO' | 'SEMANAL' | 'CICLO'>(() => {
     return (sessionStorage.getItem('fiscalstudy_crono_mode') as any) || 'MAESTRO';
   });
   const [selectedDia, setSelectedDia] = useState<string>('Segunda');
   const [isRoutineOpen, setIsRoutineOpen] = useState(false);
+  const [routineDrawerTab, setRoutineDrawerTab] = useState<'MANUAL' | 'JSON_GEMINI'>('MANUAL');
+  const [routineJsonInput, setRoutineJsonInput] = useState('');
+  const [isImportingJson, setIsImportingJson] = useState(false);
+  const [importJsonFeedback, setImportJsonFeedback] = useState<string | null>(null);
+  const [copiedPrompt, setCopiedPrompt] = useState(false);
 
   // Routine state
   const [routineHours, setRoutineHours] = useState({
@@ -204,6 +261,58 @@ export const CronogramaSemanal: React.FC<CronogramaProps> = ({ activeConcurso, o
       await fetch(`/api/v1/routine/commitments/${id}`, { method: 'DELETE' });
       loadRoutineData();
     } catch {}
+  };
+
+  const handleCopyPrompt = () => {
+    let p = GEMINI_ROUTINE_PROMPT;
+    if (activeConcurso?.id) {
+      p = p.replace('<ID_DO_CONCURSO_ATIVO>', activeConcurso.id);
+    }
+    navigator.clipboard.writeText(p);
+    setCopiedPrompt(true);
+    setTimeout(() => setCopiedPrompt(false), 3000);
+  };
+
+  const handleImportRoutineJson = async () => {
+    if (!routineJsonInput.trim()) return;
+    setIsImportingJson(true);
+    setImportJsonFeedback(null);
+    try {
+      let parsed;
+      try {
+        parsed = JSON.parse(routineJsonInput.trim());
+      } catch {
+        const match = routineJsonInput.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+        if (match) {
+          parsed = JSON.parse(match[1]);
+        } else {
+          throw new Error('Formato JSON inválido. Verifique chaves e aspas.');
+        }
+      }
+
+      const cid = activeConcurso?.id || parsed.concursoId || '';
+      const res = await fetch(`/api/v1/routine/import-json?concursoId=${encodeURIComponent(cid)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(parsed)
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setImportJsonFeedback(`✓ Sucesso! ${data.commitmentsCount || 0} compromissos cadastrados e rotina ajustada para ${data.totalHorasSemanais || 0}h semanais.`);
+        loadRoutineData();
+        setTimeout(() => {
+          setIsRoutineOpen(false);
+          setImportJsonFeedback(null);
+        }, 2200);
+      } else {
+        setImportJsonFeedback('⚠️ Falha ao salvar rotina no servidor.');
+      }
+    } catch (e: any) {
+      setImportJsonFeedback(`⚠️ Erro: ${e.message || 'JSON inválido'}`);
+    } finally {
+      setIsImportingJson(false);
+    }
   };
 
   const dias = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
@@ -463,170 +572,364 @@ export const CronogramaSemanal: React.FC<CronogramaProps> = ({ activeConcurso, o
               </button>
             </div>
 
+            {/* Abas: Manual vs Importar JSON (Gemini) */}
+            <div style={{ display: 'flex', gap: '4px', padding: '0 20px', borderBottom: '1px solid #2e3347', background: '#12151e' }}>
+              <button
+                type="button"
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  borderBottom: routineDrawerTab === 'MANUAL' ? '2px solid #6366f1' : '2px solid transparent',
+                  color: routineDrawerTab === 'MANUAL' ? '#fff' : '#a1a6c2',
+                  padding: '12px 16px',
+                  fontWeight: 600,
+                  fontSize: '13px',
+                  cursor: 'pointer'
+                }}
+                onClick={() => setRoutineDrawerTab('MANUAL')}
+              >
+                ✍️ Horários Manuais
+              </button>
+              <button
+                type="button"
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  borderBottom: routineDrawerTab === 'JSON_GEMINI' ? '2px solid #10b981' : '2px solid transparent',
+                  color: routineDrawerTab === 'JSON_GEMINI' ? '#10b981' : '#a1a6c2',
+                  padding: '12px 16px',
+                  fontWeight: 600,
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+                onClick={() => setRoutineDrawerTab('JSON_GEMINI')}
+              >
+                🤖 Importar JSON (Gemini)
+                <span style={{ fontSize: '10px', background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>IA</span>
+              </button>
+            </div>
+
             <div className="routine-drawer-body">
-              {/* Daily Hours */}
-              <div>
-                <h4 className="routine-section-title">Horas Disponíveis por Dia da Semana</h4>
-                <div className="routine-days-grid">
-                  {Object.entries({
-                    Seg: 'horasSegunda',
-                    Ter: 'horasTerca',
-                    Qua: 'horasQuarta',
-                    Qui: 'horasQuinta',
-                    Sex: 'horasSexta',
-                    Sáb: 'horasSabado',
-                    Dom: 'horasDomingo'
-                  }).map(([label, key]) => (
-                    <div key={label} className="routine-day-input-box">
-                      <span>{label}</span>
-                      <input
-                        type="number"
-                        step="0.5"
-                        min="0"
-                        max="16"
-                        value={(routineHours as any)[key]}
-                        onChange={(e) => setRoutineHours({
-                          ...routineHours,
-                          [key]: parseFloat(e.target.value) || 0
-                        })}
-                      />
+              {routineDrawerTab === 'MANUAL' ? (
+                <>
+                  {/* Daily Hours */}
+                  <div>
+                    <h4 className="routine-section-title">Horas Disponíveis por Dia da Semana</h4>
+                    <div className="routine-days-grid">
+                      {Object.entries({
+                        Seg: 'horasSegunda',
+                        Ter: 'horasTerca',
+                        Qua: 'horasQuarta',
+                        Qui: 'horasQuinta',
+                        Sex: 'horasSexta',
+                        Sáb: 'horasSabado',
+                        Dom: 'horasDomingo'
+                      }).map(([label, key]) => (
+                        <div key={label} className="routine-day-input-box">
+                          <span>{label}</span>
+                          <input
+                            type="number"
+                            step="0.5"
+                            min="0"
+                            max="16"
+                            value={(routineHours as any)[key]}
+                            onChange={(e) => setRoutineHours({
+                              ...routineHours,
+                              [key]: parseFloat(e.target.value) || 0
+                            })}
+                          />
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </div>
+                  </div>
 
-              {/* Commitments */}
-              <div>
-                <h4 className="routine-section-title">Compromissos Fixos (Bloqueios de Agenda)</h4>
-                <div className="commitments-list">
-                  {commitments.map(c => (
-                    <div key={c.id} className="commitment-item">
-                      <div className="commitment-info">
-                        <strong>{c.titulo}</strong>
-                        <small>{c.diaSemana} • {c.horaInicio} às {c.horaFim} ({c.tipo})</small>
+                  {/* Commitments */}
+                  <div>
+                    <h4 className="routine-section-title">Compromissos Fixos (Bloqueios de Agenda)</h4>
+                    <div className="commitments-list">
+                      {commitments.map(c => (
+                        <div key={c.id} className="commitment-item">
+                          <div className="commitment-info">
+                            <strong>{c.titulo}</strong>
+                            <small>{c.diaSemana} • {c.horaInicio} às {c.horaFim} ({c.tipo})</small>
+                          </div>
+                          <button
+                            style={{ background: 'none', border: 'none', color: '#f55a5a', cursor: 'pointer' }}
+                            onClick={() => handleDeleteCommitment(c.id)}
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+
+                      <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                        <input
+                          type="text"
+                          placeholder="Novo compromisso (ex: Trabalho)"
+                          value={newCommitTitulo}
+                          onChange={(e) => setNewCommitTitulo(e.target.value)}
+                          style={{
+                            flex: 1,
+                            background: '#1a1e2a',
+                            border: '1px solid #2e3347',
+                            borderRadius: '6px',
+                            padding: '8px',
+                            color: '#fff',
+                            fontSize: '12px'
+                          }}
+                        />
+                        <select
+                          value={newCommitDia}
+                          onChange={(e) => setNewCommitDia(e.target.value)}
+                          style={{
+                            background: '#1a1e2a',
+                            border: '1px solid #2e3347',
+                            borderRadius: '6px',
+                            padding: '8px',
+                            color: '#fff',
+                            fontSize: '12px'
+                          }}
+                        >
+                          <option value="SEGUNDA">Segunda</option>
+                          <option value="TERCA">Terça</option>
+                          <option value="QUARTA">Quarta</option>
+                          <option value="QUINTA">Quinta</option>
+                          <option value="SEXTA">Sexta</option>
+                          <option value="SABADO">Sábado</option>
+                          <option value="DOMINGO">Domingo</option>
+                          <option value="TODOS_DIAS_UTEIS">Seg a Sex</option>
+                        </select>
+                        <input
+                          type="time"
+                          value={newCommitHoraIni}
+                          onChange={(e) => setNewCommitHoraIni(e.target.value)}
+                          style={{
+                            background: '#1a1e2a',
+                            border: '1px solid #2e3347',
+                            borderRadius: '6px',
+                            padding: '6px',
+                            color: '#fff',
+                            fontSize: '12px'
+                          }}
+                        />
+                        <input
+                          type="time"
+                          value={newCommitHoraFim}
+                          onChange={(e) => setNewCommitHoraFim(e.target.value)}
+                          style={{
+                            background: '#1a1e2a',
+                            border: '1px solid #2e3347',
+                            borderRadius: '6px',
+                            padding: '6px',
+                            color: '#fff',
+                            fontSize: '12px'
+                          }}
+                        />
+                        <button
+                          className="btn-add-material"
+                          style={{ padding: '6px 12px', fontSize: '12px' }}
+                          onClick={handleAddCommitment}
+                        >
+                          + Adicionar
+                        </button>
                       </div>
-                      <button
-                        style={{ background: 'none', border: 'none', color: '#f55a5a', cursor: 'pointer' }}
-                        onClick={() => handleDeleteCommitment(c.id)}
-                      >
-                        ✕
-                      </button>
                     </div>
-                  ))}
+                  </div>
 
-                  <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-                    <input
-                      type="text"
-                      placeholder="Novo compromisso (ex: Trabalho)"
-                      value={newCommitTitulo}
-                      onChange={(e) => setNewCommitTitulo(e.target.value)}
+                  {/* Exceptions */}
+                  <div>
+                    <h4 className="routine-section-title">Exceções & Imprevistos Registrados</h4>
+                    <div className="commitments-list">
+                      {exceptions.map(ex => (
+                        <div key={ex.id} className="commitment-item">
+                          <div className="commitment-info">
+                            <strong>📅 {ex.data}: {ex.motivo || 'Sem motivo'}</strong>
+                            <small>{ex.tipo} • {ex.horas}h de impacto</small>
+                          </div>
+                        </div>
+                      ))}
+                      {exceptions.length === 0 && (
+                        <small style={{ color: '#a1a6c2' }}>Nenhuma exceção registrada. A rotina segue o padrão planejado.</small>
+                      )}
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
+                    <button
                       style={{
-                        flex: 1,
                         background: '#1a1e2a',
                         border: '1px solid #2e3347',
-                        borderRadius: '6px',
-                        padding: '8px',
-                        color: '#fff',
-                        fontSize: '12px'
+                        color: '#a1a6c2',
+                        padding: '8px 16px',
+                        borderRadius: '8px',
+                        cursor: 'pointer'
                       }}
-                    />
-                    <select
-                      value={newCommitDia}
-                      onChange={(e) => setNewCommitDia(e.target.value)}
-                      style={{
-                        background: '#1a1e2a',
-                        border: '1px solid #2e3347',
-                        borderRadius: '6px',
-                        padding: '8px',
-                        color: '#fff',
-                        fontSize: '12px'
-                      }}
+                      onClick={() => setIsRoutineOpen(false)}
                     >
-                      <option value="SEGUNDA">Segunda</option>
-                      <option value="TERCA">Terça</option>
-                      <option value="QUARTA">Quarta</option>
-                      <option value="QUINTA">Quinta</option>
-                      <option value="SEXTA">Sexta</option>
-                      <option value="SABADO">Sábado</option>
-                      <option value="DOMINGO">Domingo</option>
-                      <option value="TODOS_DIAS_UTEIS">Seg a Sex</option>
-                    </select>
-                    <input
-                      type="time"
-                      value={newCommitHoraIni}
-                      onChange={(e) => setNewCommitHoraIni(e.target.value)}
-                      style={{
-                        background: '#1a1e2a',
-                        border: '1px solid #2e3347',
-                        borderRadius: '6px',
-                        padding: '6px',
-                        color: '#fff',
-                        fontSize: '12px'
-                      }}
-                    />
-                    <input
-                      type="time"
-                      value={newCommitHoraFim}
-                      onChange={(e) => setNewCommitHoraFim(e.target.value)}
-                      style={{
-                        background: '#1a1e2a',
-                        border: '1px solid #2e3347',
-                        borderRadius: '6px',
-                        padding: '6px',
-                        color: '#fff',
-                        fontSize: '12px'
-                      }}
-                    />
+                      Cancelar
+                    </button>
                     <button
                       className="btn-add-material"
-                      style={{ padding: '6px 12px', fontSize: '12px' }}
-                      onClick={handleAddCommitment}
+                      onClick={handleSaveRoutineHours}
                     >
-                      + Adicionar
+                      Salvar Configuração de Rotina
+                    </button>
+                  </div>
+                </>
+              ) : (
+                /* Gemini JSON Import Tab */
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div style={{
+                    background: 'rgba(16, 185, 129, 0.08)',
+                    border: '1px solid rgba(16, 185, 129, 0.25)',
+                    borderRadius: '8px',
+                    padding: '12px 16px',
+                    fontSize: '12px',
+                    lineHeight: '1.6',
+                    color: '#d1fae5'
+                  }}>
+                    <strong style={{ display: 'block', fontSize: '13px', color: '#10b981', marginBottom: '4px' }}>
+                      ✨ Como usar a conversão de rotina com o Gemini:
+                    </strong>
+                    1. Clique no botão abaixo para copiar o <strong>Prompt Mestre</strong> formatado.<br />
+                    2. Abra o Gemini e cole o prompt, substituindo a lista de atividades com sua rotina real.<br />
+                    3. Copie o JSON gerado pelo Gemini e cole no campo abaixo para injetar na sua agenda.
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                    <button
+                      type="button"
+                      onClick={handleCopyPrompt}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        background: copiedPrompt ? '#059669' : '#1e293b',
+                        border: '1px solid #334155',
+                        color: '#fff',
+                        padding: '10px 16px',
+                        borderRadius: '8px',
+                        fontSize: '13px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      {copiedPrompt ? '✓ Prompt Copiado para Área de Transferência!' : '📋 Copiar Prompt Mestre para o Gemini'}
+                    </button>
+                    <span style={{ fontSize: '11px', color: '#64748b' }}>Compatível com Gemini Pro, Flash e Advanced</span>
+                  </div>
+
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                      <label style={{ fontSize: '12px', fontWeight: 600, color: '#e2e8f0' }}>
+                        Cole aqui o JSON gerado pelo Gemini:
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setRoutineJsonInput(`{
+  "concursoId": "${activeConcurso?.id || ''}",
+  "modoPlanejamento": "MAESTRO",
+  "horasSemana": {
+    "segunda": 3.0,
+    "terca": 3.0,
+    "quarta": 3.0,
+    "quinta": 3.0,
+    "sexta": 3.0,
+    "sabado": 6.0,
+    "domingo": 4.0
+  },
+  "compromissos": [
+    {
+      "titulo": "Trabalho Integral",
+      "diaSemana": "SEGUNDA",
+      "horaInicio": "08:00",
+      "horaFim": "17:00",
+      "tipo": "TRABALHO"
+    },
+    {
+      "titulo": "Academia",
+      "diaSemana": "QUARTA",
+      "horaInicio": "18:00",
+      "horaFim": "19:00",
+      "tipo": "SAUDE"
+    }
+  ]
+}`);
+                        }}
+                        style={{ background: 'none', border: 'none', color: '#6366f1', fontSize: '11px', cursor: 'pointer', textDecoration: 'underline' }}
+                      >
+                        Carregar exemplo
+                      </button>
+                    </div>
+
+                    <textarea
+                      value={routineJsonInput}
+                      onChange={(e) => setRoutineJsonInput(e.target.value)}
+                      placeholder='{\n  "horasSemana": { "segunda": 3.5, ... },\n  "compromissos": [ ... ]\n}'
+                      style={{
+                        width: '100%',
+                        height: '220px',
+                        fontFamily: 'monospace',
+                        fontSize: '12px',
+                        background: '#0d1117',
+                        border: '1px solid #30363d',
+                        borderRadius: '8px',
+                        padding: '12px',
+                        color: '#58a6ff',
+                        boxSizing: 'border-box',
+                        resize: 'vertical'
+                      }}
+                    />
+                  </div>
+
+                  {importJsonFeedback && (
+                    <div style={{
+                      padding: '10px 14px',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      background: importJsonFeedback.startsWith('✓') ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                      color: importJsonFeedback.startsWith('✓') ? '#34d399' : '#f87171',
+                      border: importJsonFeedback.startsWith('✓') ? '1px solid #10b981' : '1px solid #ef4444'
+                    }}>
+                      {importJsonFeedback}
+                    </div>
+                  )}
+
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '6px' }}>
+                    <button
+                      type="button"
+                      style={{
+                        background: '#1a1e2a',
+                        border: '1px solid #2e3347',
+                        color: '#a1a6c2',
+                        padding: '8px 16px',
+                        borderRadius: '8px',
+                        cursor: 'pointer'
+                      }}
+                      onClick={() => setIsRoutineOpen(false)}
+                    >
+                      Fechar
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isImportingJson || !routineJsonInput.trim()}
+                      className="btn-add-material"
+                      style={{
+                        background: isImportingJson || !routineJsonInput.trim() ? '#475569' : '#10b981',
+                        cursor: isImportingJson || !routineJsonInput.trim() ? 'not-allowed' : 'pointer'
+                      }}
+                      onClick={handleImportRoutineJson}
+                    >
+                      {isImportingJson ? 'Injetando Rotina...' : '🚀 Processar e Aplicar Rotina'}
                     </button>
                   </div>
                 </div>
-              </div>
-
-              {/* Exceptions */}
-              <div>
-                <h4 className="routine-section-title">Exceções & Imprevistos Registrados</h4>
-                <div className="commitments-list">
-                  {exceptions.map(ex => (
-                    <div key={ex.id} className="commitment-item">
-                      <div className="commitment-info">
-                        <strong>📅 {ex.data}: {ex.motivo || 'Sem motivo'}</strong>
-                        <small>{ex.tipo} • {ex.horas}h de impacto</small>
-                      </div>
-                    </div>
-                  ))}
-                  {exceptions.length === 0 && (
-                    <small style={{ color: '#a1a6c2' }}>Nenhuma exceção registrada. A rotina segue o padrão planejado.</small>
-                  )}
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
-                <button
-                  style={{
-                    background: '#1a1e2a',
-                    border: '1px solid #2e3347',
-                    color: '#a1a6c2',
-                    padding: '8px 16px',
-                    borderRadius: '8px',
-                    cursor: 'pointer'
-                  }}
-                  onClick={() => setIsRoutineOpen(false)}
-                >
-                  Cancelar
-                </button>
-                <button
-                  className="btn-add-material"
-                  onClick={handleSaveRoutineHours}
-                >
-                  Salvar Configuração de Rotina
-                </button>
-              </div>
+              )}
             </div>
           </div>
         </div>

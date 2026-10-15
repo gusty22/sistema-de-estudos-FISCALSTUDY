@@ -63,6 +63,12 @@ public class StudyMaterialController {
         return ResponseEntity.ok(materialService.saveLink(link));
     }
 
+    @DeleteMapping("/links/{linkId}")
+    public ResponseEntity<Void> deleteLink(@PathVariable String linkId) {
+        materialService.deleteLink(linkId);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/{id}/auto-link")
     public ResponseEntity<List<TopicMaterialLink>> autoLinkMaterial(
             @PathVariable String id,

@@ -47,7 +47,15 @@ export const MaestroBattleView: React.FC<MaestroBattleViewProps> = ({
   onSwitchToWeekly,
   onOpenAnkiHub,
 }) => {
-  const [selectedMinutes, setSelectedMinutes] = useState<number>(180); // Padrão 3 horas
+  const [selectedMinutes, setSelectedMinutes] = useState<number>(() => {
+    const saved = localStorage.getItem('fiscalstudy_maestro_custom_minutes');
+    return saved ? parseInt(saved, 10) : 180;
+  });
+  const [customMinutesInput, setCustomMinutesInput] = useState<number>(() => {
+    const saved = localStorage.getItem('fiscalstudy_maestro_custom_minutes');
+    return saved ? parseInt(saved, 10) : 180;
+  });
+  const [showCustomInput, setShowCustomInput] = useState<boolean>(false);
   const [plan, setPlan] = useState<MaestroPlan | null>(null);
   const [currentStepIndex, setCurrentStepIndex] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -263,33 +271,97 @@ export const MaestroBattleView: React.FC<MaestroBattleViewProps> = ({
             <span className="time-selector-label">Tenho hoje:</span>
             <button
               type="button"
-              className={`time-pill-btn ${selectedMinutes === 60 ? 'active' : ''}`}
-              onClick={() => setSelectedMinutes(60)}
+              className={`time-pill-btn ${selectedMinutes === 60 && !showCustomInput ? 'active' : ''}`}
+              onClick={() => { setSelectedMinutes(60); setShowCustomInput(false); }}
             >
-              1 hora
+              1h
             </button>
             <button
               type="button"
-              className={`time-pill-btn ${selectedMinutes === 120 ? 'active' : ''}`}
-              onClick={() => setSelectedMinutes(120)}
+              className={`time-pill-btn ${selectedMinutes === 120 && !showCustomInput ? 'active' : ''}`}
+              onClick={() => { setSelectedMinutes(120); setShowCustomInput(false); }}
             >
-              2 horas
+              2h
             </button>
             <button
               type="button"
-              className={`time-pill-btn ${selectedMinutes === 180 ? 'active' : ''}`}
-              onClick={() => setSelectedMinutes(180)}
+              className={`time-pill-btn ${selectedMinutes === 180 && !showCustomInput ? 'active' : ''}`}
+              onClick={() => { setSelectedMinutes(180); setShowCustomInput(false); }}
             >
-              3 horas (Padrão)
+              3h
             </button>
             <button
               type="button"
-              className={`time-pill-btn ${selectedMinutes === 240 ? 'active' : ''}`}
-              onClick={() => setSelectedMinutes(240)}
+              className={`time-pill-btn ${selectedMinutes === 240 && !showCustomInput ? 'active' : ''}`}
+              onClick={() => { setSelectedMinutes(240); setShowCustomInput(false); }}
             >
-              4 horas
+              4h
+            </button>
+            <button
+              type="button"
+              className={`time-pill-btn ${showCustomInput || (![60, 120, 180, 240].includes(selectedMinutes)) ? 'active' : ''}`}
+              onClick={() => setShowCustomInput(!showCustomInput)}
+              title="Defina o seu tempo exato disponível hoje (ex: 45 min, 90 min, 150 min, etc.)"
+            >
+              ⏱️ {![60, 120, 180, 240].includes(selectedMinutes) ? `${selectedMinutes} min` : '+ Meu Horário'}
             </button>
           </div>
+
+          {showCustomInput && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              background: '#13161e',
+              border: '1px solid #3b82f6',
+              padding: '6px 12px',
+              borderRadius: '10px'
+            }}>
+              <span style={{ fontSize: '12px', color: '#a1a6c2' }}>Duração exata:</span>
+              <input
+                type="number"
+                min="20"
+                max="720"
+                step="5"
+                value={customMinutesInput}
+                onChange={(e) => setCustomMinutesInput(parseInt(e.target.value, 10) || 30)}
+                style={{
+                  width: '75px',
+                  padding: '4px 8px',
+                  background: '#1a1e2a',
+                  border: '1px solid #2e3347',
+                  borderRadius: '6px',
+                  color: '#fff',
+                  fontSize: '13px',
+                  textAlign: 'center',
+                  fontFamily: 'monospace'
+                }}
+              />
+              <span style={{ fontSize: '12px', color: '#cbd5e1' }}>
+                min ({Math.floor(customMinutesInput / 60)}h {customMinutesInput % 60}m)
+              </span>
+              <button
+                type="button"
+                className="btn btn-primary"
+                style={{ padding: '5px 12px', fontSize: '12px', fontWeight: 700 }}
+                onClick={() => {
+                  const mins = Math.max(20, customMinutesInput);
+                  setSelectedMinutes(mins);
+                  localStorage.setItem('fiscalstudy_maestro_custom_minutes', String(mins));
+                  setShowCustomInput(false);
+                }}
+              >
+                ✓ Aplicar
+              </button>
+              <button
+                type="button"
+                style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '14px' }}
+                onClick={() => setShowCustomInput(false)}
+              >
+                ✕
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
