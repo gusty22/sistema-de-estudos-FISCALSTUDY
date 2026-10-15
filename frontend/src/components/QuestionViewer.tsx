@@ -3,6 +3,7 @@ import './QuestionViewer.css';
 import { CrossDomainBridgeModal } from './cognitive/CrossDomainBridgeModal';
 import { AnkiHubModal } from './anki/AnkiHubModal';
 import { CognitiveLockModal } from './cognitive/CognitiveLockModal';
+import { ReverseEngineeringModal } from './cognitive/ReverseEngineeringModal';
 
 interface Option {
   label?: string;
@@ -163,6 +164,7 @@ const QuestionViewer: React.FC = () => {
     errosConsecutivos?: number;
   } | null>(null);
   const [showMediaModal, setShowMediaModal] = useState(false);
+  const [isReverseModalOpen, setIsReverseModalOpen] = useState(false);
 
   // Simulado / Inoculação de Estresse (Chaos Engineering)
   const [simuladoConfig] = useState<any>(() => {
@@ -936,6 +938,25 @@ const QuestionViewer: React.FC = () => {
             </span>
           </button>
           <button
+            type="button"
+            className="btn btn-secondary"
+            style={{
+              padding: '5px 12px',
+              fontSize: '0.8rem',
+              background: 'rgba(99, 102, 241, 0.2)',
+              border: '1px solid #818cf8',
+              color: '#c7d2fe',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}
+            onClick={() => setIsReverseModalOpen(true)}
+            title="Estudo Reverso Orientado (Engenharia Reversa): Resolva 5 questões da banca foco para mapear pegadinhas e recortar a teoria do PDF"
+          >
+            <span>🎯</span>
+            <span>Estudo Reverso</span>
+          </button>
+          <button
             className="btn btn-secondary"
             style={{ padding: '5px 12px', fontSize: '0.8rem', background: '#1e293b', border: '1px solid #3b82f6', color: '#93c5fd' }}
             onClick={() => setShowDesmembramento(prev => !prev)}
@@ -1590,6 +1611,28 @@ const QuestionViewer: React.FC = () => {
           </div>
         </div>
       )}
+      {/* 4. Engenharia Reversa como Padrão de Estudo (Estudo Reverso Orientado) */}
+      <ReverseEngineeringModal
+        isOpen={isReverseModalOpen}
+        onClose={() => setIsReverseModalOpen(false)}
+        disciplina={question?.metadata?.discipline || selectedDiscipline || 'Direito Tributário'}
+        assunto={question?.metadata?.topic || 'Substituição Tributária para Frente'}
+        concursoId={selectedConcursoId}
+        banca={question?.metadata?.board || 'FGV'}
+        onPrescriptionReady={(presc) => {
+          if (presc) {
+            setMediaPrescription({
+              veiculo: 'PDF_DIRETO',
+              titulo: 'Teoria Recortada (Estudo Reverso)',
+              prescricaoTexto: presc.prescricaoRecorteTexto,
+              categoriaDisciplina: 'Leis / Exceções',
+              nivelFamiliaridade: 'INTERMEDIARIO',
+              paginaSugerida: presc.paginaInicioRecorte,
+              errosConsecutivos: 0
+            });
+          }
+        }}
+      />
     </div>
   );
 };

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import './MaestroBattleView.css';
+import { ReverseEngineeringModal } from '../cognitive/ReverseEngineeringModal';
 
 export interface MaestroStep {
   numeroPasso: number;
@@ -58,6 +59,7 @@ export const MaestroBattleView: React.FC<MaestroBattleViewProps> = ({
 
   // Drawer do Roteiro Completo
   const [isScriptDrawerOpen, setIsScriptDrawerOpen] = useState<boolean>(false);
+  const [isReverseModalOpen, setIsReverseModalOpen] = useState<boolean>(false);
 
   // Ação executada com sucesso feedback
   const [actionFeedback, setActionFeedback] = useState<string | null>(null);
@@ -193,6 +195,8 @@ export const MaestroBattleView: React.FC<MaestroBattleViewProps> = ({
       const msg = `🎥 Videoaula Prescrita (Blocos ${step.metadata?.blocoInicio || 1} ao ${step.metadata?.blocoFim || 3}, Vel. ${step.metadata?.velocidade || '1.5x'}): ${step.disciplina} - ${step.assunto}. Esta matéria exige compreensão visual da mecânica.`;
       setActionFeedback(msg);
       setTimeout(() => setActionFeedback(null), 8000);
+    } else if (step.actionType === 'ENGENHARIA_REVERSA') {
+      setIsReverseModalOpen(true);
     }
   };
 
@@ -449,6 +453,28 @@ export const MaestroBattleView: React.FC<MaestroBattleViewProps> = ({
                 </button>
               )}
 
+              {currentStep.actionType === 'ENGENHARIA_REVERSA' && (
+                <button
+                  type="button"
+                  className="btn-battle-launch"
+                  style={{ background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)', boxShadow: '0 4px 16px rgba(99, 102, 241, 0.4)' }}
+                  onClick={() => setIsReverseModalOpen(true)}
+                >
+                  🎯 Iniciar Bateria de Estudo Reverso (5 Questões)
+                </button>
+              )}
+
+              {currentStep.tipo === 'TEORIA_RECORTADA' && (
+                <button
+                  type="button"
+                  className="btn-battle-launch"
+                  style={{ background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', color: '#000', fontWeight: 700, boxShadow: '0 4px 16px rgba(245, 158, 11, 0.4)' }}
+                  onClick={() => handleExecuteAction(currentStep)}
+                >
+                  📖 Abrir PDF nas Páginas {currentStep.metadata?.paginaInicio || 16} a {currentStep.metadata?.paginaFim || 22} (Pular 15 Páginas)
+                </button>
+              )}
+
               {currentStep.actionType === 'ANKI_SYNC' && (
                 <button
                   type="button"
@@ -671,6 +697,20 @@ export const MaestroBattleView: React.FC<MaestroBattleViewProps> = ({
         </div>,
         document.body
       )}
+
+      {/* Modal de Engenharia Reversa / Estudo Reverso Orientado */}
+      <ReverseEngineeringModal
+        isOpen={isReverseModalOpen}
+        onClose={() => setIsReverseModalOpen(false)}
+        concursoId={concursoId}
+        disciplina={plan?.disciplinaPrincipal || 'Direito Tributário'}
+        assunto={plan?.assuntoPrincipal || 'Substituição Tributária para Frente'}
+        onPrescriptionReady={(presc) => {
+          if (presc) {
+            setActionFeedback(`💡 Recorte prescrito: Pule 15 págs do PDF. Leia apenas págs ${presc.paginaInicioRecorte} a ${presc.paginaFimRecorte}.`);
+          }
+        }}
+      />
     </div>
   );
 };
