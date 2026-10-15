@@ -1,0 +1,74 @@
+{
+  "contract_version": "1.0.0",
+  "generated_at": "2026-10-15T02:36:36Z",
+  "source_model": "survival_logistic_regression_wilson_v1",
+  "parameters": {
+    "target_minimum_retention": 0.85,
+    "confidence_level_z": 1.96,
+    "noise_cutoff_ms": 1000,
+    "decay_coefficient_beta1": -0.3370
+  },
+  "critical_topics": [
+    {
+      "discipline": "Direito Constitucional",
+      "topic": "Direitos Individuais",
+      "beta_0": 5.4027,
+      "beta_1_decay": -0.3370,
+      "beta_2_conf": 1.3911,
+      "beta_3_diff": -17.9735,
+      "wilson_lower_bound": 0.510,
+      "sample_size_n": 4,
+      "metacognitive_penalty": false,
+      "priority_score": 49.0,
+      "recommended_intervention": "NEW_QUESTIONS",
+      "emergency_block_minutes": 15,
+      "rationale": "Limite inferior de Wilson (51.0%) abaixo da meta de 85%. Amostra ou retenção em risco."
+    },
+    {
+      "discipline": "Auditoria",
+      "topic": "Normas Relativas ao Relatório do Auditor",
+      "beta_0": 5.4027,
+      "beta_1_decay": -0.3370,
+      "beta_2_conf": 1.3911,
+      "beta_3_diff": -17.9735,
+      "wilson_lower_bound": 0.046,
+      "sample_size_n": 4,
+      "metacognitive_penalty": true,
+      "priority_score": 120.4,
+      "recommended_intervention": "ANKI_FLASHCARD",
+      "emergency_block_minutes": 15,
+      "rationale": "Limite inferior de Wilson (4.6%) abaixo da meta de 85%. Identificado erro com Confiança 5 (Falsa Fluência)."
+    },
+    {
+      "discipline": "Direito Tributário",
+      "topic": "Imunidades Tributárias",
+      "beta_0": 5.4027,
+      "beta_1_decay": -0.3370,
+      "beta_2_conf": 1.3911,
+      "beta_3_diff": -17.9735,
+      "wilson_lower_bound": 0.301,
+      "sample_size_n": 4,
+      "metacognitive_penalty": false,
+      "priority_score": 69.9,
+      "recommended_intervention": "NEW_QUESTIONS",
+      "emergency_block_minutes": 15,
+      "rationale": "Limite inferior de Wilson (30.1%) abaixo da meta de 85%. Amostra ou retenção em risco."
+    }
+  ],
+  "hyper_consolidated_disciplines": [
+    {
+      "discipline": "Direito Constitucional",
+      "wilson_lower_bound": 0.910,
+      "projected_retention_14d": 0.890,
+      "max_stealable_minutes": 15,
+      "status": "DOADOR_DE_TEMPO"
+    }
+  ],
+  "redistribution_plan": {
+    "total_stolen_minutes": 15,
+    "donor_discipline": "Direito Constitucional",
+    "receiver_discipline": "Direito Constitucional",
+    "receiver_topic": "Direitos Individuais",
+    "intervention_type": "EMERGENCIA_ROBIN_HOOD"
+  }
+}

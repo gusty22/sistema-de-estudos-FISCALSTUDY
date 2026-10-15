@@ -1,0 +1,14 @@
+attempt_id,question_id,session_id,discipline,topic,occurred_at,attempt_index_topic,delta_t_hours,delta_t_days,prev_confidence_level,confidence_level,selected_option,official_option,gabarito_status,is_correct,y_n,active_time_ms,is_noise_filtered,topic_difficulty_prior,board,origin_type,concurso_point
+"e1a1b2c3-0001","q-const-01","sess-01","Direito Constitucional","Direitos Individuais","2026-10-01T10:00:00Z",1,0.00,0.0000,NA,4,"A","A","DEFINITIVO",true,1,45000,false,0.40,"FGV","REAL_STUDY",1
+"e1a1b2c3-0002","q-const-02","sess-02","Direito Constitucional","Direitos Individuais","2026-10-03T10:00:00Z",2,48.00,2.0000,4,5,"B","B","DEFINITIVO",true,1,42000,false,0.40,"FGV","REAL_STUDY",1
+"e1a1b2c3-0003","q-const-03","sess-03","Direito Constitucional","Direitos Individuais","2026-10-08T10:00:00Z",3,120.00,5.0000,5,5,"C","C","DEFINITIVO",true,1,38000,false,0.40,"FGV","REAL_STUDY",1
+"e1a1b2c3-0004","q-const-04","sess-04","Direito Constitucional","Direitos Individuais","2026-10-14T10:00:00Z",4,144.00,6.0000,5,5,"D","D","DEFINITIVO",true,1,35000,false,0.40,"FGV","REAL_STUDY",1
+"e1a1b2c3-0005","q-audit-01","sess-01","Auditoria","Normas Relativas ao Relatório do Auditor","2026-10-01T11:00:00Z",1,0.00,0.0000,NA,5,"A","B","DEFINITIVO",false,0,55000,false,0.70,"FGV","REAL_STUDY",0
+"e1a1b2c3-0006","q-audit-02","sess-02","Auditoria","Normas Relativas ao Relatório do Auditor","2026-10-04T11:00:00Z",2,72.00,3.0000,5,4,"C","D","DEFINITIVO",false,0,62000,false,0.70,"FGV","REAL_STUDY",0
+"e1a1b2c3-0007","q-audit-03","sess-03","Auditoria","Normas Relativas ao Relatório do Auditor","2026-10-09T11:00:00Z",3,120.00,5.0000,4,5,"A","B","DEFINITIVO",false,0,48000,false,0.70,"FGV","REAL_STUDY",0
+"e1a1b2c3-0008","q-audit-04","sess-04","Auditoria","Normas Relativas ao Relatório do Auditor","2026-10-14T11:00:00Z",4,120.00,5.0000,5,4,"B","B","DEFINITIVO",true,1,50000,false,0.70,"FGV","REAL_STUDY",1
+"e1a1b2c3-0009","q-trib-01","sess-01","Direito Tributário","Imunidades Tributárias","2026-10-02T14:00:00Z",1,0.00,0.0000,NA,4,"A","A","DEFINITIVO",true,1,41000,false,0.50,"IBGP","REAL_STUDY",1
+"e1a1b2c3-0010","q-trib-02","sess-02","Direito Tributário","Imunidades Tributárias","2026-10-06T14:00:00Z",2,96.00,4.0000,4,4,"B","B","DEFINITIVO",true,1,39000,false,0.50,"IBGP","REAL_STUDY",1
+"e1a1b2c3-0011","q-trib-03","sess-03","Direito Tributário","Imunidades Tributárias","2026-10-12T14:00:00Z",3,144.00,6.0000,4,3,"C","D","DEFINITIVO",false,0,44000,false,0.50,"IBGP","REAL_STUDY",0
+"e1a1b2c3-0012","q-trib-04","sess-04","Direito Tributário","Imunidades Tributárias","2026-10-14T14:00:00Z",4,48.00,2.0000,3,4,"A","A","DEFINITIVO",true,1,36000,false,0.50,"IBGP","REAL_STUDY",1
+"e1a1b2c3-0013","q-noise-01","sess-05","Direito Tributário","Imunidades Tributárias","2026-10-14T15:00:00Z",5,1.00,0.0417,4,1,"A","B","DEFINITIVO",false,0,450,true,0.50,"IBGP","REAL_STUDY",0

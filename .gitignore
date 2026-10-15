@@ -40,4 +40,6 @@ references/
 tests/golden-set/docs/
 FiscalStudy_Kit_Retomada_2026-10-11/
 scratch/
+output/
+backend/analytics/
 
