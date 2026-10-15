@@ -37,6 +37,18 @@ public class RobinHoodCycleEngine {
             int completedCyclesCount,
             Map<String, String> lastHandoffPerDiscipline
     ) {
+        return generateCycle(concursoId, profiles, weeklyHoursAvailable, standardBlockMinutes, completedCyclesCount, lastHandoffPerDiscipline, null);
+    }
+
+    public RobinHoodCycleResult generateCycle(
+            String concursoId,
+            List<DisciplineProfile> profiles,
+            double weeklyHoursAvailable,
+            int standardBlockMinutes,
+            int completedCyclesCount,
+            Map<String, String> lastHandoffPerDiscipline,
+            com.fiscalstudy.backend.infrastructure.in.web.dto.RobinHoodWeightsDTO injectedWeights
+    ) {
         if (profiles == null || profiles.isEmpty()) {
             return new RobinHoodCycleResult(
                     concursoId,
@@ -158,10 +170,62 @@ public class RobinHoodCycleEngine {
         RobinHoodCycleBlock simuladoBlock = RobinHoodCycleBlock.createSimuladoBlock(sequence++, Math.min(blockMinutes * 2, 120));
         generatedBlocks.add(simuladoBlock);
 
-        // Renumerar sequências após as inserções
+        // 7. Loop de Reinjeção Robin Hood (Pesos calculados pelo R)
+        if (injectedWeights != null) {
+            String donor = "Matéria Consolidada";
+            if (injectedWeights.redistributionPlan() != null && injectedWeights.redistributionPlan().donorDiscipline() != null) {
+                donor = injectedWeights.redistributionPlan().donorDiscipline();
+            } else if (injectedWeights.hyperConsolidatedDisciplines() != null && !injectedWeights.hyperConsolidatedDisciplines().isEmpty()) {
+                donor = injectedWeights.hyperConsolidatedDisciplines().get(0).discipline();
+            }
+
+            if (injectedWeights.criticalTopics() != null && !injectedWeights.criticalTopics().isEmpty()) {
+                for (int i = injectedWeights.criticalTopics().size() - 1; i >= 0; i--) {
+                    var crit = injectedWeights.criticalTopics().get(i);
+                    int durMin = crit.emergencyBlockMinutes() != null ? crit.emergencyBlockMinutes() : 15;
+                    String rationale = crit.rationale() != null && !crit.rationale().isBlank()
+                            ? crit.rationale()
+                            : String.format("Limite inferior de Wilson (%.1f%%) abaixo da meta de 85%%.", crit.wilsonLowerBound() != null ? crit.wilsonLowerBound() * 100 : 75.0);
+                    
+                    if (Boolean.TRUE.equals(crit.metacognitivePenalty())) {
+                        rationale += " ⚠️ Alerta Metacognitivo: Erro em questão de Confiança 5 (Falsa Fluência). Prioridade máxima.";
+                    }
+
+                    RobinHoodCycleBlock emergency = RobinHoodCycleBlock.createEmergencyBlock(
+                            1,
+                            crit.discipline(),
+                            crit.topic(),
+                            durMin,
+                            rationale
+                    );
+                    // Injeta na primeira posição para se tornar a ação imediata!
+                    generatedBlocks.add(0, emergency);
+
+                    resumoRobinHood.put("🚨 Emergência Robin Hood: " + crit.topic(),
+                            String.format("Alocado bloco de %dmin (tempo roubado de %s). Wilson: %.1f%%",
+                                    durMin, donor, crit.wilsonLowerBound() != null ? crit.wilsonLowerBound() * 100 : 75.0));
+                }
+                resumoRobinHood.put("Doador Robin Hood: " + donor,
+                        String.format("Retenção > 90%% projetada no R. Tempo subtraído e transferido para tópico em esquecimento iminente."));
+            }
+        }
+
+        // 8. Reconstruir lista com numeração de sequência contígua 1..N
+        List<RobinHoodCycleBlock> finalizedBlocks = new ArrayList<>();
         for (int i = 0; i < generatedBlocks.size(); i++) {
-            // Sequence order 1-indexed
-            // Reflection or rebuild if final fields
+            RobinHoodCycleBlock b = generatedBlocks.get(i);
+            finalizedBlocks.add(new RobinHoodCycleBlock(
+                    i + 1,
+                    b.getType(),
+                    b.getDisciplina(),
+                    b.getDuracaoMinutos(),
+                    b.getNivelDominioEstrelas(),
+                    b.getPesoProva(),
+                    b.getHorasAlocadasDisciplina(),
+                    b.getHorasOriginais(),
+                    b.getHorasTransferidasRobinHood(),
+                    b.getMensagemEuDoPassado()
+            ));
         }
 
         boolean recalibrationRequired = completedCyclesCount >= RECALIBRATION_CYCLE_THRESHOLD;
@@ -170,7 +234,7 @@ public class RobinHoodCycleEngine {
                 concursoId,
                 totalWeeklyHours,
                 blockMinutes,
-                generatedBlocks,
+                finalizedBlocks,
                 completedCyclesCount,
                 recalibrationRequired,
                 resumoRobinHood

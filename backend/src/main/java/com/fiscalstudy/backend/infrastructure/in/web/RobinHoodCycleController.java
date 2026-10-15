@@ -24,4 +24,25 @@ public class RobinHoodCycleController {
         RobinHoodCycleResult result = robinHoodCycleService.getOrGenerateCycle(concursoId, weeklyHours, blockMinutes);
         return ResponseEntity.ok(result);
     }
+
+    @PostMapping("/robin-hood/inject-weights")
+    public ResponseEntity<com.fiscalstudy.backend.infrastructure.in.web.dto.RobinHoodWeightsDTO> injectWeights(
+            @RequestBody com.fiscalstudy.backend.infrastructure.in.web.dto.RobinHoodWeightsDTO weights
+    ) {
+        robinHoodCycleService.injectWeights(weights);
+        return ResponseEntity.ok(robinHoodCycleService.getActiveWeights());
+    }
+
+    @PostMapping("/robin-hood/sync-weights")
+    public ResponseEntity<com.fiscalstudy.backend.infrastructure.in.web.dto.RobinHoodWeightsDTO> syncWeights(
+            @RequestParam(required = false) String path
+    ) {
+        com.fiscalstudy.backend.infrastructure.in.web.dto.RobinHoodWeightsDTO weights = robinHoodCycleService.syncWeightsFromFile(path);
+        return ResponseEntity.ok(weights);
+    }
+
+    @GetMapping("/robin-hood/active-weights")
+    public ResponseEntity<com.fiscalstudy.backend.infrastructure.in.web.dto.RobinHoodWeightsDTO> getActiveWeights() {
+        return ResponseEntity.ok(robinHoodCycleService.getActiveWeights());
+    }
 }

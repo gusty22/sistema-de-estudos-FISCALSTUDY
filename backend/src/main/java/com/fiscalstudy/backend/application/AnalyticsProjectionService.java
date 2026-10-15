@@ -8,6 +8,10 @@ import com.fiscalstudy.backend.domain.QuestionRepository;
 import com.fiscalstudy.backend.infrastructure.in.web.dto.AnalyticsOverviewDTO;
 import org.springframework.stereotype.Service;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.Instant;
 import java.util.*;
 
 @Service
@@ -228,6 +232,209 @@ public class AnalyticsProjectionService {
         return sb.toString();
     }
 
+    public String exportQuestionsV1Csv(String originFilter) {
+        return exportQuestionsV1Csv(originFilter, eventStoreRepository.getMaxRowid());
+    }
+
+    public String exportQuestionsV1Csv(String originFilter, Long maxRowid) {
+        long effectiveMaxRowid = maxRowid != null ? maxRowid : eventStoreRepository.getMaxRowid();
+        List<com.fiscalstudy.backend.domain.EventRecord> events = eventStoreRepository.getEventsUpTo("ANSWER_SUBMITTED", effectiveMaxRowid);
+
+        List<AttemptItem> attempts = new ArrayList<>();
+        for (com.fiscalstudy.backend.domain.EventRecord event : events) {
+            try {
+                JsonNode node = objectMapper.readTree(event.getPayloadJson());
+                String origin = node.has("origin") && !node.path("origin").asText().isBlank()
+                        ? node.path("origin").asText().trim()
+                        : com.fiscalstudy.backend.domain.EventOrigin.UNVERIFIED_HISTORICAL.name();
+
+                if (originFilter != null && !originFilter.isBlank() && !originFilter.equalsIgnoreCase("ALL")) {
+                    if (!origin.equalsIgnoreCase(originFilter.trim())) {
+                        continue;
+                    }
+                }
+
+                String questionId = node.path("questionId").asText();
+                String selectedOption = node.path("selectedOption").asText();
+                String gabaritoStatus = node.path("gabaritoStatus").asText("DEFINITIVO");
+                JsonNode isCorrectNode = node.path("isCorrect");
+                int confidence = node.path("confidenceLevel").asInt(3);
+                long activeTime = node.path("activeTimeMs").asLong(0);
+                int concursoPoint = node.path("concursoPoint").asInt(0);
+
+                Optional<Question> qOpt = questionRepository.findById(questionId);
+                String discipline = qOpt.map(Question::getDiscipline).orElse("Geral");
+                String board = qOpt.map(Question::getBoard).orElse("IBGP");
+                String topic = qOpt.map(Question::getTopic).filter(t -> !t.isBlank()).orElse("Geral");
+                String officialOption = qOpt.map(Question::getCorrectOption).orElse("NA");
+
+                String isCorrectStr;
+                String ynStr;
+                if (isCorrectNode.isNull() || "ANULADA".equalsIgnoreCase(gabaritoStatus) ||
+                        "AUSENTE".equalsIgnoreCase(gabaritoStatus) || "SOB_REVISAO".equalsIgnoreCase(gabaritoStatus)) {
+                    isCorrectStr = "NA";
+                    ynStr = "NA";
+                } else {
+                    boolean correct = isCorrectNode.asBoolean();
+                    isCorrectStr = String.valueOf(correct);
+                    ynStr = correct ? "1" : "0";
+                }
+
+                Instant occurredAtInstant;
+                try {
+                    occurredAtInstant = Instant.parse(event.getOccurredAt());
+                } catch (Exception ex) {
+                    occurredAtInstant = Instant.EPOCH;
+                }
+
+                attempts.add(new AttemptItem(
+                        event.getEventId(),
+                        questionId,
+                        event.getSessionId() != null ? event.getSessionId() : "NA",
+                        discipline != null ? discipline : "Geral",
+                        topic != null ? topic : "Geral",
+                        event.getOccurredAt() != null ? event.getOccurredAt() : "NA",
+                        occurredAtInstant,
+                        confidence,
+                        selectedOption,
+                        officialOption,
+                        gabaritoStatus,
+                        isCorrectStr,
+                        ynStr,
+                        activeTime,
+                        activeTime < 1000,
+                        0.50,
+                        board != null ? board : "IBGP",
+                        origin,
+                        concursoPoint
+                ));
+            } catch (Exception ignored) {}
+        }
+
+        attempts.sort(Comparator.comparing(a -> a.occurredAt));
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("attempt_id,question_id,session_id,discipline,topic,occurred_at,attempt_index_topic,delta_t_hours,delta_t_days,prev_confidence_level,confidence_level,selected_option,official_option,gabarito_status,is_correct,y_n,active_time_ms,is_noise_filtered,topic_difficulty_prior,board,origin_type,concurso_point\n");
+
+        Map<String, TopicTemporalState> topicStates = new HashMap<>();
+
+        for (AttemptItem att : attempts) {
+            String topicKey = (att.discipline + ":::" + att.topic).toLowerCase().trim();
+            TopicTemporalState state = topicStates.computeIfAbsent(topicKey, k -> new TopicTemporalState());
+            state.attemptIndex++;
+
+            double deltaHours = 0.0;
+            double deltaDays = 0.0;
+            String prevConfStr = "NA";
+
+            if (state.lastOccurredAt != null) {
+                long diffMs = Math.max(0, att.occurredAt.toEpochMilli() - state.lastOccurredAt.toEpochMilli());
+                deltaHours = diffMs / 3600000.0;
+                deltaDays = deltaHours / 24.0;
+                prevConfStr = state.lastConfidence != null ? String.valueOf(state.lastConfidence) : "NA";
+            }
+
+            state.lastOccurredAt = att.occurredAt;
+            state.lastConfidence = att.confidenceLevel;
+
+            sb.append(String.format(Locale.US, "\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",%d,%.2f,%.4f,%s,%d,\"%s\",\"%s\",\"%s\",%s,%s,%d,%b,%.2f,\"%s\",\"%s\",%d\n",
+                    escapeCsv(att.attemptId),
+                    escapeCsv(att.questionId),
+                    escapeCsv(att.sessionId),
+                    escapeCsv(att.discipline),
+                    escapeCsv(att.topic),
+                    escapeCsv(att.occurredAtStr),
+                    state.attemptIndex,
+                    deltaHours,
+                    deltaDays,
+                    prevConfStr,
+                    att.confidenceLevel,
+                    escapeCsv(att.selectedOption),
+                    escapeCsv(att.officialOption),
+                    escapeCsv(att.gabaritoStatus),
+                    att.isCorrectStr,
+                    att.ynStr,
+                    att.activeTimeMs,
+                    att.isNoiseFiltered,
+                    att.topicDifficultyPrior,
+                    escapeCsv(att.board),
+                    escapeCsv(att.originType),
+                    att.concursoPoint
+            ));
+        }
+
+        return sb.toString();
+    }
+
+    public String exportEventsV1Csv(String eventTypeFilter, Long maxRowid) {
+        long effectiveMaxRowid = maxRowid != null ? maxRowid : eventStoreRepository.getMaxRowid();
+        List<com.fiscalstudy.backend.domain.EventRecord> events = (eventTypeFilter != null && !eventTypeFilter.isBlank() && !eventTypeFilter.equalsIgnoreCase("ALL"))
+                ? eventStoreRepository.getEventsUpTo(eventTypeFilter, effectiveMaxRowid)
+                : eventStoreRepository.getAllEvents();
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("rowid,event_id,event_type,aggregate_type,aggregate_id,session_id,occurred_at,recorded_at,event_version,schema_version,payload_json\n");
+
+        int rowidCounter = 1;
+        for (com.fiscalstudy.backend.domain.EventRecord ev : events) {
+            sb.append(String.format("%d,\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",%d,\"%s\",\"%s\"\n",
+                    rowidCounter++,
+                    escapeCsv(ev.getEventId()),
+                    escapeCsv(ev.getEventType()),
+                    escapeCsv(ev.getAggregateType()),
+                    escapeCsv(ev.getAggregateId()),
+                    escapeCsv(ev.getSessionId() != null ? ev.getSessionId() : "NA"),
+                    escapeCsv(ev.getOccurredAt()),
+                    escapeCsv(ev.getRecordedAt()),
+                    ev.getEventVersion(),
+                    escapeCsv(ev.getSchemaVersion()),
+                    escapeCsv(ev.getPayloadJson())
+            ));
+        }
+        return sb.toString();
+    }
+
+    public Map<String, String> exportSyncToLocal(String customTargetDir, String originFilter) {
+        Map<String, String> results = new LinkedHashMap<>();
+        try {
+            String questionsCsv = exportQuestionsV1Csv(originFilter, null);
+            String eventsCsv = exportEventsV1Csv(null, null);
+
+            // 1. Salvar no diretório analytics/ do projeto
+            Path localAnalyticsDir = Files.exists(Paths.get("analytics")) ? Paths.get("analytics") : Paths.get("../analytics");
+            Files.createDirectories(localAnalyticsDir);
+            Path qPath = localAnalyticsDir.resolve("questions_v1.csv");
+            Path ePath = localAnalyticsDir.resolve("events_v1.csv");
+            Files.writeString(qPath, questionsCsv, java.nio.charset.StandardCharsets.UTF_8);
+            Files.writeString(ePath, eventsCsv, java.nio.charset.StandardCharsets.UTF_8);
+            results.put("analytics_questions_v1", qPath.toAbsolutePath().toString());
+            results.put("analytics_events_v1", ePath.toAbsolutePath().toString());
+
+            // 2. Salvar em diretórios adicionais configurados
+            List<String> targetDirs = new ArrayList<>();
+            if (customTargetDir != null && !customTargetDir.isBlank()) {
+                targetDirs.add(customTargetDir);
+            }
+            targetDirs.add("C:\\Users\\washi\\Downloads\\fiscalstudy-analytics");
+
+            for (String tDir : targetDirs) {
+                try {
+                    Path dir = Paths.get(tDir);
+                    if (Files.exists(dir) || dir.toFile().mkdirs()) {
+                        Path tQ = dir.resolve("questions_v1.csv");
+                        Path tE = dir.resolve("events_v1.csv");
+                        Files.writeString(tQ, questionsCsv, java.nio.charset.StandardCharsets.UTF_8);
+                        Files.writeString(tE, eventsCsv, java.nio.charset.StandardCharsets.UTF_8);
+                        results.put("external_sync_" + dir.getFileName(), tQ.toAbsolutePath().toString());
+                    }
+                } catch (Exception ignored) {}
+            }
+        } catch (Exception e) {
+            results.put("error", e.getMessage());
+        }
+        return results;
+    }
+
     public com.fiscalstudy.backend.infrastructure.in.web.dto.ExportManifestDTO generateExportManifest(String originFilter) {
         long maxRowid = eventStoreRepository.getMaxRowid();
         return generateExportManifest(originFilter, maxRowid);
@@ -379,5 +586,59 @@ public class AnalyticsProjectionService {
         int correct = 0;
         long totalTimeMs = 0;
         int overconfidenceCount = 0;
+    }
+
+    private static class AttemptItem {
+        final String attemptId;
+        final String questionId;
+        final String sessionId;
+        final String discipline;
+        final String topic;
+        final String occurredAtStr;
+        final Instant occurredAt;
+        final int confidenceLevel;
+        final String selectedOption;
+        final String officialOption;
+        final String gabaritoStatus;
+        final String isCorrectStr;
+        final String ynStr;
+        final long activeTimeMs;
+        final boolean isNoiseFiltered;
+        final double topicDifficultyPrior;
+        final String board;
+        final String originType;
+        final int concursoPoint;
+
+        public AttemptItem(String attemptId, String questionId, String sessionId, String discipline, String topic,
+                           String occurredAtStr, Instant occurredAt, int confidenceLevel, String selectedOption,
+                           String officialOption, String gabaritoStatus, String isCorrectStr, String ynStr,
+                           long activeTimeMs, boolean isNoiseFiltered, double topicDifficultyPrior,
+                           String board, String originType, int concursoPoint) {
+            this.attemptId = attemptId;
+            this.questionId = questionId;
+            this.sessionId = sessionId;
+            this.discipline = discipline;
+            this.topic = topic;
+            this.occurredAtStr = occurredAtStr;
+            this.occurredAt = occurredAt;
+            this.confidenceLevel = confidenceLevel;
+            this.selectedOption = selectedOption;
+            this.officialOption = officialOption;
+            this.gabaritoStatus = gabaritoStatus;
+            this.isCorrectStr = isCorrectStr;
+            this.ynStr = ynStr;
+            this.activeTimeMs = activeTimeMs;
+            this.isNoiseFiltered = isNoiseFiltered;
+            this.topicDifficultyPrior = topicDifficultyPrior;
+            this.board = board;
+            this.originType = originType;
+            this.concursoPoint = concursoPoint;
+        }
+    }
+
+    private static class TopicTemporalState {
+        int attemptIndex = 0;
+        Instant lastOccurredAt = null;
+        Integer lastConfidence = null;
     }
 }

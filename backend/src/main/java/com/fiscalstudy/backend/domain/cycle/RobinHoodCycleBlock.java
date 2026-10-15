@@ -8,7 +8,8 @@ public class RobinHoodCycleBlock {
     public enum BlockType {
         ESTUDO_REGULAR,
         ESTUDO_LIVRE, // Para quitar atrasos e amortecer imprevistos
-        SIMULADO      // Gatilho de fechamento do ciclo
+        SIMULADO,     // Gatilho de fechamento do ciclo
+        EMERGENCIA_ROBIN_HOOD // Intervenção crítica psicométrica calculada pelo R
     }
 
     private final int sequenceOrder;
@@ -75,6 +76,21 @@ public class RobinHoodCycleBlock {
                 duracaoMinutos / 60.0,
                 0.0,
                 "Bateria cronometrada em ondas (60% fáceis primeiro, marcar círculos nas médias e ? nas difíceis)."
+        );
+    }
+
+    public static RobinHoodCycleBlock createEmergencyBlock(int sequenceOrder, String disciplina, String topic, int duracaoMinutos, String rationale) {
+        return new RobinHoodCycleBlock(
+                sequenceOrder,
+                BlockType.EMERGENCIA_ROBIN_HOOD,
+                disciplina + (topic != null && !topic.isBlank() ? " — " + topic : ""),
+                duracaoMinutos,
+                1,
+                3.0,
+                duracaoMinutos / 60.0,
+                0.0,
+                duracaoMinutos / 60.0,
+                rationale != null && !rationale.isBlank() ? rationale : "Intervenção Crítica de Memória via Robin Hood (Taxa de retenção em colapso calculada pelo laboratório R)."
         );
     }
 

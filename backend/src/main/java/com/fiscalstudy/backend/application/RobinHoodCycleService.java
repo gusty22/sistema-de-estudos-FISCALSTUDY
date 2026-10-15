@@ -2,11 +2,16 @@ package com.fiscalstudy.backend.application;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fiscalstudy.backend.domain.cycle.*;
+import com.fiscalstudy.backend.infrastructure.in.web.dto.RobinHoodWeightsDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
 /**
@@ -21,12 +26,14 @@ public class RobinHoodCycleService {
     private final TimeMetricService timeMetricService;
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
+    private RobinHoodWeightsDTO activeWeights;
 
     public RobinHoodCycleService(TimeMetricService timeMetricService, JdbcTemplate jdbcTemplate, ObjectMapper objectMapper) {
         this.engine = new RobinHoodCycleEngine();
         this.timeMetricService = timeMetricService;
         this.jdbcTemplate = jdbcTemplate;
         this.objectMapper = objectMapper;
+        this.activeWeights = null;
     }
 
     public RobinHoodCycleResult getOrGenerateCycle(String concursoId, Double weeklyHours, Integer blockMinutes) {
@@ -80,7 +87,57 @@ public class RobinHoodCycleService {
             }
         } catch (Exception ignored) {}
 
-        return engine.generateCycle(concursoId, profiles, hours, duration, completedCycles, handoffs);
+        if (this.activeWeights == null) {
+            autoLoadWeightsIfPresent();
+        }
+
+        return engine.generateCycle(concursoId, profiles, hours, duration, completedCycles, handoffs, this.activeWeights);
+    }
+
+    public synchronized void injectWeights(RobinHoodWeightsDTO weights) {
+        this.activeWeights = weights;
+        logger.info("Robin Hood Weights injetados com sucesso. Modelo fonte: {}, Tópicos críticos: {}",
+                weights != null ? weights.sourceModel() : "null",
+                weights != null && weights.criticalTopics() != null ? weights.criticalTopics().size() : 0);
+    }
+
+    public synchronized RobinHoodWeightsDTO getActiveWeights() {
+        if (this.activeWeights == null) {
+            autoLoadWeightsIfPresent();
+        }
+        return this.activeWeights;
+    }
+
+    public synchronized RobinHoodWeightsDTO syncWeightsFromFile(String customPath) {
+        List<String> candidatePaths = new ArrayList<>();
+        if (customPath != null && !customPath.isBlank()) {
+            candidatePaths.add(customPath);
+        }
+        candidatePaths.add("analytics/robin_hood_weights.json");
+        candidatePaths.add("../analytics/robin_hood_weights.json");
+        candidatePaths.add("output/metrics/robin_hood_weights.json");
+        candidatePaths.add("../output/metrics/robin_hood_weights.json");
+        candidatePaths.add("C:\\Users\\washi\\Downloads\\fiscalstudy-analytics\\output\\metrics\\robin_hood_weights.json");
+
+        for (String pStr : candidatePaths) {
+            try {
+                Path p = Paths.get(pStr);
+                if (Files.exists(p)) {
+                    String json = Files.readString(p);
+                    RobinHoodWeightsDTO dto = objectMapper.readValue(json, RobinHoodWeightsDTO.class);
+                    this.activeWeights = dto;
+                    logger.info("Robin Hood Weights sincronizados a partir do arquivo: {}", p.toAbsolutePath());
+                    return dto;
+                }
+            } catch (Exception e) {
+                logger.warn("Falha ao ler pesos Robin Hood de {}: {}", pStr, e.getMessage());
+            }
+        }
+        return this.activeWeights;
+    }
+
+    private void autoLoadWeightsIfPresent() {
+        syncWeightsFromFile(null);
     }
 
     private List<DisciplineProfile> loadDisciplineProfiles(String concursoId) {

@@ -112,4 +112,47 @@ public class AnalyticsControllerTest {
                 .andExpect(jsonPath("$.byDiscipline['Direito Tributário'].evaluated").value(1))
                 .andExpect(jsonPath("$.byDiscipline['Direito Tributário'].accuracy").value(100.0));
     }
+
+    @Test
+    void exportQuestionsV1_GeneratesStrictContractV1Csv() throws Exception {
+        // Tentativa 1 no tópico Imunidades
+        jdbcTemplate.update("INSERT INTO event_store (event_id, event_type, aggregate_type, aggregate_id, session_id, occurred_at, recorded_at, event_version, schema_version, payload_json) " +
+                "VALUES ('e1', 'ANSWER_SUBMITTED', 'QUESTION', 'q1', 's1', '2026-10-14T10:00:00Z', '2026-10-14T10:00:00Z', 1, 'v1', " +
+                "'{\"questionId\":\"q1\",\"selectedOption\":\"A\",\"isCorrect\":true,\"gabaritoStatus\":\"DEFINITIVO\",\"confidenceLevel\":4,\"activeTimeMs\":15000}')");
+
+        // Tentativa 2 no mesmo tópico Imunidades 24 horas depois
+        jdbcTemplate.update("INSERT INTO event_store (event_id, event_type, aggregate_type, aggregate_id, session_id, occurred_at, recorded_at, event_version, schema_version, payload_json) " +
+                "VALUES ('e2', 'ANSWER_SUBMITTED', 'QUESTION', 'q1', 's2', '2026-10-15T10:00:00Z', '2026-10-15T10:00:00Z', 1, 'v1', " +
+                "'{\"questionId\":\"q1\",\"selectedOption\":\"B\",\"isCorrect\":false,\"gabaritoStatus\":\"DEFINITIVO\",\"confidenceLevel\":5,\"activeTimeMs\":22000}')");
+
+        mockMvc.perform(get("/api/v1/analytics/export/questions-v1"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Disposition", containsString("questions_v1.csv")))
+                .andExpect(content().contentType("text/csv; charset=UTF-8"))
+                .andExpect(content().string(containsString("attempt_id,question_id,session_id,discipline,topic,occurred_at,attempt_index_topic,delta_t_hours,delta_t_days,prev_confidence_level,confidence_level")))
+                .andExpect(content().string(containsString("0.00,0.0000,NA,4")))
+                .andExpect(content().string(containsString("24.00,1.0000,4,5")));
+    }
+
+    @Test
+    void exportEventsV1_ExportsRawEventStoreStream() throws Exception {
+        jdbcTemplate.update("INSERT INTO event_store (event_id, event_type, aggregate_type, aggregate_id, session_id, occurred_at, recorded_at, event_version, schema_version, payload_json) " +
+                "VALUES ('e1', 'ANSWER_SUBMITTED', 'QUESTION', 'q1', 's1', '2026-10-14T10:00:00Z', '2026-10-14T10:00:00Z', 1, 'v1', " +
+                "'{\"questionId\":\"q1\",\"selectedOption\":\"A\",\"isCorrect\":true,\"confidenceLevel\":5}')");
+
+        mockMvc.perform(get("/api/v1/analytics/export/events-v1"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Disposition", containsString("events_v1.csv")))
+                .andExpect(content().contentType("text/csv; charset=UTF-8"))
+                .andExpect(content().string(containsString("rowid,event_id,event_type,aggregate_type,aggregate_id,session_id,occurred_at,recorded_at,event_version,schema_version,payload_json")))
+                .andExpect(content().string(containsString("\"e1\",\"ANSWER_SUBMITTED\",\"QUESTION\",\"q1\",\"s1\"")));
+    }
+
+    @Test
+    void syncToLocal_WritesFilesSuccessfully() throws Exception {
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/v1/analytics/export/sync-to-local"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.analytics_questions_v1").exists())
+                .andExpect(jsonPath("$.analytics_events_v1").exists());
+    }
 }
