@@ -189,6 +189,10 @@ export const MaestroBattleView: React.FC<MaestroBattleViewProps> = ({
       } else {
         alert('Explique com suas próprias palavras os conceitos principais deste tópico.');
       }
+    } else if (step.actionType === 'ASSISTIR_VIDEO') {
+      const msg = `🎥 Videoaula Prescrita (Blocos ${step.metadata?.blocoInicio || 1} ao ${step.metadata?.blocoFim || 3}, Vel. ${step.metadata?.velocidade || '1.5x'}): ${step.disciplina} - ${step.assunto}. Esta matéria exige compreensão visual da mecânica.`;
+      setActionFeedback(msg);
+      setTimeout(() => setActionFeedback(null), 8000);
     }
   };
 
@@ -431,6 +435,17 @@ export const MaestroBattleView: React.FC<MaestroBattleViewProps> = ({
                   onClick={() => handleExecuteAction(currentStep)}
                 >
                   📖 Abrir {currentStep.metadata?.materialDoc || 'PDF Aula'} (Págs. {currentStep.metadata?.paginaInicio || 15} a {currentStep.metadata?.paginaFim || 35})
+                </button>
+              )}
+
+              {currentStep.actionType === 'ASSISTIR_VIDEO' && (
+                <button
+                  type="button"
+                  className="btn-battle-launch"
+                  style={{ background: 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)', boxShadow: '0 4px 16px rgba(239, 68, 68, 0.4)' }}
+                  onClick={() => handleExecuteAction(currentStep)}
+                >
+                  🎥 Assistir Videoaula (Blocos {currentStep.metadata?.blocoInicio || 1} ao {currentStep.metadata?.blocoFim || 3} • Vel. {currentStep.metadata?.velocidade || '1.5x'})
                 </button>
               )}
 

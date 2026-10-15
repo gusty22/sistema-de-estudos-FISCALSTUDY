@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import './QuestionViewer.css';
 import { CrossDomainBridgeModal } from './cognitive/CrossDomainBridgeModal';
 import { AnkiHubModal } from './anki/AnkiHubModal';
+import { CognitiveLockModal } from './cognitive/CognitiveLockModal';
 
 interface Option {
   label?: string;
@@ -61,7 +62,15 @@ const QuestionViewer: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [confidence, setConfidence] = useState<number>(0);
-  const [feedback, setFeedback] = useState<{ isCorrect: boolean | null; gabaritoStatus?: string; concursoPoint?: number } | null>(null);
+  const [feedback, setFeedback] = useState<{
+    isCorrect: boolean | null;
+    gabaritoStatus?: string;
+    concursoPoint?: number;
+    bloqueioCognitivo?: boolean;
+    errosConsecutivos?: number;
+    prescricaoTexto?: string;
+    veiculo?: string;
+  } | null>(null);
 
   // Configuração da Sessão Personalizada (Fase 8)
   const [concursos, setConcursos] = useState<ConcursoOption[]>([]);
@@ -137,6 +146,23 @@ const QuestionViewer: React.FC = () => {
   useEffect(() => {
     refreshAnkiStatus();
   }, []);
+
+  // 3. Roteamento Inteligente de Mídia & Bloqueio Cognitivo
+  const [isCognitiveLockOpen, setIsCognitiveLockOpen] = useState(false);
+  const [cognitiveLockResolved, setCognitiveLockResolved] = useState(false);
+  const [mediaPrescription, setMediaPrescription] = useState<{
+    veiculo: string;
+    titulo: string;
+    prescricaoTexto: string;
+    categoriaDisciplina?: string;
+    nivelFamiliaridade?: string;
+    velocidadeSugerida?: string;
+    blocoInicio?: number;
+    blocoFim?: number;
+    paginaSugerida?: number;
+    errosConsecutivos?: number;
+  } | null>(null);
+  const [showMediaModal, setShowMediaModal] = useState(false);
 
   // Simulado / Inoculação de Estresse (Chaos Engineering)
   const [simuladoConfig] = useState<any>(() => {
@@ -317,6 +343,8 @@ const QuestionViewer: React.FC = () => {
     setBiometricResult(null);
     setFeynmanAuditRequired(false);
     setFeynmanAuditCompleted(false);
+    setIsCognitiveLockOpen(false);
+    setCognitiveLockResolved(false);
     setPegadinhaExplicacao('');
     setRegraCorretaExplicacao('');
     setAuditSuccessMsg('');
@@ -342,6 +370,14 @@ const QuestionViewer: React.FC = () => {
       if (response.ok) {
         const data = await response.json();
         setQuestion(data);
+
+        // Avaliar Roteamento de Mídia para esta questão
+        fetch(`/api/v1/cognitive/media-routing/evaluate?disciplina=${encodeURIComponent(data.metadata?.discipline || '')}&assunto=${encodeURIComponent(data.metadata?.topic || '')}&sessionId=${sessionId}`)
+          .then((r) => (r.ok ? r.json() : null))
+          .then((presc) => {
+            if (presc) setMediaPrescription(presc);
+          })
+          .catch(() => {});
         
         // Registrar a apresentação explicitamente (Append-Only Event Store)
         await fetch(`/api/v1/questions/${data.questionId}/presented`, {
@@ -497,6 +533,10 @@ const QuestionViewer: React.FC = () => {
           setFeynmanAuditRequired(true);
           setFeynmanAuditCompleted(false);
           refreshAnkiStatus();
+          if (result.bloqueioCognitivo || (result.errosConsecutivos && result.errosConsecutivos >= 3)) {
+            setIsCognitiveLockOpen(true);
+            setCognitiveLockResolved(false);
+          }
         }
       }
     } catch (error) {
@@ -848,6 +888,30 @@ const QuestionViewer: React.FC = () => {
           <span className="tag" style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', borderColor: 'rgba(16, 185, 129, 0.4)' }}>
             Modo {studyMode}
           </span>
+          {mediaPrescription && (
+            <button
+              type="button"
+              className="tag"
+              style={{
+                cursor: 'pointer',
+                background: mediaPrescription.veiculo === 'VIDEOAULA' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(59, 130, 246, 0.2)',
+                color: mediaPrescription.veiculo === 'VIDEOAULA' ? '#fca5a5' : '#93c5fd',
+                borderColor: mediaPrescription.veiculo === 'VIDEOAULA' ? 'rgba(239, 68, 68, 0.5)' : 'rgba(59, 130, 246, 0.5)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                borderWidth: 1,
+                borderStyle: 'solid',
+                borderRadius: '6px',
+                padding: '2px 8px',
+                fontWeight: 600
+              }}
+              onClick={() => setShowMediaModal(true)}
+              title="Matriz de Complexidade vs. Familiaridade • Clique para ver a prescrição de mídia"
+            >
+              {mediaPrescription.veiculo === 'VIDEOAULA' ? '🎥 Videoaula 1.5x' : '📄 PDF Direto'}
+            </button>
+          )}
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           <button
@@ -1171,6 +1235,59 @@ const QuestionViewer: React.FC = () => {
                     Ver no Anki Hub ➔
                   </button>
                 </div>
+
+                {/* 3. Travamentos (O Bloqueio Cognitivo) - Alerta Interativo com IA */}
+                {(feedback.bloqueioCognitivo || (feedback.errosConsecutivos && feedback.errosConsecutivos >= 3)) && (
+                  <div style={{
+                    margin: '0.85rem 0',
+                    padding: '0.85rem 1.1rem',
+                    background: 'rgba(239, 68, 68, 0.16)',
+                    border: '1.5px solid rgba(239, 68, 68, 0.65)',
+                    borderRadius: '10px',
+                    boxShadow: '0 4px 16px rgba(239, 68, 68, 0.25)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.6rem'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span style={{ fontSize: '1.3rem' }}>🛑</span>
+                        <strong style={{ color: '#fca5a5', fontSize: '0.92rem' }}>
+                          Travamento Detectado: Bloqueio Cognitivo ({feedback.errosConsecutivos || 3} erros seguidos)
+                        </strong>
+                      </div>
+                      <span style={{ fontSize: '0.75rem', padding: '2px 8px', background: 'rgba(239, 68, 68, 0.3)', color: '#fecaca', borderRadius: 12, fontWeight: 600 }}>
+                        {cognitiveLockResolved ? '✓ Destravado' : 'Avanço Interrompido'}
+                      </span>
+                    </div>
+                    <p style={{ margin: 0, fontSize: '0.84rem', color: '#fecaca', lineHeight: 1.45 }}>
+                      Notei que você não entendeu esse conceito (<strong>{question.metadata.topic || 'Conceito da Questão'}</strong>). O avanço está bloqueado para impedir a ilusão de fluência. Fale com a IA agora para alinhar seu modelo mental.
+                    </p>
+                    <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: '0.2rem' }}>
+                      <button
+                        type="button"
+                        className="btn"
+                        style={{
+                          background: 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)',
+                          color: '#ffffff',
+                          fontWeight: 700,
+                          padding: '8px 16px',
+                          fontSize: '0.84rem',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          borderRadius: '8px',
+                          boxShadow: '0 4px 12px rgba(239, 68, 68, 0.35)',
+                          border: 'none',
+                          cursor: 'pointer'
+                        }}
+                        onClick={() => setIsCognitiveLockOpen(true)}
+                      >
+                        <span>🤖 Fale com a IA Agora (Dono de Supermercado) ➔</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
             
@@ -1252,20 +1369,37 @@ const QuestionViewer: React.FC = () => {
             )}
           </div>
           
-          <button 
-            className="btn" 
-            onClick={fetchNextQuestion} 
-            disabled={feynmanAuditRequired && !feynmanAuditCompleted}
-            style={{ 
-              marginTop: '0.75rem', 
-              alignSelf: 'flex-end',
-              opacity: (feynmanAuditRequired && !feynmanAuditCompleted) ? 0.45 : 1,
-              cursor: (feynmanAuditRequired && !feynmanAuditCompleted) ? 'not-allowed' : 'pointer'
-            }}
-            title={(feynmanAuditRequired && !feynmanAuditCompleted) ? 'Avanço bloqueado: conserte seu modelo mental na auditoria Feynman acima' : 'Próxima Questão'}
-          >
-            {(feynmanAuditRequired && !feynmanAuditCompleted) ? '🔒 Avanço Bloqueado (Feynman Pendente)' : 'Próxima Questão ➔'}
-          </button>
+          {(() => {
+            const isCognitiveLocked = Boolean((feedback?.bloqueioCognitivo || (feedback?.errosConsecutivos != null && feedback.errosConsecutivos >= 3)) && !cognitiveLockResolved);
+            const isAdvanceBlocked = Boolean((feynmanAuditRequired && !feynmanAuditCompleted) || isCognitiveLocked);
+
+            return (
+              <button 
+                className="btn" 
+                onClick={fetchNextQuestion} 
+                disabled={isAdvanceBlocked}
+                style={{ 
+                  marginTop: '0.75rem', 
+                  alignSelf: 'flex-end',
+                  opacity: isAdvanceBlocked ? 0.45 : 1,
+                  cursor: isAdvanceBlocked ? 'not-allowed' : 'pointer'
+                }}
+                title={
+                  isCognitiveLocked
+                    ? 'Avanço bloqueado: fale com a IA para destravar o bloqueio cognitivo'
+                    : (feynmanAuditRequired && !feynmanAuditCompleted) 
+                      ? 'Avanço bloqueado: conserte seu modelo mental na auditoria Feynman acima' 
+                      : 'Próxima Questão'
+                }
+              >
+                {isCognitiveLocked
+                  ? '🛑 Travamento: Fale com a IA para Destravar'
+                  : (feynmanAuditRequired && !feynmanAuditCompleted) 
+                    ? '🔒 Avanço Bloqueado (Feynman Pendente)' 
+                    : 'Próxima Questão ➔'}
+              </button>
+            );
+          })()}
         </div>
       )}
 
@@ -1400,6 +1534,62 @@ const QuestionViewer: React.FC = () => {
         }}
         activeConcursoId={selectedConcursoId}
       />
+
+      {/* 3. Travamentos: Modal de Bloqueio Cognitivo & Chat IA Embutido */}
+      <CognitiveLockModal
+        isOpen={isCognitiveLockOpen}
+        onClose={() => setIsCognitiveLockOpen(false)}
+        sessionId={sessionId}
+        concursoId={selectedConcursoId}
+        disciplina={question?.metadata?.discipline || selectedDiscipline || 'Direito Tributário'}
+        assunto={question?.metadata?.topic || 'Substituição Tributária para Frente'}
+        consecutiveErrors={feedback?.errosConsecutivos || 3}
+        onUnlock={() => {
+          setCognitiveLockResolved(true);
+        }}
+      />
+
+      {/* Modal de Detalhes da Matriz de Mídia */}
+      {showMediaModal && mediaPrescription && (
+        <div className="modal-backdrop animate-fade-in" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+          <div className="glass modal-card" style={{ maxWidth: 520, width: '92%', padding: '1.5rem', borderRadius: 12, background: '#0f172a', border: '1px solid #334155' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+              <h3 style={{ margin: 0, color: '#f8fafc', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span>{mediaPrescription.veiculo === 'VIDEOAULA' ? '🎥' : '📄'}</span>
+                <span>{mediaPrescription.titulo}</span>
+              </h3>
+              <button
+                onClick={() => setShowMediaModal(false)}
+                style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '1.2rem', cursor: 'pointer' }}
+              >
+                ✕
+              </button>
+            </div>
+            <div style={{ margin: '0.75rem 0', padding: '0.85rem', background: 'rgba(30, 41, 59, 0.7)', borderRadius: 8, border: '1px solid #334155' }}>
+              <p style={{ margin: 0, color: '#e2e8f0', fontSize: '0.9rem', lineHeight: 1.5 }}>
+                {mediaPrescription.prescricaoTexto}
+              </p>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', margin: '0.75rem 0', fontSize: '0.8rem', color: '#94a3b8' }}>
+              <div><strong>Matéria:</strong> {question.metadata.discipline}</div>
+              <div><strong>Categoria:</strong> {mediaPrescription.categoriaDisciplina}</div>
+              <div><strong>Familiaridade:</strong> {mediaPrescription.nivelFamiliaridade}</div>
+              {mediaPrescription.velocidadeSugerida && (
+                <div><strong>Velocidade:</strong> {mediaPrescription.velocidadeSugerida}</div>
+              )}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setShowMediaModal(false)}
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
