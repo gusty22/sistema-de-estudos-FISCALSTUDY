@@ -313,5 +313,20 @@ CREATE TABLE IF NOT EXISTS anki_flashcards (
     error_message TEXT
 );
 
+-- Roteamento Inteligente de Mídia e Registro de Bloqueio Cognitivo
+CREATE TABLE IF NOT EXISTS cognitive_lock_records (
+    id TEXT PRIMARY KEY,
+    session_id TEXT,
+    concurso_id TEXT,
+    disciplina TEXT NOT NULL,
+    assunto TEXT NOT NULL,
+    consecutive_errors INTEGER DEFAULT 3,
+    chat_dialogue_json TEXT,
+    resolved BOOLEAN DEFAULT 0,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    resolved_at TEXT
+);
+
+
 
 

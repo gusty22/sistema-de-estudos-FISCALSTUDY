@@ -25,13 +25,23 @@ public class MaestroOrchestratorService {
     private final JdbcTemplate jdbcTemplate;
     private final EventStoreRepository eventStoreRepository;
     private final ObjectMapper objectMapper;
+    private final MediaRoutingService mediaRoutingService;
 
     public MaestroOrchestratorService(JdbcTemplate jdbcTemplate,
                                       EventStoreRepository eventStoreRepository,
                                       ObjectMapper objectMapper) {
+        this(jdbcTemplate, eventStoreRepository, objectMapper, null);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public MaestroOrchestratorService(JdbcTemplate jdbcTemplate,
+                                      EventStoreRepository eventStoreRepository,
+                                      ObjectMapper objectMapper,
+                                      MediaRoutingService mediaRoutingService) {
         this.jdbcTemplate = jdbcTemplate;
         this.eventStoreRepository = eventStoreRepository;
         this.objectMapper = objectMapper;
+        this.mediaRoutingService = mediaRoutingService;
     }
 
     public MaestroPlanDTO generateDailyPlan(String concursoId, Integer tempoDisponivelMinutos) {
@@ -109,7 +119,17 @@ public class MaestroOrchestratorService {
             }
         } catch (Exception ignored) {}
 
-        // 5. Orquestração Proporcional dos Passos baseada no tempo disponível
+        // 5. Avaliar Matriz 'Complexidade vs. Familiaridade' (Roteamento Inteligente de Mídia)
+        com.fiscalstudy.backend.infrastructure.in.web.dto.MediaRoutingPrescriptionDTO mediaRouting = null;
+        if (mediaRoutingService != null) {
+            try {
+                mediaRouting = mediaRoutingService.evaluateRouting(concursoId, disciplina, assunto, null);
+            } catch (Exception ignored) {}
+        }
+        boolean isVideoAula = mediaRouting != null && "VIDEOAULA".equals(mediaRouting.getVeiculo());
+        int pagDestino = (mediaRouting != null && mediaRouting.getPaginaSugerida() != null) ? mediaRouting.getPaginaSugerida() : pagIni;
+
+        // 6. Orquestração Proporcional dos Passos baseada no tempo disponível
         List<MaestroStepDTO> passos = new ArrayList<>();
 
         if (tempoTotal <= 60) {
@@ -123,14 +143,25 @@ public class MaestroOrchestratorService {
                     Map.of("cardsAtrasados", cardsAtrasados, "retencaoAtual", retencaoAtual, "metaRetencao", metaRetencao)
             ));
 
-            passos.add(new MaestroStepDTO(
-                    2, 3, 35, "TEORIA",
-                    "Teoria Hiperfocada",
-                    String.format("Passo 2 (35 min): Teoria. Vá para o %s, páginas %d a %d. Foque nos conceitos centrais de '%s'. Ignore a jurisprudência por enquanto.", materialDoc, pagIni, pagFim, assunto),
-                    disciplina, assunto,
-                    "Absorção conceitual direta sem divagações", "LER_MATERIAL",
-                    Map.of("materialDoc", materialDoc, "paginaInicio", pagIni, "paginaFim", pagFim)
-            ));
+            if (isVideoAula) {
+                passos.add(new MaestroStepDTO(
+                        2, 3, 35, "VIDEO_AULA",
+                        "Videoaula Recomendada (Visual da Mecânica)",
+                        "Passo 2 (35 min): Assista à videoaula do bloco 1 ao 3 (velocidade 1.5x). Esta matéria exige compreensão visual da mecânica.",
+                        disciplina, assunto,
+                        "Compreensão visual da mecânica operacional antes da fixação", "ASSISTIR_VIDEO",
+                        Map.of("veiculo", "VIDEOAULA", "velocidade", "1.5x", "blocoInicio", 1, "blocoFim", 3)
+                ));
+            } else {
+                passos.add(new MaestroStepDTO(
+                        2, 3, 35, "TEORIA",
+                        "Teoria Hiperfocada (PDF Direto)",
+                        String.format("Passo 2 (35 min): Vá direto para o %s, página %d. Videoaula aqui é perda de tempo.", materialDoc, pagDestino),
+                        disciplina, assunto,
+                        "Absorção conceitual direta sem divagações", "LER_MATERIAL",
+                        Map.of("veiculo", "PDF_LEITURA", "materialDoc", materialDoc, "paginaInicio", pagDestino, "paginaFim", Math.max(pagDestino + 15, pagFim))
+                ));
+            }
 
             passos.add(new MaestroStepDTO(
                     3, 3, 10, "DESCANSO",
@@ -160,14 +191,25 @@ public class MaestroOrchestratorService {
                     Map.of("totalQuestoes", 5, "modo", "PRIMING")
             ));
 
-            passos.add(new MaestroStepDTO(
-                    3, 4, 50, "TEORIA",
-                    "Teoria Hiperfocada",
-                    String.format("Passo 3 (50 min): Teoria. Vá para o %s, páginas %d a %d. Foque apenas nos atributos centrais de '%s'. Ignore a jurisprudência por enquanto.", materialDoc, pagIni, pagFim, assunto),
-                    disciplina, assunto,
-                    "Estudo ativo direcionado pelas dúvidas do priming", "LER_MATERIAL",
-                    Map.of("materialDoc", materialDoc, "paginaInicio", pagIni, "paginaFim", pagFim)
-            ));
+            if (isVideoAula) {
+                passos.add(new MaestroStepDTO(
+                        3, 4, 50, "VIDEO_AULA",
+                        "Videoaula Recomendada (Visual da Mecânica)",
+                        "Passo 3 (50 min): Assista à videoaula do bloco 1 ao 3 (velocidade 1.5x). Esta matéria exige compreensão visual da mecânica.",
+                        disciplina, assunto,
+                        "Estudo ativo visual direcionado pelas dúvidas do priming", "ASSISTIR_VIDEO",
+                        Map.of("veiculo", "VIDEOAULA", "velocidade", "1.5x", "blocoInicio", 1, "blocoFim", 3)
+                ));
+            } else {
+                passos.add(new MaestroStepDTO(
+                        3, 4, 50, "TEORIA",
+                        "Teoria Hiperfocada (PDF Direto)",
+                        String.format("Passo 3 (50 min): Teoria. Vá direto para o %s, página %d. Videoaula aqui é perda de tempo.", materialDoc, pagDestino),
+                        disciplina, assunto,
+                        "Estudo ativo direcionado pelas dúvidas do priming", "LER_MATERIAL",
+                        Map.of("veiculo", "PDF_LEITURA", "materialDoc", materialDoc, "paginaInicio", pagDestino, "paginaFim", Math.max(pagDestino + 20, pagFim))
+                ));
+            }
 
             passos.add(new MaestroStepDTO(
                     4, 4, 10, "DESCANSO",
@@ -209,14 +251,26 @@ public class MaestroOrchestratorService {
             String focoTeoria = ("Atos Administrativos".equalsIgnoreCase(assunto) || "Direito Administrativo".equalsIgnoreCase(disciplina))
                     ? "atributos do ato"
                     : "atributos e requisitos de '" + assunto + "'";
-            passos.add(new MaestroStepDTO(
-                    3, 6, 50, "TEORIA",
-                    "Teoria Hiperfocada",
-                    String.format("Passo 3 (50 min): Teoria. Vá para o %s, páginas %d a %d. Foque apenas nos %s. Ignore a jurisprudência por enquanto.", materialDoc, pagIni, pagFim, focoTeoria),
-                    disciplina, assunto,
-                    "Preenchimento das lacunas expostas durante o priming", "LER_MATERIAL",
-                    Map.of("materialDoc", materialDoc, "paginaInicio", pagIni, "paginaFim", pagFim)
-            ));
+
+            if (isVideoAula) {
+                passos.add(new MaestroStepDTO(
+                        3, 6, 50, "VIDEO_AULA",
+                        "Videoaula Recomendada (Visual da Mecânica)",
+                        String.format("Passo 3 (50 min): Assista à videoaula do bloco 1 ao 3 (velocidade 1.5x). Esta matéria exige compreensão visual da mecânica de '%s'.", assunto),
+                        disciplina, assunto,
+                        "Compreensão visual da mecânica operacional antes da fixação", "ASSISTIR_VIDEO",
+                        Map.of("veiculo", "VIDEOAULA", "velocidade", "1.5x", "blocoInicio", 1, "blocoFim", 3, "assunto", assunto)
+                ));
+            } else {
+                passos.add(new MaestroStepDTO(
+                        3, 6, 50, "TEORIA",
+                        "Teoria Hiperfocada (PDF Direto)",
+                        String.format("Passo 3 (50 min): Teoria. Vá direto para o %s, página %d. Videoaula aqui é perda de tempo. Foque apenas nos %s. Ignore a jurisprudência por enquanto.", materialDoc, pagDestino, focoTeoria),
+                        disciplina, assunto,
+                        "Preenchimento das lacunas expostas durante o priming via leitura densa", "LER_MATERIAL",
+                        Map.of("veiculo", "PDF_LEITURA", "materialDoc", materialDoc, "paginaInicio", pagDestino, "paginaFim", Math.max(pagDestino + 20, pagFim))
+                ));
+            }
 
             passos.add(new MaestroStepDTO(
                     4, 6, 10, "DESCANSO",

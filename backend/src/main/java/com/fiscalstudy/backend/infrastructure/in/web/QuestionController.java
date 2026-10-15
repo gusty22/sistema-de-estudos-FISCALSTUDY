@@ -115,7 +115,11 @@ public class QuestionController {
             return ResponseEntity.ok(new AttemptResultDTO(
                     result.getIsCorrect(),
                     result.getGabaritoStatus() != null ? result.getGabaritoStatus().name() : "DEFINITIVO",
-                    result.getConcursoPoint()
+                    result.getConcursoPoint(),
+                    result.getBloqueioCognitivo(),
+                    result.getErrosConsecutivos(),
+                    result.getMediaPrescriptionTexto(),
+                    result.getMediaVeiculo()
             ));
         } catch (IllegalStateException e) {
             return ResponseEntity.badRequest().build();
@@ -215,10 +219,32 @@ public class QuestionController {
         @com.fasterxml.jackson.annotation.JsonProperty("concursoPoint")
         public Integer concursoPoint;
 
+        @com.fasterxml.jackson.annotation.JsonProperty("bloqueioCognitivo")
+        public Boolean bloqueioCognitivo;
+
+        @com.fasterxml.jackson.annotation.JsonProperty("errosConsecutivos")
+        public Integer errosConsecutivos;
+
+        @com.fasterxml.jackson.annotation.JsonProperty("prescricaoTexto")
+        public String prescricaoTexto;
+
+        @com.fasterxml.jackson.annotation.JsonProperty("veiculo")
+        public String veiculo;
+
         public AttemptResultDTO(Boolean isCorrect, String gabaritoStatus, Integer concursoPoint) {
+            this(isCorrect, gabaritoStatus, concursoPoint, null, null, null, null);
+        }
+
+        public AttemptResultDTO(Boolean isCorrect, String gabaritoStatus, Integer concursoPoint,
+                                Boolean bloqueioCognitivo, Integer errosConsecutivos,
+                                String prescricaoTexto, String veiculo) {
             this.isCorrect = isCorrect;
             this.gabaritoStatus = gabaritoStatus;
             this.concursoPoint = concursoPoint;
+            this.bloqueioCognitivo = bloqueioCognitivo;
+            this.errosConsecutivos = errosConsecutivos;
+            this.prescricaoTexto = prescricaoTexto;
+            this.veiculo = veiculo;
         }
 
         public AttemptResultDTO(Boolean isCorrect, String gabaritoStatus) {
@@ -232,5 +258,9 @@ public class QuestionController {
         public Boolean getIsCorrect() { return isCorrect; }
         public String getGabaritoStatus() { return gabaritoStatus; }
         public Integer getConcursoPoint() { return concursoPoint; }
+        public Boolean getBloqueioCognitivo() { return bloqueioCognitivo; }
+        public Integer getErrosConsecutivos() { return errosConsecutivos; }
+        public String getPrescricaoTexto() { return prescricaoTexto; }
+        public String getVeiculo() { return veiculo; }
     }
 }

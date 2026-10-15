@@ -15,22 +15,32 @@ public class AttemptSubmissionService {
     private final EventStoreRepository eventStoreRepository;
     private final EventOrigin instanceOrigin;
     private final AnkiIntegrationService ankiIntegrationService;
+    private final MediaRoutingService mediaRoutingService;
 
     public AttemptSubmissionService(QuestionRepository questionRepository,
                                     EventStoreRepository eventStoreRepository,
                                     @Value("${fiscalstudy.event-origin:UNVERIFIED_HISTORICAL}") String configuredOrigin) {
-        this(questionRepository, eventStoreRepository, configuredOrigin, null);
+        this(questionRepository, eventStoreRepository, configuredOrigin, null, null);
+    }
+
+    public AttemptSubmissionService(QuestionRepository questionRepository,
+                                    EventStoreRepository eventStoreRepository,
+                                    @Value("${fiscalstudy.event-origin:UNVERIFIED_HISTORICAL}") String configuredOrigin,
+                                    AnkiIntegrationService ankiIntegrationService) {
+        this(questionRepository, eventStoreRepository, configuredOrigin, ankiIntegrationService, null);
     }
 
     @org.springframework.beans.factory.annotation.Autowired
     public AttemptSubmissionService(QuestionRepository questionRepository,
                                     EventStoreRepository eventStoreRepository,
                                     @Value("${fiscalstudy.event-origin:UNVERIFIED_HISTORICAL}") String configuredOrigin,
-                                    AnkiIntegrationService ankiIntegrationService) {
+                                    AnkiIntegrationService ankiIntegrationService,
+                                    MediaRoutingService mediaRoutingService) {
         this.questionRepository = questionRepository;
         this.eventStoreRepository = eventStoreRepository;
         this.instanceOrigin = EventOrigin.fromString(configuredOrigin);
         this.ankiIntegrationService = ankiIntegrationService;
+        this.mediaRoutingService = mediaRoutingService;
     }
 
     public EventOrigin getInstanceOrigin() {
@@ -185,7 +195,28 @@ public class AttemptSubmissionService {
             } catch (Exception ignored) {}
         }
 
-        return new com.fiscalstudy.backend.domain.AttemptResult(isCorrect, status, concursoPoint);
+        // Roteamento Inteligente de Mídia & Detecção de Bloqueio Cognitivo (3 erros seguidos)
+        boolean bloqueioCognitivo = false;
+        int errosConsecutivos = 0;
+        String prescricaoTexto = null;
+        String veiculo = null;
+
+        if (Boolean.FALSE.equals(isCorrect) && mediaRoutingService != null) {
+            try {
+                var prescription = mediaRoutingService.evaluateRouting(null, question.getDiscipline(), question.getTopic(), sessionId);
+                if (prescription != null) {
+                    bloqueioCognitivo = prescription.isBloqueioCognitivo();
+                    errosConsecutivos = prescription.getErrosConsecutivos();
+                    prescricaoTexto = prescription.getPrescricaoTexto();
+                    veiculo = prescription.getVeiculo();
+                }
+            } catch (Exception ignored) {}
+        }
+
+        return new com.fiscalstudy.backend.domain.AttemptResult(
+                isCorrect, status, concursoPoint,
+                bloqueioCognitivo, errosConsecutivos, prescricaoTexto, veiculo
+        );
     }
 
     private com.fiscalstudy.backend.domain.AttemptResult calculateAttemptResult(Question question, String optionLetter, com.fiscalstudy.backend.domain.GabaritoStatus status) {
