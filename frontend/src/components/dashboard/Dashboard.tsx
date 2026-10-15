@@ -81,6 +81,42 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeConcurso, onNavigate
     };
   } | null>(null);
 
+  const [isSyncingRobinHood, setIsSyncingRobinHood] = useState(false);
+  const [robinHoodSyncMsg, setRobinHoodSyncMsg] = useState<string | null>(null);
+
+  const handleSyncRobinHoodWeights = async () => {
+    setIsSyncingRobinHood(true);
+    try {
+      const res = await fetch('/api/v1/cycle/robin-hood/sync-weights', { method: 'POST' });
+      if (res.ok) {
+        const data = await res.json();
+        setRobinHoodSyncMsg(`Pesos sincronizados! Modelo: ${data?.source_model || 'R Survival GLM'}`);
+        if (activeConcurso) {
+          const cycleRes = await fetch(`/api/v1/cycle/robin-hood?concursoId=${encodeURIComponent(activeConcurso.id)}`);
+          if (cycleRes.ok) {
+            const cycleData = await cycleRes.json();
+            setRobinHoodCycle(cycleData);
+          }
+        }
+      } else {
+        setRobinHoodSyncMsg('Arquivo de pesos não encontrado. Execute retention_analysis.R primeiro.');
+      }
+    } catch (e) {
+      setRobinHoodSyncMsg('Erro ao conectar com o serviço de pesos Robin Hood.');
+    } finally {
+      setIsSyncingRobinHood(false);
+      setTimeout(() => setRobinHoodSyncMsg(null), 5000);
+    }
+  };
+
+  const handleExportQuestionsV1 = () => {
+    window.open('/api/v1/analytics/export/questions-v1', '_blank');
+  };
+
+  const handleExportEventsV1 = () => {
+    window.open('/api/v1/analytics/export/events-v1', '_blank');
+  };
+
   // Fetch real statistics, topics & cognitive metrics
   useEffect(() => {
     if (!activeConcurso) return;
@@ -265,6 +301,81 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeConcurso, onNavigate
           </div>
         )}
       </div>
+
+      {/* PONTO CRÍTICO DE ESQUECIMENTO: INTERVENÇÃO EMERGENCIAL ROBIN HOOD (R LAB) */}
+      {robinHoodCycle?.blocos && robinHoodCycle.blocos.length > 0 && robinHoodCycle.blocos[0].type === 'EMERGENCIA_ROBIN_HOOD' && (
+        <div
+          className="glass animate-fade-in"
+          style={{
+            padding: '1.4rem 1.75rem',
+            borderRadius: '16px',
+            border: '2px solid #ef4444',
+            background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.22) 0%, rgba(15, 23, 42, 0.95) 100%)',
+            boxShadow: '0 10px 30px rgba(239, 68, 68, 0.35)',
+            marginBottom: '1.5rem',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '1.25rem'
+          }}
+        >
+          <div style={{ maxWidth: '680px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', color: '#ef4444', background: 'rgba(239, 68, 68, 0.25)', padding: '3px 10px', borderRadius: '4px' }}>
+                🚨 AÇÃO IMEDIATA: PONTO CRÍTICO DE ESQUECIMENTO (ROBIN HOOD & R LAB)
+              </span>
+              <span style={{ fontSize: '0.75rem', color: '#fca5a5' }}>Limite de Wilson &lt; 85% • Intervenção Mandatória</span>
+            </div>
+            <h3 style={{ color: '#f8fafc', fontSize: '1.35rem', margin: '0.2rem 0 0.4rem 0', fontWeight: 800 }}>
+              {robinHoodCycle.blocos[0].disciplina} ({robinHoodCycle.blocos[0].duracaoMinutos} min de Emergência)
+            </h3>
+            <p style={{ color: '#e2e8f0', fontSize: '0.92rem', margin: 0, lineHeight: 1.5 }}>
+              {robinHoodCycle.blocos[0].mensagemEuDoPassado}
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              className="btn"
+              style={{
+                background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                color: '#fff',
+                border: 'none',
+                padding: '12px 24px',
+                fontSize: '0.95rem',
+                fontWeight: 800,
+                borderRadius: '10px',
+                cursor: 'pointer',
+                boxShadow: '0 4px 20px rgba(239, 68, 68, 0.55)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+              onClick={() => {
+                if (onOpenAnkiHub) {
+                  onOpenAnkiHub();
+                } else {
+                  onNavigateToTab('study', { disciplina: robinHoodCycle.blocos[0].disciplina });
+                }
+              }}
+            >
+              <span>⚡ Executar Bloco de Emergência (15 min)</span>
+              <span>→</span>
+            </button>
+            {onOpenAnkiHub && (
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={onOpenAnkiHub}
+                style={{ borderRadius: '10px', padding: '12px 18px', fontSize: '0.88rem' }}
+              >
+                ⚡ Anki SRS Local
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* BANNER HEROICO: O MAESTRO DO CICLO DIÁRIO */}
       <div 
@@ -729,7 +840,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeConcurso, onNavigate
                   <div className="block-pill-header">
                     <span className="block-order">#{bloco.sequenceOrder}</span>
                     <span className="block-stars">
-                      {bloco.type === 'ESTUDO_REGULAR'
+                      {bloco.type === 'EMERGENCIA_ROBIN_HOOD'
+                        ? '🚨 R-URGENTE'
+                        : bloco.type === 'ESTUDO_REGULAR'
                         ? '★'.repeat(bloco.nivelDominioEstrelas) + '☆'.repeat(5 - bloco.nivelDominioEstrelas)
                         : '🎯'}
                     </span>
@@ -763,6 +876,81 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeConcurso, onNavigate
               >
                 ▶ Iniciar Bloco: {robinHoodCycle.blocos[0].disciplina}
               </button>
+            </div>
+          )}
+
+          {/* Barra de Integração com o Laboratório Psicométrico em R */}
+          <div style={{
+            marginTop: '1.25rem',
+            padding: '1rem 1.25rem',
+            background: 'rgba(15, 23, 42, 0.65)',
+            border: '1px solid rgba(56, 189, 248, 0.25)',
+            borderRadius: '10px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '0.75rem'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '1.15rem' }}>🔬</span>
+              <div>
+                <strong style={{ color: '#38bdf8', fontSize: '0.9rem', display: 'block' }}>Laboratório Psicométrico em R (FiscalStudy Analytics)</strong>
+                <span style={{ color: '#94a3b8', fontSize: '0.78rem' }}>Exportação do Vetor de Esquecimento e Reinjeção Dinâmica via Lei de Robin Hood</span>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={handleExportQuestionsV1}
+                title="Baixar dataset questions_v1.csv (com Δt, Cn-1, Yn e telemetria limpa)"
+                style={{ fontSize: '0.8rem', padding: '6px 12px' }}
+              >
+                📥 questions_v1.csv
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={handleExportEventsV1}
+                title="Baixar append-only event store completo events_v1.csv"
+                style={{ fontSize: '0.8rem', padding: '6px 12px' }}
+              >
+                📜 events_v1.csv
+              </button>
+              <button
+                type="button"
+                className="btn btn-sm"
+                onClick={handleSyncRobinHoodWeights}
+                disabled={isSyncingRobinHood}
+                style={{
+                  background: 'linear-gradient(135deg, #0284c7 0%, #2563eb 100%)',
+                  color: '#fff',
+                  border: 'none',
+                  fontWeight: 700,
+                  fontSize: '0.8rem',
+                  padding: '6px 14px',
+                  borderRadius: '6px',
+                  cursor: 'pointer'
+                }}
+                title="Consumir output/metrics/robin_hood_weights.json gerado pelo R"
+              >
+                {isSyncingRobinHood ? 'Sincronizando...' : '🔄 Sincronizar Pesos R'}
+              </button>
+            </div>
+          </div>
+          {robinHoodSyncMsg && (
+            <div style={{
+              marginTop: '0.5rem',
+              fontSize: '0.82rem',
+              color: '#38bdf8',
+              background: 'rgba(56, 189, 248, 0.1)',
+              padding: '6px 12px',
+              borderRadius: '6px',
+              border: '1px solid rgba(56, 189, 248, 0.3)'
+            }}>
+              {robinHoodSyncMsg}
             </div>
           )}
         </div>
