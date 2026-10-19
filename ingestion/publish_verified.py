@@ -53,6 +53,7 @@ def publish_questions(
     file_id: Optional[str] = None,
     allow_structurally_valid: bool = False,
     dry_run: bool = False,
+    clean_slate: bool = False,
 ) -> Dict[str, Any]:
     """Publica questões elegíveis de staging para o banco operacional fiscalstudy.db."""
     if not os.path.exists(staging_db_path):
@@ -72,7 +73,8 @@ def publish_questions(
         sql = f"""
             SELECT q.id, q.statement, q.options_json, q.correct_option, q.gabarito_status,
                    q.disciplina, q.assunto, q.subassunto, q.status, q.numero_original,
-                   f.banca, f.ano, f.orgao, f.cargo, f.id as file_id
+                   q.justificativa, q.texto_apoio, q.texto_apoio_titulo,
+                   f.banca, f.ano, f.orgao, f.cargo, f.rel_path, f.id as file_id
             FROM staging_questions q
             JOIN staging_documents d ON q.document_id = d.id
             JOIN staging_files f ON d.file_id = f.id
@@ -87,8 +89,22 @@ def publish_questions(
         cur = s_conn.execute(sql, params)
         staging_rows = cur.fetchall()
 
+        # Recuperar materiais de apoio vinculados às questões elegíveis
+        mat_sql = f"""
+            SELECT DISTINCT m.id, m.tipo, m.titulo, m.conteudo_texto, m.media_path,
+                   m.pagina_inicio, m.pagina_fim, m.coordenadas_json,
+                   qsm.question_id
+            FROM staging_support_materials m
+            JOIN staging_question_support_materials qsm ON m.id = qsm.material_id
+            JOIN staging_questions q ON qsm.question_id = q.id
+            WHERE q.status IN ({status_placeholders})
+        """
+        cur_mats = s_conn.execute(mat_sql)
+        staging_mats = cur_mats.fetchall()
+
     total_eligible = len(staging_rows)
     print(f"[Publicação] Encontradas {total_eligible} questões elegíveis ({', '.join(eligible_statuses)}).")
+    print(f"[Publicação] Encontrados {len(staging_mats)} vínculos de materiais de apoio para publicação.")
 
     if total_eligible == 0:
         return {
@@ -105,14 +121,16 @@ def publish_questions(
             "status": "SIMULATION_SUCCESS",
             "dry_run": True,
             "eligible_count": total_eligible,
+            "materials_count": len(staging_mats),
             "backup_performed": False,
         }
 
-    # 3. Executar backup físico prévio
+    # 3. Executar backup físico prévio obrigatório
     backup_path = create_physical_backup(operational_db_path, backup_dir)
 
     # 4. Transação atômica de publicação no banco operacional
     published_count = 0
+    published_mats_count = 0
     now_iso = datetime.datetime.utcnow().isoformat() + "Z"
 
     with sqlite3.connect(operational_db_path) as op_conn:
@@ -120,12 +138,21 @@ def publish_questions(
         op_conn.execute("BEGIN TRANSACTION;")
 
         try:
-            # Inserção das questões com proteção não destrutiva
+            # Se solicitado clean-slate (revisão integral sem poluição prévia)
+            if clean_slate:
+                print("[Publicação] Opção --clean-slate ativada: limpando registros anteriores.")
+                op_conn.execute("DELETE FROM question_support_materials;")
+                op_conn.execute("DELETE FROM support_materials;")
+                op_conn.execute("DELETE FROM questions;")
+
+            # Inserção das questões com proteção idempotente e novos campos
             insert_sql = """
                 INSERT INTO questions (
                     id, enunciado, options_json, correct_option, gabarito_status,
-                    banca, ano, orgao, cargo, disciplina
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    banca, ano, orgao, cargo, disciplina, assunto,
+                    justificativa, texto_apoio, texto_apoio_titulo,
+                    status, numero_original, arquivo_origem
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(id) DO UPDATE SET
                     enunciado = excluded.enunciado,
                     options_json = excluded.options_json,
@@ -135,7 +162,14 @@ def publish_questions(
                     ano = excluded.ano,
                     orgao = excluded.orgao,
                     cargo = excluded.cargo,
-                    disciplina = excluded.disciplina
+                    disciplina = excluded.disciplina,
+                    assunto = excluded.assunto,
+                    justificativa = excluded.justificativa,
+                    texto_apoio = excluded.texto_apoio,
+                    texto_apoio_titulo = excluded.texto_apoio_titulo,
+                    status = excluded.status,
+                    numero_original = excluded.numero_original,
+                    arquivo_origem = excluded.arquivo_origem
             """
 
             for r in staging_rows:
@@ -149,19 +183,70 @@ def publish_questions(
                 orgao = r["orgao"] or "UNKNOWN"
                 cargo = r["cargo"] or "UNKNOWN"
                 disc = r["disciplina"] or "Geral"
+                assunto = r["assunto"]
 
                 op_conn.execute(
                     insert_sql,
-                    (q_id, stmt, opts_json, corr_opt, gab_st, banca, ano, orgao, cargo, disc),
+                    (
+                        q_id, stmt, opts_json, corr_opt, gab_st,
+                        banca, ano, orgao, cargo, disc, assunto,
+                        r["justificativa"], r["texto_apoio"], r["texto_apoio_titulo"],
+                        "VALIDADA", r["numero_original"], r["rel_path"]
+                    ),
                 )
                 published_count += 1
+
+            # Inserção de materiais de apoio e vínculos
+            insert_mat_sql = """
+                INSERT INTO support_materials (
+                    id, tipo, titulo, conteudo_texto, media_path, doc_origem,
+                    pagina_inicio, pagina_fim, coordenadas_json, created_at
+                ) VALUES (?, ?, ?, ?, ?, 'Caderno de Prova', ?, ?, ?, CURRENT_TIMESTAMP)
+                ON CONFLICT(id) DO UPDATE SET
+                    tipo = excluded.tipo,
+                    titulo = excluded.titulo,
+                    conteudo_texto = excluded.conteudo_texto,
+                    media_path = excluded.media_path,
+                    pagina_inicio = excluded.pagina_inicio,
+                    pagina_fim = excluded.pagina_fim,
+                    coordenadas_json = excluded.coordenadas_json
+            """
+
+            insert_qsm_sql = """
+                INSERT OR IGNORE INTO question_support_materials (question_id, material_id)
+                VALUES (?, ?)
+            """
+
+            saved_mat_ids = set()
+            for m in staging_mats:
+                m_id = m["id"]
+                if m_id not in saved_mat_ids:
+                    op_conn.execute(
+                        insert_mat_sql,
+                        (
+                            m_id,
+                            m["tipo"],
+                            m["titulo"],
+                            m["conteudo_texto"],
+                            m["media_path"],
+                            m["pagina_inicio"],
+                            m["pagina_fim"],
+                            m["coordenadas_json"],
+                        ),
+                    )
+                    saved_mat_ids.add(m_id)
+                    published_mats_count += 1
+
+                op_conn.execute(insert_qsm_sql, (m["question_id"], m_id))
 
             # Inserção de evento auditável em event_store
             event_id = str(uuid.uuid4())
             event_payload = json.dumps({
                 "published_count": published_count,
+                "materials_count": published_mats_count,
                 "file_filter": file_id or "ALL",
                 "statuses_included": eligible_statuses,
+                "clean_slate": clean_slate,
                 "backup_path": backup_path,
                 "published_at": now_iso,
             }, ensure_ascii=False)
@@ -174,7 +259,7 @@ def publish_questions(
             """, (event_id, file_id or "ALL_ELIGIBLE", now_iso, now_iso, event_payload))
 
             op_conn.commit()
-            print(f"[Publicação] Sucesso atômico: {published_count} questões salvas e auditadas em event_store.")
+            print(f"[Publicação] Sucesso atômico: {published_count} questões e {published_mats_count} materiais salvos e auditados em event_store.")
 
         except Exception as e:
             op_conn.rollback()
@@ -185,6 +270,8 @@ def publish_questions(
         "status": "SUCCESS",
         "dry_run": False,
         "published_count": published_count,
+        "materials_count": published_mats_count,
+        "clean_slate": clean_slate,
         "backup_path": backup_path,
         "timestamp": now_iso,
     }
@@ -195,6 +282,7 @@ def main():
     parser.add_argument("--file-id", default=None, help="ID do arquivo específico a publicar de staging")
     parser.add_argument("--all-verified", action="store_true", help="Publica todas as questões com status SOURCE_VERIFIED")
     parser.add_argument("--include-valid", action="store_true", help="Inclui também questões STRUCTURALLY_VALID além de SOURCE_VERIFIED")
+    parser.add_argument("--clean-slate", action="store_true", help="Limpa o banco operacional antes da inserção integral das questões revisadas")
     parser.add_argument("--dry-run", action="store_true", help="Simula a publicação sem alterar o banco operacional")
     parser.add_argument("--staging-db", default=DEFAULT_STAGING_DB, help="Caminho do staging.db")
     parser.add_argument("--operational-db", default=DEFAULT_OPERATIONAL_DB, help="Caminho do fiscalstudy.db")
@@ -208,6 +296,7 @@ def main():
     print(f"Operacional DB  : {args.operational_db}")
     print(f"Modo Simulação  : {args.dry_run}")
     print(f"Incluir Válidas : {args.include_valid}")
+    print(f"Clean Slate     : {args.clean_slate}")
     print("=" * 80)
 
     result = publish_questions(
@@ -217,6 +306,7 @@ def main():
         file_id=args.file_id,
         allow_structurally_valid=args.include_valid,
         dry_run=args.dry_run,
+        clean_slate=args.clean_slate,
     )
 
     print("\n" + json.dumps(result, indent=2, ensure_ascii=False))
