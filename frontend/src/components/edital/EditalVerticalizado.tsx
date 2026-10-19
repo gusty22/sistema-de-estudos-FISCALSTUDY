@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { EDITAL_EXTRACTION_PROMPT } from '../../constants/editalPromptMestre';
+import MotorParetoEditalModal from './MotorParetoEditalModal';
 import './EditalVerticalizado.css';
 
 export interface EditalDocument {
@@ -115,6 +116,9 @@ export default function EditalVerticalizado({ concursoId, concursoNome, onNaviga
 
   // Modal de dicas estratégicas
   const [dicasModalDisciplina, setDicasModalDisciplina] = useState<string | null>(null);
+
+  // Modal Motor de Ingestão e Matriz de Pareto
+  const [isMotorParetoOpen, setIsMotorParetoOpen] = useState(false);
 
   // Modal 1: Publicação / Transição Pós-Edital
   const [isPostEditalModalOpen, setIsPostEditalModalOpen] = useState(false);
@@ -242,6 +246,7 @@ export default function EditalVerticalizado({ concursoId, concursoNome, onNaviga
       isRenameDisciplineModalOpen ||
       isTopicModalOpen ||
       isLinkModalOpen ||
+      isMotorParetoOpen ||
       !!dicasModalDisciplina;
 
     if (isAnyModalOpen) {
@@ -879,6 +884,24 @@ export default function EditalVerticalizado({ concursoId, concursoNome, onNaviga
         </div>
 
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+          <button
+            className="btn btn-primary"
+            onClick={() => setIsMotorParetoOpen(true)}
+            style={{
+              padding: '8px 15px',
+              fontSize: '0.85rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.45rem',
+              background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+              boxShadow: '0 2px 8px rgba(37, 99, 235, 0.35)',
+              fontWeight: 600,
+            }}
+            title="Motor de Ingestão e Matriz de Pareto da Área Fiscal (Classes A, B e C, Ponderação e Alocação de Tempo)"
+          >
+            🎯 Motor de Ingestão & Pareto
+          </button>
+
           <button
             className="btn-pos-edital"
             onClick={handleOpenPostEditalModal}
@@ -2218,6 +2241,15 @@ export default function EditalVerticalizado({ concursoId, concursoNome, onNaviga
         </div>,
         document.body
       )}
+
+      {/* Modal Motor de Ingestão e Matriz de Pareto */}
+      <MotorParetoEditalModal
+        isOpen={isMotorParetoOpen}
+        onClose={() => setIsMotorParetoOpen(false)}
+        concursoId={concursoId}
+        concursoNome={concursoNome}
+        onSuccessImport={loadEditalData}
+      />
     </div>
   );
 }

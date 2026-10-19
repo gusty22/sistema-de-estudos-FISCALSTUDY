@@ -9,7 +9,9 @@ import {
   Play,
   Layers,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  BookOpen,
+  Database
 } from 'lucide-react';
 import type { ConcursoItem } from '../concursos/MeusConcursos';
 import { MontagemCadernoModal } from './MontagemCadernoModal';
@@ -26,9 +28,11 @@ export const BancoQuestoes: React.FC<BancoQuestoesProps> = ({
   onResolveQuestion,
   onStartCaderno
 }) => {
+  // Modo de escopo: apenas disciplinas do edital ou acervo geral
+  const [editalOnly, setEditalOnly] = useState<boolean>(true);
+
   // Filtros
   const [selectedDisciplina, setSelectedDisciplina] = useState<string>('TODAS');
-  const [selectedAssunto, setSelectedAssunto] = useState<string>('TODOS');
   const [selectedBanca, setSelectedBanca] = useState<string>('TODAS');
   const [selectedAno, setSelectedAno] = useState<string>('TODOS');
   const [selectedCargo, setSelectedCargo] = useState<string>('TODOS');
@@ -37,19 +41,23 @@ export const BancoQuestoes: React.FC<BancoQuestoesProps> = ({
   const [selectedSituacao, setSelectedSituacao] = useState<string>('TODAS');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Metadados dos filtros (bancas, anos, órgãos...)
+  // Metadados dinâmicos e estritamente reais retornados pelo backend
   const [filterMetadata, setFilterMetadata] = useState<{
     bancas: string[];
     anos: number[];
     orgaos: string[];
     cargos: string[];
     disciplinas: string[];
+    tiposQuestao: string[];
+    editalDisciplinas: Array<{ nome: string; questoesDisponiveis: number }>;
   }>({
     bancas: [],
     anos: [],
     orgaos: [],
     cargos: [],
-    disciplinas: []
+    disciplinas: [],
+    tiposQuestao: ['MULTIPLA_ESCOLHA'],
+    editalDisciplinas: []
   });
 
   // Resultados
@@ -73,15 +81,71 @@ export const BancoQuestoes: React.FC<BancoQuestoesProps> = ({
     setTimeout(() => setFeedback(null), 3500);
   };
 
-  // Carregar metadados dos filtros uma vez
+  // Carregar metadados dos filtros dinamicamente com base nas seleções ativas
+  const fetchFilterMetadata = useCallback(async () => {
+    try {
+      const params = new URLSearchParams();
+      if (activeConcurso?.id) params.set('concursoId', activeConcurso.id);
+      if (editalOnly) params.set('editalOnly', 'true');
+      if (selectedDisciplina !== 'TODAS') params.set('disciplina', selectedDisciplina);
+      if (selectedBanca !== 'TODAS') params.set('banca', selectedBanca);
+      if (selectedAno !== 'TODOS') params.set('ano', selectedAno);
+      if (selectedCargo !== 'TODOS') params.set('cargo', selectedCargo);
+      if (selectedOrgao !== 'TODOS') params.set('orgao', selectedOrgao);
+      if (selectedTipo !== 'TODOS') params.set('tipoQuestao', selectedTipo);
+      if (selectedSituacao !== 'TODAS') params.set('situacao', selectedSituacao);
+      if (searchQuery.trim()) params.set('q', searchQuery.trim());
+
+      const res = await fetch(`/api/v1/bank/filters-metadata?${params.toString()}`);
+      if (res.ok) {
+        const data = await res.json();
+        setFilterMetadata(prev => ({
+          ...prev,
+          bancas: data.bancas || [],
+          anos: data.anos || [],
+          orgaos: data.orgaos || [],
+          cargos: data.cargos || [],
+          disciplinas: data.disciplinas || [],
+          tiposQuestao: data.tiposQuestao || ['MULTIPLA_ESCOLHA'],
+          editalDisciplinas: data.editalDisciplinas || prev.editalDisciplinas
+        }));
+
+        // Se a seleção atual deixou de existir nos metadados válidos combinados, reseta para neutro
+        if (selectedBanca !== 'TODAS' && data.bancas && !data.bancas.includes(selectedBanca)) {
+          setSelectedBanca('TODAS');
+        }
+        if (selectedAno !== 'TODOS' && data.anos && !data.anos.map((a: number) => a.toString()).includes(selectedAno)) {
+          setSelectedAno('TODOS');
+        }
+        if (selectedDisciplina !== 'TODAS' && data.disciplinas && !data.disciplinas.includes(selectedDisciplina)) {
+          setSelectedDisciplina('TODAS');
+        }
+        if (selectedOrgao !== 'TODOS' && data.orgaos && !data.orgaos.includes(selectedOrgao)) {
+          setSelectedOrgao('TODOS');
+        }
+        if (selectedCargo !== 'TODOS' && data.cargos && !data.cargos.includes(selectedCargo)) {
+          setSelectedCargo('TODOS');
+        }
+      }
+    } catch {
+      // Falha silenciosa de metadados
+    }
+  }, [
+    activeConcurso?.id,
+    editalOnly,
+    selectedDisciplina,
+    selectedBanca,
+    selectedAno,
+    selectedCargo,
+    selectedOrgao,
+    selectedTipo,
+    selectedSituacao,
+    searchQuery
+  ]);
+
   useEffect(() => {
-    fetch('/api/v1/bank/filters-metadata')
-      .then(res => res.ok ? res.json() : null)
-      .then(data => {
-        if (data) setFilterMetadata(data);
-      })
-      .catch(() => {});
-  }, []);
+    fetchFilterMetadata();
+  }, [fetchFilterMetadata]);
 
   // Buscar questões
   const fetchQuestions = useCallback(async (targetPage = 0) => {
@@ -89,8 +153,8 @@ export const BancoQuestoes: React.FC<BancoQuestoesProps> = ({
     try {
       const params = new URLSearchParams();
       if (activeConcurso?.id) params.set('concursoId', activeConcurso.id);
+      if (editalOnly) params.set('editalOnly', 'true');
       if (selectedDisciplina !== 'TODAS') params.set('disciplina', selectedDisciplina);
-      if (selectedAssunto !== 'TODOS') params.set('assunto', selectedAssunto);
       if (selectedBanca !== 'TODAS') params.set('banca', selectedBanca);
       if (selectedAno !== 'TODOS') params.set('ano', selectedAno);
       if (selectedCargo !== 'TODOS') params.set('cargo', selectedCargo);
@@ -116,8 +180,8 @@ export const BancoQuestoes: React.FC<BancoQuestoesProps> = ({
     }
   }, [
     activeConcurso?.id,
+    editalOnly,
     selectedDisciplina,
-    selectedAssunto,
     selectedBanca,
     selectedAno,
     selectedCargo,
@@ -164,7 +228,6 @@ export const BancoQuestoes: React.FC<BancoQuestoesProps> = ({
 
   const limparFiltros = () => {
     setSelectedDisciplina('TODAS');
-    setSelectedAssunto('TODOS');
     setSelectedBanca('TODAS');
     setSelectedAno('TODOS');
     setSelectedCargo('TODOS');
@@ -205,6 +268,54 @@ export const BancoQuestoes: React.FC<BancoQuestoesProps> = ({
           fontWeight: 600
         }}>
           {feedback}
+        </div>
+      )}
+
+      {/* Seletor de Escopo: Edital do Concurso Ativo vs Acervo Geral */}
+      {activeConcurso && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '0.75rem',
+          padding: '0.85rem 1.25rem',
+          borderRadius: '12px',
+          background: 'var(--calm-card-bg, #ffffff)',
+          border: '1px solid var(--calm-card-border, #e2e8f0)',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            <BookOpen className="w-4 h-4 text-indigo-500" />
+            <div style={{ fontSize: '0.85rem', color: 'var(--calm-text)' }}>
+              Concurso Ativo: <strong>{activeConcurso.cargo || activeConcurso.nome}</strong> ({activeConcurso.orgao})
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            <button
+              type="button"
+              className={`btn-q-action ${editalOnly ? 'primary' : ''}`}
+              style={{ fontSize: '0.78rem', padding: '0.4rem 0.85rem' }}
+              onClick={() => {
+                setEditalOnly(true);
+                setSelectedDisciplina('TODAS');
+              }}
+            >
+              <BookOpen className="w-3.5 h-3.5 mr-1 inline" /> Disciplinas do Edital
+            </button>
+            <button
+              type="button"
+              className={`btn-q-action ${!editalOnly ? 'primary' : ''}`}
+              style={{ fontSize: '0.78rem', padding: '0.4rem 0.85rem' }}
+              onClick={() => {
+                setEditalOnly(false);
+                setSelectedDisciplina('TODAS');
+              }}
+            >
+              <Database className="w-3.5 h-3.5 mr-1 inline" /> Todo o Acervo
+            </button>
+          </div>
         </div>
       )}
 
@@ -254,7 +365,14 @@ export const BancoQuestoes: React.FC<BancoQuestoesProps> = ({
 
           {/* Disciplina */}
           <div className="filtro-group">
-            <label className="filtro-label">Disciplina</label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <label className="filtro-label">Disciplina</label>
+              {filterMetadata.disciplinas.length > 0 && (
+                <span style={{ fontSize: '0.7rem', color: 'var(--calm-text-muted)' }}>
+                  ({filterMetadata.disciplinas.length})
+                </span>
+              )}
+            </div>
             <select
               className="filtro-select"
               value={selectedDisciplina}
@@ -269,7 +387,14 @@ export const BancoQuestoes: React.FC<BancoQuestoesProps> = ({
 
           {/* Banca */}
           <div className="filtro-group">
-            <label className="filtro-label">Banca Examinadora</label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <label className="filtro-label">Banca Examinadora</label>
+              {filterMetadata.bancas.length > 0 && (
+                <span style={{ fontSize: '0.7rem', color: 'var(--calm-text-muted)' }}>
+                  ({filterMetadata.bancas.length})
+                </span>
+              )}
+            </div>
             <select
               className="filtro-select"
               value={selectedBanca}
@@ -284,7 +409,14 @@ export const BancoQuestoes: React.FC<BancoQuestoesProps> = ({
 
           {/* Ano */}
           <div className="filtro-group">
-            <label className="filtro-label">Ano</label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <label className="filtro-label">Ano</label>
+              {filterMetadata.anos.length > 0 && (
+                <span style={{ fontSize: '0.7rem', color: 'var(--calm-text-muted)' }}>
+                  ({filterMetadata.anos.length})
+                </span>
+              )}
+            </div>
             <select
               className="filtro-select"
               value={selectedAno}
@@ -297,19 +429,110 @@ export const BancoQuestoes: React.FC<BancoQuestoesProps> = ({
             </select>
           </div>
 
-          {/* Tipo de Questão */}
-          <div className="filtro-group">
-            <label className="filtro-label">Tipo de Questão</label>
-            <select
-              className="filtro-select"
-              value={selectedTipo}
-              onChange={(e) => setSelectedTipo(e.target.value)}
-            >
-              <option value="TODOS">Todos os Tipos</option>
-              <option value="MULTIPLA_ESCOLHA">Múltipla Escolha</option>
-              <option value="CERTO_ERRADO">Certo / Errado</option>
-            </select>
-          </div>
+          {/* Órgão (Filtro Dinâmico Real) */}
+          {filterMetadata.orgaos.length > 0 && (
+            <div className="filtro-group">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <label className="filtro-label">Órgão</label>
+                <span style={{ fontSize: '0.7rem', color: 'var(--calm-text-muted)' }}>
+                  ({filterMetadata.orgaos.length})
+                </span>
+              </div>
+              <select
+                className="filtro-select"
+                value={selectedOrgao}
+                onChange={(e) => setSelectedOrgao(e.target.value)}
+              >
+                <option value="TODOS">Todos os Órgãos</option>
+                {filterMetadata.orgaos.map(o => (
+                  <option key={o} value={o}>{o}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Cargo (Filtro Dinâmico Real) */}
+          {filterMetadata.cargos.length > 0 && (
+            <div className="filtro-group">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <label className="filtro-label">Cargo</label>
+                <span style={{ fontSize: '0.7rem', color: 'var(--calm-text-muted)' }}>
+                  ({filterMetadata.cargos.length})
+                </span>
+              </div>
+              <select
+                className="filtro-select"
+                value={selectedCargo}
+                onChange={(e) => setSelectedCargo(e.target.value)}
+              >
+                <option value="TODOS">Todos os Cargos</option>
+                {filterMetadata.cargos.map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Tipo de Questão (Derivado estritamente dos dados reais) */}
+          {filterMetadata.tiposQuestao.length > 1 && (
+            <div className="filtro-group">
+              <label className="filtro-label">Tipo de Questão</label>
+              <select
+                className="filtro-select"
+                value={selectedTipo}
+                onChange={(e) => setSelectedTipo(e.target.value)}
+              >
+                <option value="TODOS">Todos os Tipos</option>
+                {filterMetadata.tiposQuestao.includes('MULTIPLA_ESCOLHA') && (
+                  <option value="MULTIPLA_ESCOLHA">Múltipla Escolha</option>
+                )}
+                {filterMetadata.tiposQuestao.includes('CERTO_ERRADO') && (
+                  <option value="CERTO_ERRADO">Certo / Errado</option>
+                )}
+              </select>
+            </div>
+          )}
+
+          {/* Resumo da Cobertura do Edital */}
+          {editalOnly && filterMetadata.editalDisciplinas.length > 0 && (
+            <div style={{
+              marginTop: '0.5rem',
+              padding: '0.75rem',
+              borderRadius: '8px',
+              background: 'var(--calm-bg-subtle, #f8fafc)',
+              border: '1px solid var(--calm-card-border, #e2e8f0)',
+              fontSize: '0.74rem'
+            }}>
+              <div style={{ fontWeight: 600, color: 'var(--calm-text)', marginBottom: '0.4rem' }}>
+                Disciplinas do Edital de Referência:
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                {filterMetadata.editalDisciplinas.map(ed => (
+                  <div
+                    key={ed.nome}
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      color: ed.questoesDisponiveis > 0 ? 'var(--calm-text)' : 'var(--calm-text-muted)'
+                    }}
+                  >
+                    <span>{ed.nome}</span>
+                    <span style={{
+                      fontWeight: 600,
+                      padding: '1px 5px',
+                      borderRadius: '4px',
+                      fontSize: '0.68rem',
+                      background: ed.questoesDisponiveis > 0 ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                      color: ed.questoesDisponiveis > 0 ? '#059669' : '#dc2626'
+                    }}>
+                      {ed.questoesDisponiveis > 0 ? `${ed.questoesDisponiveis} q.` : '0 q.'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </aside>
 
         {/* ===================================================================
@@ -476,7 +699,6 @@ export const BancoQuestoes: React.FC<BancoQuestoesProps> = ({
           activeConcurso={activeConcurso}
           initialFilters={{
             disciplina: selectedDisciplina !== 'TODAS' ? selectedDisciplina : undefined,
-            assunto: selectedAssunto !== 'TODOS' ? selectedAssunto : undefined,
             banca: selectedBanca !== 'TODAS' ? selectedBanca : undefined,
             ano: selectedAno !== 'TODOS' ? parseInt(selectedAno) : undefined,
             situacao: selectedSituacao !== 'TODAS' ? selectedSituacao : undefined

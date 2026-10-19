@@ -30,17 +30,32 @@ public class QuestionBankController {
             @RequestParam(required = false) String tipoQuestao,
             @RequestParam(required = false) String situacao,
             @RequestParam(required = false) String q,
+            @RequestParam(required = false, defaultValue = "false") Boolean editalOnly,
             @RequestParam(required = false, defaultValue = "0") Integer page,
             @RequestParam(required = false, defaultValue = "15") Integer limit
     ) {
         return ResponseEntity.ok(questionBankService.searchQuestions(
-                concursoId, disciplina, assunto, banca, ano, cargo, orgao, tipoQuestao, situacao, q, page, limit
+                concursoId, disciplina, assunto, banca, ano, cargo, orgao, tipoQuestao, situacao, q, editalOnly, page, limit
         ));
     }
 
     @GetMapping("/filters-metadata")
-    public ResponseEntity<Map<String, Object>> getFiltersMetadata() {
-        return ResponseEntity.ok(questionBankService.getFiltersMetadata());
+    public ResponseEntity<Map<String, Object>> getFiltersMetadata(
+            @RequestParam(required = false) String concursoId,
+            @RequestParam(required = false) String disciplina,
+            @RequestParam(required = false) String assunto,
+            @RequestParam(required = false) String banca,
+            @RequestParam(required = false) Integer ano,
+            @RequestParam(required = false) String cargo,
+            @RequestParam(required = false) String orgao,
+            @RequestParam(required = false) String tipoQuestao,
+            @RequestParam(required = false) String situacao,
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false, defaultValue = "false") Boolean editalOnly
+    ) {
+        return ResponseEntity.ok(questionBankService.getFiltersMetadata(
+                concursoId, disciplina, assunto, banca, ano, cargo, orgao, tipoQuestao, situacao, q, editalOnly
+        ));
     }
 
     @PostMapping("/questions/{id}/favorite")

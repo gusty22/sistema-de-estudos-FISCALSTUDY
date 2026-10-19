@@ -13,9 +13,9 @@
 - **Ingestão**: Python (`UniversalExtractor` com isolamento prévio de `SUPPORT_PATTERNS` e fusão multi-cargo de gabaritos).
 - **Resiliência**: Falhas no motor R ou extratores nunca travam o estudo; o sistema opera em fallback local resiliente.
 
-## 3. Estado Atual dos Bancos e Produção (v3.23)
+## 3. Estado Atual dos Bancos e Produção (v3.24)
 - **Produção (`db/fiscalstudy.db`)**: 13.241 questões ativas publicadas com segurança atômica; 486 materiais vinculados.
-- **Staging (`db/staging.db`)**: 386 arquivos elegíveis com isolamento estrito da área de publicação.
+- **Motor de Ingestão e Matriz de Pareto**: Módulo nativo ativo no Edital Verticalizado (`motorParetoEdital.ts` e `MotorParetoEditalModal.tsx`) para ingestão de edital bruto, classificação Pareto A/B/C histórica, cálculo de pesos da prova e diagnóstico do Quarteto de Alocação de Tempo.
 - **Build & Testes**: Backend (`mvnw.cmd test-compile` -> SUCCESS) e Frontend (`tsc -b && vite build` -> SUCCESS).
 
 ## 4. Índice de Documentação Modular
