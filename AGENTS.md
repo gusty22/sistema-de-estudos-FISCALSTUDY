@@ -1,8 +1,8 @@
 # AGENTS.md — Diretrizes Operacionais e Arquitetura do FiscalStudy
 
-## 1. Princípio Fundamental de Contexto Mínimo
-- **NÃO leia documentos extensos por padrão**: A leitura de documentação pesada (`docs/PROMPT_MESTRE.md`, histórico ou contratos) deve ser **SELETIVA E PONTUAL**, acionada via `view_file` (com `StartLine`/`EndLine`) apenas se a tarefa ativa exigir explicitamente regras daquele domínio.
-- **Memória ativa**: Consulte o índice executivo em `.agents/memory/CONTEXT.md` para situar-se sobre o estado do projeto e localizar a documentação modular em `docs/architecture/`.
+## 1. Protocolo de Inicialização e Contexto Mínimo
+- **Passo 1 (Obrigatório ao iniciar)**: Consulte o índice executivo em `.agents/memory/CONTEXT.md` para recuperar o estado do projeto, stack, ferramentas ativas e localização das especificações.
+- **Passo 2 (Leitura seletiva)**: NÃO leia documentação extensa (`PROMPT_MESTRE.md` ou histórico completo). Acesse pontualmente apenas o módulo correspondente à tarefa em `docs/architecture/modules/MODULOS_ESPECIFICACOES.md`.
 
 ## 2. Postura de Engenharia Pragmática (Diretrizes Ponytail / YAGNI)
 - **O melhor código é o que não precisou ser escrito**: Reutilize sempre componentes, utilitários e serviços existentes antes de criar novos.
