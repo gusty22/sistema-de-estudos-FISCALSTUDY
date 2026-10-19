@@ -27,9 +27,8 @@ target/
 ingestion/output/*.txt
 
 # DB
-db/*.db*
-db/backups/
-db/*.json
+db/
+analytics/*.json
 
 # Ingestion temp
 ingestion/inspection_*.json
