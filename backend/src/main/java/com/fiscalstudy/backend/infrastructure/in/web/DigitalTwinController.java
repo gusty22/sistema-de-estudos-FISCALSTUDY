@@ -24,4 +24,12 @@ public class DigitalTwinController {
         Map<String, Object> result = digitalTwinService.getDigitalTwinStatus(concursoId, concursoNome);
         return ResponseEntity.ok(result);
     }
+
+    @PostMapping("/recalibrate-r")
+    public ResponseEntity<Map<String, Object>> recalibrateWithR(
+            @RequestParam(required = false) String concursoId
+    ) {
+        Map<String, Object> result = digitalTwinService.recalibrateWithREngine(concursoId);
+        return ResponseEntity.ok(result);
+    }
 }

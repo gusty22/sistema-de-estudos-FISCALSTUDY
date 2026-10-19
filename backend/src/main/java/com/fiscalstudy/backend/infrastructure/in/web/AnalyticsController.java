@@ -15,11 +15,38 @@ public class AnalyticsController {
 
     private final AnalyticsProjectionService analyticsProjectionService;
     private final com.fiscalstudy.backend.application.QuestionHistoryService questionHistoryService;
+    private final com.fiscalstudy.backend.application.PerformanceIntelligenceService performanceIntelligenceService;
 
     public AnalyticsController(AnalyticsProjectionService analyticsProjectionService,
-                               com.fiscalstudy.backend.application.QuestionHistoryService questionHistoryService) {
+                               com.fiscalstudy.backend.application.QuestionHistoryService questionHistoryService,
+                               com.fiscalstudy.backend.application.PerformanceIntelligenceService performanceIntelligenceService) {
         this.analyticsProjectionService = analyticsProjectionService;
         this.questionHistoryService = questionHistoryService;
+        this.performanceIntelligenceService = performanceIntelligenceService;
+    }
+
+    @GetMapping("/dashboard")
+    public ResponseEntity<java.util.Map<String, Object>> getPerformanceDashboard(
+            @RequestParam(required = false) String concursoId,
+            @RequestParam(required = false) String period
+    ) {
+        return ResponseEntity.ok(performanceIntelligenceService.getPerformanceDashboard(concursoId, period));
+    }
+
+    @GetMapping("/content-detail")
+    public ResponseEntity<java.util.Map<String, Object>> getContentDetail(
+            @RequestParam(required = false) String concursoId,
+            @RequestParam(required = false) String disciplina,
+            @RequestParam(required = false) String topico
+    ) {
+        return ResponseEntity.ok(performanceIntelligenceService.getContentAnalysis(concursoId, disciplina, topico));
+    }
+
+    @GetMapping("/calibration-model")
+    public ResponseEntity<java.util.Map<String, Object>> getCalibrationAndStudentModel(
+            @RequestParam(required = false) String concursoId
+    ) {
+        return ResponseEntity.ok(performanceIntelligenceService.getCalibrationAndStudentModel(concursoId));
     }
 
     @GetMapping("/overview")

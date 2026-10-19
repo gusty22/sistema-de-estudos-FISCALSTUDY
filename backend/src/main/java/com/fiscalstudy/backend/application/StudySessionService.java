@@ -192,4 +192,87 @@ public class StudySessionService {
         summary.put("secondsPorDisciplina", secondsPorDisciplina);
         return summary;
     }
+
+    public List<Map<String, Object>> getAllStudySessions(String concursoId, String disciplina, String tipo) {
+        List<com.fiscalstudy.backend.domain.EventRecord> sessionEvents = eventStoreRepository.getAllEvents("STUDY_SESSION_RECORDED");
+        List<com.fiscalstudy.backend.domain.EventRecord> annotationEvents = eventStoreRepository.getAllEvents("STUDY_SESSION_ANNOTATION_ADDED");
+
+        // Agrupa anotações por sessionId
+        Map<String, List<Map<String, Object>>> annotationsBySession = new HashMap<>();
+        for (com.fiscalstudy.backend.domain.EventRecord annRecord : annotationEvents) {
+            try {
+                Map<String, Object> annMap = objectMapper.readValue(annRecord.getPayloadJson(), Map.class);
+                String sId = (String) annMap.get("sessionId");
+                if (sId != null) {
+                    annMap.put("createdAt", annRecord.getOccurredAt());
+                    annotationsBySession.computeIfAbsent(sId, k -> new ArrayList<>()).add(annMap);
+                }
+            } catch (Exception ignored) {}
+        }
+
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (com.fiscalstudy.backend.domain.EventRecord event : sessionEvents) {
+            try {
+                Map<String, Object> map = objectMapper.readValue(event.getPayloadJson(), Map.class);
+                String cid = (String) map.get("concursoId");
+                if (concursoId != null && !concursoId.isBlank() && !concursoId.equals(cid)) {
+                    continue;
+                }
+                String disc = (String) map.get("disciplina");
+                if (disciplina != null && !disciplina.isBlank() && !disciplina.equalsIgnoreCase(disc)) {
+                    continue;
+                }
+                String actType = (String) map.get("activityType");
+                if (tipo != null && !tipo.isBlank() && !tipo.equalsIgnoreCase(actType)) {
+                    continue;
+                }
+
+                String sId = (String) map.get("sessionId");
+                map.put("occurredAt", event.getOccurredAt());
+                if (sId != null && annotationsBySession.containsKey(sId)) {
+                    map.put("annotations", annotationsBySession.get(sId));
+                } else {
+                    map.put("annotations", Collections.emptyList());
+                }
+
+                result.add(map);
+            } catch (Exception ignored) {}
+        }
+
+        // Ordena decrescente pela data do evento
+        result.sort((a, b) -> {
+            String da = (String) a.getOrDefault("occurredAt", "");
+            String db = (String) b.getOrDefault("occurredAt", "");
+            return db.compareTo(da);
+        });
+
+        return result;
+    }
+
+    public Map<String, Object> addSessionAnnotation(String sessionId, Map<String, Object> annotationData) {
+        String annotationId = UUID.randomUUID().toString();
+        Map<String, Object> payload = new LinkedHashMap<>(annotationData);
+        payload.put("annotationId", annotationId);
+        payload.put("sessionId", sessionId);
+
+        String payloadJson = "{}";
+        try {
+            payloadJson = objectMapper.writeValueAsString(payload);
+        } catch (Exception e) {
+            logger.error("Falha ao serializar anotação de sessão", e);
+        }
+
+        eventStoreRepository.appendEvent(
+                "STUDY_SESSION_ANNOTATION_ADDED",
+                "STUDY_SESSION",
+                sessionId,
+                sessionId,
+                1,
+                "v1",
+                payloadJson
+        );
+
+        payload.put("status", "ANNOTATION_RECORDED");
+        return payload;
+    }
 }

@@ -27,6 +27,12 @@ CREATE TABLE IF NOT EXISTS questions (
     disciplina TEXT,
     assunto TEXT,
     dificuldade TEXT,
+    status TEXT DEFAULT 'VALIDADA',
+    justificativa TEXT,
+    texto_apoio TEXT,
+    texto_apoio_titulo TEXT,
+    numero_original INTEGER,
+    arquivo_origem TEXT,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -352,6 +358,127 @@ CREATE TABLE IF NOT EXISTS reverse_engineering_sessions (
     completed_at TEXT
 );
 
+-- Conceitos Canônicos (Núcleo Epistemológico transversal independente de editais)
+CREATE TABLE IF NOT EXISTS canonical_concepts (
+    id TEXT PRIMARY KEY,
+    disciplina TEXT NOT NULL,
+    macro_tema TEXT NOT NULL,
+    nome TEXT NOT NULL,
+    descricao TEXT,
+    profundidade_padrao INTEGER DEFAULT 1, -- 1=Conceitual, 2=Legal/Doutrinário, 3=Jurisprudencial/Cálculo
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
 
+-- DAG de Pré-Requisitos e Dependências entre Conceitos Canônicos
+CREATE TABLE IF NOT EXISTS canonical_concept_prerequisites (
+    concept_id TEXT NOT NULL,
+    prerequisite_concept_id TEXT NOT NULL,
+    grau_dependencia TEXT NOT NULL DEFAULT 'ESSENCIAL', -- ESSENCIAL, RECOMENDADO, CONTRASTIVO
+    PRIMARY KEY(concept_id, prerequisite_concept_id),
+    FOREIGN KEY(concept_id) REFERENCES canonical_concepts(id),
+    FOREIGN KEY(prerequisite_concept_id) REFERENCES canonical_concepts(id)
+);
 
+-- Vínculo entre Tópicos do Edital Verticalizado e Conceitos Canônicos
+CREATE TABLE IF NOT EXISTS edital_topico_concept_links (
+    id TEXT PRIMARY KEY,
+    topico_id TEXT NOT NULL,
+    concept_id TEXT NOT NULL,
+    nivel_cobranca TEXT NOT NULL DEFAULT 'PADRAO', -- BASICO, PADRAO, APROFUNDADO
+    peso_relativo REAL DEFAULT 1.0,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(topico_id) REFERENCES edital_topicos(id),
+    FOREIGN KEY(concept_id) REFERENCES canonical_concepts(id)
+);
+
+-- Projeções do Gêmeo Digital Cognitivo (Calculadas pelo motor estatístico em R)
+CREATE TABLE IF NOT EXISTS digital_twin_projections (
+    concept_id TEXT PRIMARY KEY,
+    disciplina TEXT NOT NULL,
+    nome_conceito TEXT NOT NULL,
+    prob_dominio REAL NOT NULL DEFAULT 0.10,     -- P(L_k) calculado por BKT em R
+    incerteza_sigma REAL NOT NULL DEFAULT 1.0,  -- Incerteza estatística da estimativa
+    estabilidade_dias REAL NOT NULL DEFAULT 1.0, -- Estabilidade sináptica S (FSRS v5)
+    retencao_atual_pct REAL NOT NULL DEFAULT 0.0, -- R(t) no instante da projeção
+    dias_sem_contato REAL NOT NULL DEFAULT 0.0,
+    total_tentativas INTEGER DEFAULT 0,
+    total_acertos INTEGER DEFAULT 0,
+    friccao_cognitiva_media REAL DEFAULT 0.0,
+    tempo_medio_resposta_segundos REAL DEFAULT 0.0,
+    estado_neural TEXT NOT NULL DEFAULT 'VIRGEM_NAO_EXPLORADO', -- VIRGEM_NAO_EXPLORADO, EM_EQUILIBRIO, CONSOLIDADO, RISCO_AMNESIA
+    minutos_ate_quebra REAL DEFAULT 0.0,
+    calibrado_por_r INTEGER DEFAULT 1,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Memória de Decisões Pedagógicas (Histórico auditável de prescrições vs execução real)
+CREATE TABLE IF NOT EXISTS pedagogical_decision_log (
+    id TEXT PRIMARY KEY,
+    concurso_id TEXT,
+    concept_id TEXT,
+    topico_id TEXT,
+    tipo_atividade TEXT NOT NULL,               -- PRIMING, TEORIA_HIPERFOCADA, FIXACAO_QUESTOES, FEYNMAN_AUDIT, REVISAO_SRS
+    duracao_estimada_minutos INTEGER NOT NULL,
+    duracao_estimada_min INTEGER NOT NULL,
+    duracao_estimada_max INTEGER NOT NULL,
+    duracao_real_minutos INTEGER,
+    metodo_pedagogico TEXT NOT NULL,
+    justificativa_probabilistica TEXT NOT NULL,
+    algoritmo_versao TEXT NOT NULL DEFAULT 'R_ENGINE_V1',
+    brier_score_previsto REAL,
+    executado INTEGER DEFAULT 0,
+    resultado_observado TEXT,                   -- SUCESSO_CONSOLIDADO, FRICCAO_RESIDUAL, RETENTATIVA_NECESSARIA
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    evaluated_at TEXT
+);
+
+-- Fila Adaptativa de Revisão (Baseada em Retenção, Confiança e Estágios Cognitivos)
+CREATE TABLE IF NOT EXISTS revision_calendar (
+    id TEXT PRIMARY KEY,
+    session_id TEXT,
+    concurso_id TEXT,
+    disciplina TEXT NOT NULL,
+    topico TEXT NOT NULL,
+    tipo_revisao TEXT NOT NULL, -- IMEDIATO, CONSOLIDACAO, MANUTENCAO, ADAPTATIVA
+    intervalo_dias INTEGER NOT NULL DEFAULT 1,
+    data_agendada TEXT NOT NULL, -- YYYY-MM-DD
+    origem_evento TEXT NOT NULL, -- ERRO_QUESTAO, CHUTE_EDUCADO, FRICCAO_COGNITIVA, PROGRESSAO_APRENDIZAGEM
+    source_id TEXT,
+    status TEXT NOT NULL DEFAULT 'PENDENTE', -- PENDENTE, CONCLUIDA, ATRASADA
+    taxa_acerto_revisao REAL,
+    justificativa_pedagogica TEXT,
+    estagio_intervencao TEXT DEFAULT 'RECUPERACAO_ATIVA', -- INTERVENCAO_CORRETIVA, TESTE_TRANSFERENCIA, RECUPERACAO_ATIVA, MANUTENCAO_PREVENTIVA
+    prioridade_score REAL DEFAULT 0.5,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    concluida_em TEXT
+);
+
+-- Cadernos e Simulados (Módulo E — T19 e T23)
+CREATE TABLE IF NOT EXISTS study_notebooks (
+    id TEXT PRIMARY KEY,
+    nome TEXT NOT NULL,
+    concurso_id TEXT,
+    tipo TEXT NOT NULL DEFAULT 'DINAMICO', -- FIXO, DINAMICO
+    modo_resolucao TEXT NOT NULL DEFAULT 'PRATICA', -- PRATICA, DIAGNOSTICO, FIXACAO, SIMULADO
+    filtros_json TEXT,
+    questoes_ids_json TEXT,
+    quantidade INTEGER DEFAULT 20,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    last_executed_at TEXT
+);
+
+-- Questões Favoritas do Estudante (T18)
+CREATE TABLE IF NOT EXISTS favorite_questions (
+    question_id TEXT PRIMARY KEY,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Reporte de Problemas de Questões (T18)
+CREATE TABLE IF NOT EXISTS question_reports (
+    id TEXT PRIMARY KEY,
+    question_id TEXT NOT NULL,
+    motivo TEXT NOT NULL,
+    descricao TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
 

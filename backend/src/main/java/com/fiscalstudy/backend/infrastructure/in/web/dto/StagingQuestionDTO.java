@@ -26,6 +26,9 @@ public class StagingQuestionDTO {
     private String assuntoSugerido;
     private String subassuntoSugerido;
     private String rejectionType; // RECUPERAVEL, DEFINITIVA
+    private String justificativa;
+    private String textoApoio;
+    private String textoApoioTitulo;
 
     public StagingQuestionDTO() {}
 
@@ -203,5 +206,29 @@ public class StagingQuestionDTO {
 
     public void setRejectionType(String rejectionType) {
         this.rejectionType = rejectionType;
+    }
+
+    public String getJustificativa() {
+        return justificativa;
+    }
+
+    public void setJustificativa(String justificativa) {
+        this.justificativa = justificativa;
+    }
+
+    public String getTextoApoio() {
+        return textoApoio;
+    }
+
+    public void setTextoApoio(String textoApoio) {
+        this.textoApoio = textoApoio;
+    }
+
+    public String getTextoApoioTitulo() {
+        return textoApoioTitulo;
+    }
+
+    public void setTextoApoioTitulo(String textoApoioTitulo) {
+        this.textoApoioTitulo = textoApoioTitulo;
     }
 }

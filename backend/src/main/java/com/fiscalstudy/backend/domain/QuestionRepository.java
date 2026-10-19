@@ -7,6 +7,7 @@ public interface QuestionRepository {
     Optional<Question> findNextAvailableQuestion();
     Optional<Question> findNextAvailableQuestion(String sessionId, String disciplina);
     Optional<Question> findNextAvailableQuestion(String sessionId, String concursoId, String disciplina, String assunto, Boolean includeAnswered);
+    List<Question> findQuestionBatch(String sessionId, String concursoId, String disciplina, String assunto, Boolean includeAnswered, int limit);
     Optional<Question> findById(String id);
     List<String> findAllDisciplines();
     List<String> findAllAssuntos(String disciplina);

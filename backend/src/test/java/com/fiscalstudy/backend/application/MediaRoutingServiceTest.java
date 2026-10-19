@@ -34,7 +34,8 @@ class MediaRoutingServiceTest {
                 "session_id TEXT, occurred_at TEXT, recorded_at TEXT, event_version INTEGER, schema_version TEXT, payload_json TEXT)");
 
         jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS questions (" +
-                "id TEXT PRIMARY KEY, disciplina TEXT, assunto TEXT)");
+                "id TEXT PRIMARY KEY, disciplina TEXT, assunto TEXT, status TEXT DEFAULT 'VALIDADA', " +
+                "justificativa TEXT, texto_apoio TEXT, texto_apoio_titulo TEXT, numero_original INTEGER, arquivo_origem TEXT)");
 
         jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS question_attempts (" +
                 "id TEXT PRIMARY KEY, aggregate_id TEXT, is_correct INTEGER)");

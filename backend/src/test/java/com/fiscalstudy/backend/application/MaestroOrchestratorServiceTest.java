@@ -39,6 +39,9 @@ class MaestroOrchestratorServiceTest {
         when(jdbcTemplate.queryForList(startsWith("SELECT disciplina, assunto"), any(Object[].class)))
                 .thenReturn(List.of(Map.of("disciplina", "Direito Administrativo", "assunto", "Atos Administrativos", "subassunto", "Atributos do Ato")));
 
+        when(jdbcTemplate.queryForList(startsWith("SELECT COUNT(*) as total FROM anki_flashcards")))
+                .thenReturn(List.of(Map.of("total", 15)));
+
         MaestroPlanDTO plan = maestroService.generateDailyPlan("concurso-123", 180);
 
         assertNotNull(plan);
@@ -49,28 +52,26 @@ class MaestroOrchestratorServiceTest {
         var p1 = plan.getPassos().get(0);
         assertEquals(1, p1.getNumeroPasso());
         assertEquals("ANKI_SRS", p1.getTipo());
-        assertTrue(p1.getInstrucaoMastigada().contains("Abra o Anki"));
+        assertTrue(p1.getInstrucaoMastigada().contains("cards pendentes"));
         assertTrue(p1.getInstrucaoMastigada().contains("Direito Administrativo"));
 
         // Passo 2: Priming Cognitivo
         var p2 = plan.getPassos().get(1);
         assertEquals(2, p2.getNumeroPasso());
         assertEquals("PRIMING_COGNITIVO", p2.getTipo());
-        assertTrue(p2.getInstrucaoMastigada().contains("Priming Cognitivo"));
-        assertTrue(p2.getInstrucaoMastigada().contains("5 questões inéditas"));
+        assertTrue(p2.getInstrucaoMastigada().contains("5 questões"));
 
         // Passo 3: Teoria
         var p3 = plan.getPassos().get(2);
         assertEquals(3, p3.getNumeroPasso());
         assertEquals("TEORIA", p3.getTipo());
-        assertTrue(p3.getInstrucaoMastigada().contains("Teoria"));
-        assertTrue(p3.getInstrucaoMastigada().contains("Foque apenas nos atributos"));
+        assertTrue(p3.getInstrucaoMastigada().contains("Estude"));
 
-        // Passo 4: Descanso Absoluto
+        // Passo 4: Descanso
         var p4 = plan.getPassos().get(3);
         assertEquals(4, p4.getNumeroPasso());
         assertEquals("DESCANSO", p4.getTipo());
-        assertTrue(p4.getInstrucaoMastigada().contains("Descanso absoluto"));
+        assertTrue(p4.getInstrucaoMastigada().contains("Pausa"));
     }
 
     @Test

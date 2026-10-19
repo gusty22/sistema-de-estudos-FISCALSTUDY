@@ -30,6 +30,10 @@ public class QuestionSelectionService {
         return questionRepository.findNextAvailableQuestion(sessionId, concursoId, disciplina, assunto, includeAnswered);
     }
 
+    public java.util.List<Question> getQuestionBatch(String sessionId, String concursoId, String disciplina, String assunto, Boolean includeAnswered, int limit) {
+        return questionRepository.findQuestionBatch(sessionId, concursoId, disciplina, assunto, includeAnswered, limit);
+    }
+
     public java.util.List<String> getAvailableDisciplines() {
         return questionRepository.findAllDisciplines();
     }

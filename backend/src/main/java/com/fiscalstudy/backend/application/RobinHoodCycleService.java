@@ -113,6 +113,8 @@ public class RobinHoodCycleService {
         if (customPath != null && !customPath.isBlank()) {
             candidatePaths.add(customPath);
         }
+        candidatePaths.add("../analytics-engine/output/metrics/robin_hood_weights.json");
+        candidatePaths.add("analytics-engine/output/metrics/robin_hood_weights.json");
         candidatePaths.add("analytics/robin_hood_weights.json");
         candidatePaths.add("../analytics/robin_hood_weights.json");
         candidatePaths.add("output/metrics/robin_hood_weights.json");

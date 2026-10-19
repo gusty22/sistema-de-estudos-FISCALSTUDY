@@ -43,7 +43,8 @@ class ReverseEngineeringServiceTest {
 
         jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS questions (" +
                 "id TEXT PRIMARY KEY, enunciado TEXT, options_json TEXT, correct_option TEXT, " +
-                "disciplina TEXT, assunto TEXT, banca TEXT, ano INTEGER, orgao TEXT, cargo TEXT, gabarito_status TEXT)");
+                "disciplina TEXT, assunto TEXT, banca TEXT, ano INTEGER, orgao TEXT, cargo TEXT, gabarito_status TEXT, " +
+                "status TEXT DEFAULT 'VALIDADA', justificativa TEXT, texto_apoio TEXT, texto_apoio_titulo TEXT, numero_original INTEGER, arquivo_origem TEXT)");
 
         jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS concursos (" +
                 "id TEXT PRIMARY KEY, nome TEXT, orgao TEXT, banca TEXT, ano INTEGER, cargo TEXT)");

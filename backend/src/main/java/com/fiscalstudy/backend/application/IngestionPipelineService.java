@@ -530,6 +530,20 @@ public class IngestionPipelineService {
         return Files.readAllBytes(evidencePath);
     }
 
+    public Path getPdfForSession(String sessionId) {
+        Path sessionUploads = stagingRoot.resolve(sessionId).resolve("uploads");
+        if (!Files.exists(sessionUploads)) {
+            return null;
+        }
+        try (var stream = Files.list(sessionUploads)) {
+            return stream.filter(p -> p.toString().toLowerCase().endsWith(".pdf"))
+                         .findFirst()
+                         .orElse(null);
+        } catch (IOException e) {
+            return null;
+        }
+    }
+
     public ImportSimulationDTO simulateImport(String sessionId) {
         if (!sessionQuestions.containsKey(sessionId)) {
             loadSessionState(sessionId);

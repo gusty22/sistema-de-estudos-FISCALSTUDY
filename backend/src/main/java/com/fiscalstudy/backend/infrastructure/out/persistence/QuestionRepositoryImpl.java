@@ -7,6 +7,7 @@ import org.springframework.stereotype.Repository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -43,6 +44,11 @@ public class QuestionRepositoryImpl implements QuestionRepository {
 
     @Override
     public Optional<Question> findNextAvailableQuestion(String sessionId, String concursoId, String disciplina, String assunto, Boolean includeAnswered) {
+        return findQuestionBatch(sessionId, concursoId, disciplina, assunto, includeAnswered, 25).stream().findFirst();
+    }
+
+    @Override
+    public List<Question> findQuestionBatch(String sessionId, String concursoId, String disciplina, String assunto, Boolean includeAnswered, int limit) {
         StringBuilder sql = new StringBuilder("SELECT * FROM questions WHERE 1=1 ");
         List<Object> params = new java.util.ArrayList<>();
 
@@ -98,7 +104,10 @@ public class QuestionRepositoryImpl implements QuestionRepository {
             params.add(sessionId.trim());
         }
 
-        sql.append("ORDER BY RANDOM() LIMIT 25");
+        sql.append("AND (status = 'VALIDADA' OR status IS NULL) ");
+
+        int maxLimit = Math.max(1, Math.min(limit, 50));
+        sql.append("ORDER BY RANDOM() LIMIT ").append(maxLimit);
 
         List<Question> questions = jdbcTemplate.query(sql.toString(), (rs, rowNum) -> {
             try {
@@ -131,6 +140,32 @@ public class QuestionRepositoryImpl implements QuestionRepository {
                     cargo = rs.getString("cargo");
                 } catch (Exception ignored) {}
 
+                String justificativa = null;
+                try {
+                    justificativa = rs.getString("justificativa");
+                } catch (Exception ignored) {}
+                String textoApoio = null;
+                try {
+                    textoApoio = rs.getString("texto_apoio");
+                } catch (Exception ignored) {}
+                String textoApoioTitulo = null;
+                try {
+                    textoApoioTitulo = rs.getString("texto_apoio_titulo");
+                } catch (Exception ignored) {}
+                String qStatus = null;
+                try {
+                    qStatus = rs.getString("status");
+                } catch (Exception ignored) {}
+                Integer numOrig = null;
+                try {
+                    int no = rs.getInt("numero_original");
+                    if (!rs.wasNull()) numOrig = no;
+                } catch (Exception ignored) {}
+                String arqOrig = null;
+                try {
+                    arqOrig = rs.getString("arquivo_origem");
+                } catch (Exception ignored) {}
+
                 return new Question(
                         rs.getString("id"),
                         rs.getString("enunciado"),
@@ -142,16 +177,74 @@ public class QuestionRepositoryImpl implements QuestionRepository {
                         rs.getString("banca"),
                         rs.getInt("ano"),
                         orgao,
-                        cargo
+                        cargo,
+                        null,
+                        justificativa,
+                        textoApoio,
+                        textoApoioTitulo,
+                        qStatus,
+                        numOrig,
+                        arqOrig
                 );
             } catch (Exception e) {
                 throw new RuntimeException("Failed to map question", e);
             }
         }, params.toArray());
 
-        return questions.stream()
+        List<Question> validQuestions = questions.stream()
                 .filter(this::isStructurallyValid)
-                .findFirst();
+                .collect(java.util.stream.Collectors.toList());
+
+        enrichWithSupportMaterials(validQuestions);
+        return validQuestions;
+    }
+
+    private void enrichWithSupportMaterials(List<Question> questionList) {
+        if (questionList == null || questionList.isEmpty()) return;
+        List<String> ids = questionList.stream().map(Question::getId).collect(java.util.stream.Collectors.toList());
+        String inSql = String.join(",", java.util.Collections.nCopies(ids.size(), "?"));
+        String matSql = "SELECT qsm.question_id, m.id, m.tipo, m.titulo, m.conteudo_texto, m.media_path, m.pagina_inicio, m.pagina_fim " +
+                "FROM question_support_materials qsm " +
+                "JOIN support_materials m ON qsm.material_id = m.id " +
+                "WHERE qsm.question_id IN (" + inSql + ")";
+        try {
+            Map<String, Map<String, Object>> matMap = new HashMap<>();
+            jdbcTemplate.query(matSql, rs -> {
+                String qId = rs.getString("question_id");
+                Map<String, Object> m = new HashMap<>();
+                m.put("id", rs.getString("id"));
+                m.put("tipo", rs.getString("tipo"));
+                m.put("titulo", rs.getString("titulo"));
+                m.put("conteudoTexto", rs.getString("conteudo_texto"));
+                m.put("mediaPath", rs.getString("media_path"));
+                m.put("paginaInicio", rs.getInt("pagina_inicio"));
+                m.put("paginaFim", rs.getInt("pagina_fim"));
+                matMap.put(qId, m);
+            }, ids.toArray());
+
+            for (int i = 0; i < questionList.size(); i++) {
+                Question q = questionList.get(i);
+                if (matMap.containsKey(q.getId())) {
+                    Question enriched = new Question(
+                            q.getId(),
+                            q.getStatement(),
+                            q.getOptions(),
+                            q.getCorrectOption(),
+                            q.getGabaritoStatus(),
+                            q.getDiscipline(),
+                            q.getTopic(),
+                            q.getBoard(),
+                            q.getYear(),
+                            q.getOrgao(),
+                            q.getCargo(),
+                            matMap.get(q.getId())
+                    );
+                    questionList.set(i, enriched);
+                }
+            }
+        } catch (Exception e) {
+            // Se tabela de materiais não existir ou falhar, preserva as questões
+        }
     }
 
     private boolean isStructurallyValid(Question q) {
@@ -219,6 +312,32 @@ public class QuestionRepositoryImpl implements QuestionRepository {
                     cargo = rs.getString("cargo");
                 } catch (Exception ignored) {}
 
+                String justificativa = null;
+                try {
+                    justificativa = rs.getString("justificativa");
+                } catch (Exception ignored) {}
+                String textoApoio = null;
+                try {
+                    textoApoio = rs.getString("texto_apoio");
+                } catch (Exception ignored) {}
+                String textoApoioTitulo = null;
+                try {
+                    textoApoioTitulo = rs.getString("texto_apoio_titulo");
+                } catch (Exception ignored) {}
+                String qStatus = null;
+                try {
+                    qStatus = rs.getString("status");
+                } catch (Exception ignored) {}
+                Integer numOrig = null;
+                try {
+                    int no = rs.getInt("numero_original");
+                    if (!rs.wasNull()) numOrig = no;
+                } catch (Exception ignored) {}
+                String arqOrig = null;
+                try {
+                    arqOrig = rs.getString("arquivo_origem");
+                } catch (Exception ignored) {}
+
                 return new Question(
                         rs.getString("id"),
                         rs.getString("enunciado"),
@@ -230,14 +349,25 @@ public class QuestionRepositoryImpl implements QuestionRepository {
                         rs.getString("banca"),
                         rs.getInt("ano"),
                         orgao,
-                        cargo
+                        cargo,
+                        null,
+                        justificativa,
+                        textoApoio,
+                        textoApoioTitulo,
+                        qStatus,
+                        numOrig,
+                        arqOrig
                 );
             } catch (Exception e) {
                 throw new RuntimeException("Failed to map question", e);
             }
         }, id);
 
-        return questions.isEmpty() ? Optional.empty() : Optional.of(questions.get(0));
+        if (questions.isEmpty()) {
+            return Optional.empty();
+        }
+        enrichWithSupportMaterials(questions);
+        return Optional.of(questions.get(0));
     }
 
     @Override

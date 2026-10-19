@@ -47,6 +47,15 @@ class AnkiIntegrationServiceTest {
                 "id TEXT PRIMARY KEY, edital_id TEXT, concurso_id TEXT, disciplina TEXT, " +
                 "assunto TEXT, subassunto TEXT, peso REAL, questoes_previstas INTEGER)");
 
+        jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS questions (" +
+                "id TEXT PRIMARY KEY, enunciado TEXT, options_json TEXT, correct_option TEXT, " +
+                "disciplina TEXT, assunto TEXT, status TEXT DEFAULT 'VALIDADA', justificativa TEXT, " +
+                "texto_apoio TEXT, texto_apoio_titulo TEXT, numero_original INTEGER, arquivo_origem TEXT)");
+
+        jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS event_store (" +
+                "event_id TEXT PRIMARY KEY, aggregate_id TEXT, event_type TEXT, " +
+                "session_id TEXT, recorded_at TEXT, payload_json TEXT)");
+
         eventStoreRepository = mock(EventStoreRepository.class);
         objectMapper = new ObjectMapper();
 
@@ -99,6 +108,16 @@ class AnkiIntegrationServiceTest {
     @Test
     @DisplayName("generateSessionBatch15 deve gerar exatamente 15 flashcards das regras mais importantes da sessão")
     void testGenerateSessionBatch15() {
+        for (int i = 1; i <= 15; i++) {
+            String qId = "q-" + i;
+            jdbcTemplate.update("INSERT INTO questions (id, enunciado, options_json, correct_option, disciplina, assunto) VALUES (?, ?, ?, ?, ?, ?)",
+                    qId, "Enunciado da questão número " + i + " sobre Direito Tributário e competência tributária.",
+                    "[\"A) Primeira opção de resposta " + i + "\", \"B) Segunda opção de resposta " + i + "\"]",
+                    "A", "Direito Tributário", "Competência");
+            jdbcTemplate.update("INSERT INTO event_store (aggregate_id, event_type, session_id, payload_json) VALUES (?, 'ANSWER_SUBMITTED', 'session-end-01', ?)",
+                    qId, "{\"selectedOption\":\"A\",\"isCorrect\":true}");
+        }
+
         List<AnkiFlashcardDTO> batch = ankiService.generateSessionBatch15("concurso-araguari", "session-end-01");
 
         assertNotNull(batch);

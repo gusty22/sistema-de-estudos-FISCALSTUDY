@@ -46,10 +46,35 @@ public class QuestionController {
             q.getDiscipline(),
             q.getTopic(),
             q.getBoard(),
-            q.getYear()
+            q.getYear(),
+            q.getSupportMaterial()
         );
         
         return ResponseEntity.ok(dto);
+    }
+
+    @GetMapping("/batch")
+    public ResponseEntity<List<QuestionDTO>> getQuestionBatch(
+            @RequestParam(required = false) String sessionId,
+            @RequestParam(required = false) String concursoId,
+            @RequestParam(required = false) String disciplina,
+            @RequestParam(required = false) String assunto,
+            @RequestParam(required = false) Boolean includeAnswered,
+            @RequestParam(required = false, defaultValue = "15") Integer limit) {
+        List<Question> questions = questionSelectionService.getQuestionBatch(sessionId, concursoId, disciplina, assunto, includeAnswered, limit != null ? limit : 15);
+        List<QuestionDTO> dtos = questions.stream()
+                .map(item -> new QuestionDTO(
+                        item.getId(),
+                        item.getStatement(),
+                        item.getOptions(),
+                        item.getDiscipline(),
+                        item.getTopic(),
+                        item.getBoard(),
+                        item.getYear(),
+                        item.getSupportMaterial()
+                ))
+                .collect(java.util.stream.Collectors.toList());
+        return ResponseEntity.ok(dtos);
     }
 
     @GetMapping("/disciplines")
@@ -109,7 +134,10 @@ public class QuestionController {
                     payload.getDistanciaCursorPx(),
                     payload.getFriccaoCognitivaScore(),
                     payload.getChuteEducadoDetectado(),
-                    payload.getFluenciaNeurologica()
+                    payload.getFluenciaNeurologica(),
+                    payload.getUsedHelp(),
+                    payload.getHelpType(),
+                    payload.getInterventionType()
             );
 
             return ResponseEntity.ok(new AttemptResultDTO(
@@ -138,10 +166,14 @@ public class QuestionController {
         public MetadataDTO metadata;
 
         public QuestionDTO(String questionId, String statement, Object options, String discipline, String topic, String board, Integer year) {
+            this(questionId, statement, options, discipline, topic, board, year, null);
+        }
+
+        public QuestionDTO(String questionId, String statement, Object options, String discipline, String topic, String board, Integer year, Map<String, Object> supportMaterial) {
             this.questionId = questionId;
             this.statement = statement;
             this.options = options;
-            this.metadata = new MetadataDTO(discipline, topic, board, year);
+            this.metadata = new MetadataDTO(discipline, topic, board, year, supportMaterial);
         }
     }
 
@@ -150,12 +182,18 @@ public class QuestionController {
         public String topic;
         public String board;
         public Integer year;
+        public Map<String, Object> supportMaterial;
 
         public MetadataDTO(String discipline, String topic, String board, Integer year) {
+            this(discipline, topic, board, year, null);
+        }
+
+        public MetadataDTO(String discipline, String topic, String board, Integer year, Map<String, Object> supportMaterial) {
             this.discipline = discipline;
             this.topic = topic;
             this.board = board;
             this.year = year;
+            this.supportMaterial = supportMaterial;
         }
     }
 
@@ -175,6 +213,9 @@ public class QuestionController {
         private Double friccaoCognitivaScore;
         private Boolean chuteEducadoDetectado;
         private String fluenciaNeurologica;
+        private Boolean usedHelp;
+        private String helpType;
+        private String interventionType;
 
         public String getSelectedOption() { return selectedOption; }
         public void setSelectedOption(String selectedOption) { this.selectedOption = selectedOption; }
@@ -206,6 +247,12 @@ public class QuestionController {
         public void setChuteEducadoDetectado(Boolean chuteEducadoDetectado) { this.chuteEducadoDetectado = chuteEducadoDetectado; }
         public String getFluenciaNeurologica() { return fluenciaNeurologica; }
         public void setFluenciaNeurologica(String fluenciaNeurologica) { this.fluenciaNeurologica = fluenciaNeurologica; }
+        public Boolean getUsedHelp() { return usedHelp; }
+        public void setUsedHelp(Boolean usedHelp) { this.usedHelp = usedHelp; }
+        public String getHelpType() { return helpType; }
+        public void setHelpType(String helpType) { this.helpType = helpType; }
+        public String getInterventionType() { return interventionType; }
+        public void setInterventionType(String interventionType) { this.interventionType = interventionType; }
     }
 
     @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)

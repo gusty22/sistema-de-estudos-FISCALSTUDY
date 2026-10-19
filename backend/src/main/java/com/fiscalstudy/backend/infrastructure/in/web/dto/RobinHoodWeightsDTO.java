@@ -10,11 +10,39 @@ public record RobinHoodWeightsDTO(
         @JsonProperty("contract_version") String contractVersion,
         @JsonProperty("generated_at") String generatedAt,
         @JsonProperty("source_model") String sourceModel,
+        @JsonProperty("algorithm") String algorithm,
+        @JsonProperty("target_retention_threshold") Double targetRetentionThreshold,
+        @JsonProperty("disciplines_count") Integer disciplinesCount,
+        @JsonProperty("weights") Map<String, DisciplineWeightDTO> weights,
+        @JsonProperty("recommendations") RecommendationsDTO recommendations,
         @JsonProperty("parameters") Map<String, Object> parameters,
         @JsonProperty("critical_topics") List<CriticalTopicDTO> criticalTopics,
         @JsonProperty("hyper_consolidated_disciplines") List<HyperConsolidatedDTO> hyperConsolidatedDisciplines,
         @JsonProperty("redistribution_plan") RedistributionPlanDTO redistributionPlan
 ) {
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record DisciplineWeightDTO(
+            @JsonProperty("discipline") String discipline,
+            @JsonProperty("n_attempts") Integer nAttempts,
+            @JsonProperty("n_correct") Integer nCorrect,
+            @JsonProperty("accuracy") Double accuracy,
+            @JsonProperty("ci_lower") Double ciLower,
+            @JsonProperty("urgency_status") String urgencyStatus,
+            @JsonProperty("critical_day") Integer criticalDay,
+            @JsonProperty("days_until_critical") Integer daysUntilCritical,
+            @JsonProperty("raw_priority_score") Double rawPriorityScore,
+            @JsonProperty("recommended_action") String recommendedAction,
+            @JsonProperty("cycle_time_share_percent") Double cycleTimeSharePercent,
+            @JsonProperty("suggested_block_minutes") Integer suggestedBlockMinutes
+    ) {}
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record RecommendationsDTO(
+            @JsonProperty("time_theft_donors") Object timeTheftDonors,
+            @JsonProperty("priority_recipients") Object priorityRecipients,
+            @JsonProperty("summary_instruction") String summaryInstruction
+    ) {}
+
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record CriticalTopicDTO(
             @JsonProperty("discipline") String discipline,

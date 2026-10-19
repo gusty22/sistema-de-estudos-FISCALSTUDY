@@ -81,23 +81,44 @@ public class MediaRoutingService {
         if (assunto == null || assunto.isBlank()) return "PRIMEIRO_CONTATO";
 
         try {
-            String sql = "SELECT COUNT(*) as total, SUM(CASE WHEN is_correct = 1 THEN 1 ELSE 0 END) as acertos " +
-                         "FROM question_attempts a " +
-                         "JOIN questions q ON a.aggregate_id = q.id " +
-                         "WHERE LOWER(q.assunto) = LOWER(?)";
+            // Conta histórico através do event_store (append-only)
+            String sql = "SELECT e.payload_json FROM event_store e " +
+                         "JOIN questions q ON e.aggregate_id = q.id " +
+                         "WHERE e.event_type = 'ANSWER_SUBMITTED' " +
+                         "  AND LOWER(q.assunto) = LOWER(?)";
             List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql, assunto.trim());
-            if (!rows.isEmpty() && rows.get(0).get("total") != null) {
-                int total = ((Number) rows.get(0).get("total")).intValue();
-                int acertos = rows.get(0).get("acertos") != null ? ((Number) rows.get(0).get("acertos")).intValue() : 0;
-                if (total <= 2) {
-                    return "PRIMEIRO_CONTATO";
+            int total = rows.size();
+            int acertos = 0;
+            for (Map<String, Object> r : rows) {
+                String payload = (String) r.get("payload_json");
+                if (payload != null && payload.contains("\"isCorrect\":true")) {
+                    acertos++;
                 }
-                double taxa = (double) acertos / total;
-                if (total >= 5 && taxa >= 0.75) {
-                    return "DOMINADO";
-                }
-                return "EM_CONSOLIDACAO";
             }
+
+            // Fallback para tabela de compatibilidade question_attempts caso exista e event_store esteja vazio
+            if (total == 0) {
+                try {
+                    String sqlCompat = "SELECT COUNT(*) as total, SUM(CASE WHEN is_correct = 1 THEN 1 ELSE 0 END) as acertos " +
+                                       "FROM question_attempts a " +
+                                       "JOIN questions q ON a.aggregate_id = q.id " +
+                                       "WHERE LOWER(q.assunto) = LOWER(?)";
+                    List<Map<String, Object>> rowsCompat = jdbcTemplate.queryForList(sqlCompat, assunto.trim());
+                    if (!rowsCompat.isEmpty() && rowsCompat.get(0).get("total") != null) {
+                        total = ((Number) rowsCompat.get(0).get("total")).intValue();
+                        acertos = rowsCompat.get(0).get("acertos") != null ? ((Number) rowsCompat.get(0).get("acertos")).intValue() : 0;
+                    }
+                } catch (Exception ignored) {}
+            }
+
+            if (total <= 2) {
+                return "PRIMEIRO_CONTATO";
+            }
+            double taxa = (double) acertos / total;
+            if (total >= 5 && taxa >= 0.75) {
+                return "DOMINADO";
+            }
+            return "EM_CONSOLIDACAO";
         } catch (Exception e) {
             logger.warn("Erro ao calcular familiaridade de '{}': {}", assunto, e.getMessage());
         }

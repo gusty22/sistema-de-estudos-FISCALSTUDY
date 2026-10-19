@@ -18,6 +18,8 @@ public class StagingFileDTO {
     private int questionCount;
     private int verifiedCount;
     private int needsReviewCount;
+    private boolean hasInconsistency;
+    private String inconsistencyReason;
 
     public StagingFileDTO() {}
 
@@ -155,5 +157,21 @@ public class StagingFileDTO {
 
     public void setNeedsReviewCount(int needsReviewCount) {
         this.needsReviewCount = needsReviewCount;
+    }
+
+    public boolean isHasInconsistency() {
+        return hasInconsistency;
+    }
+
+    public void setHasInconsistency(boolean hasInconsistency) {
+        this.hasInconsistency = hasInconsistency;
+    }
+
+    public String getInconsistencyReason() {
+        return inconsistencyReason;
+    }
+
+    public void setInconsistencyReason(String inconsistencyReason) {
+        this.inconsistencyReason = inconsistencyReason;
     }
 }

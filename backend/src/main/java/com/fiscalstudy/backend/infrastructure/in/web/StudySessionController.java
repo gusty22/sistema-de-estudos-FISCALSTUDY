@@ -26,4 +26,19 @@ public class StudySessionController {
     public ResponseEntity<Map<String, Object>> getSummary(@RequestParam(required = false) String concursoId) {
         return ResponseEntity.ok(studySessionService.getStudyTimeSummary(concursoId));
     }
+
+    @GetMapping
+    public ResponseEntity<java.util.List<Map<String, Object>>> getAllSessions(
+            @RequestParam(required = false) String concursoId,
+            @RequestParam(required = false) String disciplina,
+            @RequestParam(required = false) String tipo) {
+        return ResponseEntity.ok(studySessionService.getAllStudySessions(concursoId, disciplina, tipo));
+    }
+
+    @PostMapping("/{sessionId}/annotation")
+    public ResponseEntity<Map<String, Object>> addAnnotation(
+            @PathVariable String sessionId,
+            @RequestBody Map<String, Object> annotationData) {
+        return ResponseEntity.ok(studySessionService.addSessionAnnotation(sessionId, annotationData));
+    }
 }

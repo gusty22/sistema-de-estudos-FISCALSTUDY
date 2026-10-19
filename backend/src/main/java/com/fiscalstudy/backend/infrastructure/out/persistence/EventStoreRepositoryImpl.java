@@ -115,4 +115,32 @@ public class EventStoreRepositoryImpl implements EventStoreRepository {
                 rs.getString("payload_json")
         ));
     }
+
+    @Override
+    public int countPreviousAttempts(String questionId) {
+        if (questionId == null || questionId.isBlank()) return 0;
+        String sql = "SELECT COUNT(*) FROM event_store WHERE event_type = 'ANSWER_SUBMITTED' AND aggregate_id = ?";
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, questionId);
+        return count != null ? count : 0;
+    }
+
+    @Override
+    public java.util.Optional<com.fiscalstudy.backend.domain.EventRecord> findLatestAttempt(String questionId) {
+        if (questionId == null || questionId.isBlank()) return java.util.Optional.empty();
+        String sql = "SELECT event_id, event_type, aggregate_type, aggregate_id, session_id, occurred_at, recorded_at, event_version, schema_version, payload_json " +
+                     "FROM event_store WHERE event_type = 'ANSWER_SUBMITTED' AND aggregate_id = ? ORDER BY occurred_at DESC, rowid DESC LIMIT 1";
+        java.util.List<com.fiscalstudy.backend.domain.EventRecord> list = jdbcTemplate.query(sql, (rs, rowNum) -> new com.fiscalstudy.backend.domain.EventRecord(
+                rs.getString("event_id"),
+                rs.getString("event_type"),
+                rs.getString("aggregate_type"),
+                rs.getString("aggregate_id"),
+                rs.getString("session_id"),
+                rs.getString("occurred_at"),
+                rs.getString("recorded_at"),
+                rs.getInt("event_version"),
+                rs.getString("schema_version"),
+                rs.getString("payload_json")
+        ), questionId);
+        return list.isEmpty() ? java.util.Optional.empty() : java.util.Optional.of(list.get(0));
+    }
 }

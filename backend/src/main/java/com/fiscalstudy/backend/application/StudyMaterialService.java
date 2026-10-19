@@ -69,6 +69,15 @@ public class StudyMaterialService {
         return materialRepository.saveLink(link);
     }
 
+    public Optional<StudyMaterial> updateMaterialProgress(String id, int paginaAtual) {
+        Optional<StudyMaterial> matOpt = materialRepository.findById(id);
+        if (matOpt.isEmpty()) return Optional.empty();
+        StudyMaterial material = matOpt.get();
+        material.setPaginaAtual(Math.max(0, paginaAtual));
+        materialRepository.save(material);
+        return Optional.of(material);
+    }
+
     /**
      * Análise inteligente de conteúdo do material didático e vinculação automática com os tópicos do edital.
      * Considera título, disciplina, notas e texto do sumário/conteúdo do PDF.

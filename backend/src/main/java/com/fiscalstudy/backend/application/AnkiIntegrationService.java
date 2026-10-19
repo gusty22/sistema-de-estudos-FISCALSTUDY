@@ -1,5 +1,6 @@
 package com.fiscalstudy.backend.application;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fiscalstudy.backend.domain.EventStoreRepository;
@@ -276,7 +277,7 @@ public class AnkiIntegrationService {
             // Extrai palavra-chave da alternativa correta para omissão cloze
             String keyword = extractCoreKeyword(correctText);
             String sentence = formatClozeSentence(statement, correctText, keyword);
-            frontOrText = String.format("【%s • %s】 %s", disciplina, assunto, sentence);
+            frontOrText = String.format("[%s — %s] %s", disciplina, assunto, sentence);
             backOrExtra = String.format(
                     "<b>Gabarito:</b> Alternativa %s.<br><b>Pegadinha evitada:</b> A alternativa %s ('%s') induzia ao erro.",
                     correctOpt, chosenOption, truncate(chosenText, 60)
@@ -306,7 +307,7 @@ public class AnkiIntegrationService {
             throw new IllegalArgumentException("O parágrafo do PDF não pode estar vazio.");
         }
 
-        String disc = (disciplina != null && !disciplina.isBlank()) ? disciplina : "Direito Administrativo";
+        String disc = (disciplina != null && !disciplina.isBlank()) ? disciplina : "Geral";
         String ass = (assunto != null && !assunto.isBlank()) ? assunto : "Conceitos Fundamentais";
 
         String cleanText = textParagraph.trim().replaceAll("\\s+", " ");
@@ -318,7 +319,7 @@ public class AnkiIntegrationService {
             clozeText = "{{c1::" + truncate(cleanText, 50) + "}} " + cleanText.substring(Math.min(cleanText.length(), 50));
         }
 
-        String front = String.format("【%s • %s】 %s", disc, ass, clozeText);
+        String front = String.format("[%s — %s] %s", disc, ass, clozeText);
         String backExtra = "<b>Fonte:</b> PDF da sessão de estudos • Regra essencial para revisão ativa amanhã.";
 
         return saveAndPushCard(sessionId, null, disc, ass, "CLOZE", front, backExtra, "PDF_PARAGRAPH", null);
@@ -326,47 +327,97 @@ public class AnkiIntegrationService {
 
     /**
      * MOTOR DE GERAÇÃO: Gera o Lote de 15 Flashcards Essenciais da Sessão
-     * "Você termina a sessão de estudos, fecha o PDF, abre o Anki e magicamente os 15 flashcards
-     * das coisas mais importantes que você acabou de ler (ou errar) já estão lá, com a formatação correta."
+     * Restrição Rígida: Flashcards só são gerados a partir do que o aluno REALMENTE VIU E ESTUDOU.
+     * Nunca injeta assuntos ou disciplinas não vistas.
      */
     public List<AnkiFlashcardDTO> generateSessionBatch15(String concursoId, String sessionId) {
         List<AnkiFlashcardDTO> generatedCards = new ArrayList<>();
 
-        // 1. Tópicos prioritários do edital
-        List<Map<String, Object>> topicos = jdbcTemplate.queryForList(
-                "SELECT disciplina, assunto, subassunto FROM edital_topicos " +
-                        (concursoId != null && !concursoId.isBlank() ? "WHERE concurso_id = ? " : "") +
-                        "ORDER BY peso DESC, questoes_previstas DESC LIMIT 15",
-                concursoId != null && !concursoId.isBlank() ? new Object[]{concursoId} : new Object[]{}
+        // 1. Busca questões que o estudante REALMENTE resolveu nesta sessão
+        List<Map<String, Object>> resolvedQuestions = jdbcTemplate.queryForList(
+                "SELECT DISTINCT q.id, q.enunciado, q.options_json, q.correct_option, q.disciplina, q.assunto, e.payload_json " +
+                "FROM questions q " +
+                "INNER JOIN event_store e ON e.aggregate_id = q.id " +
+                "WHERE e.event_type = 'ANSWER_SUBMITTED' " +
+                (sessionId != null && !sessionId.isBlank() ? "AND e.session_id = ? " : "") +
+                "ORDER BY e.recorded_at DESC LIMIT 15",
+                (sessionId != null && !sessionId.isBlank() ? new Object[]{sessionId} : new Object[]{})
         );
 
-        String defaultDisc = "Direito Administrativo";
-        String defaultAss = "Atos Administrativos";
-        if (!topicos.isEmpty()) {
-            defaultDisc = (String) topicos.get(0).getOrDefault("disciplina", defaultDisc);
-            defaultAss = (String) topicos.get(0).getOrDefault("assunto", defaultAss);
+        // 2. Se a sessão atual ainda tiver poucas questões, busca as questões resolvidas recentemente pelo aluno
+        if (resolvedQuestions.isEmpty()) {
+            resolvedQuestions = jdbcTemplate.queryForList(
+                    "SELECT DISTINCT q.id, q.enunciado, q.options_json, q.correct_option, q.disciplina, q.assunto, e.payload_json " +
+                    "FROM questions q " +
+                    "INNER JOIN event_store e ON e.aggregate_id = q.id " +
+                    "WHERE e.event_type = 'ANSWER_SUBMITTED' " +
+                    "ORDER BY e.recorded_at DESC LIMIT 15"
+            );
         }
 
-        // Template dos 15 Flashcards Estratégicos de Alta Frequência (Frente/Verso e Cloze)
-        List<Map<String, String>> highYieldBlueprints = getHighYield15Blueprints(defaultDisc, defaultAss);
+        // 3. Gera os flashcards baseados ESTRITAMENTE nas questões e matérias vistas
+        for (int i = 0; i < resolvedQuestions.size(); i++) {
+            Map<String, Object> row = resolvedQuestions.get(i);
+            String qId = (String) row.get("id");
+            String enunciado = (String) row.get("enunciado");
+            String optionsJson = (String) row.get("options_json");
+            String correctOpt = (String) row.get("correct_option");
+            String disc = (String) row.get("disciplina");
+            String ass = (String) row.get("assunto");
+            String payloadJson = (String) row.get("payload_json");
 
-        for (int i = 0; i < highYieldBlueprints.size(); i++) {
-            Map<String, String> bp = highYieldBlueprints.get(i);
-            String disc = bp.getOrDefault("disciplina", defaultDisc);
-            String ass = bp.getOrDefault("assunto", defaultAss);
-            String type = bp.getOrDefault("type", (i % 2 == 0) ? "CLOZE" : "BASIC");
-            String front = bp.get("front");
-            String back = bp.get("back");
+            if (disc == null || disc.isBlank()) disc = "Geral";
+            if (ass == null || ass.isBlank()) ass = "Conceitos";
+
+            List<String> options = new ArrayList<>();
+            try {
+                if (optionsJson != null) {
+                    options = objectMapper.readValue(optionsJson, new TypeReference<List<String>>(){});
+                }
+            } catch (Exception ignored) {}
+
+            String chosenOpt = "A";
+            boolean isCorrect = true;
+            try {
+                if (payloadJson != null) {
+                    JsonNode node = objectMapper.readTree(payloadJson);
+                    chosenOpt = node.path("selectedOption").asText("A");
+                    isCorrect = node.path("isCorrect").asBoolean(true);
+                }
+            } catch (Exception ignored) {}
+
+            String correctText = "";
+            for (String opt : options) {
+                if (opt != null && correctOpt != null && opt.toUpperCase().startsWith(correctOpt.toUpperCase())) {
+                    correctText = opt.substring(Math.min(opt.length(), 2)).trim();
+                    break;
+                }
+            }
+
+            String cardType = (i % 2 == 0) ? "CLOZE" : "BASIC";
+            String front;
+            String back;
+
+            if ("CLOZE".equals(cardType) && !correctText.isBlank()) {
+                String keyword = extractCoreKeyword(correctText);
+                String sentence = formatClozeSentence(enunciado, correctText, keyword);
+                front = String.format("[%s — %s] %s", disc, ass, sentence);
+                back = String.format("<b>Gabarito Oficial:</b> Alternativa %s (%s).<br><small>Fonte: Questão resolvida em sessão.</small>",
+                        correctOpt, correctText);
+            } else {
+                front = String.format("<b>[%s — %s]</b><br>Regra testada na questão:<br><i>\"%s\"</i><br><br><b>Qual o entendimento correto e gabarito?</b>",
+                        disc, ass, truncate(enunciado, 180));
+                back = String.format("<b>Alternativa Correta (%s):</b><br>%s<br><br><small>Questão resolvida na sua preparação.</small>",
+                        correctOpt, correctText.isBlank() ? "Verifique a fundamentação teórica deste tópico." : correctText);
+            }
 
             AnkiFlashcardDTO card = saveAndPushCard(
-                    sessionId, concursoId, disc, ass, type, front, back, "SESSION_SYNTHESIS", "step-" + (i + 1)
+                    sessionId, concursoId, disc, ass, cardType, front, back, "QUESTION_RESOLVED", qId
             );
             generatedCards.add(card);
         }
 
-        log.info("Lote de 15 flashcards da sessão gerado com sucesso para o Anki. Total sincronizado: {}",
-                generatedCards.stream().filter(c -> "SYNCED".equals(c.getSyncStatus())).count());
-
+        log.info("Lote de flashcards gerado com base estrita no material estudado. Total: {}", generatedCards.size());
         return generatedCards;
     }
 
@@ -517,100 +568,5 @@ public class AnkiIntegrationService {
                 .replaceAll("_+", "_")
                 .replaceAll("^_|_$", "");
     }
-
-    private List<Map<String, String>> getHighYield15Blueprints(String disciplina, String assunto) {
-        List<Map<String, String>> list = new ArrayList<>();
-
-        list.add(Map.of(
-                "disciplina", disciplina, "assunto", assunto, "type", "CLOZE",
-                "front", "【" + disciplina + " • " + assunto + "】 O atributo do ato administrativo que permite à Administração exigir o cumprimento das obrigações sem prévia autorização judicial é a {{c1::exigibilidade}}.",
-                "back", "A exigibilidade atua por meios indiretos de coação (ex: aplicação de multa). Já a autoexecutoriedade atua por meios diretos materiais."
-        ));
-
-        list.add(Map.of(
-                "disciplina", disciplina, "assunto", assunto, "type", "BASIC",
-                "front", "<b>[" + disciplina + " — " + assunto + "]</b><br>Quais são os 5 requisitos (elementos) indispensáveis de validade de todo ato administrativo?",
-                "back", "Mnemônico <b>COM-FI-FOR-M-OB</b>:<br>1. <b>Competência</b> (sempre vinculado)<br>2. <b>Finalidade</b> (sempre vinculado)<br>3. <b>Forma</b> (regra: vinculado)<br>4. <b>Motivo</b> (pode ser discricionário)<br>5. <b>Objeto</b> (pode ser discricionário)"
-        ));
-
-        list.add(Map.of(
-                "disciplina", disciplina, "assunto", assunto, "type", "CLOZE",
-                "front", "【" + disciplina + " • " + assunto + "】 A presunção de legitimidade dos atos administrativos gera a inversão do {{c1::ônus da prova}} em favor da Administração Pública.",
-                "back", "O ato é presumido verdadeiro e conforme a lei até prova em contrário (presunção juris tantum)."
-        ));
-
-        list.add(Map.of(
-                "disciplina", disciplina, "assunto", assunto, "type", "BASIC",
-                "front", "<b>[" + disciplina + " — " + assunto + "]</b><br>Quais são os efeitos temporais da ANULAÇÃO vs REVOGAÇÃO de um ato administrativo?",
-                "back", "• <b>Anulação (ilegalidade):</b> Efeitos <i>ex tunc</i> (retroativos, apagam todos os efeitos desde a origem).<br>• <b>Revogação (conveniência e oportunidade):</b> Efeitos <i>ex nunc</i> (prospectivos, preservam os efeitos passados)."
-        ));
-
-        list.add(Map.of(
-                "disciplina", disciplina, "assunto", assunto, "type", "CLOZE",
-                "front", "【" + disciplina + " • " + assunto + "】 São convalidáveis apenas os vícios sanáveis relativos à {{c1::competência em razão da pessoa ou matéria comum}} e à {{c1::forma não essencial}}.",
-                "back", "Vícios de finalidade, motivo e objeto ilícito são insanáveis e acarretam nulidade absoluta."
-        ));
-
-        list.add(Map.of(
-                "disciplina", "Direito Tributário", "assunto", "Obrigação Tributária", "type", "CLOZE",
-                "front", "【Direito Tributário • Fato Gerador】 A obrigação tributária principal surge com a ocorrência do fato gerador e tem por objeto o pagamento de {{c1::tributo ou penalidade pecuniária}}.",
-                "back", "A obrigação acessória tem por objeto prestações positivas ou negativas no interesse da arrecadação ou fiscalização."
-        ));
-
-        list.add(Map.of(
-                "disciplina", "Direito Tributário", "assunto", "Lançamento Tributário", "type", "BASIC",
-                "front", "<b>[Direito Tributário — Lançamento]</b><br>Quais são as três modalidades de lançamento tributário previstas no CTN (arts. 147 a 150)?",
-                "back", "1. <b>De Ofício / Direto:</b> Realizado integralmente pelo Fisco (ex: IPTU, IPVA).<br>2. <b>Por Declaração / Misto:</b> Contribuinte fornece dados e Fisco calcula (ex: ITBI em alguns municípios).<br>3. <b>Por Homologação / Auto-lançamento:</b> Contribuinte calcula e antecipa o pagamento sem prévio exame (ex: ICMS, ISSQN)."
-        ));
-
-        list.add(Map.of(
-                "disciplina", "Direito Constitucional", "assunto", "Controle de Constitucionalidade", "type", "CLOZE",
-                "front", "【Direito Constitucional】 A decisão definitiva de mérito proferida pelo STF nas ações do controle concentrado de constitucionalidade possui eficácia contra todos (erga omnes) e efeito {{c1::vinculante}} relativamente aos demais órgãos do Poder Judiciário e à Administração Pública.",
-                "back", "Art. 102, § 2º da CF/88. O Poder Legislativo em sua função típica de legislar não é vinculado."
-        ));
-
-        list.add(Map.of(
-                "disciplina", "Direito Constitucional", "assunto", "Direitos Fundamentais", "type", "BASIC",
-                "front", "<b>[Direito Constitucional — Remédios Constitucionais]</b><br>Qual é a diferença entre Mandado de Segurança e Habeas Data quanto ao direito líquido e certo?",
-                "back", "• <b>Habeas Data:</b> Destinado exclusivamente a assegurar o conhecimento/retificação de informações relativas à pessoa do impetrante em registros públicos.<br>• <b>Mandado de Segurança:</b> Remédio residual para proteger direito líquido e certo não amparado por Habeas Corpus nem Habeas Data."
-        ));
-
-        list.add(Map.of(
-                "disciplina", "Auditoria", "assunto", "Evidências e Procedimentos", "type", "CLOZE",
-                "front", "【Auditoria Governamental】 O procedimento de auditoria que consiste na obtenção de declaração formal e independente de terceiros estranhos à entidade auditada é denominado {{c1::circularização ou confirmação externa}}.",
-                "back", "Pode ser positiva (exige resposta em qualquer caso) ou negativa (exige resposta apenas se houver discordância)."
-        ));
-
-        list.add(Map.of(
-                "disciplina", "Contabilidade Geral", "assunto", "DRE e Apuração do Resultado", "type", "BASIC",
-                "front", "<b>[Contabilidade Geral — Regime Contábil]</b><br>O que preceitua o Princípio da Competência quanto às receitas e despesas?",
-                "back", "As receitas e as despesas devem ser incluídas na apuração do resultado do período em que ocorrerem, <b>independentemente do efetivo recebimento ou pagamento</b>."
-        ));
-
-        list.add(Map.of(
-                "disciplina", "Legislação Tributária Municipal", "assunto", "ISSQN", "type", "CLOZE",
-                "front", "【Legislação Municipal • ISSQN】 A alíquota máxima do ISSQN fixada pela Lei Complementar 116/2003 é de {{c1::5%}}, enquanto a alíquota mínima constitucional é de {{c1::2%}}.",
-                "back", "A alíquota mínima de 2% visa combater a guerra fiscal entre municípios."
-        ));
-
-        list.add(Map.of(
-                "disciplina", disciplina, "assunto", assunto, "type", "BASIC",
-                "front", "<b>[" + disciplina + " — " + assunto + "]</b><br>O que é a Teoria dos Motivos Determinantes no Direito Administrativo?",
-                "back", "A validade do ato administrativo fica vinculada aos motivos indicados pela autoridade como justificativa para sua edição. Se os motivos forem inexistentes ou falsos, o ato é nulo, mesmo que originalmente fosse discricionário."
-        ));
-
-        list.add(Map.of(
-                "disciplina", "Direito Tributário", "assunto", "Crédito Tributário", "type", "CLOZE",
-                "front", "【Direito Tributário • Suspensão vs Extinção】 A concessão de medida liminar em mandado de segurança {{c1::suspende a exigibilidade}} do crédito tributário, enquanto o pagamento e a compensação {{c1::extinguem}} o crédito tributário.",
-                "back", "Art. 151 (suspensão) vs Art. 156 (extinção) do Código Tributário Nacional."
-        ));
-
-        list.add(Map.of(
-                "disciplina", disciplina, "assunto", assunto, "type", "CLOZE",
-                "front", "【" + disciplina + " • " + assunto + "】 A revogação do ato administrativo incide exclusivamente sobre atos {{c1::válidos e discricionários}}, tendo fundamento no juízo de conveniência e oportunidade.",
-                "back", "Atos vinculados, atos consumados, atos que geraram direitos adquiridos e meros atos administrativos não admitem revogação."
-        ));
-
-        return list;
-    }
 }
+

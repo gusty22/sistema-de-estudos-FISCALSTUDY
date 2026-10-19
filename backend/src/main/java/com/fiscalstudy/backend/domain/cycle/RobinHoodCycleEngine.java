@@ -75,6 +75,16 @@ public class RobinHoodCycleEngine {
         for (DisciplineProfile dp : profiles) {
             double raw = dp.getQuantidadeQuestoes() * dp.getPesoProva();
             double factor = calculateInverseMasteryFactor(dp.getNivelDominioEstrelas());
+
+            // Se o motor R calculou pesos de alocação (Robin Hood Weights), ajusta o multiplicador empírico
+            if (injectedWeights != null && injectedWeights.weights() != null && injectedWeights.weights().containsKey(dp.getDisciplina())) {
+                var dw = injectedWeights.weights().get(dp.getDisciplina());
+                if (dw.cycleTimeSharePercent() != null && dw.cycleTimeSharePercent() > 0) {
+                    // Modulador de peso baseado no score de prioridade estatística e urgência calculada pelo R
+                    factor = Math.max(0.2, (dw.cycleTimeSharePercent() / (100.0 / profiles.size())));
+                }
+            }
+
             double effective = raw * factor;
 
             rawWeights.put(dp.getDisciplina(), raw);
@@ -207,6 +217,26 @@ public class RobinHoodCycleEngine {
                 }
                 resumoRobinHood.put("Doador Robin Hood: " + donor,
                         String.format("Retenção > 90%% projetada no R. Tempo subtraído e transferido para tópico em esquecimento iminente."));
+            } else if (injectedWeights.weights() != null && !injectedWeights.weights().isEmpty()) {
+                // Se o R gerou pesos com status de urgência crítica ou necessidade exploratória
+                for (var entry : injectedWeights.weights().entrySet()) {
+                    var dw = entry.getValue();
+                    if ("OVERDUE_CRITICAL_INTERVENTION".equals(dw.urgencyStatus()) || "CRITICAL_INTERVENTION".equals(dw.urgencyStatus())) {
+                        int durMin = dw.suggestedBlockMinutes() != null ? Math.min(dw.suggestedBlockMinutes(), 30) : 20;
+                        String rationale = String.format("Urgência Analítica (%s): Limite inferior de Wilson em %.1f%%.",
+                                dw.urgencyStatus(), dw.ciLower() != null ? dw.ciLower() * 100 : 50.0);
+                        RobinHoodCycleBlock emergency = RobinHoodCycleBlock.createEmergencyBlock(
+                                1,
+                                dw.discipline(),
+                                "Tópicos Críticos / Micro-Revisão",
+                                durMin,
+                                rationale
+                        );
+                        generatedBlocks.add(0, emergency);
+                        resumoRobinHood.put("🚨 Urgência R: " + dw.discipline(), rationale);
+                        break; // Injeta a principal urgência no topo
+                    }
+                }
             }
         }
 

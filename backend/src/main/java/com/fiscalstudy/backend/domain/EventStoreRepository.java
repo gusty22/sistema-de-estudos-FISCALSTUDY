@@ -14,4 +14,6 @@ public interface EventStoreRepository {
     java.util.List<EventRecord> getEventsUpTo(String eventType, long maxRowid);
     java.util.List<EventRecord> getAllEvents(String eventType);
     java.util.List<EventRecord> getAllEvents();
+    int countPreviousAttempts(String questionId);
+    java.util.Optional<EventRecord> findLatestAttempt(String questionId);
 }

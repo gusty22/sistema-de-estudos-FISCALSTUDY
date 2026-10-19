@@ -57,6 +57,15 @@ public class AnalyticsExportIntegrationTest {
                 optionsJson);
     }
 
+    private String resolveRScriptPath(String scriptName) {
+        Path p = Path.of("../../analytics-engine/R", scriptName).toAbsolutePath().normalize();
+        if (Files.exists(p)) {
+            return p.toString().replace("\\", "/");
+        }
+        Path alt = Path.of("C:/Users/washi/Downloads/fiscalstudy-analytics/R", scriptName);
+        return alt.toString().replace("\\", "/");
+    }
+
     @Test
     void export_EmptyDataset_ReturnsHeaderOnlyAndValidZeroedManifest() throws Exception {
         mockMvc.perform(get("/api/v1/analytics/export"))
@@ -316,7 +325,7 @@ public class AnalyticsExportIntegrationTest {
             Files.writeString(csvPath, csvContent, java.nio.charset.StandardCharsets.UTF_8);
             Files.writeString(manifestPath, manifestJson, java.nio.charset.StandardCharsets.UTF_8);
 
-            String rScript = "source('C:/Users/washi/Downloads/fiscalstudy-analytics/R/provenance.R'); " +
+            String rScript = "source('" + resolveRScriptPath("provenance.R") + "'); " +
                     "df <- utils::read.csv('" + csvPath.toString().replace("\\", "/") + "', stringsAsFactors=FALSE); " +
                     "manifest <- jsonlite::fromJSON('" + manifestPath.toString().replace("\\", "/") + "', simplifyVector=FALSE); " +
                     "res <- verify_data_provenance(df, declared_provenance='PROVEN_OPERATIONAL', file_path='" + csvPath.toString().replace("\\", "/") + "', manifest=manifest); " +
@@ -407,8 +416,8 @@ public class AnalyticsExportIntegrationTest {
             assertTrue(Files.exists(pkg.getManifestPath()));
 
             // 7. Validar os arquivos no laboratório R
-            String rScript = "source('C:/Users/washi/Downloads/fiscalstudy-analytics/R/provenance.R'); " +
-                    "source('C:/Users/washi/Downloads/fiscalstudy-analytics/R/adapter.R'); " +
+            String rScript = "source('" + resolveRScriptPath("provenance.R") + "'); " +
+                    "source('" + resolveRScriptPath("adapter.R") + "'); " +
                     "df <- utils::read.csv('" + pkg.getCsvPath().toString().replace("\\", "/") + "', stringsAsFactors=FALSE); " +
                     "manifest <- jsonlite::fromJSON('" + pkg.getManifestPath().toString().replace("\\", "/") + "', simplifyVector=FALSE); " +
                     "val_res <- validate_operational_export(df); " +

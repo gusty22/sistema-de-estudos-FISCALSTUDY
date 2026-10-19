@@ -82,4 +82,45 @@ public class StudyMaterialController {
     public ResponseEntity<List<TopicMaterialLink>> autoLinkAll(@RequestParam(required = false) String concursoId) {
         return ResponseEntity.ok(materialService.autoLinkAllMaterials(concursoId));
     }
+
+    @PatchMapping("/{id}/progress")
+    public ResponseEntity<StudyMaterial> updateProgress(
+            @PathVariable String id,
+            @RequestBody(required = false) java.util.Map<String, Object> payload) {
+        int pagina = 0;
+        if (payload != null && payload.containsKey("paginaAtual")) {
+            pagina = ((Number) payload.get("paginaAtual")).intValue();
+        }
+        return materialService.updateMaterialProgress(id, pagina)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/{id}/file")
+    public ResponseEntity<org.springframework.core.io.Resource> getMaterialFile(@PathVariable String id) {
+        return materialService.getMaterialById(id).map(mat -> {
+            String path = mat.getUrlOuCaminho();
+            if (path == null || path.isBlank()) {
+                return ResponseEntity.notFound().<org.springframework.core.io.Resource>build();
+            }
+            try {
+                java.io.File file = new java.io.File(path);
+                if (!file.exists() || !file.isFile()) {
+                    return ResponseEntity.notFound().<org.springframework.core.io.Resource>build();
+                }
+                org.springframework.core.io.Resource resource = new org.springframework.core.io.FileSystemResource(file);
+                String contentType = "application/pdf";
+                if (path.toLowerCase().endsWith(".txt")) contentType = "text/plain";
+                else if (path.toLowerCase().endsWith(".md")) contentType = "text/markdown";
+                else if (path.toLowerCase().endsWith(".html") || path.toLowerCase().endsWith(".htm")) contentType = "text/html";
+
+                return ResponseEntity.ok()
+                        .header(org.springframework.http.HttpHeaders.CONTENT_TYPE, contentType)
+                        .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + file.getName() + "\"")
+                        .body(resource);
+            } catch (Exception e) {
+                return ResponseEntity.internalServerError().<org.springframework.core.io.Resource>build();
+            }
+        }).orElse(ResponseEntity.notFound().build());
+    }
 }

@@ -18,7 +18,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -40,6 +40,7 @@ class QuestionControllerTest {
     void setup() {
         jdbcTemplate.execute("DELETE FROM event_store");
         jdbcTemplate.execute("DELETE FROM questions");
+        jdbcTemplate.execute("DELETE FROM edital_topicos");
 
         String qId = "q123";
         String optionsJson = "[\"A) Option A\", \"B) Option B\", \"C) Option C\", \"D) Option D\"]";
@@ -408,6 +409,48 @@ class QuestionControllerTest {
         mockMvc.perform(get("/api/v1/questions/next?disciplina=Direito"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.questionId").value("q_valid"));
+    }
+
+    @Test
+    void submitAttempt_InstrumentacaoEtapa1_RegistraEvidenciasConfiaveis() throws Exception {
+        // Tentativa 1: primeira exposição com uso de ajuda e bloco de emergência
+        String payload1 = "{\"selectedOption\":\"A\", \"confidenceLevel\":5, \"activeTimeMs\":3500, \"sessionId\":\"sess_inst_1\", \"usedHelp\":true, \"helpType\":\"MATERIAL_APOIO\", \"interventionType\":\"BLOCO_EMERGENCIA_15MIN\"}";
+
+        mockMvc.perform(post("/api/v1/questions/q123/attempts")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(payload1))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.isCorrect").value(true));
+
+        String savedJson1 = jdbcTemplate.queryForObject(
+                "SELECT payload_json FROM event_store WHERE event_type = 'ANSWER_SUBMITTED' AND session_id = 'sess_inst_1'",
+                String.class
+        );
+        assertNotNull(savedJson1);
+        assertTrue(savedJson1.contains("\"exposicaoAnteriorCount\": 0"), "Primeira exposição deve ter contador 0");
+        assertTrue(savedJson1.contains("\"diasDesdeUltimaExposicao\": null"), "Primeira exposição não tem intervalo prévio");
+        assertTrue(savedJson1.contains("\"usedHelp\": true"), "Deve registrar que consultou ajuda");
+        assertTrue(savedJson1.contains("\"helpType\": \"MATERIAL_APOIO\""));
+        assertTrue(savedJson1.contains("\"interventionType\": \"BLOCO_EMERGENCIA_15MIN\""));
+
+        // Tentativa 2: segunda exposição da mesma questão em nova sessão, sem ajuda
+        String payload2 = "{\"selectedOption\":\"B\", \"confidenceLevel\":2, \"activeTimeMs\":4200, \"sessionId\":\"sess_inst_2\", \"usedHelp\":false, \"causaErro\":\"E1\"}";
+
+        mockMvc.perform(post("/api/v1/questions/q123/attempts")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(payload2))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.isCorrect").value(false));
+
+        String savedJson2 = jdbcTemplate.queryForObject(
+                "SELECT payload_json FROM event_store WHERE event_type = 'ANSWER_SUBMITTED' AND session_id = 'sess_inst_2'",
+                String.class
+        );
+        assertNotNull(savedJson2);
+        assertTrue(savedJson2.contains("\"exposicaoAnteriorCount\": 1"), "Segunda exposição deve registrar contador 1");
+        assertTrue(savedJson2.contains("\"resultadoAnterior\": true"), "Deve rastrear o resultado da tentativa anterior");
+        assertTrue(savedJson2.contains("\"usedHelp\": false"));
+        assertTrue(savedJson2.contains("\"causaErro\": \"E1\""));
     }
 }
 

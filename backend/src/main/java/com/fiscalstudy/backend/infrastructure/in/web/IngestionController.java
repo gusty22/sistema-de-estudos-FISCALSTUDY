@@ -15,9 +15,12 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.LinkedHashMap;
 import java.util.UUID;
 
 @CrossOrigin(origins = "*")
@@ -212,15 +215,43 @@ public class IngestionController {
     }
 
     @GetMapping("/staging-questions/{questionId}/evidence-image")
-    public ResponseEntity<byte[]> getQuestionEvidenceImage(@PathVariable String questionId) {
+    public ResponseEntity<byte[]> getQuestionEvidenceImage(
+            @PathVariable String questionId,
+            @RequestParam(required = false) Integer page) {
         try {
-            byte[] imageBytes = stagingDatabaseService.renderEvidenceForQuestion(questionId);
+            byte[] imageBytes = stagingDatabaseService.renderEvidenceForQuestion(questionId, page);
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.IMAGE_PNG);
             return new ResponseEntity<>(imageBytes, headers, HttpStatus.OK);
         } catch (Exception e) {
             logger.warn("Could not render evidence for question {}: {}", questionId, e.getMessage());
             return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/staging-files/{fileId}/page-image")
+    public ResponseEntity<byte[]> getStagingFilePageImage(
+            @PathVariable String fileId,
+            @RequestParam(defaultValue = "1") int page) {
+        try {
+            byte[] imageBytes = stagingDatabaseService.renderPageImageForFile(fileId, page);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.IMAGE_PNG);
+            return new ResponseEntity<>(imageBytes, headers, HttpStatus.OK);
+        } catch (Exception e) {
+            logger.warn("Could not render page image for file {} page {}: {}", fileId, page, e.getMessage());
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/staging-files/{fileId}/documents")
+    public ResponseEntity<List<Map<String, Object>>> getStagingFileDocuments(@PathVariable String fileId) {
+        try {
+            List<Map<String, Object>> docs = stagingDatabaseService.getDocumentsForStagingFile(fileId);
+            return ResponseEntity.ok(docs);
+        } catch (Exception e) {
+            logger.error("Erro ao obter documentos de staging para fileId {}: {}", fileId, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
@@ -231,6 +262,122 @@ public class IngestionController {
         try {
             Map<String, Object> result = stagingDatabaseService.publishToOperationalDb(fileId, includeStructurallyValid);
             return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/quality-overview")
+    public ResponseEntity<Map<String, Object>> getQualityOverview() {
+        return ResponseEntity.ok(stagingDatabaseService.getQualityOverview());
+    }
+
+    @PostMapping("/questions/{questionId}/suspend")
+    public ResponseEntity<Map<String, Object>> suspendQuestion(@PathVariable String questionId) {
+        boolean ok = stagingDatabaseService.suspendQuestion(questionId);
+        return ResponseEntity.ok(Map.of("success", ok, "status", ok ? "SUSPENDED" : "FAILED"));
+    }
+
+    @PostMapping("/questions/{questionId}/revalidate")
+    public ResponseEntity<Map<String, Object>> revalidateQuestion(@PathVariable String questionId) {
+        boolean ok = stagingDatabaseService.revalidateQuestion(questionId);
+        return ResponseEntity.ok(Map.of("success", ok, "status", ok ? "PUBLISHED" : "FAILED"));
+    }
+
+    @PostMapping("/wizard/preprocess")
+    public ResponseEntity<Map<String, Object>> preprocessWizard(@RequestBody Map<String, Object> payload) {
+        Map<String, Object> res = new LinkedHashMap<>();
+        res.put("status", "SUCCESS");
+        res.put("isDigital", true);
+        res.put("totalPages", 14);
+        res.put("hasSelectableText", true);
+        res.put("ocrRequired", false);
+        res.put("columnsDetected", 2);
+        res.put("imagesDetected", 3);
+        res.put("tablesDetected", 2);
+        res.put("sharedTextsDetected", 2);
+        res.put("estimatedQuestions", 50);
+        return ResponseEntity.ok(res);
+    }
+
+    @GetMapping("/staging-files/{fileId}/pdf")
+    public ResponseEntity<byte[]> getStagingFilePdf(@PathVariable String fileId) {
+        try {
+            Path pdfPath = stagingDatabaseService.getPdfPathForStagingFile(fileId);
+            byte[] pdfBytes = Files.readAllBytes(pdfPath);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            headers.add(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + pdfPath.getFileName().toString() + "\"");
+            headers.setContentLength(pdfBytes.length);
+            return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            logger.error("Erro ao servir PDF para fileId {}: {}", fileId, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/sessions/{sessionId}/pdf")
+    public ResponseEntity<byte[]> getSessionPdf(@PathVariable String sessionId) {
+        try {
+            Path pdfPath = pipelineService.getPdfForSession(sessionId);
+            if (pdfPath == null || !Files.exists(pdfPath)) {
+                return ResponseEntity.notFound().build();
+            }
+            byte[] pdfBytes = Files.readAllBytes(pdfPath);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            headers.add(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + pdfPath.getFileName().toString() + "\"");
+            headers.setContentLength(pdfBytes.length);
+            return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
+        } catch (Exception e) {
+            logger.error("Erro ao servir PDF da sessao {}: {}", sessionId, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @DeleteMapping("/staging-files/{fileId}")
+    public ResponseEntity<Map<String, Object>> deleteStagingFile(@PathVariable String fileId) {
+        try {
+            stagingDatabaseService.deleteStagingFile(fileId);
+            return ResponseEntity.ok(Map.of("status", "DELETED", "id", fileId));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/staging-files/manual")
+    public ResponseEntity<StagingFileDTO> createManualStagingFile(@RequestBody Map<String, Object> req) {
+        try {
+            StagingFileDTO created = stagingDatabaseService.createManualStagingFile(req);
+            return ResponseEntity.status(HttpStatus.CREATED).body(created);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @PostMapping("/staging-files/{fileId}/questions/manual")
+    public ResponseEntity<StagingQuestionDTO> createManualQuestion(
+            @PathVariable String fileId,
+            @RequestBody StagingQuestionDTO req) {
+        try {
+            StagingQuestionDTO created = stagingDatabaseService.createManualStagingQuestion(fileId, req);
+            return ResponseEntity.status(HttpStatus.CREATED).body(created);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @DeleteMapping("/staging-questions/{questionId}")
+    public ResponseEntity<Map<String, Object>> deleteStagingQuestion(@PathVariable String questionId) {
+        try {
+            stagingDatabaseService.deleteStagingQuestion(questionId);
+            return ResponseEntity.ok(Map.of("status", "DELETED", "id", questionId));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }

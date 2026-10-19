@@ -14,9 +14,30 @@ public class QuestionUpdateRequestDTO {
     private String status; // EXTRACTED, STRUCTURALLY_VALID, NEEDS_REVIEW, SOURCE_VERIFIED, REJECTED
     private String rejectionType; // RECUPERAVEL, DEFINITIVA
     private String reviewNotes;
+    private Integer numeroOriginal;
+    private List<Integer> pages;
     private java.util.Map<String, Object> supportMaterial;
+    private String justificativa;
+    private String textoApoio;
+    private String textoApoioTitulo;
 
     public QuestionUpdateRequestDTO() {}
+
+    public Integer getNumeroOriginal() {
+        return numeroOriginal;
+    }
+
+    public void setNumeroOriginal(Integer numeroOriginal) {
+        this.numeroOriginal = numeroOriginal;
+    }
+
+    public List<Integer> getPages() {
+        return pages;
+    }
+
+    public void setPages(List<Integer> pages) {
+        this.pages = pages;
+    }
 
     public String getStatement() {
         return statement;
@@ -112,5 +133,29 @@ public class QuestionUpdateRequestDTO {
 
     public void setSupportMaterial(java.util.Map<String, Object> supportMaterial) {
         this.supportMaterial = supportMaterial;
+    }
+
+    public String getJustificativa() {
+        return justificativa;
+    }
+
+    public void setJustificativa(String justificativa) {
+        this.justificativa = justificativa;
+    }
+
+    public String getTextoApoio() {
+        return textoApoio;
+    }
+
+    public void setTextoApoio(String textoApoio) {
+        this.textoApoio = textoApoio;
+    }
+
+    public String getTextoApoioTitulo() {
+        return textoApoioTitulo;
+    }
+
+    public void setTextoApoioTitulo(String textoApoioTitulo) {
+        this.textoApoioTitulo = textoApoioTitulo;
     }
 }
