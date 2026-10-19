@@ -213,8 +213,14 @@ export const ReverseEngineeringModal: React.FC<ReverseEngineeringModalProps> = (
 
               <div className="rev-options-list">
                 {currentQ.options && currentQ.options.map((opt, idx) => {
+                  const isCE = currentQ.options.length === 2 && (
+                    currentQ.options.some(o => o.toUpperCase().includes('CERT') || o.toUpperCase().includes('ERR')) ||
+                    (currentQ.banca && (currentQ.banca.toUpperCase().includes('CEBRASPE') || currentQ.banca.toUpperCase().includes('CESPE')))
+                  );
                   const letterMatch = opt.match(/^([A-E])\)?/i);
-                  const letter = letterMatch ? letterMatch[1].toUpperCase() : String.fromCharCode(65 + idx);
+                  const letter = isCE
+                    ? (idx === 0 ? 'C' : 'E')
+                    : (letterMatch ? letterMatch[1].toUpperCase() : String.fromCharCode(65 + idx));
                   const isEliminated = eliminatedOptions.includes(letter);
                   const isSelected = selectedOption === letter;
 

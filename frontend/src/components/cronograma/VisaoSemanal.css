@@ -1,0 +1,652 @@
+/* ==========================================================================
+   VISÃO SEMANAL ADAPTATIVA — TECNOLOGIA CALMA
+   Linha do tempo fluida da carga de estudo e projeção anti-frágil.
+   ========================================================================== */
+
+.weekly-calm-wrapper {
+  min-height: 100vh;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  font-family: inherit;
+  padding: 1.5rem 1.5rem 3.5rem 1.5rem;
+}
+
+/* --------------------------------------------------------------------------
+   THEME TOKENS: PAPER VS NIGHT
+   -------------------------------------------------------------------------- */
+:root[data-theme="paper"] .weekly-calm-wrapper,
+[data-theme="paper"] .weekly-calm-wrapper,
+body.theme-paper .weekly-calm-wrapper,
+.weekly-calm-wrapper.theme-paper {
+  --calm-bg: #f9f8f6;
+  --calm-text: #292524;
+  --calm-text-muted: #78716c;
+  --calm-card-bg: #ffffff;
+  --calm-card-border: rgba(231, 229, 228, 0.75);
+  --calm-subtle-bg: #f2f0eb;
+  --calm-input-bg: #fafaf9;
+  --calm-border: #e7e5e4;
+  --calm-primary: #4f46e5;
+  --calm-primary-hover: #4338ca;
+  --calm-primary-shadow: rgba(79, 70, 229, 0.2);
+  --calm-card-shadow: 0 4px 20px rgba(120, 113, 108, 0.06);
+
+  --type-revisao-bg: #ecfdf5;
+  --type-revisao-border: #a7f3d0;
+  --type-revisao-text: #047857;
+
+  --type-pratica-bg: #eef2ff;
+  --type-pratica-border: #c7d2fe;
+  --type-pratica-text: #4338ca;
+
+  --type-conteudo-bg: #f5f5f4;
+  --type-conteudo-border: #e7e5e4;
+  --type-conteudo-text: #57534e;
+
+  --day-today-bg: rgba(79, 70, 229, 0.06);
+  --day-today-border: #4f46e5;
+  --timeline-line: #e7e5e4;
+
+  background-color: var(--calm-bg);
+  color: var(--calm-text);
+}
+
+:root[data-theme="night"] .weekly-calm-wrapper,
+:root[data-theme="dark"] .weekly-calm-wrapper,
+[data-theme="night"] .weekly-calm-wrapper,
+[data-theme="dark"] .weekly-calm-wrapper,
+body.theme-night .weekly-calm-wrapper,
+body.theme-dark .weekly-calm-wrapper,
+.weekly-calm-wrapper.theme-night,
+.weekly-calm-wrapper.theme-dark {
+  --calm-bg: #0e0f11;
+  --calm-text: #e7e5e4;
+  --calm-text-muted: #a8a29e;
+  --calm-card-bg: #16181a;
+  --calm-card-border: #26282b;
+  --calm-subtle-bg: #1c1e22;
+  --calm-input-bg: #111214;
+  --calm-border: #26282b;
+  --calm-primary: #6366f1;
+  --calm-primary-hover: #818cf8;
+  --calm-primary-shadow: rgba(99, 102, 241, 0.25);
+  --calm-card-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+
+  --type-revisao-bg: rgba(16, 185, 129, 0.12);
+  --type-revisao-border: rgba(16, 185, 129, 0.28);
+  --type-revisao-text: #34d399;
+
+  --type-pratica-bg: rgba(99, 102, 241, 0.15);
+  --type-pratica-border: rgba(99, 102, 241, 0.3);
+  --type-pratica-text: #818cf8;
+
+  --type-conteudo-bg: rgba(120, 113, 108, 0.15);
+  --type-conteudo-border: rgba(120, 113, 108, 0.3);
+  --type-conteudo-text: #d6d3d1;
+
+  --day-today-bg: rgba(99, 102, 241, 0.12);
+  --day-today-border: #6366f1;
+  --timeline-line: #26282b;
+
+  background-color: var(--calm-bg);
+  color: var(--calm-text);
+}
+
+.weekly-calm-container {
+  max-width: 1080px;
+  margin: 0 auto;
+}
+
+/* --------------------------------------------------------------------------
+   HEADER
+   -------------------------------------------------------------------------- */
+.weekly-header {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+@media (min-width: 640px) {
+  .weekly-header {
+    flex-direction: row;
+    align-items: flex-end;
+  }
+}
+
+.weekly-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--calm-primary);
+  margin-bottom: 0.35rem;
+}
+
+.weekly-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.weekly-subtitle {
+  font-size: 0.88rem;
+  color: var(--calm-text-muted);
+  margin-top: 0.35rem;
+  max-width: 650px;
+  line-height: 1.45;
+}
+
+.weekly-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.weekly-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--calm-border);
+  background-color: var(--calm-card-bg);
+  color: var(--calm-text);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.weekly-action-btn:hover {
+  background-color: var(--calm-subtle-bg);
+}
+
+.weekly-theme-toggle {
+  padding: 0.65rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--calm-border);
+  background-color: var(--calm-card-bg);
+  color: var(--calm-text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.weekly-theme-toggle:hover {
+  background-color: var(--calm-subtle-bg);
+  color: var(--calm-text);
+}
+
+/* --------------------------------------------------------------------------
+   ALERTA DO PRINCÍPIO DA ANTI-FRAGILIDADE
+   -------------------------------------------------------------------------- */
+.weekly-antifragile-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  padding: 1.15rem 1.25rem;
+  border-radius: 1.25rem;
+  border: 1px solid var(--calm-card-border);
+  background-color: var(--calm-card-bg);
+  box-shadow: var(--calm-card-shadow);
+  margin-bottom: 1.75rem;
+}
+
+.weekly-antifragile-icon {
+  padding: 0.45rem;
+  border-radius: 0.5rem;
+  background-color: var(--day-today-bg);
+  color: var(--calm-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.weekly-antifragile-title {
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 0 0 0.25rem 0;
+  color: var(--calm-text);
+}
+
+.weekly-antifragile-text {
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--calm-text-muted);
+  margin: 0;
+  max-width: 820px;
+}
+
+/* --------------------------------------------------------------------------
+   SELETOR DE DIAS HORIZONTAL (SEG A DOM)
+   -------------------------------------------------------------------------- */
+.weekly-days-row {
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.weekly-day-card {
+  min-width: 135px;
+  flex: 1;
+  padding: 0.85rem 1rem;
+  border-radius: 1.25rem;
+  border: 1px solid var(--calm-border);
+  background-color: var(--calm-card-bg);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  text-align: left;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.weekly-day-card:hover {
+  background-color: var(--calm-subtle-bg);
+}
+
+.weekly-day-card.is-selected {
+  border-color: var(--calm-primary);
+  box-shadow: 0 0 0 1px var(--calm-primary);
+}
+
+.weekly-day-card.is-today {
+  border-color: var(--day-today-border);
+  background-color: var(--day-today-bg);
+}
+
+.weekly-day-card.is-past {
+  opacity: 0.7;
+}
+
+.weekly-day-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.weekly-day-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--calm-text-muted);
+}
+
+.weekly-day-card.is-today .weekly-day-label {
+  color: var(--calm-primary);
+}
+
+.weekly-today-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background-color: var(--calm-primary);
+}
+
+.weekly-day-date {
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--calm-text);
+  line-height: 1;
+}
+
+.weekly-day-progress-box {
+  margin-top: 0.25rem;
+}
+
+.weekly-day-progress-text {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.64rem;
+  font-weight: 600;
+  color: var(--calm-text-muted);
+  margin-bottom: 0.3rem;
+}
+
+.weekly-progress-bar-bg {
+  height: 5px;
+  width: 100%;
+  border-radius: 9999px;
+  background-color: var(--calm-border);
+  overflow: hidden;
+}
+
+.weekly-progress-bar-fill {
+  height: 100%;
+  border-radius: 9999px;
+  background-color: var(--calm-primary);
+  transition: width 0.3s ease;
+}
+
+.weekly-progress-bar-fill.past {
+  background-color: var(--calm-text-muted);
+}
+
+.weekly-day-exception-badge {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--calm-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.25rem;
+}
+
+/* --------------------------------------------------------------------------
+   PAINEL DO DIA SELECIONADO & LINHA DO TEMPO
+   -------------------------------------------------------------------------- */
+.weekly-detail-container {
+  border-radius: 1.5rem;
+  border: 1px solid var(--calm-card-border);
+  background-color: var(--calm-card-bg);
+  box-shadow: var(--calm-card-shadow);
+  padding: 1.75rem;
+  min-height: 420px;
+}
+
+.weekly-detail-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--calm-border);
+}
+
+.weekly-detail-day-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin: 0 0 0.35rem 0;
+  color: var(--calm-text);
+}
+
+.weekly-today-pill {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.15rem 0.6rem;
+  border-radius: 9999px;
+  background-color: var(--day-today-bg);
+  border: 1px solid var(--day-today-border);
+  color: var(--calm-primary);
+}
+
+.weekly-detail-window {
+  font-size: 0.8rem;
+  color: var(--calm-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+/* Estado de Exceção / Dia Bloqueado */
+.weekly-exception-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 3.5rem 1.5rem;
+  border-radius: 1.25rem;
+  border: 1px dashed var(--calm-border);
+  background-color: var(--calm-subtle-bg);
+}
+
+.weekly-exception-circle {
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 9999px;
+  background-color: var(--calm-card-bg);
+  border: 1px solid var(--calm-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+  color: var(--calm-text-muted);
+}
+
+.weekly-exception-heading {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0 0 0.35rem 0;
+  color: var(--calm-text);
+}
+
+.weekly-exception-reason {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--calm-text-muted);
+  margin-bottom: 1rem;
+}
+
+.weekly-exception-desc {
+  font-size: 0.76rem;
+  line-height: 1.5;
+  color: var(--calm-text-muted);
+  max-width: 420px;
+  margin: 0;
+}
+
+/* --------------------------------------------------------------------------
+   TIMELINE VERTICAL ALTERNADA (ESQUERDA / DIREITA)
+   -------------------------------------------------------------------------- */
+.weekly-timeline {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1rem 0;
+}
+
+/* Linha central vertical em gradiente */
+.weekly-timeline::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 1.25rem;
+  width: 2px;
+  background: linear-gradient(to bottom, transparent, var(--timeline-line) 15%, var(--timeline-line) 85%, transparent);
+}
+
+@media (min-width: 768px) {
+  .weekly-timeline::before {
+    left: 50%;
+    transform: translateX(-50%);
+  }
+}
+
+.weekly-timeline-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .weekly-timeline-item {
+    justify-content: flex-start;
+  }
+
+  .weekly-timeline-item:nth-child(even) {
+    justify-content: flex-end;
+  }
+}
+
+/* Marcador Circular na Linha */
+.weekly-timeline-marker {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 9999px;
+  border: 4px solid var(--calm-bg);
+  background-color: var(--calm-card-bg);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  z-index: 2;
+}
+
+@media (min-width: 768px) {
+  .weekly-timeline-marker {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+}
+
+/* Cartão de Atividade */
+.weekly-activity-card {
+  width: calc(100% - 3.5rem);
+  padding: 1.15rem 1.25rem;
+  border-radius: 1.25rem;
+  border: 1px solid var(--calm-border);
+  background-color: var(--calm-card-bg);
+  transition: all 0.2s ease;
+}
+
+@media (min-width: 768px) {
+  .weekly-activity-card {
+    width: calc(50% - 2.5rem);
+  }
+}
+
+.weekly-activity-card:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+}
+
+.weekly-activity-card.is-concluido {
+  opacity: 0.65;
+  background-color: var(--calm-subtle-bg);
+}
+
+.weekly-activity-card.is-em-execucao {
+  background-color: var(--day-today-bg);
+  border-color: var(--day-today-border);
+  box-shadow: 0 4px 18px var(--calm-primary-shadow);
+}
+
+.weekly-activity-card.is-adiado,
+.weekly-activity-card.is-substituido {
+  opacity: 0.55;
+  border-style: dashed;
+}
+
+.weekly-activity-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.weekly-activity-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.15rem 0.5rem;
+  border-radius: 0.4rem;
+  border: 1px solid transparent;
+}
+
+.weekly-activity-badge.type-revisao {
+  background-color: var(--type-revisao-bg);
+  border-color: var(--type-revisao-border);
+  color: var(--type-revisao-text);
+}
+
+.weekly-activity-badge.type-pratica {
+  background-color: var(--type-pratica-bg);
+  border-color: var(--type-pratica-border);
+  color: var(--type-pratica-text);
+}
+
+.weekly-activity-badge.type-conteudo {
+  background-color: var(--type-conteudo-bg);
+  border-color: var(--type-conteudo-border);
+  color: var(--type-conteudo-text);
+}
+
+.weekly-activity-duration {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--calm-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.weekly-activity-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.35;
+  margin: 0 0 0.5rem 0;
+  color: var(--calm-text);
+}
+
+.weekly-activity-title.strike {
+  text-decoration: line-through;
+  opacity: 0.75;
+}
+
+.weekly-activity-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.weekly-state-text.concluido {
+  color: #10b981;
+}
+
+.weekly-state-text.em-execucao {
+  color: var(--calm-primary);
+}
+
+.weekly-state-text.planejado {
+  color: var(--calm-text-muted);
+}
+
+.weekly-state-text.adiado,
+.weekly-state-text.substituido {
+  color: #f59e0b;
+}
+
+.weekly-activity-note {
+  font-size: 0.68rem;
+  font-weight: 500;
+  font-style: italic;
+  color: var(--calm-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  text-transform: none;
+}

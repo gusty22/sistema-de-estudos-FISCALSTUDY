@@ -1,0 +1,128 @@
+/* ============================================================================
+   T19 — MONTAGEM DE CADERNOS (TECNOLOGIA CALMA)
+   Compatibilidade com Modo Claro e Escuro
+   ============================================================================ */
+
+.montagem-caderno-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.montagem-caderno-modal {
+  background: var(--calm-card-bg, #ffffff);
+  border: 1px solid var(--calm-card-border, #e2e8f0);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 580px;
+  padding: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.15);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.montagem-caderno-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.montagem-caderno-header h3 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--calm-text, #0f172a);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.montagem-quantidades-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.btn-qty-pill {
+  padding: 0.45rem 0.85rem;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border: 1px solid var(--calm-card-border, #cbd5e1);
+  background: var(--calm-bg-subtle, #f8fafc);
+  color: var(--calm-text, #0f172a);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-qty-pill:hover {
+  border-color: var(--calm-primary, #4f46e5);
+  background: var(--bg-card-hover, #f1f5f9);
+}
+
+.btn-qty-pill.active {
+  background: rgba(79, 70, 229, 0.1);
+  border-color: var(--calm-primary, #4f46e5);
+  color: var(--calm-primary, #4f46e5);
+}
+
+.modos-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
+}
+
+.btn-modo-card {
+  padding: 0.85rem;
+  border-radius: 10px;
+  border: 1px solid var(--calm-card-border, #cbd5e1);
+  background: var(--calm-bg-subtle, #f8fafc);
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  transition: all 0.15s ease;
+}
+
+.btn-modo-card:hover {
+  border-color: var(--calm-primary, #4f46e5);
+  background: var(--bg-card-hover, #f1f5f9);
+}
+
+.btn-modo-card.active {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: #10b981;
+}
+
+.btn-modo-card strong {
+  font-size: 0.84rem;
+  color: var(--calm-text, #0f172a);
+}
+
+.btn-modo-card span {
+  font-size: 0.74rem;
+  color: var(--calm-text-muted, #64748b);
+  line-height: 1.3;
+}
+
+.elegibilidade-banner {
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  font-size: 0.82rem;
+  color: #059669;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}

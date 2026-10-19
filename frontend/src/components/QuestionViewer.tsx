@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './QuestionViewer.css';
 import { CrossDomainBridgeModal } from './cognitive/CrossDomainBridgeModal';
-import { AnkiHubModal } from './anki/AnkiHubModal';
 import { CognitiveLockModal } from './cognitive/CognitiveLockModal';
 import { ReverseEngineeringModal } from './cognitive/ReverseEngineeringModal';
+import { RelatorioSessaoQuestoes, type SolvedQuestionItem } from './questoes/RelatorioSessaoQuestoes';
 
 interface Option {
   label?: string;
@@ -14,6 +14,7 @@ interface SupportMaterial {
   tipo?: string;
   titulo?: string;
   conteudoTexto?: string;
+  mediaPath?: string;
 }
 
 interface Question {
@@ -27,6 +28,16 @@ interface Question {
     year: number;
     supportMaterial?: SupportMaterial;
   };
+}
+
+export interface AttemptFeedback {
+  isCorrect: boolean | null;
+  gabaritoStatus?: string;
+  concursoPoint?: number;
+  bloqueioCognitivo?: boolean;
+  errosConsecutivos?: number;
+  prescricaoTexto?: string;
+  veiculo?: string;
 }
 
 interface SessionSummary {
@@ -47,13 +58,99 @@ interface ConcursoOption {
   cargo: string;
 }
 
-const ERROR_TAXONOMIES = [
-  { code: 'NAO_SABIA_MATERIA', label: '1. Não sabia a matéria (Lacuna teórica pura)' },
-  { code: 'NAO_LEMBRAVA', label: '2. Não lembrava (Falha de retenção / SRS)' },
-  { code: 'INTERPRETACAO_EQUIVOCADA', label: '3. Interpretação equivocada (Comando / enunciado)' },
-  { code: 'CONFUSAO_CONCEITUAL', label: '4. Confusão entre conceitos (Faltou Feynman / macro)' },
-  { code: 'FALTA_ATENCAO', label: '5. Falta de atenção (Leitura rápida / ignorou restritivos)' },
+export interface MetaconFeedbackOption {
+  code: string;
+  label: string;
+  shortLabel: string;
+  type: 'acerto' | 'erro' | 'ambos';
+  badgeColor: string;
+  description: string;
+}
+
+export const METACON_FEEDBACK_OPTIONS: MetaconFeedbackOption[] = [
+  { 
+    code: 'SABIA_COM_CONVICCAO', 
+    label: '🟢 Sabia e acertei com convicção', 
+    shortLabel: 'Convicção Plena',
+    type: 'acerto', 
+    badgeColor: '#10b981',
+    description: 'Domínio conceitual real e seguro, sem hesitação ou dúvida.' 
+  },
+  { 
+    code: 'CHUTE_EDUCADO', 
+    label: '🟡 Acertei no chute educado / eliminação', 
+    shortLabel: 'Chute Educado',
+    type: 'acerto', 
+    badgeColor: '#f59e0b',
+    description: 'Acertei por descarte ou técnica de prova, mas preciso revisar a teoria.' 
+  },
+  { 
+    code: 'SABIA_MAS_CONFUNDI', 
+    label: '🟠 Sabia, mas confundi / vacilei em detalhe', 
+    shortLabel: 'Sabia, mas confundi',
+    type: 'erro', 
+    badgeColor: '#fb923c',
+    description: 'Conheço a matéria, mas troquei conceitos semelhantes, prazos ou caí em exceção.' 
+  },
+  { 
+    code: 'NAO_SABIA_MATERIA', 
+    label: '🔴 Não sabia a matéria (Lacuna teórica pura)', 
+    shortLabel: 'Lacuna Teórica',
+    type: 'erro', 
+    badgeColor: '#ef4444',
+    description: 'Nunca estudei esse assunto ou esqueci completamente os fundamentos.' 
+  },
+  { 
+    code: 'NAO_LEMBRAVA', 
+    label: '📉 Não lembrava (Falha de retenção / SRS)', 
+    shortLabel: 'Não lembrava',
+    type: 'erro', 
+    badgeColor: '#a855f7',
+    description: 'Já tinha estudado, mas a memória decaiu na Curva de Ebbinghaus.' 
+  },
+  { 
+    code: 'FALTA_ATENCAO', 
+    label: '🟣 Falta de atenção / Interpretação do comando', 
+    shortLabel: 'Atenção / Comando',
+    type: 'erro', 
+    badgeColor: '#8b5cf6',
+    description: 'Comi bronha no enunciado (ignorado "incorreto", "salvo", "vedado").' 
+  },
+  { 
+    code: 'TRAVAMENTO_PRATICO', 
+    label: '🔵 Sabia a teoria, mas travei na aplicação prática', 
+    shortLabel: 'Trava Prática',
+    type: 'erro', 
+    badgeColor: '#38bdf8',
+    description: 'Entendo o conceito abstrato, mas travei no cálculo ou na subsunção ao caso.' 
+  },
 ];
+
+export interface SessionAttemptHistoryItem {
+  questionId: string;
+  statement: string;
+  discipline: string;
+  topic: string;
+  board: string;
+  year: number;
+  options: string[];
+  selectedOption: string;
+  isCorrect: boolean | null;
+  gabaritoStatus?: string;
+  concursoPoint?: number;
+  confidenceLevel: number;
+  activeTimeMs: number;
+  tempoHesitacaoMs: number;
+  trocasCount: number;
+  friccaoScore: number;
+  chuteEducadoDetectado: boolean;
+  fluenciaNeurologica: string;
+  causaErro?: string;
+  naCordaBamba?: boolean;
+  pensouContrario?: boolean;
+}
+
+const ERROR_TAXONOMIES = METACON_FEEDBACK_OPTIONS;
 
 const QuestionViewer: React.FC = () => {
   const [sessionStarted, setSessionStarted] = useState(() => sessionStorage.getItem('fiscalstudy_sessionStarted') === 'true');
@@ -63,15 +160,8 @@ const QuestionViewer: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [confidence, setConfidence] = useState<number>(0);
-  const [feedback, setFeedback] = useState<{
-    isCorrect: boolean | null;
-    gabaritoStatus?: string;
-    concursoPoint?: number;
-    bloqueioCognitivo?: boolean;
-    errosConsecutivos?: number;
-    prescricaoTexto?: string;
-    veiculo?: string;
-  } | null>(null);
+  const [feedback, setFeedback] = useState<AttemptFeedback | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   // Configuração da Sessão Personalizada (Fase 8)
   const [concursos, setConcursos] = useState<ConcursoOption[]>([]);
@@ -85,6 +175,109 @@ const QuestionViewer: React.FC = () => {
   const [questionCountLimit, setQuestionCountLimit] = useState<number>(10);
   const [selectedCausaErro, setSelectedCausaErro] = useState<string>('');
   const [showSupportMaterial, setShowSupportMaterial] = useState<boolean>(true);
+  const [sessionHistory, setSessionHistory] = useState<SessionAttemptHistoryItem[]>([]);
+
+  // Navegação entre Questões e Mapa da Sessão
+  const [sessionQuestions, setSessionQuestions] = useState<Question[]>([]);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(0);
+  const [answeredMap, setAnsweredMap] = useState<Record<string, {
+    selectedOption: string | null;
+    confidence: number;
+    feedback: AttemptFeedback | null;
+    biometricResult: any | null;
+    activeTimeMs: number;
+    selectedCausaErro?: string;
+    naCordaBamba?: boolean;
+    pensouContrario?: boolean;
+  }>>({});
+
+  // Parser inteligente para formatar enunciados de PDF de forma limpa e organizada
+  const renderFormattedStatement = (statementText: string) => {
+    if (!statementText) return null;
+
+    // Detectar se o enunciado possui um comando de bloco no topo (separado por \n\n ou inline)
+    const blockCommandRegex = /^(?:(?:Com rela[çc][ãa]o|A respeito|Acerca|No que se refere|No que tange|No que concerne|Considerando|Tendo em vista|Em rela[çc][ãa]o|Quanto [aà]|A partir d[oe]|Com base n[oe]|Em cada um dos itens|Julgue)[^\.]*?julgue\s+[^\.]*?[\.:])/i;
+
+    const paragraphs = statementText.split(/\r?\n\s*\r?\n/).map(p => p.trim()).filter(Boolean);
+    let blockHeader: string | null = null;
+    let mainStatement = statementText;
+
+    if (paragraphs.length >= 2 && blockCommandRegex.test(paragraphs[0])) {
+      blockHeader = paragraphs[0];
+      mainStatement = paragraphs.slice(1).join('\n\n');
+    } else {
+      const matchInline = statementText.match(/^((?:(?:Com rela[çc][ãa]o|A respeito|Acerca|No que se refere|No que tange|No que concerne|Considerando|Tendo em vista|Em rela[çc][ãa]o|Quanto [aà]|A partir d[oe]|Com base n[oe]|Em cada um dos itens|Julgue)[^\.]*?julgue\s+[^\.]*?[\.:]))\s*([\s\S]+)$/i);
+      if (matchInline) {
+        blockHeader = matchInline[1].trim();
+        mainStatement = matchInline[2].trim();
+      }
+    }
+
+    const rawLines = mainStatement.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    if (rawLines.length === 0 && !blockHeader) return null;
+
+    const itemPattern = /^((?:[I|V|X|L]+|\d+|[a-eA-E])\s*[-–.)])\s*(.*)$/;
+    const commandPattern = /^(estão\s+(?:corretas?|incorretas?|certas?|erradas?)|assinale\s+a\s+alternativa|qual\s+(?:das\s+afirmativas|é\s+a\s+alternativa)|a\s+respeito\s+d(?:o|a)s?\s+afirmativas?|quanto\s+a(?:os?)?\s+itens)/i;
+
+    const elements: React.ReactNode[] = [];
+    let currentParagraph = '';
+
+    const flushParagraph = (key: string | number) => {
+      if (currentParagraph) {
+        const isCommand = commandPattern.test(currentParagraph) || currentParagraph.endsWith(':');
+        elements.push(
+          <p key={key} className={isCommand ? 'statement-command' : 'statement-paragraph'}>
+            {currentParagraph}
+          </p>
+        );
+        currentParagraph = '';
+      }
+    };
+
+    rawLines.forEach((line, index) => {
+      const itemMatch = line.match(itemPattern);
+      const isCommand = commandPattern.test(line);
+
+      if (itemMatch) {
+        flushParagraph(`p-before-${index}`);
+        elements.push(
+          <div key={`item-${index}`} className="statement-item-card">
+            <span className="statement-item-prefix">{itemMatch[1]}</span>
+            <span className="statement-item-body">{itemMatch[2]}</span>
+          </div>
+        );
+      } else if (isCommand) {
+        flushParagraph(`p-before-cmd-${index}`);
+        elements.push(
+          <p key={`cmd-${index}`} className="statement-command">
+            {line}
+          </p>
+        );
+      } else {
+        if (currentParagraph) {
+          currentParagraph += ' ' + line;
+        } else {
+          currentParagraph = line;
+        }
+      }
+    });
+
+    flushParagraph('p-last');
+
+    return (
+      <div className="statement-blocks">
+        {blockHeader && (
+          <div className="statement-block-header">
+            <div className="statement-block-tag">📌 Contexto / Comando do Bloco</div>
+            <p className="statement-block-text">{blockHeader}</p>
+          </div>
+        )}
+        <div className={blockHeader ? 'statement-block-space' : undefined}>
+          {elements}
+        </div>
+      </div>
+    );
+  };
 
   // Estados Cognitivos Módulo 1, 2 e 3
   const [showBrainDump, setShowBrainDump] = useState(false);
@@ -129,25 +322,6 @@ const QuestionViewer: React.FC = () => {
   // Colisão de Domínios Modal
   const [showCrossDomainModal, setShowCrossDomainModal] = useState(false);
 
-  // Automação Extrema: Integração Silenciosa AnkiConnect
-  const [isAnkiModalOpen, setIsAnkiModalOpen] = useState(false);
-  const [ankiStatus, setAnkiStatus] = useState<{ connected: boolean; pendingQueueCount: number } | null>(null);
-
-  const refreshAnkiStatus = () => {
-    fetch('/api/v1/anki/status')
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data) {
-          setAnkiStatus({ connected: !!data.connected, pendingQueueCount: data.pendingQueueCount || 0 });
-        }
-      })
-      .catch(() => {});
-  };
-
-  useEffect(() => {
-    refreshAnkiStatus();
-  }, []);
-
   // 3. Roteamento Inteligente de Mídia & Bloqueio Cognitivo
   const [isCognitiveLockOpen, setIsCognitiveLockOpen] = useState(false);
   const [cognitiveLockResolved, setCognitiveLockResolved] = useState(false);
@@ -179,17 +353,40 @@ const QuestionViewer: React.FC = () => {
   const [activeTimeMs, setActiveTimeMs] = useState<number>(0);
   const [lastFocusTime, setLastFocusTime] = useState<number>(0);
 
-  // Atalho de Teclado Ctrl+D para Brain Dump (Lista de Distrações Anti-AIDA)
+  // Timer contínuo de tempo ativo (garante milissegundos estritamente positivos para o motor em R)
+  useEffect(() => {
+    if (!sessionStarted || sessionEnded || !question || feedback) return;
+
+    const timer = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        setActiveTimeMs((prev) => prev + 1000);
+      }
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [sessionStarted, sessionEnded, question, feedback]);
+
+  // Atalho de Teclado Ctrl+D para Brain Dump e teclas 1-5 para Confiança
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && (e.key === 'd' || e.key === 'D')) {
         e.preventDefault();
         setShowBrainDump((prev) => !prev);
+        return;
+      }
+
+      // Evita disparar atalhos numéricos quando digitando em campos de texto
+      const activeEl = document.activeElement;
+      const isInput = activeEl instanceof HTMLInputElement || activeEl instanceof HTMLTextAreaElement || activeEl?.getAttribute('contenteditable') === 'true';
+      if (isInput) return;
+
+      if (!feedback && ['1', '2', '3', '4', '5'].includes(e.key)) {
+        setConfidence(Number(e.key));
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [feedback]);
 
   const handleSelectOption = (opt: string) => {
     if (feedback) return;
@@ -286,15 +483,20 @@ const QuestionViewer: React.FC = () => {
   };
   
   // Create or retrieve session ID with persistence across page reloads
+  const generateNewSessionId = () => {
+    const id = 'session-' + crypto.randomUUID();
+    sessionStorage.setItem('fiscalstudy_sessionId', id);
+    return id;
+  };
+
   const getInitialSessionId = () => {
     let stored = sessionStorage.getItem('fiscalstudy_sessionId');
     if (!stored) {
-      stored = 'session-' + crypto.randomUUID();
-      sessionStorage.setItem('fiscalstudy_sessionId', stored);
+      stored = generateNewSessionId();
     }
     return stored;
   };
-  const sessionId = useRef(getInitialSessionId()).current;
+  const [sessionId, setSessionId] = useState<string>(getInitialSessionId);
 
   // Carrega Concursos e Disciplinas disponíveis
   useEffect(() => {
@@ -327,11 +529,11 @@ const QuestionViewer: React.FC = () => {
     }
   }, [selectedDiscipline]);
 
-  const fetchNextQuestion = useCallback(async () => {
-    setLoading(true);
+  const resetQuestionInteractions = () => {
     setFeedback(null);
     setSelectedOption(null);
     setConfidence(0);
+    setIsSubmitting(false);
     setSelectedCausaErro('');
     setPensarContrarioOpen(false);
     setPensouContrario(false);
@@ -350,56 +552,151 @@ const QuestionViewer: React.FC = () => {
     setPegadinhaExplicacao('');
     setRegraCorretaExplicacao('');
     setAuditSuccessMsg('');
+  };
+
+  const loadQuestionAtIndex = useCallback((idx: number, list: Question[] = sessionQuestions) => {
+    const targetQ = list[idx];
+    if (!targetQ) return;
+
+    resetQuestionInteractions();
+    setQuestion(targetQ);
+    setCurrentQuestionIndex(idx);
+
+    const saved = answeredMap[targetQ.questionId];
+    if (saved) {
+      setSelectedOption(saved.selectedOption);
+      setConfidence(saved.confidence);
+      setFeedback(saved.feedback);
+      setBiometricResult(saved.biometricResult);
+      setSelectedCausaErro(saved.selectedCausaErro || '');
+      setNaCordaBamba(!!saved.naCordaBamba);
+      setPensouContrario(!!saved.pensouContrario);
+      setActiveTimeMs(saved.activeTimeMs || 0);
+      setLastFocusTime(Date.now());
+    } else {
+      setActiveTimeMs(0);
+      setLastFocusTime(Date.now());
+      fetch(`/api/v1/questions/${targetQ.questionId}/presented`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId })
+      }).catch(() => {});
+    }
+
+    fetch(`/api/v1/cognitive/media-routing/evaluate?disciplina=${encodeURIComponent(targetQ.metadata?.discipline || '')}&assunto=${encodeURIComponent(targetQ.metadata?.topic || '')}&sessionId=${sessionId}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((presc) => {
+        if (presc) setMediaPrescription(presc);
+      })
+      .catch(() => {});
+  }, [sessionQuestions, answeredMap, sessionId]);
+
+  const handlePrevQuestion = () => {
+    if (currentQuestionIndex > 0) {
+      if (question) {
+        const spentNow = Math.max(1000, activeTimeMs + (document.visibilityState === 'visible' && lastFocusTime > 0 ? (Date.now() - lastFocusTime) : 0));
+        setAnsweredMap(prev => ({
+          ...prev,
+          [question.questionId]: {
+            selectedOption,
+            confidence,
+            feedback,
+            biometricResult,
+            activeTimeMs: spentNow,
+            selectedCausaErro,
+            naCordaBamba,
+            pensouContrario
+          }
+        }));
+      }
+      loadQuestionAtIndex(currentQuestionIndex - 1);
+    }
+  };
+
+  const handleNextQuestion = () => {
+    if (currentQuestionIndex < sessionQuestions.length - 1) {
+      if (question) {
+        const spentNow = Math.max(1000, activeTimeMs + (document.visibilityState === 'visible' && lastFocusTime > 0 ? (Date.now() - lastFocusTime) : 0));
+        setAnsweredMap(prev => ({
+          ...prev,
+          [question.questionId]: {
+            selectedOption,
+            confidence,
+            feedback,
+            biometricResult,
+            activeTimeMs: spentNow,
+            selectedCausaErro,
+            naCordaBamba,
+            pensouContrario
+          }
+        }));
+      }
+      loadQuestionAtIndex(currentQuestionIndex + 1);
+    }
+  };
+
+  const handleJumpToQuestion = (targetIdx: number) => {
+    if (targetIdx >= 0 && targetIdx < sessionQuestions.length && targetIdx !== currentQuestionIndex) {
+      if (question) {
+        const spentNow = Math.max(1000, activeTimeMs + (document.visibilityState === 'visible' && lastFocusTime > 0 ? (Date.now() - lastFocusTime) : 0));
+        setAnsweredMap(prev => ({
+          ...prev,
+          [question.questionId]: {
+            selectedOption,
+            confidence,
+            feedback,
+            biometricResult,
+            activeTimeMs: spentNow,
+            selectedCausaErro,
+            naCordaBamba,
+            pensouContrario
+          }
+        }));
+      }
+      loadQuestionAtIndex(targetIdx);
+    }
+  };
+
+  const fetchNextQuestion = useCallback(async (overrideSessionId?: string) => {
+    const currentSession = overrideSessionId || sessionId;
+    setLoading(true);
+    resetQuestionInteractions();
+
     try {
-      let url = `/api/v1/questions/next?sessionId=${sessionId}`;
-      if (selectedConcursoId) {
-        url += `&concursoId=${encodeURIComponent(selectedConcursoId)}`;
-      }
-      if (selectedDiscipline) {
-        url += `&disciplina=${encodeURIComponent(selectedDiscipline)}`;
-      }
-      if (selectedAssunto) {
-        url += `&assunto=${encodeURIComponent(selectedAssunto)}`;
-      }
-      if (includeAnswered) {
-        url += `&includeAnswered=true`;
-      }
-      if (studyMode) {
-        url += `&studyMode=${encodeURIComponent(studyMode)}`;
-      }
+      let batchUrl = `/api/v1/questions/batch?sessionId=${currentSession}&limit=${questionCountLimit || 15}`;
+      if (selectedConcursoId) batchUrl += `&concursoId=${encodeURIComponent(selectedConcursoId)}`;
+      if (selectedDiscipline) batchUrl += `&disciplina=${encodeURIComponent(selectedDiscipline)}`;
+      if (selectedAssunto) batchUrl += `&assunto=${encodeURIComponent(selectedAssunto)}`;
+      if (includeAnswered) batchUrl += `&includeAnswered=true`;
 
-      const response = await fetch(url);
+      const response = await fetch(batchUrl);
       if (response.ok) {
-        const data = await response.json();
-        setQuestion(data);
+        const batchData = await response.json();
+        if (Array.isArray(batchData) && batchData.length > 0) {
+          setSessionQuestions(batchData);
+          setCurrentQuestionIndex(0);
+          loadQuestionAtIndex(0, batchData);
+          return;
+        }
+      }
 
-        // Avaliar Roteamento de Mídia para esta questão
-        fetch(`/api/v1/cognitive/media-routing/evaluate?disciplina=${encodeURIComponent(data.metadata?.discipline || '')}&assunto=${encodeURIComponent(data.metadata?.topic || '')}&sessionId=${sessionId}`)
-          .then((r) => (r.ok ? r.json() : null))
-          .then((presc) => {
-            if (presc) setMediaPrescription(presc);
-          })
-          .catch(() => {});
-        
-        // Registrar a apresentação explicitamente (Append-Only Event Store)
-        await fetch(`/api/v1/questions/${data.questionId}/presented`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sessionId })
-        });
-
-        // Iniciar cronômetro só após registrar apresentação com sucesso
-        setActiveTimeMs(0);
-        setLastFocusTime(Date.now());
+      // Fallback para /next caso /batch retorne vazio
+      const nextRes = await fetch(`/api/v1/questions/next?sessionId=${currentSession}${selectedConcursoId ? `&concursoId=${encodeURIComponent(selectedConcursoId)}` : ''}`);
+      if (nextRes.ok) {
+        const singleQ = await nextRes.json();
+        setSessionQuestions([singleQ]);
+        setCurrentQuestionIndex(0);
+        loadQuestionAtIndex(0, [singleQ]);
       } else {
         setQuestion(null);
       }
     } catch (error) {
-      console.error("Failed to fetch question:", error);
+      console.error("Failed to fetch questions:", error);
+      setQuestion(null);
     } finally {
       setLoading(false);
     }
-  }, [sessionId, selectedConcursoId, selectedDiscipline, selectedAssunto, includeAnswered, studyMode]);
+  }, [sessionId, selectedConcursoId, selectedDiscipline, selectedAssunto, includeAnswered, questionCountLimit, loadQuestionAtIndex]);
 
   useEffect(() => {
     if (sessionStarted && !question && !sessionEnded) {
@@ -412,14 +709,16 @@ const QuestionViewer: React.FC = () => {
 
   const startSession = async () => {
     try {
+      const freshSessionId = generateNewSessionId();
+      setSessionId(freshSessionId);
       await fetch(`/api/v1/sessions/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId })
+        body: JSON.stringify({ sessionId: freshSessionId })
       });
       sessionStorage.setItem('fiscalstudy_sessionStarted', 'true');
       setSessionStarted(true);
-      fetchNextQuestion();
+      fetchNextQuestion(freshSessionId);
     } catch (err) {
       console.error("Failed to start session", err);
     }
@@ -436,17 +735,89 @@ const QuestionViewer: React.FC = () => {
 
   const endSession = async () => {
     try {
+      // 1. Auto-submissão da questão ativa se houver alternativa e confiança marcadas
+      if (question && selectedOption && confidence > 0 && !feedback && !isSubmitting) {
+        await handleSubmit();
+      }
+
+      // 2. Finaliza no backend
       await fetch(`/api/v1/sessions/end`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sessionId })
       });
       
-      const res = await fetch(`/api/v1/sessions/${sessionId}/summary`);
-      if (res.ok) {
-        setSummary(await res.json());
+      // 3. Obtém o resumo consolidado do backend
+      let summaryData: SessionSummary | null = null;
+      try {
+        const res = await fetch(`/api/v1/sessions/${sessionId}/summary`);
+        if (res.ok) {
+          summaryData = await res.json();
+        }
+      } catch (e) {
+        console.error("Erro ao obter resumo do backend:", e);
       }
       
+      // 4. Reconciliação Cognitiva:
+      // Se summaryData for nulo ou totalAnswered === 0 mas houver histórico de respostas,
+      // calculamos os dados a partir do histórico para blindar a exibição contra latência de banco.
+      if (!summaryData || summaryData.totalAnswered === 0) {
+        let history = [...sessionHistory];
+        if (question && selectedOption && confidence > 0 && !history.some(h => h.questionId === question.questionId)) {
+          const isCE = Array.isArray(question.options) && question.options.length === 2;
+          let optLetter = selectedOption.match(/^([A-Ea-e])\)?/)?.[1]?.toUpperCase() || selectedOption.charAt(0).toUpperCase();
+          if (isCE) {
+            if (selectedOption.toUpperCase().includes('CERT') || optLetter === 'C' || optLetter === 'A') optLetter = 'C';
+            else if (selectedOption.toUpperCase().includes('ERR') || optLetter === 'E' || optLetter === 'B') optLetter = 'E';
+          }
+          history.push({
+            questionId: question.questionId,
+            statement: question.statement,
+            discipline: question.metadata?.discipline || selectedDiscipline || 'Geral',
+            topic: question.metadata?.topic || '',
+            board: question.metadata?.board || 'Banca',
+            year: question.metadata?.year || 2024,
+            options: [],
+            selectedOption: optLetter,
+            isCorrect: feedback?.isCorrect ?? true,
+            gabaritoStatus: feedback?.gabaritoStatus || 'DEFINITIVO',
+            concursoPoint: feedback?.concursoPoint ?? 1,
+            confidenceLevel: confidence,
+            activeTimeMs: Math.max(1200, activeTimeMs),
+            tempoHesitacaoMs: 0,
+            trocasCount: optionSwitchCount,
+            friccaoScore: 0.1,
+            chuteEducadoDetectado: false,
+            fluenciaNeurologica: 'ALTA_FLUENCIA',
+            causaErro: selectedCausaErro || '',
+            naCordaBamba,
+            pensouContrario
+          });
+        }
+
+        if (history.length > 0) {
+          const totalAns = history.length;
+          const corrects = history.filter(i => i.isCorrect).length;
+          const totalMs = history.reduce((acc, i) => acc + (i.activeTimeMs || 0), 0);
+          const overconf = history.filter(i => i.confidenceLevel === 5 && !i.isCorrect).length;
+          const anuladas = history.filter(i => i.gabaritoStatus === 'ANULADA').length;
+          const nonAnuladas = history.filter(i => i.gabaritoStatus !== 'ANULADA');
+          const nonAnuladasCorrect = nonAnuladas.filter(i => i.isCorrect).length;
+          const accuracy = nonAnuladas.length > 0 ? (nonAnuladasCorrect / nonAnuladas.length) * 100 : 0;
+          
+          summaryData = {
+            totalAnswered: totalAns,
+            correctCount: corrects,
+            accuracy,
+            averageTimeMs: totalAns > 0 ? (totalMs / totalAns) : 0,
+            overconfidenceCount: overconf,
+            concursoScore: corrects + anuladas,
+            anuladasCount: anuladas
+          };
+        }
+      }
+
+      setSummary(summaryData);
       sessionStorage.removeItem('fiscalstudy_sessionStarted');
       sessionStorage.removeItem('fiscalstudy_sessionId');
       setSessionEnded(true);
@@ -473,15 +844,28 @@ const QuestionViewer: React.FC = () => {
   }, [lastFocusTime, sessionStarted, sessionEnded]);
 
   const handleSubmit = async () => {
-    if (!question || !selectedOption || confidence === 0) return;
+    if (!question || !selectedOption || confidence === 0 || isSubmitting) return;
+    setIsSubmitting(true);
 
-    let finalActiveTime = activeTimeMs;
+    let finalActiveTime = Math.max(1200, activeTimeMs);
     if (document.visibilityState === 'visible' && lastFocusTime > 0) {
-      finalActiveTime += (Date.now() - lastFocusTime);
+      const elapsed = Date.now() - lastFocusTime;
+      if (elapsed > 0 && elapsed < 7200000) {
+        finalActiveTime = Math.max(1200, activeTimeMs + elapsed);
+      }
     }
     
-    // extrair apenas a letra se vier no formato 'A) ...'
-    const optionLetter = selectedOption.match(/^([A-E])\)?/)?.[1] || selectedOption.charAt(0);
+    // Identificar questões de Certo ou Errado (Cebraspe)
+    const isCE = Array.isArray(question.options) && question.options.length === 2;
+
+    let optionLetter = selectedOption.match(/^([A-Ea-e])\)?/)?.[1]?.toUpperCase() || selectedOption.charAt(0).toUpperCase();
+    if (isCE) {
+      if (selectedOption.toUpperCase().includes('CERT') || optionLetter === 'C' || optionLetter === 'A') {
+        optionLetter = 'C';
+      } else if (selectedOption.toUpperCase().includes('ERR') || optionLetter === 'E' || optionLetter === 'B') {
+        optionLetter = 'E';
+      }
+    }
 
     // Cálculo da Biometria da Decisão (Anti-Cheat Cognitivo):
     const finalLeituraMs = firstHoverMs !== null ? firstHoverMs : finalActiveTime;
@@ -512,6 +896,11 @@ const QuestionViewer: React.FC = () => {
       fluenciaNeurologica: fluencia
     });
 
+    const hasApoio = Boolean(question.metadata?.supportMaterial && showSupportMaterial);
+    const currentIntervention = naCordaBamba 
+      ? 'NA_CORDA_BAMBA' 
+      : (pensouContrario ? 'PENSAR_CONTRARIO' : (studyMode === 'EMERGENCY' ? 'BLOCO_EMERGENCIA_15MIN' : 'REGULAR'));
+
     try {
       const response = await fetch(`/api/v1/questions/${question.questionId}/attempts`, {
         method: 'POST',
@@ -524,6 +913,9 @@ const QuestionViewer: React.FC = () => {
           causaErro: selectedCausaErro || undefined,
           naCordaBamba: naCordaBamba,
           pensouContrario: pensouContrario,
+          usedHelp: hasApoio,
+          helpType: hasApoio ? 'MATERIAL_APOIO' : 'NENHUM',
+          interventionType: currentIntervention,
           ...bioPayload
         })
       });
@@ -531,10 +923,61 @@ const QuestionViewer: React.FC = () => {
       if (response.ok) {
         const result = await response.json();
         setFeedback(result);
+
+        const currentOptions = Array.isArray(question.options) 
+          ? (typeof question.options[0] === 'string' ? (question.options as string[]) : (question.options as Option[]).map(o => `${o.label}) ${o.text}`))
+          : [];
+
+        const defaultCausa = result.isCorrect 
+          ? (isChute ? 'CHUTE_EDUCADO' : 'SABIA_COM_CONVICCAO')
+          : (confidence === 5 ? 'SABIA_MAS_CONFUNDI' : '');
+
+        const historyItem: SessionAttemptHistoryItem = {
+          questionId: question.questionId,
+          statement: question.statement,
+          discipline: question.metadata?.discipline || 'Geral',
+          topic: question.metadata?.topic || '',
+          board: question.metadata?.board || 'Banca',
+          year: question.metadata?.year || 2023,
+          options: currentOptions,
+          selectedOption: optionLetter,
+          isCorrect: result.isCorrect,
+          gabaritoStatus: result.gabaritoStatus,
+          concursoPoint: result.concursoPoint,
+          confidenceLevel: confidence,
+          activeTimeMs: finalActiveTime,
+          tempoHesitacaoMs: finalHesitacaoMs,
+          trocasCount: optionSwitchCount,
+          friccaoScore: frictionScore,
+          chuteEducadoDetectado: isChute,
+          fluenciaNeurologica: fluencia,
+          causaErro: selectedCausaErro || defaultCausa,
+          naCordaBamba,
+          pensouContrario
+        };
+
+        setSessionHistory(prev => {
+          const filtered = prev.filter(item => item.questionId !== question.questionId);
+          return [...filtered, historyItem];
+        });
+
+        setAnsweredMap(prev => ({
+          ...prev,
+          [question.questionId]: {
+            selectedOption: optionLetter,
+            confidence,
+            feedback: result,
+            biometricResult: bioPayload,
+            activeTimeMs: finalActiveTime,
+            selectedCausaErro: selectedCausaErro || defaultCausa,
+            naCordaBamba,
+            pensouContrario
+          }
+        }));
+
         if (result.isCorrect === false) {
           setFeynmanAuditRequired(true);
           setFeynmanAuditCompleted(false);
-          refreshAnkiStatus();
           if (result.bloqueioCognitivo || (result.errosConsecutivos && result.errosConsecutivos >= 3)) {
             setIsCognitiveLockOpen(true);
             setCognitiveLockResolved(false);
@@ -543,27 +986,44 @@ const QuestionViewer: React.FC = () => {
       }
     } catch (error) {
       console.error("Failed to submit attempt:", error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  // Envia ou atualiza a causa do erro pós-feedback se o estudante selecionar
-  const handleSelectCausaErroPostSubmission = async (code: string) => {
+  // Envia ou atualiza a causa do erro pós-feedback se o estudante selecionar (suporta ID da questão do histórico)
+  const handleSelectCausaErroPostSubmission = async (code: string, targetQuestionId?: string) => {
     setSelectedCausaErro(code);
-    if (!question) return;
+    const qId = targetQuestionId || question?.questionId;
+    if (!qId) return;
+
+    setSessionHistory(prev => prev.map(item => {
+      if (item.questionId === qId) {
+        return { ...item, causaErro: code };
+      }
+      return item;
+    }));
+
     try {
-      // Reenvia attempt idempotentemente com causa do erro registrada
-      const optionLetter = selectedOption ? (selectedOption.match(/^([A-E])\)?/)?.[1] || selectedOption.charAt(0)) : 'A';
-      await fetch(`/api/v1/questions/${question.questionId}/attempts`, {
+      const targetItem = sessionHistory.find(i => i.questionId === qId);
+      let optionLetter = 'A';
+      if (targetItem && targetItem.selectedOption) {
+        optionLetter = targetItem.selectedOption;
+      } else if (selectedOption) {
+        const matchLetter = selectedOption.match(/^([A-E])/i);
+        optionLetter = matchLetter ? matchLetter[1].toUpperCase() : selectedOption.charAt(0).toUpperCase();
+      }
+      await fetch(`/api/v1/questions/${qId}/attempts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           selectedOption: optionLetter,
-          confidenceLevel: confidence || 3,
-          activeTimeMs,
+          confidenceLevel: targetItem?.confidenceLevel || confidence || 3,
+          activeTimeMs: targetItem?.activeTimeMs || activeTimeMs,
           sessionId,
           causaErro: code,
-          naCordaBamba: naCordaBamba,
-          pensouContrario: pensouContrario
+          naCordaBamba: targetItem?.naCordaBamba ?? naCordaBamba,
+          pensouContrario: targetItem?.pensouContrario ?? pensouContrario
         })
       });
     } catch (e) {
@@ -576,9 +1036,9 @@ const QuestionViewer: React.FC = () => {
     return (
       <div className="viewer-container empty">
         <div className="glass session-config-card">
-          <div style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '1rem' }}>
-            <h2 style={{ color: '#f8fafc', margin: 0, fontSize: '1.4rem' }}>⚙️ Nova Sessão de Estudo Personalizada</h2>
-            <p style={{ color: '#94a3b8', margin: '0.35rem 0 0', fontSize: '0.88rem' }}>
+          <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '1rem' }}>
+            <h2 style={{ color: 'var(--text-color)', margin: 0, fontSize: '1.45rem', fontWeight: 700 }}>⚙️ Nova Sessão de Estudo Personalizada</h2>
+            <p style={{ color: 'var(--text-muted)', margin: '0.4rem 0 0', fontSize: '0.9rem', lineHeight: 1.5 }}>
               Defina o foco pedagógico, concurso-alvo e filtros temáticos para iniciar:
             </p>
           </div>
@@ -663,28 +1123,21 @@ const QuestionViewer: React.FC = () => {
                 className={`mode-btn ${studyMode === 'LEARNING' ? 'active' : ''}`}
                 onClick={() => setStudyMode('LEARNING')}
               >
-                📘 Aprendizagem (Feedback Imediato)
+                📘 Treino (Gabarito na Hora)
               </button>
               <button
                 type="button"
                 className={`mode-btn ${studyMode === 'EXAM' ? 'active' : ''}`}
                 onClick={() => setStudyMode('EXAM')}
               >
-                ⏱️ Simulado Oficial (Tempo Ativo)
+                ⏱️ Simulado (Gabarito no Final)
               </button>
               <button
                 type="button"
                 className={`mode-btn ${studyMode === 'RETENTION' ? 'active' : ''}`}
                 onClick={() => setStudyMode('RETENTION')}
               >
-                🔄 Fixação (Revisão Espaçada)
-              </button>
-              <button
-                type="button"
-                className={`mode-btn ${studyMode === 'CREDIARIO' ? 'active' : ''}`}
-                onClick={() => setStudyMode('CREDIARIO')}
-              >
-                💳 Método do Crediário (Saltos 1, 4, 7...)
+                🔄 Foco em Dificuldades (Revisão Inteligente)
               </button>
             </div>
           </div>
@@ -698,7 +1151,7 @@ const QuestionViewer: React.FC = () => {
               onChange={(e) => setIncludeAnswered(e.target.checked)}
               style={{ cursor: 'pointer', transform: 'scale(1.2)' }}
             />
-            <label htmlFor="includeAnswered" style={{ color: '#cbd5e1', fontSize: '0.88rem', cursor: 'pointer' }}>
+            <label htmlFor="includeAnswered" style={{ color: 'var(--text-color)', fontSize: '0.9rem', cursor: 'pointer', fontWeight: 500 }}>
               Incluir questões já respondidas anteriormente neste concurso
             </label>
           </div>
@@ -711,13 +1164,58 @@ const QuestionViewer: React.FC = () => {
     );
   }
 
-  // TELA 2: Relatório Final da Sessão
+  // TELA 2: Relatório Final da Sessão (T22 — Relatório da Sessão de Questões)
   if (sessionEnded) {
+    if (sessionHistory.length > 0) {
+      const solvedQuestions: SolvedQuestionItem[] = sessionHistory.map(item => ({
+        questionId: item.questionId,
+        statement: item.statement,
+        discipline: item.discipline,
+        topic: item.topic,
+        board: item.board,
+        year: item.year,
+        userSelectedOption: item.selectedOption,
+        correctOption: (answeredMap[item.questionId]?.feedback as any)?.correctOption || (item.isCorrect ? item.selectedOption : undefined),
+        isCorrect: item.isCorrect,
+        gabaritoStatus: item.gabaritoStatus || 'DEFINITIVO',
+        confidenceLevel: item.confidenceLevel,
+        activeTimeMs: item.activeTimeMs,
+        causaErro: item.causaErro,
+        explicacao: (answeredMap[item.questionId]?.feedback as any)?.explicacao || 'Resolução fundamentada com base no edital e jurisprudência.'
+      }));
+
+      return (
+        <RelatorioSessaoQuestoes
+          tituloSessao={`Relatório da Sessão — ${question?.metadata?.discipline || selectedDiscipline || 'Estudo Ativo'}`}
+          modoResolucao={studyMode}
+          questions={solvedQuestions}
+          onVoltarAoInicio={() => {
+            const newId = generateNewSessionId();
+            setSessionId(newId);
+            setSessionEnded(false);
+            setSessionStarted(false);
+            setQuestion(null);
+            setSummary(null);
+            setSessionHistory([]);
+            setAnsweredMap({});
+            setSessionQuestions([]);
+            setCurrentQuestionIndex(0);
+          }}
+          onIniciarRecuperacao={() => {
+            setSessionEnded(false);
+          }}
+        />
+      );
+    }
+
     return (
       <div className="viewer-container empty">
-        <div className="glass empty-state" style={{ maxWidth: '620px', width: '100%', padding: '2rem' }}>
-          <h2 style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '12px', marginBottom: '16px' }}>
-            📊 Relatório da Sessão de Estudo
+        <div className="glass empty-state" style={{ maxWidth: '920px', width: '100%', padding: '2.25rem' }}>
+          <h2 style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '14px', marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+            <span>📊 Relatório Final da Sessão de Estudo</span>
+            <span style={{ fontSize: '0.85rem', color: '#38bdf8', fontWeight: 600 }}>
+              Sessão: {sessionId.slice(0, 16)}...
+            </span>
           </h2>
           {summary ? (
             <div style={{ textAlign: 'left', fontSize: '1rem' }}>
@@ -755,69 +1253,158 @@ const QuestionViewer: React.FC = () => {
                 </p>
               </div>
 
-              {/* Alerta de Falsa Fluência (Overconfidence) */}
+              {/* Ponto de Atenção: Certeza no Erro */}
               {summary.overconfidenceCount > 0 && (
-                <div style={{ marginTop: '15px', padding: '12px', background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.5)', borderRadius: '8px' }}>
-                  <h4 style={{ color: '#f87171', margin: '0 0 6px 0', fontSize: '0.95rem' }}>⚠️ Alerta de Falsa Fluência (Overconfidence)</h4>
-                  <p style={{ margin: 0, fontSize: '0.85rem', lineHeight: '1.4' }}>
-                    Você assinalou certeza absoluta (nível 5) em <strong>{summary.overconfidenceCount}</strong> questão(ões) que estavam incorretas. Atenção redobrada a pegadinhas e conceitos mal consolidados.
+                <div style={{ marginTop: '15px', padding: '12px 14px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: '8px' }}>
+                  <h4 style={{ color: '#f87171', margin: '0 0 6px 0', fontSize: '0.92rem' }}>⚠️ Ponto de Atenção: Certeza no Erro</h4>
+                  <p style={{ margin: 0, fontSize: '0.84rem', lineHeight: '1.45', color: '#fecaca' }}>
+                    Você marcou com 100% de certeza em <strong>{summary.overconfidenceCount}</strong> questão(ões) que estavam incorretas. Vale a pena revisar esses tópicos com calma para evitar pegadinhas semelhantes no concurso.
                   </p>
                 </div>
               )}
 
-              {/* Diagnóstico de Causas de Erro Registradas */}
-              {summary.errorDistribution && Object.keys(summary.errorDistribution).length > 0 && (
-                <div style={{ marginTop: '15px', padding: '12px', background: 'rgba(15,23,42,0.6)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }}>
-                  <h4 style={{ color: '#38bdf8', margin: '0 0 8px 0', fontSize: '0.95rem' }}>🎯 Diagnóstico das Causas de Erro:</h4>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                    {Object.entries(summary.errorDistribution).map(([code, count]) => {
-                      const match = ERROR_TAXONOMIES.find((t) => t.code === code);
+              {/* Revisão Detalhada Questão a Questão */}
+              {sessionHistory.length > 0 && (
+                <div className="metacon-audit-section">
+                  <div className="metacon-audit-title-wrap">
+                    <h3 className="metacon-audit-title">
+                      <span>🔍</span> Revisão Questão a Questão
+                    </h3>
+                    <span style={{ fontSize: '0.8rem', color: '#60a5fa', fontWeight: 600 }}>
+                      {sessionHistory.length} questão(ões) resolvida(s)
+                    </span>
+                  </div>
+                  <p className="metacon-audit-sub">
+                    O autodiagnóstico honesto é a chave da aprovação: classifique o motivo real de cada resposta ("sabia, mas confundi", "chute educado", "lacuna teórica") para calibrar o Gêmeo Digital e evitar ilusão de competência.
+                  </p>
+
+                  {/* Quadro Resumo de Sinceridade */}
+                  <div className="metacon-summary-pills">
+                    <span className="metacon-count-pill" style={{ borderColor: 'rgba(16, 185, 129, 0.4)', color: '#34d399' }}>
+                      🟢 Convicção Plena: {sessionHistory.filter(i => i.causaErro === 'SABIA_COM_CONVICCAO').length}
+                    </span>
+                    <span className="metacon-count-pill" style={{ borderColor: 'rgba(245, 158, 11, 0.4)', color: '#fbbf24' }}>
+                      🟡 Chute Educado: {sessionHistory.filter(i => i.causaErro === 'CHUTE_EDUCADO').length}
+                    </span>
+                    <span className="metacon-count-pill" style={{ borderColor: 'rgba(251, 146, 60, 0.4)', color: '#fdba74' }}>
+                      🟠 Sabia, mas confundi: {sessionHistory.filter(i => i.causaErro === 'SABIA_MAS_CONFUNDI').length}
+                    </span>
+                    <span className="metacon-count-pill" style={{ borderColor: 'rgba(239, 68, 68, 0.4)', color: '#fca5a5' }}>
+                      🔴 Lacuna Teórica: {sessionHistory.filter(i => i.causaErro === 'NAO_SABIA_MATERIA').length}
+                    </span>
+                    <span className="metacon-count-pill" style={{ borderColor: 'rgba(168, 85, 247, 0.4)', color: '#d8b4fe' }}>
+                      🟣 Falta de Atenção: {sessionHistory.filter(i => i.causaErro === 'FALTA_ATENCAO').length}
+                    </span>
+                  </div>
+
+                  {/* Lista de Questões da Sessão */}
+                  <div className="metacon-questions-list">
+                    {sessionHistory.map((item, idx) => {
+                      const isUnverified = item.gabaritoStatus === 'AUSENTE' || item.gabaritoStatus === 'SOB_REVISAO';
+                      const isAnulada = item.gabaritoStatus === 'ANULADA';
+
                       return (
-                        <span key={code} className="tax-pill active" style={{ fontSize: '0.8rem', padding: '4px 10px' }}>
-                          {match ? match.label : code}: <strong>{count}</strong>
-                        </span>
+                        <div key={item.questionId || idx} className="metacon-question-card animate-fade-in">
+                          <div className="metacon-q-header">
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                              <span className="metacon-q-num">Questão #{idx + 1}</span>
+                              <span className={`metacon-q-status ${isAnulada ? 'correct' : (isUnverified ? '' : (item.isCorrect ? 'correct' : 'incorrect'))}`}>
+                                {isAnulada ? '⚠️ Anulada' : isUnverified ? 'ℹ️ Em Revisão' : (item.isCorrect ? '✅ Acertou' : '❌ Errou')}
+                              </span>
+                            </div>
+                            <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
+                              Confiança Registrada: <strong>{item.confidenceLevel}/5</strong> ({item.confidenceLevel === 5 ? 'Certeza' : (item.confidenceLevel === 4 ? 'Seguro' : (item.confidenceLevel === 3 ? 'Parcial' : (item.confidenceLevel === 2 ? 'Dúvida' : 'Chute')))})
+                            </span>
+                          </div>
+
+                          <div className="metacon-q-meta">
+                            <span>🏛️ {item.board} {item.year}</span>
+                            <span>•</span>
+                            <span style={{ color: '#38bdf8', fontWeight: 600 }}>{item.discipline}</span>
+                            {item.topic && <span>› {item.topic}</span>}
+                          </div>
+
+                          <div className="metacon-q-snippet">
+                            <div style={{ marginBottom: '0.4rem', fontWeight: 500, color: '#f1f5f9' }}>
+                              {item.statement.length > 220 ? `${item.statement.slice(0, 220)}...` : item.statement}
+                            </div>
+                            <div style={{ fontSize: '0.82rem', color: '#94a3b8' }}>
+                              Sua resposta: <strong style={{ color: item.isCorrect ? '#34d399' : '#f87171' }}>Alternativa {item.selectedOption}</strong>
+                            </div>
+                          </div>
+
+                          {/* Telemetria Antifraude Comportamental da Questão */}
+                          <div className="metacon-telemetry-strip">
+                            <span>⏱️ Tempo: <strong>{(item.activeTimeMs / 1000).toFixed(1)}s</strong></span>
+                            <span>•</span>
+                            <span>⏳ Hesitação: <strong>{(item.tempoHesitacaoMs / 1000).toFixed(1)}s</strong></span>
+                            <span>•</span>
+                            <span>🔄 Trocas de Alternativa: <strong>{item.trocasCount}</strong></span>
+                            <span>•</span>
+                            <span className={`biometric-badge ${item.fluenciaNeurologica}`} style={{ fontSize: '0.72rem', padding: '2px 6px' }}>
+                              {item.chuteEducadoDetectado 
+                                ? '⚠️ Chute Educado Detectado' 
+                                : (item.fluenciaNeurologica === 'ALTA_FLUENCIA' ? '⚡ Alta Fluência' : '🔍 Fricção Moderada')}
+                            </span>
+                          </div>
+
+                          {/* Seletor de Feedback Metacognitivo Sincero */}
+                          <div>
+                            <span className="metacon-selector-title">
+                              🎯 Classificação de Sinceridade Metacognitiva (Clique para ajustar):
+                            </span>
+                            <div className="metacon-options-grid">
+                              {METACON_FEEDBACK_OPTIONS.map((opt) => {
+                                const isSelected = item.causaErro === opt.code;
+                                return (
+                                  <button
+                                    key={opt.code}
+                                    type="button"
+                                    className={`metacon-pill-btn ${isSelected ? 'active' : ''}`}
+                                    style={isSelected ? { borderColor: opt.badgeColor, background: `${opt.badgeColor}25` } : undefined}
+                                    onClick={() => handleSelectCausaErroPostSubmission(opt.code, item.questionId)}
+                                    title={opt.description}
+                                  >
+                                    {opt.label}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {/* Diagnósticos de Calibração Sincera */}
+                          {item.confidenceLevel === 5 && item.isCorrect === false && (
+                            <div className="metacon-alert-box warning">
+                              ⚠️ <strong>Ponto de Atenção (Certeza no Erro):</strong> Você assinalou certeza máxima (nível 5), mas errou o item. Vale a pena revisar com calma a regra para não cair nessa pegadinha de novo.
+                            </div>
+                          )}
+
+                          {item.isCorrect && item.chuteEducadoDetectado && item.causaErro === 'CHUTE_EDUCADO' && (
+                            <div className="metacon-alert-box info">
+                              🎯 <strong>Bom Autodiagnóstico:</strong> Você reconheceu que acertou por eliminação/chute. A questão voltará no momento certo para fixar o conteúdo.
+                            </div>
+                          )}
+                        </div>
                       );
                     })}
                   </div>
                 </div>
               )}
 
-              {/* Fechamento da Sessão: Integração Silenciosa Anki */}
-              <div style={{
-                marginTop: '15px',
-                padding: '14px',
-                background: 'rgba(59, 130, 246, 0.12)',
-                border: '1px solid rgba(59, 130, 246, 0.35)',
-                borderRadius: '10px'
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
-                  <div style={{ maxWidth: '420px' }}>
-                    <h4 style={{ color: '#60a5fa', margin: '0 0 4px 0', fontSize: '0.95rem' }}>
-                      ⚡ Fechamento de Sessão: Flashcards Anki
-                    </h4>
-                    <p style={{ margin: 0, fontSize: '0.82rem', color: '#cbd5e1', lineHeight: 1.4 }}>
-                      As regras dos erros que você cometeu foram convertidas silenciosamente em perguntas curtas e diretas, agendadas para amanhã no seu Anki.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    className="btn btn-primary"
-                    style={{ padding: '8px 14px', fontSize: '0.82rem', background: '#3b82f6', whiteSpace: 'nowrap' }}
-                    onClick={() => setIsAnkiModalOpen(true)}
-                  >
-                    Ver Cards no Anki Hub ➔
-                  </button>
-                </div>
-              </div>
-
               <button
                 className="btn"
                 style={{ marginTop: '1.5rem', width: '100%' }}
                 onClick={() => {
+                  const newId = generateNewSessionId();
+                  setSessionId(newId);
                   setSessionEnded(false);
                   setSessionStarted(false);
                   setQuestion(null);
                   setSummary(null);
+                  setSessionHistory([]);
+                  setAnsweredMap({});
+                  setSessionQuestions([]);
+                  setCurrentQuestionIndex(0);
                 }}
               >
                 🔄 Configurar Nova Sessão
@@ -864,6 +1451,8 @@ const QuestionViewer: React.FC = () => {
     );
   }
 
+  const isCertoErrado = Array.isArray(question.options) && question.options.length === 2;
+
   let optionsList: string[] = [];
   if (Array.isArray(question.options)) {
     if (typeof question.options[0] === 'string') {
@@ -871,116 +1460,152 @@ const QuestionViewer: React.FC = () => {
     } else {
       optionsList = (question.options as Option[]).map((o: Option) => `${o.label}) ${o.text}`);
     }
-    // Garante ordenação alfabética estrita das alternativas (A, B, C, D, E)
-    optionsList.sort((a, b) => {
-      const letterA = a.match(/^([A-E])\)?/i)?.[1]?.toUpperCase() || '';
-      const letterB = b.match(/^([A-E])\)?/i)?.[1]?.toUpperCase() || '';
-      return letterA.localeCompare(letterB);
-    });
+    if (isCertoErrado) {
+      // Garante que a 1ª seja C) CERTO e a 2ª seja E) ERRADO
+      optionsList = optionsList.map((opt, idx) => {
+        const clean = opt.replace(/^([A-Ea-e])\)?\s*/, '').trim();
+        const letter = idx === 0 ? 'C' : 'E';
+        return `${letter}) ${clean || (idx === 0 ? 'CERTO' : 'ERRADO')}`;
+      });
+    } else {
+      // Garante ordenação alfabética estrita das alternativas (A, B, C, D, E)
+      optionsList.sort((a, b) => {
+        const letterA = a.match(/^([A-E])\)?/i)?.[1]?.toUpperCase() || '';
+        const letterB = b.match(/^([A-E])\)?/i)?.[1]?.toUpperCase() || '';
+        return letterA.localeCompare(letterB);
+      });
+    }
   }
 
   return (
     <div className="viewer-container animate-fade-in">
-      <header className="viewer-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div className="metadata-tags">
-          <span className="tag">{question.metadata.board || 'Banca'}</span>
-          <span className="tag">{question.metadata.discipline || 'Geral'}</span>
-          {question.metadata.topic && <span className="tag">{question.metadata.topic}</span>}
-          <span className="tag">{question.metadata.year || 2023}</span>
-          <span className="tag" style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', borderColor: 'rgba(16, 185, 129, 0.4)' }}>
-            Modo {studyMode}
-          </span>
-          {mediaPrescription && (
+      <header className="viewer-header">
+        <div className="viewer-header-meta">
+          <div className="meta-breadcrumb">
+            <span className="meta-pill board-pill">{question.metadata.board || 'Banca'}</span>
+            <span className="meta-pill discipline-pill">{question.metadata.discipline || 'Geral'}</span>
+            {question.metadata.topic && (
+              <span className="meta-pill" style={{ background: 'rgba(56, 189, 248, 0.1)', color: '#38bdf8' }}>
+                {question.metadata.topic}
+              </span>
+            )}
+            <span className="meta-pill year-pill">{question.metadata.year || 2023}</span>
+          </div>
+          <div className="meta-status">
+            <span className="meta-pill mode-pill">Modo {studyMode}</span>
+            {mediaPrescription && (
+              <button
+                type="button"
+                className="meta-pill prescription-btn"
+                onClick={() => setShowMediaModal(true)}
+                title="Matriz de Complexidade vs. Familiaridade • Clique para ver a prescrição de mídia"
+              >
+                {mediaPrescription.veiculo === 'VIDEOAULA' ? '🎥 Videoaula 1.5x' : '📄 PDF Direto'}
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="viewer-header-toolbar">
+          <div className="toolbar-tools">
             <button
               type="button"
-              className="tag"
-              style={{
-                cursor: 'pointer',
-                background: mediaPrescription.veiculo === 'VIDEOAULA' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(59, 130, 246, 0.2)',
-                color: mediaPrescription.veiculo === 'VIDEOAULA' ? '#fca5a5' : '#93c5fd',
-                borderColor: mediaPrescription.veiculo === 'VIDEOAULA' ? 'rgba(239, 68, 68, 0.5)' : 'rgba(59, 130, 246, 0.5)',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px',
-                borderWidth: 1,
-                borderStyle: 'solid',
-                borderRadius: '6px',
-                padding: '2px 8px',
-                fontWeight: 600
-              }}
-              onClick={() => setShowMediaModal(true)}
-              title="Matriz de Complexidade vs. Familiaridade • Clique para ver a prescrição de mídia"
+              className="tool-btn"
+              onClick={() => setShowBrainDump(true)}
+              title="Anotações rápidas / Rascunho da questão"
             >
-              {mediaPrescription.veiculo === 'VIDEOAULA' ? '🎥 Videoaula 1.5x' : '📄 PDF Direto'}
+              <span>📝</span>
+              <span>Rascunho</span>
             </button>
-          )}
-        </div>
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          </div>
           <button
             type="button"
-            className="btn btn-secondary"
-            style={{
-              padding: '5px 12px',
-              fontSize: '0.8rem',
-              background: '#1e293b',
-              border: ankiStatus?.connected ? '1px solid #10b981' : '1px solid #f59e0b',
-              color: ankiStatus?.connected ? '#6ee7b7' : '#fcd34d',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}
-            onClick={() => setIsAnkiModalOpen(true)}
-            title="Integração Silenciosa AnkiConnect • Clique para abrir o Anki Hub"
-          >
-            <span>⚡</span>
-            <span>
-              {ankiStatus?.connected ? 'AnkiConnect: Online' : `Anki: ${ankiStatus?.pendingQueueCount || 0} na Fila`}
-            </span>
-          </button>
-          <button
-            type="button"
-            className="btn btn-secondary"
-            style={{
-              padding: '5px 12px',
-              fontSize: '0.8rem',
-              background: 'rgba(99, 102, 241, 0.2)',
-              border: '1px solid #818cf8',
-              color: '#c7d2fe',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}
-            onClick={() => setIsReverseModalOpen(true)}
-            title="Estudo Reverso Orientado (Engenharia Reversa): Resolva 5 questões da banca foco para mapear pegadinhas e recortar a teoria do PDF"
-          >
-            <span>🎯</span>
-            <span>Estudo Reverso</span>
-          </button>
-          <button
-            className="btn btn-secondary"
-            style={{ padding: '5px 12px', fontSize: '0.8rem', background: '#1e293b', border: '1px solid #3b82f6', color: '#93c5fd' }}
-            onClick={() => setShowDesmembramento(prev => !prev)}
-            title="Desmembramento Lateral: Resgate a árvore conceitual deste instituto de memória"
-          >
-            🌳 Desmembramento Lateral
-          </button>
-          <button
-            className="btn btn-secondary"
-            style={{ padding: '5px 12px', fontSize: '0.8rem', background: '#1e293b', border: '1px solid #334155' }}
-            onClick={() => setShowBrainDump(true)}
-            title="Lista de Distrações / Brain Dump (Ctrl+D)"
-          >
-            🧠 Brain Dump (Ctrl+D)
-          </button>
-          <button
-            className="btn"
-            style={{ padding: '5px 15px', fontSize: '0.85rem', background: 'transparent', border: '1px solid #fff', color: '#fff' }}
+            className="end-session-btn"
             onClick={() => setShowHandoffModal(true)}
           >
             Encerrar Sessão
           </button>
         </div>
       </header>
+
+      {/* MAPA DA SESSÃO E NAVEGAÇÃO DE QUESTÕES */}
+      {sessionQuestions.length > 0 && (
+        <div className="session-map-bar glass animate-fade-in">
+          <div className="map-info">
+            <div className="map-badge-counter">
+              <span className="map-title-label">🗺️ Mapa da Sessão:</span>
+              <span className="map-count">
+                Questão <strong>{currentQuestionIndex + 1}</strong> de <strong>{sessionQuestions.length}</strong>
+              </span>
+              <span className="map-progress-pct">
+                ({Math.round((Object.keys(answeredMap).length / Math.max(sessionQuestions.length, 1)) * 100)}% respondido)
+              </span>
+            </div>
+
+            <div className="map-nav-controls">
+              <button
+                type="button"
+                className="map-nav-btn prev"
+                onClick={handlePrevQuestion}
+                disabled={currentQuestionIndex === 0}
+                title="Voltar para a questão anterior"
+              >
+                ⬅ Anterior
+              </button>
+              <button
+                type="button"
+                className="map-nav-btn next"
+                onClick={handleNextQuestion}
+                disabled={currentQuestionIndex >= sessionQuestions.length - 1}
+                title="Ir para a próxima questão"
+              >
+                Próxima ➔
+              </button>
+            </div>
+          </div>
+
+          <div className="map-pills-scroll">
+            {sessionQuestions.map((q, idx) => {
+              const isCurrent = idx === currentQuestionIndex;
+              const ans = answeredMap[q.questionId];
+              const isAnswered = !!ans;
+              const isAnulada = ans?.feedback?.gabaritoStatus === 'ANULADA';
+              const isCorrect = ans?.feedback?.isCorrect;
+
+              let pillClass = 'unanswered';
+              let icon = '';
+              if (isAnswered) {
+                if (isAnulada) {
+                  pillClass = 'anulada';
+                  icon = '⚠️';
+                } else if (isCorrect === true) {
+                  pillClass = 'correct';
+                  icon = '✓';
+                } else if (isCorrect === false) {
+                  pillClass = 'incorrect';
+                  icon = '✗';
+                } else {
+                  pillClass = 'answered';
+                  icon = '•';
+                }
+              }
+
+              return (
+                <button
+                  key={q.questionId || idx}
+                  type="button"
+                  className={`map-pill-btn ${pillClass} ${isCurrent ? 'current' : ''}`}
+                  onClick={() => handleJumpToQuestion(idx)}
+                  title={`Questão ${idx + 1}: ${q.metadata?.discipline || ''} • ${isAnswered ? (isCorrect ? 'Acertou' : 'Errou') : 'Pendente'}`}
+                >
+                  <span className="pill-num">{idx + 1}</span>
+                  {icon && <span className="pill-icon">{icon}</span>}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Desmembramento Lateral (Rascunho de Árvore Conceitual) */}
       {showDesmembramento && (
@@ -1028,27 +1653,27 @@ const QuestionViewer: React.FC = () => {
         </div>
       )}
 
-      {/* Banner de Inoculação de Estresse / Chaos Engineering */}
+      {/* Banner de Simulado com Treino de Pressão */}
       {simuladoConfig?.chaosModeEnabled && (
         <div className="chaos-stress-banner animate-fade-in">
-          <span>⚡</span>
+          <span>⏱️</span>
           <div>
-            <strong>MODO CAOS ATIVO: Inoculação de Estresse (Chaos Engineering)</strong>
+            <strong>Treino de Pressão de Tempo Ativo</strong>
             <span style={{ display: 'block', fontSize: '0.76rem', color: '#fecaca' }}>
-              Treino de controle emocional e gestão de tempo sob quebra brusca de ritmo da banca.
+              Questões com tempo mais restrito para simular o ritmo real de prova.
             </span>
           </div>
         </div>
       )}
 
-      {/* Simulação de Fadiga Neuro-Cognitiva (Exaustão e Textos Densos) */}
+      {/* Simulação de Prova Extensa (Textos Densos) */}
       {simuladoConfig?.stressFatigueSimulation && (
         <div className="fatigue-support-box animate-fade-in">
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', color: '#93c5fd', fontSize: '0.82rem', fontWeight: 600 }}>
-            <span>🧠 Texto-Base de Alta Densidade (Treino de Fadiga sob Queda Glicêmica)</span>
+            <span>📄 Questão com Texto Extenso (Treino de Resistência de Leitura)</span>
           </div>
           <p style={{ margin: '0.4rem 0 0', color: '#cbd5e1', fontSize: '0.78rem', lineHeight: '1.45' }}>
-            Considere a complexidade estrutural das normas fiscais aplicadas e execute a leitura dinâmica focada nos verbos núcleos e exceções sem interrupções.
+            Mantenha o foco nos verbos principais e nas palavras-chave da questão.
           </p>
         </div>
       )}
@@ -1067,15 +1692,39 @@ const QuestionViewer: React.FC = () => {
         }}
       >
         <div className="statement">
-          {question.statement.split('\n').map((line, i) => (
-            <p key={i}>{line}</p>
-          ))}
+          {renderFormattedStatement(question.statement)}
         </div>
+
+        {/* Imagem de Apoio da Questão (Tabelas, Figuras, Charges, Gráficos) */}
+        {question.metadata?.supportMaterial?.mediaPath && (
+          <div className="question-figure-container animate-fade-in">
+            <div className="question-figure-header">
+              <span className="figure-icon">🖼️</span>
+              <span className="figure-title">
+                {question.metadata.supportMaterial.titulo || 'Imagem de Apoio da Questão'}
+              </span>
+            </div>
+            <div className="question-figure-box">
+              <img
+                src={
+                  question.metadata.supportMaterial.mediaPath.startsWith('http')
+                    ? question.metadata.supportMaterial.mediaPath
+                    : `http://localhost:8080/${question.metadata.supportMaterial.mediaPath.replace(/^\/+/, '')}`
+                }
+                alt={question.metadata.supportMaterial.titulo || 'Figura da questão'}
+                className="question-support-image"
+                loading="lazy"
+              />
+            </div>
+          </div>
+        )}
 
         <div className="options">
           {optionsList.map((opt, idx) => {
             const isSelected = selectedOption === opt;
-            const letter = opt.match(/^([A-E])\)?/)?.[1] || opt.charAt(0);
+            const letter = isCertoErrado 
+              ? (idx === 0 ? 'C' : 'E') 
+              : (opt.match(/^([A-Ea-e])\)?/)?.[1]?.toUpperCase() || opt.charAt(0).toUpperCase());
             const isUnverifiedGabarito = feedback?.gabaritoStatus === 'AUSENTE' || feedback?.gabaritoStatus === 'SOB_REVISAO';
             return (
               <div 
@@ -1089,29 +1738,29 @@ const QuestionViewer: React.FC = () => {
                 onClick={() => handleSelectOption(opt)}
               >
                 <div className="option-marker">{letter}</div>
-                <div className="option-text">{opt.replace(/^([A-E])\)?\s*/, '')}</div>
+                <div className="option-text">{opt.replace(/^([A-Ea-e])\)?\s*/, '')}</div>
               </div>
             );
           })}
         </div>
       </main>
 
-      {/* Card Pensar o Contrário (Galinsky & Mussweiler) */}
+      {/* Card Dica Antipegadinha */}
       {pensarContrarioOpen && !feedback && (
-        <div className="glass animate-fade-in" style={{ padding: '0.85rem 1.25rem', border: '1px solid #f59e0b', background: 'rgba(245, 158, 11, 0.08)', borderRadius: '10px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#fbbf24', fontWeight: 600, fontSize: '0.9rem' }}>
-            <span>🤔 Deliberação Sistema 2 (Galinsky & Mussweiler)</span>
+        <div className="glass animate-fade-in" style={{ padding: '0.85rem 1.25rem', border: '1px solid rgba(245, 158, 11, 0.25)', background: 'rgba(245, 158, 11, 0.05)', borderRadius: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#fbbf24', fontWeight: 600, fontSize: '0.88rem' }}>
+            <span>🤔 Dica Antipegadinha: Pense no Contrário</span>
           </div>
-          <p style={{ margin: '0.35rem 0 0.5rem', fontSize: '0.83rem', color: '#cbd5e1' }}>
-            Neutralize o efeito âncora e o viés da facilidade heurística: busque argumentos concretos contra a alternativa que parece óbvia. Há alguma exceção oculta, termo restritivo (salvo, exceto, nunca) ou pegadinha clássica da banca?
+          <p style={{ margin: '0.35rem 0 0.5rem', fontSize: '0.83rem', color: '#cbd5e1', lineHeight: '1.45' }}>
+            A alternativa parece óbvia demais? Verifique se não há uma exceção oculta, prazos específicos ou termos restritivos como <em>"salvo"</em>, <em>"vedado"</em> ou <em>"apenas"</em>.
           </p>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: '#fef08a', cursor: 'pointer' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.82rem', color: '#fef08a', cursor: 'pointer' }}>
             <input
               type="checkbox"
               checked={pensouContrario}
               onChange={(e) => setPensouContrario(e.target.checked)}
             />
-            <span>Exercitei deliberadamente "Pensar o Contrário" antes de confirmar a resposta</span>
+            <span>Analisei possíveis pegadinhas da banca antes de confirmar</span>
           </label>
         </div>
       )}
@@ -1119,63 +1768,71 @@ const QuestionViewer: React.FC = () => {
       {!feedback ? (
         <div className="interaction-bar glass animate-fade-in">
           <div className="confidence-section">
-            <span style={{ fontSize: '0.9rem', color: '#94a3b8' }}>Nível de Confiança:</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '4px' }}>
+              <span style={{ fontSize: '0.82rem', color: '#94a3b8', fontWeight: 600 }}>Nível de Certeza:</span>
+              {selectedOption && confidence === 0 && (
+                <span style={{ fontSize: '0.75rem', color: '#f59e0b', fontWeight: 600, background: 'rgba(245, 158, 11, 0.1)', padding: '2px 8px', borderRadius: '4px' }}>
+                  Marque seu nível de certeza para responder
+                </span>
+              )}
+            </div>
             <div className="confidence-buttons">
               {[
-                { lvl: 1, label: '1: Chute' },
-                { lvl: 2, label: '2: Dúvida' },
-                { lvl: 3, label: '3: Parcial' },
-                { lvl: 4, label: '4: Seguro' },
-                { lvl: 5, label: '5: Certeza' },
+                { lvl: 1, label: 'Chute' },
+                { lvl: 2, label: 'Baixa' },
+                { lvl: 3, label: 'Média' },
+                { lvl: 4, label: 'Alta' },
+                { lvl: 5, label: 'Certeza' },
               ].map(({ lvl, label }) => (
                 <button 
                   key={lvl} 
+                  type="button"
                   className={`conf-btn ${confidence === lvl ? 'active' : ''}`}
                   onClick={() => setConfidence(lvl)}
-                  title={label}
+                  title={`Nível ${lvl} — ${label} (tecla ${lvl})`}
                 >
-                  {lvl}
+                  <span className="conf-num">{lvl}</span>
+                  <span className="conf-label">{label}</span>
                 </button>
               ))}
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
             <button
               type="button"
               className="btn btn-secondary"
-              style={{ padding: '6px 12px', fontSize: '0.82rem', borderColor: '#38bdf8', color: '#38bdf8' }}
-              onClick={() => setShowCrossDomainModal(true)}
-              title="Construção de pontes neurais entre domínios conceituais distintos"
-            >
-              ⚡ Colisão de Domínios
-            </button>
-
-            <button
-              type="button"
-              className="btn btn-secondary"
-              style={{ padding: '6px 12px', fontSize: '0.82rem', borderColor: pensarContrarioOpen ? '#f59e0b' : '#334155', color: pensarContrarioOpen ? '#fbbf24' : '#e2e8f0' }}
+              style={{ padding: '6px 12px', fontSize: '0.82rem' }}
               onClick={() => setPensarContrarioOpen(prev => !prev)}
-              title="Induz a reflexão contra a alternativa óbvia"
+              title="Ajuda a checar pegadinhas antes de marcar"
             >
-              🤔 Pensar o Contrário
+              🤔 Checar Pegadinhas
             </button>
 
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', color: '#e2e8f0', cursor: 'pointer' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', color: '#cbd5e1', cursor: 'pointer' }}>
               <input
                 type="checkbox"
                 checked={naCordaBamba}
                 onChange={(e) => setNaCordaBamba(e.target.checked)}
               />
-              <span>🟡 Na Corda Bamba (Dúvida)</span>
+              <span>🟡 Marcar como Dúvida</span>
             </label>
 
             <button 
               className="btn submit-btn" 
-              disabled={!selectedOption || confidence === 0}
+              disabled={!selectedOption || confidence === 0 || isSubmitting}
               onClick={handleSubmit}
+              title={
+                !selectedOption 
+                  ? 'Selecione uma alternativa antes de responder' 
+                  : confidence === 0 
+                    ? 'Indique seu Nível de Confiança (1 a 5) para liberar o botão Responder' 
+                    : isSubmitting 
+                      ? 'Gravando resposta...' 
+                      : 'Confirmar resposta (Brier Score / Calibração)'
+              }
             >
-              Responder
+              {isSubmitting ? 'Gravando...' : 'Responder'}
             </button>
           </div>
         </div>
@@ -1226,35 +1883,6 @@ const QuestionViewer: React.FC = () => {
                       </button>
                     ))}
                   </div>
-                </div>
-
-                {/* Automação Extrema: Integração Silenciosa AnkiConnect */}
-                <div style={{
-                  margin: '0.75rem 0',
-                  padding: '0.65rem 0.95rem',
-                  background: 'rgba(59, 130, 246, 0.12)',
-                  border: '1px solid rgba(59, 130, 246, 0.35)',
-                  borderRadius: '8px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: '0.75rem',
-                  flexWrap: 'wrap'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{ fontSize: '1.1rem' }}>⚡</span>
-                    <span style={{ fontSize: '0.83rem', color: '#93c5fd', lineHeight: 1.4 }}>
-                      <strong>Flashcard gerado silenciosamente:</strong> A regra que você errou foi sintetizada em pergunta curta e enviada para o seu Anki (agendado para amanhã).
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    style={{ padding: '4px 10px', fontSize: '0.75rem', whiteSpace: 'nowrap', border: '1px solid #3b82f6', color: '#60a5fa' }}
-                    onClick={() => setIsAnkiModalOpen(true)}
-                  >
-                    Ver no Anki Hub ➔
-                  </button>
                 </div>
 
                 {/* 3. Travamentos (O Bloqueio Cognitivo) - Alerta Interativo com IA */}
@@ -1312,18 +1940,18 @@ const QuestionViewer: React.FC = () => {
               </div>
             )}
             
-            {/* Biometria da Decisão & Telemetria Anti-Cheat */}
+            {/* Diagnóstico de Decisão & Confiança */}
             {biometricResult && (
               <div style={{ marginTop: '0.6rem', display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
                 <span className={`biometric-badge ${biometricResult.fluenciaNeurologica}`}>
                   {biometricResult.chuteEducadoDetectado 
-                    ? '⚠️ Alerta Anti-Cheat: Chute Educado / Fragilidade Sináptica Detectada'
+                    ? '⚠️ Atenção: Resposta com hesitação prolongada (Dúvida / Chute provável)'
                     : (biometricResult.fluenciaNeurologica === 'ALTA_FLUENCIA' 
-                      ? '⚡ Fluência Neural Máxima: Decisão Imediata / Domínio Absoluto' 
-                      : '🔍 Fricção Cognitiva Moderada: Hesitação Detectada')}
+                      ? '⚡ Alta Segurança: Resposta rápida e certeira' 
+                      : '🔍 Resposta ponderada')}
                 </span>
                 <span style={{ fontSize: '0.74rem', color: '#94a3b8' }}>
-                  Fricção: {biometricResult.friccaoScore.toFixed(2)} • Hesitação: {(biometricResult.tempoHesitacaoMs / 1000).toFixed(1)}s • Trocas: {biometricResult.trocasCount}
+                  Tempo de decisão: {(biometricResult.tempoHesitacaoMs / 1000).toFixed(1)}s • Trocas de alternativa: {biometricResult.trocasCount}
                 </span>
               </div>
             )}
@@ -1393,32 +2021,53 @@ const QuestionViewer: React.FC = () => {
           {(() => {
             const isCognitiveLocked = Boolean((feedback?.bloqueioCognitivo || (feedback?.errosConsecutivos != null && feedback.errosConsecutivos >= 3)) && !cognitiveLockResolved);
             const isAdvanceBlocked = Boolean((feynmanAuditRequired && !feynmanAuditCompleted) || isCognitiveLocked);
+            const isLastInBatch = currentQuestionIndex >= sessionQuestions.length - 1;
 
             return (
-              <button 
-                className="btn" 
-                onClick={fetchNextQuestion} 
-                disabled={isAdvanceBlocked}
-                style={{ 
-                  marginTop: '0.75rem', 
-                  alignSelf: 'flex-end',
-                  opacity: isAdvanceBlocked ? 0.45 : 1,
-                  cursor: isAdvanceBlocked ? 'not-allowed' : 'pointer'
-                }}
-                title={
-                  isCognitiveLocked
-                    ? 'Avanço bloqueado: fale com a IA para destravar o bloqueio cognitivo'
+              <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.75rem', alignSelf: 'flex-end', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={handlePrevQuestion}
+                  disabled={currentQuestionIndex === 0}
+                  style={{ padding: '8px 14px', fontSize: '0.85rem' }}
+                >
+                  ⬅ Questão Anterior
+                </button>
+                <button 
+                  className="btn" 
+                  onClick={async () => {
+                    if (selectedOption && confidence > 0 && !feedback && !isSubmitting) {
+                      await handleSubmit();
+                    }
+                    if (isLastInBatch) {
+                      await endSession();
+                    } else {
+                      handleNextQuestion();
+                    }
+                  }} 
+                  disabled={isAdvanceBlocked}
+                  style={{ 
+                    alignSelf: 'flex-end',
+                    opacity: isAdvanceBlocked ? 0.45 : 1,
+                    cursor: isAdvanceBlocked ? 'not-allowed' : 'pointer',
+                    background: isLastInBatch ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : undefined
+                  }}
+                  title={
+                    isCognitiveLocked
+                      ? 'Avanço bloqueado: fale com a IA para destravar o bloqueio cognitivo'
+                      : (feynmanAuditRequired && !feynmanAuditCompleted) 
+                        ? 'Avanço bloqueado: conserte seu modelo mental na auditoria Feynman acima' 
+                        : (isLastInBatch ? 'Encerrar sessão e auditar respostas' : 'Avançar para a próxima questão')
+                  }
+                >
+                  {isCognitiveLocked
+                    ? '🛑 Travamento: Fale com a IA para Destravar'
                     : (feynmanAuditRequired && !feynmanAuditCompleted) 
-                      ? 'Avanço bloqueado: conserte seu modelo mental na auditoria Feynman acima' 
-                      : 'Próxima Questão'
-                }
-              >
-                {isCognitiveLocked
-                  ? '🛑 Travamento: Fale com a IA para Destravar'
-                  : (feynmanAuditRequired && !feynmanAuditCompleted) 
-                    ? '🔒 Avanço Bloqueado (Feynman Pendente)' 
-                    : 'Próxima Questão ➔'}
-              </button>
+                      ? '🔒 Avanço Bloqueado (Feynman Pendente)' 
+                      : (isLastInBatch ? '📊 Concluir Sessão & Ver Relatório ➔' : 'Próxima Questão ➔')}
+                </button>
+              </div>
             );
           })()}
         </div>
@@ -1544,16 +2193,6 @@ const QuestionViewer: React.FC = () => {
         onClose={() => setShowCrossDomainModal(false)}
         disciplinaFiltro={question?.metadata?.discipline || selectedDiscipline}
         sessionId={sessionId}
-      />
-
-      {/* Automação Extrema: AnkiConnect Modal Hub */}
-      <AnkiHubModal
-        isOpen={isAnkiModalOpen}
-        onClose={() => {
-          setIsAnkiModalOpen(false);
-          refreshAnkiStatus();
-        }}
-        activeConcursoId={selectedConcursoId}
       />
 
       {/* 3. Travamentos: Modal de Bloqueio Cognitivo & Chat IA Embutido */}

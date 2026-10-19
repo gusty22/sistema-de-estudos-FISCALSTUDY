@@ -32,6 +32,12 @@ interface SimulationData {
   gapCompetitivoPct: number;
   pontosCriticosFalha: NeuralNode[];
   diagnosticoGeral: string;
+  intervaloConfianca90Pct?: {
+    inf: number;
+    sup: number;
+  };
+  probabilidadeAprovacaoPct?: number;
+  iteracoes?: number;
 }
 
 interface FlightPlanBlock {
@@ -84,6 +90,9 @@ interface DigitalTwinData {
   hePercentage: number;
   grafoNos: NeuralNode[];
   simulacaoRecente: SimulationData;
+  calibradoPorR?: boolean;
+  motorEstatistico?: string;
+  timestampCalibracao?: string;
   roteiroDoDia: {
     titulo: string;
     mensagemIA: string;
@@ -136,12 +145,24 @@ export const DigitalTwinView: React.FC<DigitalTwinViewProps> = ({
     }
   };
 
-  const handleRunSimulation = () => {
+  const handleRunSimulation = async () => {
+    if (!activeConcurso?.id) return;
     setIsSimulating(true);
-    setTimeout(() => {
-      loadDigitalTwin();
+    try {
+      const res = await fetch(`/api/v1/digital-twin/recalibrate-r?concursoId=${encodeURIComponent(activeConcurso.id)}`, {
+        method: 'POST'
+      });
+      if (res.ok) {
+        const calibrated = await res.json();
+        setData(calibrated);
+      } else {
+        await loadDigitalTwin();
+      }
+    } catch {
+      await loadDigitalTwin();
+    } finally {
       setIsSimulating(false);
-    }, 700);
+    }
   };
 
   const filteredNodes = (data?.grafoNos || []).filter((n) => {
@@ -159,11 +180,16 @@ export const DigitalTwinView: React.FC<DigitalTwinViewProps> = ({
       {/* Header */}
       <div className="dt-header glass">
         <div>
-          <h2>
+          <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             <span>🧠</span> Gêmeo Digital Cognitivo (Digital Twin)
+            {data?.calibradoPorR && (
+              <span style={{ fontSize: '11px', background: 'rgba(34, 197, 94, 0.15)', color: '#4ade80', padding: '3px 8px', borderRadius: '6px', border: '1px solid rgba(34, 197, 94, 0.4)', fontWeight: 600 }}>
+                📊 Motor Estatístico R 4.5.1
+              </span>
+            )}
           </h2>
           <p className="dt-subtitle">
-            Simulação algorítmica do seu cérebro baseada no método de alto rendimento: grafo de conexões sinápticas, Curva de Ebbinghaus, micro-telemetria de 3.100h e simulação noturna preditiva de prova.
+            Modelagem psicométrica e preditiva calibrada em R (Monte Carlo 10k, BKT e FSRS v5): grafo sináptico, Curva de Ebbinghaus, micro-telemetria de 3.100h e plano de voo neuroplástico.
           </p>
         </div>
 
@@ -184,7 +210,7 @@ export const DigitalTwinView: React.FC<DigitalTwinViewProps> = ({
             onClick={handleRunSimulation}
             disabled={isSimulating}
           >
-            {isSimulating ? '⚡ Executando...' : '⚡ Reexecutar Simulação Noturna'}
+            {isSimulating ? '⚡ Recalibrando com R...' : '📊 Recalibrar com R (Monte Carlo)'}
           </button>
         </div>
       </div>
@@ -269,19 +295,28 @@ export const DigitalTwinView: React.FC<DigitalTwinViewProps> = ({
             </div>
           </div>
 
-          <div className="sim-score-banner">
+          <div className="sim-score-banner" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))' }}>
             <div className="sim-score-item">
               <span className="sim-score-val" style={{ color: data.simulacaoRecente.gapCompetitivoPct >= 0 ? '#10b981' : '#f59e0b' }}>
                 {data.simulacaoRecente.notaProjetadaHojePct}%
               </span>
-              <span className="sim-score-label">Nota Projetada Hoje</span>
+              <span className="sim-score-label">Média Monte Carlo</span>
             </div>
+
+            {data.simulacaoRecente.intervaloConfianca90Pct && (
+              <div className="sim-score-item">
+                <span className="sim-score-val" style={{ color: '#a78bfa', fontSize: '1.05rem' }}>
+                  [{data.simulacaoRecente.intervaloConfianca90Pct.inf}% – {data.simulacaoRecente.intervaloConfianca90Pct.sup}%]
+                </span>
+                <span className="sim-score-label">IC 90% (Margem R)</span>
+              </div>
+            )}
 
             <div className="sim-score-item">
               <span className="sim-score-val" style={{ color: '#94a3b8' }}>
                 {data.simulacaoRecente.notaCorteConcursoPct}%
               </span>
-              <span className="sim-score-label">Nota de Corte Fiscal</span>
+              <span className="sim-score-label">Nota de Corte</span>
             </div>
 
             <div className="sim-score-item">
@@ -295,10 +330,17 @@ export const DigitalTwinView: React.FC<DigitalTwinViewProps> = ({
             </div>
 
             <div className="sim-score-item">
+              <span className="sim-score-val" style={{ color: '#10b981' }}>
+                {data.simulacaoRecente.probabilidadeAprovacaoPct ?? 0}%
+              </span>
+              <span className="sim-score-label">P(Aprovação)</span>
+            </div>
+
+            <div className="sim-score-item">
               <span className="sim-score-val" style={{ color: '#38bdf8' }}>
                 {data.nosRiscoAmnesia} nós
               </span>
-              <span className="sim-score-label">Pontos em Risco de Amnésia</span>
+              <span className="sim-score-label">Risco Amnésia</span>
             </div>
           </div>
 

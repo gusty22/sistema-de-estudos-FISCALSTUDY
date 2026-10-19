@@ -1,0 +1,667 @@
+/* ==========================================================================
+   ROTINA & DISPONIBILIDADE — TECNOLOGIA CALMA
+   Planejamento tátil da semana, turnos e capacidade macro sem sobrecarga.
+   ========================================================================== */
+
+.rotina-calm-wrapper {
+  min-height: 100vh;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  font-family: inherit;
+  padding: 1.5rem 1.5rem 3.5rem 1.5rem;
+}
+
+/* --------------------------------------------------------------------------
+   THEME TOKENS: PAPER (LIGHT RELAXANTE) VS NIGHT (DARK ARDÓSIA SUAVE)
+   -------------------------------------------------------------------------- */
+:root[data-theme="paper"] .rotina-calm-wrapper,
+[data-theme="paper"] .rotina-calm-wrapper,
+body.theme-paper .rotina-calm-wrapper,
+.rotina-calm-wrapper.theme-paper {
+  --calm-bg: #f9f8f6;
+  --calm-text: #292524;
+  --calm-text-muted: #78716c;
+  --calm-card-bg: #ffffff;
+  --calm-card-border: rgba(231, 229, 228, 0.75);
+  --calm-subtle-bg: #f2f0eb;
+  --calm-input-bg: #fafaf9;
+  --calm-border: #e7e5e4;
+  --calm-primary: #4f46e5;
+  --calm-primary-hover: #4338ca;
+  --calm-card-shadow: 0 4px 20px rgba(120, 113, 108, 0.06);
+  --calm-amber-bg: #fffbeb;
+  --calm-amber-border: #fde68a;
+  --calm-amber-text: #b45309;
+  --calm-emerald-bg: #ecfdf5;
+  --calm-emerald-border: #a7f3d0;
+  --calm-emerald-text: #047857;
+  --calm-rose-bg: #fff1f2;
+  --calm-rose-border: #fecdd3;
+  --calm-rose-text: #be123c;
+  background-color: var(--calm-bg);
+  color: var(--calm-text);
+}
+
+:root[data-theme="night"] .rotina-calm-wrapper,
+:root[data-theme="dark"] .rotina-calm-wrapper,
+[data-theme="night"] .rotina-calm-wrapper,
+[data-theme="dark"] .rotina-calm-wrapper,
+body.theme-night .rotina-calm-wrapper,
+body.theme-dark .rotina-calm-wrapper,
+.rotina-calm-wrapper.theme-night,
+.rotina-calm-wrapper.theme-dark {
+  --calm-bg: #0e0f11;
+  --calm-text: #e7e5e4;
+  --calm-text-muted: #a8a29e;
+  --calm-card-bg: #16181a;
+  --calm-card-border: #26282b;
+  --calm-subtle-bg: #1c1e22;
+  --calm-input-bg: #111214;
+  --calm-border: #26282b;
+  --calm-primary: #6366f1;
+  --calm-primary-hover: #818cf8;
+  --calm-card-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+  --calm-amber-bg: rgba(245, 158, 11, 0.12);
+  --calm-amber-border: rgba(245, 158, 11, 0.28);
+  --calm-amber-text: #fbbf24;
+  --calm-emerald-bg: rgba(16, 185, 129, 0.12);
+  --calm-emerald-border: rgba(16, 185, 129, 0.28);
+  --calm-emerald-text: #34d399;
+  --calm-rose-bg: rgba(244, 63, 94, 0.12);
+  --calm-rose-border: rgba(244, 63, 94, 0.28);
+  --calm-rose-text: #fb7185;
+  background-color: var(--calm-bg);
+  color: var(--calm-text);
+}
+
+.rotina-calm-container {
+  max-width: 960px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+
+/* --------------------------------------------------------------------------
+   HEADER
+   -------------------------------------------------------------------------- */
+.rotina-header {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .rotina-header {
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
+  }
+}
+
+.rotina-category-tag {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--calm-primary);
+}
+
+.rotina-title {
+  font-size: 1.85rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.rotina-subtitle {
+  font-size: 0.88rem;
+  color: var(--calm-text-muted);
+  margin-top: 0.4rem;
+  max-width: 640px;
+  line-height: 1.5;
+}
+
+.rotina-theme-toggle {
+  padding: 0.65rem;
+  border-radius: 9999px;
+  border: 1px solid var(--calm-card-border);
+  background: var(--calm-card-bg);
+  color: var(--calm-text-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.rotina-theme-toggle:hover {
+  opacity: 0.85;
+  transform: scale(1.05);
+}
+
+/* --------------------------------------------------------------------------
+   FEEDBACK DO GÊMEO DIGITAL (CARGA SEMANAL)
+   -------------------------------------------------------------------------- */
+.rotina-feedback-banner {
+  padding: 1.25rem 1.5rem;
+  border-radius: 1.25rem;
+  border: 1px solid var(--calm-card-border);
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  transition: all 0.3s ease;
+}
+
+.rotina-feedback-banner.type-warning {
+  background-color: var(--calm-amber-bg);
+  border-color: var(--calm-amber-border);
+}
+
+.rotina-feedback-banner.type-success {
+  background-color: var(--calm-emerald-bg);
+  border-color: var(--calm-emerald-border);
+}
+
+.rotina-feedback-banner.type-alert {
+  background-color: var(--calm-rose-bg);
+  border-color: var(--calm-rose-border);
+}
+
+.rotina-feedback-banner.type-neutral {
+  background-color: var(--calm-card-bg);
+}
+
+.rotina-feedback-icon {
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+}
+
+.rotina-feedback-title {
+  font-size: 0.92rem;
+  font-weight: 600;
+  margin: 0 0 0.25rem 0;
+}
+
+.rotina-feedback-title.type-warning { color: var(--calm-amber-text); }
+.rotina-feedback-title.type-success { color: var(--calm-emerald-text); }
+.rotina-feedback-title.type-alert { color: var(--calm-rose-text); }
+
+.rotina-feedback-desc {
+  font-size: 0.82rem;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.rotina-feedback-desc.type-warning { color: var(--calm-amber-text); opacity: 0.9; }
+.rotina-feedback-desc.type-success { color: var(--calm-emerald-text); opacity: 0.9; }
+.rotina-feedback-desc.type-alert { color: var(--calm-rose-text); opacity: 0.9; }
+.rotina-feedback-desc.type-neutral { color: var(--calm-text-muted); }
+
+/* --------------------------------------------------------------------------
+   LAYOUT EM COLUNAS (GRADE + AJUSTES)
+   -------------------------------------------------------------------------- */
+.rotina-main-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+@media (min-width: 1024px) {
+  .rotina-main-grid {
+    grid-template-columns: 8fr 4fr;
+  }
+}
+
+.rotina-card {
+  padding: 1.5rem;
+  border-radius: 1.5rem;
+  border: 1px solid var(--calm-card-border);
+  background: var(--calm-card-bg);
+  box-shadow: var(--calm-card-shadow);
+}
+
+.rotina-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+
+.rotina-card-title {
+  font-size: 0.98rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.rotina-card-caption {
+  font-size: 0.78rem;
+  color: var(--calm-text-muted);
+  margin-top: 0.25rem;
+}
+
+.rotina-badge-pill {
+  padding: 0.35rem 0.75rem;
+  border-radius: 0.65rem;
+  font-size: 0.76rem;
+  font-weight: 500;
+  background-color: var(--calm-subtle-bg);
+  border: 1px solid var(--calm-border);
+  color: var(--calm-text);
+}
+
+/* --------------------------------------------------------------------------
+   MATRIZ DA SEMANA (GRADE TÁTIL)
+   -------------------------------------------------------------------------- */
+.rotina-table-scroll {
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+  -ms-overflow-style: none;
+  scrollbar-width: thin;
+}
+
+.rotina-table-container {
+  min-width: 520px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.rotina-grid-row {
+  display: grid;
+  grid-template-columns: 55px repeat(7, 1fr);
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.rotina-day-header {
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--calm-text-muted);
+}
+
+.rotina-day-header.is-rest {
+  color: #f43f5e;
+  opacity: 0.6;
+  text-decoration: line-through;
+}
+
+.rotina-shift-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+}
+
+.rotina-shift-text {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--calm-text-muted);
+}
+
+.rotina-block-btn {
+  height: 3.25rem;
+  border-radius: 0.85rem;
+  border: 1px solid transparent;
+  background-color: var(--calm-input-bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.rotina-block-btn:hover:not(:disabled) {
+  background-color: var(--calm-subtle-bg);
+  border-color: var(--calm-border);
+  transform: translateY(-1px);
+}
+
+.rotina-block-btn.is-selected-manha {
+  background-color: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+.rotina-block-btn.is-selected-tarde {
+  background-color: rgba(249, 115, 22, 0.12);
+  border-color: rgba(249, 115, 22, 0.35);
+}
+
+.rotina-block-btn.is-selected-noite {
+  background-color: rgba(99, 102, 241, 0.12);
+  border-color: rgba(99, 102, 241, 0.35);
+}
+
+.rotina-block-btn.is-rest-day {
+  opacity: 0.28;
+  cursor: not-allowed;
+  border-style: dashed;
+  border-color: var(--calm-border);
+  background-color: transparent;
+}
+
+.rotina-block-dot {
+  width: 0.38rem;
+  height: 0.38rem;
+  border-radius: 9999px;
+}
+
+.rotina-block-time {
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+/* Rodapé com dias de descanso */
+.rotina-rest-days-row {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--calm-border);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.rotina-rest-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--calm-text-muted);
+}
+
+.rotina-rest-btn {
+  padding: 0.35rem 0.85rem;
+  border-radius: 9999px;
+  font-size: 0.76rem;
+  font-weight: 500;
+  border: 1px solid var(--calm-border);
+  background-color: var(--calm-input-bg);
+  color: var(--calm-text-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.rotina-rest-btn:hover {
+  opacity: 0.85;
+}
+
+.rotina-rest-btn.is-active {
+  background-color: rgba(244, 63, 94, 0.12);
+  color: #f43f5e;
+  border-color: rgba(244, 63, 94, 0.35);
+}
+
+/* --------------------------------------------------------------------------
+   COLUNA DIREITA (AJUSTES DE CAPACIDADE & EXCEÇÕES)
+   -------------------------------------------------------------------------- */
+.rotina-side-column {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.rotina-adjust-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.rotina-field-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 0.4rem;
+}
+
+.rotina-field-label {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--calm-text-muted);
+}
+
+.rotina-field-value {
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.rotina-slider {
+  width: 100%;
+  accent-color: var(--calm-primary);
+  cursor: pointer;
+}
+
+.rotina-field-tip {
+  font-size: 0.72rem;
+  color: var(--calm-text-muted);
+  line-height: 1.45;
+  margin-top: 0.35rem;
+}
+
+.rotina-pills-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.rotina-pill-btn {
+  flex: 1;
+  padding: 0.45rem;
+  border-radius: 0.65rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border: 1px solid var(--calm-border);
+  background: var(--calm-input-bg);
+  color: var(--calm-text-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.rotina-pill-btn:hover {
+  opacity: 0.85;
+}
+
+.rotina-pill-btn.is-active {
+  background-color: rgba(99, 102, 241, 0.15);
+  color: var(--calm-primary);
+  border-color: rgba(99, 102, 241, 0.35);
+}
+
+/* Exceções Temporárias */
+.rotina-exceptions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.rotina-exception-item {
+  padding: 0.75rem 1rem;
+  border-radius: 0.85rem;
+  border: 1px solid var(--calm-border);
+  background-color: var(--calm-subtle-bg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.rotina-exception-date {
+  font-size: 0.78rem;
+  font-weight: 700;
+  display: block;
+}
+
+.rotina-exception-reason {
+  font-size: 0.72rem;
+  color: var(--calm-text-muted);
+  display: block;
+}
+
+.rotina-badge-unavail {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.2rem 0.5rem;
+  border-radius: 9999px;
+  background-color: rgba(244, 63, 94, 0.12);
+  color: #f43f5e;
+  border: 1px solid rgba(244, 63, 94, 0.25);
+  flex-shrink: 0;
+}
+
+.rotina-add-exc-btn {
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: 0.85rem;
+  border: 1px dashed var(--calm-border);
+  background-color: transparent;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--calm-text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.rotina-add-exc-btn:hover {
+  background-color: var(--calm-subtle-bg);
+  color: var(--calm-text);
+}
+
+/* --------------------------------------------------------------------------
+   RODAPÉ DE AÇÃO E SALVAMENTO
+   -------------------------------------------------------------------------- */
+.rotina-footer {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--calm-border);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .rotina-footer {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.rotina-footer-note {
+  font-size: 0.78rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--calm-text-muted);
+}
+
+.rotina-btn-save {
+  padding: 0.85rem 2rem;
+  border-radius: 1rem;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.rotina-calm-wrapper.theme-paper .rotina-btn-save {
+  background-color: #1c1917;
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(28, 25, 23, 0.18);
+}
+
+.rotina-calm-wrapper.theme-paper .rotina-btn-save:hover {
+  background-color: #292524;
+}
+
+.rotina-calm-wrapper.theme-night .rotina-btn-save {
+  background-color: #f5f5f4;
+  color: #1c1917;
+  box-shadow: 0 4px 14px rgba(245, 245, 244, 0.12);
+}
+
+.rotina-calm-wrapper.theme-night .rotina-btn-save:hover {
+  background-color: #ffffff;
+}
+
+/* Modal de Inserir Exceção */
+.rotina-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  padding: 1rem;
+}
+
+.rotina-modal-card {
+  width: 100%;
+  max-width: 420px;
+  border-radius: 1.5rem;
+  padding: 1.75rem;
+  border: 1px solid var(--calm-card-border);
+  background-color: var(--calm-card-bg);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.rotina-modal-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.rotina-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.rotina-input-text {
+  padding: 0.65rem 0.85rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--calm-border);
+  background-color: var(--calm-input-bg);
+  color: var(--calm-text);
+  font-size: 0.85rem;
+  outline: none;
+}
+
+.rotina-input-text:focus {
+  border-color: var(--calm-primary);
+}
+
+.rotina-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}

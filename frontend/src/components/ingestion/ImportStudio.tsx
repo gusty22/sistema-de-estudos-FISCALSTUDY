@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import './ImportStudio.css';
+import { AuditCockpit } from './AuditCockpit';
+import { CentralProcessamento } from './CentralProcessamento';
+import { AssistenteImportacaoWizard } from './AssistenteImportacaoWizard';
+import { QualidadeBancoQuestoes } from './QualidadeBancoQuestoes';
 
 interface StagingDocument {
   id: string;
@@ -7,6 +11,19 @@ interface StagingDocument {
   role: string;
   sizeBytes: number;
   format: string;
+}
+
+export interface StagingDocRole {
+  id: string;
+  fileId: string;
+  docRole: string;
+  pageStart: number;
+  pageEnd: number;
+  banca?: string;
+  orgao?: string;
+  cargo?: string;
+  ano?: number;
+  status?: string;
 }
 
 interface SupportMaterial {
@@ -37,6 +54,8 @@ export interface StagingFile {
   questionCount: number;
   verifiedCount: number;
   needsReviewCount: number;
+  hasInconsistency?: boolean;
+  inconsistencyReason?: string;
 }
 
 interface StagingQuestion {
@@ -55,6 +74,9 @@ interface StagingQuestion {
   subassuntoSugerido?: string;
   rejectionType?: string; // RECUPERAVEL, DEFINITIVA
   supportMaterial?: SupportMaterial;
+  justificativa?: string;
+  textoApoio?: string;
+  textoApoioTitulo?: string;
   status: string; // EXTRACTED, STRUCTURALLY_VALID, NEEDS_REVIEW, SOURCE_VERIFIED, REJECTED
   flags: string[];
   pages: number[];
@@ -120,7 +142,61 @@ export default function ImportStudio() {
   const [stagingFiles, setStagingFiles] = useState<StagingFile[]>([]);
   const [selectedStagingFile, setSelectedStagingFile] = useState<StagingFile | null>(null);
   const [stagingSearch, setStagingSearch] = useState<string>('');
-  const [activeTab, setActiveTab] = useState<'ACERVO' | 'UPLOAD'>('ACERVO');
+  const [activeTab, setActiveTab] = useState<'CENTRAL' | 'WIZARD' | 'ACERVO' | 'QUALIDADE' | 'UPLOAD'>('CENTRAL');
+  const [stagingFilter, setStagingFilter] = useState<'ALL' | 'INCONSISTENT' | 'VERIFIED' | 'MANUAL'>('ALL');
+  const [evidenceMode, setEvidenceMode] = useState<'PDF' | 'IMAGE'>('PDF');
+  const [evidenceTab, setEvidenceTab] = useState<'PROVA' | 'GABARITO' | 'DUAL'>('DUAL');
+  const [fileDocuments, setFileDocuments] = useState<StagingDocRole[]>([]);
+  const [activeProvaPage, setActiveProvaPage] = useState<number>(1);
+  const [activeGabaritoPage, setActiveGabaritoPage] = useState<number>(1);
+  const [forceMultipleChoice, setForceMultipleChoice] = useState(false);
+  const [isAuditingCockpitOpen, setIsAuditingCockpitOpen] = useState(false);
+
+  useEffect(() => {
+    setForceMultipleChoice(false);
+  }, [activeQuestionId]);
+
+  // Helper para identificar questões de Certo ou Errado (Cebraspe / CESPE)
+  const isQuestionCertoErrado = (q?: StagingQuestion | null): boolean => {
+    if (!q) return false;
+    if (q.options && q.options.length === 2) {
+      return true;
+    }
+    const stmt = (q.statement || '').toUpperCase();
+    if (stmt.includes('JULGUE O ITEM') || stmt.includes('JULGUE OS ITENS') || stmt.includes('CERTO OU ERRADO')) {
+      return true;
+    }
+    return false;
+  };
+
+  // Modais de Criação Manual
+  const [isCreateExamModalOpen, setIsCreateExamModalOpen] = useState(false);
+  const [newExamData, setNewExamData] = useState({
+    banca: 'FGV',
+    ano: '2024',
+    orgao: 'SEFAZ-MG',
+    cargo: 'Auditor Fiscal da Receita Estadual',
+    filename: '',
+  });
+
+  const [isAddQuestionModalOpen, setIsAddQuestionModalOpen] = useState(false);
+  const [newQuestionData, setNewQuestionData] = useState({
+    numeroOriginal: 1,
+    disciplina: 'Direito Tributário',
+    assunto: '',
+    subassunto: '',
+    statement: '',
+    options: [
+      'A) ',
+      'B) ',
+      'C) ',
+      'D) ',
+      'E) ',
+    ],
+    correctOption: 'A',
+    gabaritoStatus: 'PRELIMINAR',
+    page: 1,
+  });
 
   // Helper defensivo para chamadas HTTP
   async function safeFetchJson<T>(url: string, init?: RequestInit): Promise<T> {
@@ -205,18 +281,246 @@ export default function ImportStudio() {
     setSession(null);
     setActionMessage(`Carregando questões do caderno: ${file.filename}...`);
     try {
-      const qList = await safeFetchJson<StagingQuestion[]>(`/api/v1/ingestion/staging-files/${file.id}/questions`);
-      setQuestions(qList);
-      if (qList.length > 0) {
+      const [qList, docs] = await Promise.all([
+        safeFetchJson<StagingQuestion[]>(`/api/v1/ingestion/staging-files/${file.id}/questions`),
+        safeFetchJson<StagingDocRole[]>(`/api/v1/ingestion/staging-files/${file.id}/documents`).catch(() => [])
+      ]);
+      const rawList = qList || [];
+      // 1. Identificar Gaps na Numeração (Garantir que todas as questões da prova existam sem omissões)
+      const existingNums = new Set(rawList.map((q) => q.numeroOriginal));
+      const maxNum = rawList.reduce((max, q) => Math.max(max, q.numeroOriginal || 0), 0);
+      const filledList: StagingQuestion[] = [...rawList];
+
+      if (maxNum > 0) {
+        for (let num = 1; num <= maxNum; num++) {
+          if (!existingNums.has(num)) {
+            // Cria questão pendente de preenchimento (Lacuna detectada)
+            filledList.push({
+              id: `gap-${file.id}-${num}`,
+              numeroOriginal: num,
+              statement: '⚠️ [Questão não detectada automaticamente pelo extrator. Por favor, consulte o caderno original ao lado e digite o enunciado e alternativas.]',
+              options: [],
+              correctOption: null,
+              gabaritoStatus: 'PRELIMINAR',
+              disciplina: file.cargo || 'Geral',
+              status: 'INCOMPLETE',
+              flags: ['EXTRACTION_GAP_DETECTED'],
+              pages: [1],
+              evidenceImage: null,
+              reviewNotes: 'Questão gerada automaticamente como lacuna pendente de auditoria manual.',
+            });
+          }
+        }
+      }
+
+      // Ordenar rigorosamente pela numeração sequencial original
+      filledList.sort((a, b) => a.numeroOriginal - b.numeroOriginal);
+
+      const normalizedQuestions = filledList.map((q) => {
+        const normQ = { ...q };
+        // Todas as provas que vamos fazer a auditoria devem ter gabarito status como PRELIMINAR
+        if (!normQ.gabaritoStatus || normQ.gabaritoStatus === 'DEFINITIVO' || normQ.gabaritoStatus === 'AUSENTE') {
+          normQ.gabaritoStatus = 'PRELIMINAR';
+        }
+        // Se a questão possui textoApoio mas supportMaterial está nulo/indefinido, sintetiza
+        if (!normQ.supportMaterial && normQ.textoApoio) {
+          normQ.supportMaterial = {
+            tipo: 'TEXTO_BASE',
+            titulo: normQ.textoApoioTitulo || 'Texto de Apoio 1',
+            conteudoTexto: normQ.textoApoio,
+            docOrigem: 'Caderno de Prova',
+          };
+        } else if (normQ.supportMaterial && !normQ.textoApoio) {
+          normQ.textoApoio = normQ.supportMaterial.conteudoTexto || '';
+          normQ.textoApoioTitulo = normQ.supportMaterial.titulo || '';
+        }
+        return normQ;
+      });
+      setQuestions(normalizedQuestions);
+      setFileDocuments(docs || []);
+
+      const gabDoc = docs?.find((d) => d.docRole && d.docRole.includes('GABARITO'));
+      if (gabDoc && gabDoc.pageStart) {
+        setActiveGabaritoPage(gabDoc.pageStart);
+      } else {
+        setActiveGabaritoPage(file.totalPages || 1);
+      }
+
+      if (qList && qList.length > 0) {
         setActiveQuestionId(qList[0].id);
+        if (qList[0].pages && qList[0].pages.length > 0) {
+          setActiveProvaPage(qList[0].pages[0]);
+        } else {
+          setActiveProvaPage(1);
+        }
+        setIsAuditingCockpitOpen(true);
       } else {
         setActiveQuestionId(null);
+        setActiveProvaPage(1);
       }
     } catch (err: any) {
       alert('Erro ao carregar questões do caderno: ' + err.message);
     } finally {
       setIsProcessing(false);
       setActionMessage(null);
+    }
+  };
+
+  const handleOpenPdfInNewTab = (fileId?: string, page?: number) => {
+    const fid = fileId || selectedStagingFile?.id;
+    if (fid) {
+      const pageHash = page && page > 1 ? `#page=${page}` : '';
+      window.open(`/api/v1/ingestion/staging-files/${fid}/pdf${pageHash}`, '_blank');
+    } else if (session?.sessionId) {
+      const pageHash = page && page > 1 ? `#page=${page}` : '';
+      window.open(`/api/v1/ingestion/sessions/${session.sessionId}/pdf${pageHash}`, '_blank');
+    } else {
+      alert('Nenhum documento PDF disponível para abrir.');
+    }
+  };
+
+  const handleDeleteExam = async (fileId: string, filename: string) => {
+    const confirmed = window.confirm(
+      `Tem certeza que deseja excluir permanentemente o caderno:\n"${filename}"?\n\nEsta ação apagará todas as questões e registros associados do acervo.`
+    );
+    if (!confirmed) return;
+
+    try {
+      setIsProcessing(true);
+      setActionMessage(`Excluindo caderno ${filename}...`);
+      const res = await fetch(`/api/v1/ingestion/staging-files/${fileId}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(errText || `Erro HTTP ${res.status}`);
+      }
+      alert('Prova excluída com sucesso do acervo!');
+      if (selectedStagingFile?.id === fileId) {
+        setSelectedStagingFile(null);
+        setQuestions([]);
+        setActiveQuestionId(null);
+      }
+      loadStagingFiles();
+    } catch (err: any) {
+      alert('Falha ao excluir prova: ' + err.message);
+    } finally {
+      setIsProcessing(false);
+      setActionMessage(null);
+    }
+  };
+
+  const handleCreateManualExam = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newExamData.banca.trim()) {
+      alert('Informe a banca examinadora da prova.');
+      return;
+    }
+    try {
+      setIsProcessing(true);
+      setActionMessage('Cadastrando novo caderno de prova manual...');
+      const created = await safeFetchJson<StagingFile>('/api/v1/ingestion/staging-files/manual', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newExamData),
+      });
+      setIsCreateExamModalOpen(false);
+      setNewExamData({ banca: 'FGV', ano: '2024', orgao: 'SEFAZ-MG', cargo: 'Auditor Fiscal da Receita Estadual', filename: '' });
+      loadStagingFiles();
+      alert(`Caderno "${created.filename}" criado com sucesso! Agora você pode cadastrar as questões.`);
+      handleSelectStagingFile(created);
+    } catch (err: any) {
+      alert('Erro ao cadastrar prova: ' + err.message);
+    } finally {
+      setIsProcessing(false);
+      setActionMessage(null);
+    }
+  };
+
+  const handleCreateManualQuestion = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedStagingFile) {
+      alert('Selecione um caderno de prova antes de cadastrar uma questão.');
+      return;
+    }
+    if (!newQuestionData.statement.trim()) {
+      alert('Informe o enunciado da questão.');
+      return;
+    }
+    const cleanOptions = newQuestionData.options.filter((o) => o && o.trim().length > 0);
+    if (cleanOptions.length < 2) {
+      alert('Informe pelo menos 2 alternativas válidas para a questão.');
+      return;
+    }
+
+    try {
+      setIsProcessing(true);
+      setActionMessage('Salvando questão manual...');
+      const payload = {
+        numeroOriginal: newQuestionData.numeroOriginal,
+        statement: newQuestionData.statement,
+        options: cleanOptions,
+        correctOption: newQuestionData.correctOption,
+        gabaritoStatus: newQuestionData.gabaritoStatus,
+        disciplina: newQuestionData.disciplina,
+        assunto: newQuestionData.assunto,
+        subassunto: newQuestionData.subassunto,
+        pages: [newQuestionData.page || 1],
+        status: 'SOURCE_VERIFIED',
+      };
+
+      const created = await safeFetchJson<StagingQuestion>(
+        `/api/v1/ingestion/staging-files/${selectedStagingFile.id}/questions/manual`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      setIsAddQuestionModalOpen(false);
+      setNewQuestionData({
+        numeroOriginal: (created.numeroOriginal || questions.length) + 1,
+        disciplina: newQuestionData.disciplina,
+        assunto: newQuestionData.assunto,
+        subassunto: '',
+        statement: '',
+        options: ['A) ', 'B) ', 'C) ', 'D) ', 'E) '],
+        correctOption: 'A',
+        gabaritoStatus: 'DEFINITIVO',
+        page: newQuestionData.page || 1,
+      });
+
+      setQuestions((prev) => [...prev, created]);
+      setActiveQuestionId(created.id);
+      loadStagingFiles();
+      alert(`Questão ${created.numeroOriginal} salva com sucesso como verificada!`);
+    } catch (err: any) {
+      alert('Erro ao cadastrar questão manual: ' + err.message);
+    } finally {
+      setIsProcessing(false);
+      setActionMessage(null);
+    }
+  };
+
+  const handleDeleteCurrentQuestion = async () => {
+    if (!activeQuestion) return;
+    const confirmed = window.confirm(
+      `Deseja realmente excluir a Questão ${activeQuestion.numeroOriginal}?`
+    );
+    if (!confirmed) return;
+
+    try {
+      await fetch(`/api/v1/ingestion/staging-questions/${activeQuestion.id}`, {
+        method: 'DELETE',
+      });
+      const remaining = questions.filter((q) => q.id !== activeQuestion.id);
+      setQuestions(remaining);
+      setActiveQuestionId(remaining.length > 0 ? remaining[0].id : null);
+      loadStagingFiles();
+      alert('Questão removida.');
+    } catch (err: any) {
+      alert('Erro ao excluir questão: ' + err.message);
     }
   };
 
@@ -400,6 +704,22 @@ export default function ImportStudio() {
 
   const activeQuestion = questions.find((q) => q.id === activeQuestionId);
 
+  useEffect(() => {
+    if (activeQuestion?.pages && activeQuestion.pages.length > 0) {
+      setActiveProvaPage(activeQuestion.pages[0]);
+    }
+  }, [activeQuestionId]);
+
+  const handleProvaPageChange = (delta: number) => {
+    const maxP = selectedStagingFile?.totalPages || 999;
+    setActiveProvaPage((p) => Math.min(maxP, Math.max(1, p + delta)));
+  };
+
+  const handleGabaritoPageChange = (delta: number) => {
+    const maxP = selectedStagingFile?.totalPages || 999;
+    setActiveGabaritoPage((p) => Math.min(maxP, Math.max(1, p + delta)));
+  };
+
   const handleUpdateQuestionField = (field: string, value: any) => {
     if (!activeQuestion) return;
     setQuestions((prev) =>
@@ -488,36 +808,146 @@ export default function ImportStudio() {
   const handleSaveCorrections = async () => {
     if (!activeQuestion) return;
     try {
-      const url = session
-        ? `/api/v1/ingestion/sessions/${session.sessionId}/questions/${activeQuestion.id}`
-        : `/api/v1/ingestion/staging-questions/${activeQuestion.id}`;
+      const isCE = isQuestionCertoErrado(activeQuestion) && !forceMultipleChoice;
+      let finalCorrectOption = activeQuestion.correctOption;
+      if (isCE && finalCorrectOption) {
+        const upper = finalCorrectOption.toUpperCase().trim();
+        if (upper === 'A' || upper === 'C' || upper.startsWith('CERT') || upper === 'CORRETO') {
+          finalCorrectOption = 'C';
+        } else if (upper === 'B' || upper === 'E' || upper.startsWith('ERR') || upper === 'INCORRETO') {
+          finalCorrectOption = 'E';
+        }
+      }
 
-      const res = await fetch(url, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          statement: activeQuestion.statement,
-          options: activeQuestion.options,
-          correctOption: activeQuestion.correctOption,
-          gabaritoStatus: activeQuestion.gabaritoStatus,
-          disciplina: activeQuestion.disciplina,
-          assunto: activeQuestion.assunto,
-          subassunto: activeQuestion.subassunto,
-          editalTopicoId: activeQuestion.editalTopicoId,
-          rejectionType: activeQuestion.rejectionType,
-          supportMaterial: activeQuestion.supportMaterial,
-          status: activeQuestion.status,
-          reviewNotes: activeQuestion.reviewNotes,
-        }),
-      });
+      let finalOptions = activeQuestion.options;
+      if (isCE && Array.isArray(finalOptions) && finalOptions.length === 2) {
+        const o0 = (finalOptions[0] || '').trim();
+        const o1 = (finalOptions[1] || '').trim();
+        const clean0 = o0.toUpperCase().startsWith('C)') ? o0 : `C) ${o0.replace(/^[A-Za-z]\)\s*/, '') || 'CERTO'}`;
+        const clean1 = o1.toUpperCase().startsWith('E)') ? o1 : `E) ${o1.replace(/^[A-Za-z]\)\s*/, '') || 'ERRADO'}`;
+        finalOptions = [clean0, clean1];
+      }
+
+      const finalTextoApoio = (activeQuestion.supportMaterial?.conteudoTexto !== undefined)
+        ? (activeQuestion.supportMaterial?.conteudoTexto || '')
+        : (activeQuestion.textoApoio || '');
+      const finalTextoApoioTitulo = (activeQuestion.supportMaterial?.titulo !== undefined)
+        ? (activeQuestion.supportMaterial?.titulo || '')
+        : (activeQuestion.textoApoioTitulo || '');
+
+      const finalSupportMaterial: SupportMaterial | undefined = finalTextoApoio ? {
+        tipo: activeQuestion.supportMaterial?.tipo || 'TEXTO_BASE',
+        titulo: finalTextoApoioTitulo || 'Texto de Apoio 1',
+        conteudoTexto: finalTextoApoio,
+        docOrigem: activeQuestion.supportMaterial?.docOrigem || 'Caderno de Prova',
+      } : undefined;
+
+      let res: Response;
+      if (activeQuestion.id.startsWith('gap-') && selectedStagingFile) {
+        // Gap preenchido manualmente: persiste como nova questão no staging
+        res = await fetch(`/api/v1/ingestion/staging-files/${selectedStagingFile.id}/questions/manual`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            numeroOriginal: activeQuestion.numeroOriginal,
+            pages: [activeProvaPage],
+            statement: activeQuestion.statement,
+            options: finalOptions,
+            correctOption: finalCorrectOption,
+            gabaritoStatus: activeQuestion.gabaritoStatus || 'PRELIMINAR',
+            disciplina: activeQuestion.disciplina || selectedStagingFile.cargo || 'Geral',
+            assunto: activeQuestion.assunto,
+            subassunto: activeQuestion.subassunto,
+            editalTopicoId: activeQuestion.editalTopicoId,
+            justificativa: activeQuestion.justificativa,
+            textoApoio: finalTextoApoio,
+            textoApoioTitulo: finalTextoApoioTitulo,
+            supportMaterial: finalSupportMaterial,
+            status: activeQuestion.status === 'INCOMPLETE' ? 'NEEDS_REVIEW' : activeQuestion.status,
+            reviewNotes: activeQuestion.reviewNotes,
+          }),
+        });
+      } else {
+        const url = session
+          ? `/api/v1/ingestion/sessions/${session.sessionId}/questions/${activeQuestion.id}`
+          : `/api/v1/ingestion/staging-questions/${activeQuestion.id}`;
+
+        res = await fetch(url, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            numeroOriginal: activeQuestion.numeroOriginal,
+            pages: [activeProvaPage],
+            statement: activeQuestion.statement,
+            options: finalOptions,
+            correctOption: finalCorrectOption,
+            gabaritoStatus: activeQuestion.gabaritoStatus,
+            disciplina: activeQuestion.disciplina,
+            assunto: activeQuestion.assunto,
+            subassunto: activeQuestion.subassunto,
+            editalTopicoId: activeQuestion.editalTopicoId,
+            rejectionType: activeQuestion.rejectionType,
+            supportMaterial: finalSupportMaterial,
+            justificativa: activeQuestion.justificativa,
+            textoApoio: finalTextoApoio,
+            textoApoioTitulo: finalTextoApoioTitulo,
+            status: activeQuestion.status,
+            reviewNotes: activeQuestion.reviewNotes,
+          }),
+        });
+      }
+
       if (res.ok) {
         const savedQ: StagingQuestion = await res.json();
-        setQuestions((prev) => prev.map((q) => (q.id === savedQ.id ? savedQ : q)));
+        const mergedSavedQ: StagingQuestion = {
+          ...savedQ,
+          pages: [activeProvaPage],
+          supportMaterial: savedQ.supportMaterial || finalSupportMaterial,
+          textoApoio: savedQ.textoApoio ?? finalTextoApoio,
+          textoApoioTitulo: savedQ.textoApoioTitulo ?? finalTextoApoioTitulo,
+        };
+        setQuestions((prev) =>
+          prev.map((q) => (q.id === activeQuestion.id || q.id === savedQ.id ? mergedSavedQ : q))
+        );
+        setActiveQuestionId(savedQ.id);
         alert('Correções salvas com sucesso no staging!');
+      } else {
+        const errText = await res.text();
+        throw new Error(errText || `Erro HTTP ${res.status}`);
       }
     } catch (e: any) {
       alert('Erro ao salvar: ' + e.message);
     }
+  };
+
+  const handleReplicateSupportMaterial = (sourceQ: StagingQuestion, targetQuestionId: string) => {
+    const finalTexto = (sourceQ.supportMaterial?.conteudoTexto !== undefined)
+      ? sourceQ.supportMaterial?.conteudoTexto
+      : sourceQ.textoApoio;
+    const finalTitulo = (sourceQ.supportMaterial?.titulo !== undefined)
+      ? sourceQ.supportMaterial?.titulo
+      : sourceQ.textoApoioTitulo;
+
+    const mat: SupportMaterial | undefined = finalTexto ? {
+      tipo: sourceQ.supportMaterial?.tipo || 'TEXTO_BASE',
+      titulo: finalTitulo || 'Texto de Apoio 1',
+      conteudoTexto: finalTexto,
+      docOrigem: sourceQ.supportMaterial?.docOrigem || 'Caderno de Prova',
+    } : undefined;
+
+    setQuestions((prev) =>
+      prev.map((q) =>
+        q.id === targetQuestionId
+          ? {
+              ...q,
+              supportMaterial: mat ? { ...mat } : undefined,
+              textoApoio: finalTexto || '',
+              textoApoioTitulo: finalTitulo || '',
+              modifiedByUser: true,
+            }
+          : q
+      )
+    );
   };
 
   const handleMarkVerified = async () => {
@@ -642,7 +1072,10 @@ export default function ImportStudio() {
   const filteredQuestions = questions.filter((q) => {
     if (filterStatus === 'VERIFIED') return q.status === 'SOURCE_VERIFIED';
     if (filterStatus === 'PENDING') return q.status === 'NEEDS_REVIEW' || q.status === 'EXTRACTED';
-    if (filterStatus === 'INCOMPLETE') return !q.options || q.options.length < 4 || !q.statement;
+    if (filterStatus === 'INCOMPLETE') {
+      const minOpts = isQuestionCertoErrado(q) ? 2 : 4;
+      return !q.options || q.options.length < minOpts || !q.statement;
+    }
     if (filterStatus === 'REJECTED_EXTRACTOR') return q.status === 'REJECTED';
     if (filterStatus === 'SUSPECT_OCR') return q.flags && (q.flags.includes('SUSPECT_OCR') || q.flags.includes('SUSPECT_OCR_LIGATURE'));
     if (filterStatus === 'AMBIGUOUS_KEY') return q.gabaritoStatus === 'SOB_REVISAO' || (q.flags && q.flags.includes('AMBIGUOUS_ANSWER_KEY'));
@@ -664,7 +1097,7 @@ export default function ImportStudio() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
             <div>
               <h4 style={{ color: '#ef4444', margin: 0, fontSize: '1rem', fontWeight: 700 }}>⚠️ Falha ou Alerta no Pipeline Documental</h4>
-              <p style={{ color: '#f8fafc', margin: '0.35rem 0 0', fontSize: '0.9rem', lineHeight: '1.4' }}>{processingError}</p>
+              <p style={{ color: 'var(--text-color, #1e293b)', margin: '0.35rem 0 0', fontSize: '0.9rem', lineHeight: '1.4' }}>{processingError}</p>
               {session?.stepDescription && (
                 <p style={{ color: '#94a3b8', margin: '0.25rem 0 0', fontSize: '0.8rem' }}>Última etapa: {session.stepDescription}</p>
               )}
@@ -717,9 +1150,9 @@ export default function ImportStudio() {
       {(!session && !selectedStagingFile || questions.length === 0) && (
         <div className="preset-banner glass">
           <div className="preset-info">
-            <strong>⚡ Validação Imediata com o Golden Set Oficial</strong>
+            <strong>⚡ Teste Rápido com Caderno de Prova Modelo</strong>
             <span>
-              Teste em 1 clique a Questão 15 do cargo 532 (higienização de rabiscos, separação do cabeçalho de Informática e alerta matemático de 336 vs 3.360 anagramas).
+              Teste em 1 clique a extração e validação de gabarito oficial com cadernos reais de concursos anteriores.
             </span>
           </div>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -741,53 +1174,154 @@ export default function ImportStudio() {
         </div>
       )}
 
-      {/* Mode Switcher Tabs */}
+      {/* Mode Switcher Tabs - Módulo H */}
       {(!session && !selectedStagingFile || questions.length === 0) && (
-        <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
+          <button
+            className={`btn ${activeTab === 'CENTRAL' ? '' : 'btn-secondary'}`}
+            style={activeTab === 'CENTRAL' ? { background: '#0284c7', color: '#fff', fontWeight: 600 } : {}}
+            onClick={() => setActiveTab('CENTRAL')}
+            title="Acompanhar extrações, identificar problemas e reprocessar provas com integridade"
+          >
+            📊 Central de Processamento
+          </button>
+          <button
+            className={`btn ${activeTab === 'WIZARD' ? '' : 'btn-secondary'}`}
+            style={activeTab === 'WIZARD' ? { background: '#0284c7', color: '#fff', fontWeight: 600 } : {}}
+            onClick={() => setActiveTab('WIZARD')}
+            title="Assistente de importação de provas e gabaritos em 5 etapas com integridade em staging"
+          >
+            🪄 Assistente de Importação
+          </button>
           <button
             className={`btn ${activeTab === 'ACERVO' ? '' : 'btn-secondary'}`}
             style={activeTab === 'ACERVO' ? { background: '#0284c7', color: '#fff', fontWeight: 600 } : {}}
             onClick={() => setActiveTab('ACERVO')}
+            title="Catálogo geral de provas em staging para auditoria detalhada e cadastro manual"
           >
-            📚 Acervo Digital em Staging ({stagingFiles.length} Provas Catalogadas)
+            📚 Catálogo do Acervo ({stagingFiles.length})
+          </button>
+          <button
+            className={`btn ${activeTab === 'QUALIDADE' ? '' : 'btn-secondary'}`}
+            style={activeTab === 'QUALIDADE' ? { background: '#0284c7', color: '#fff', fontWeight: 600 } : {}}
+            onClick={() => setActiveTab('QUALIDADE')}
+            title="Monitorar a confiabilidade do acervo publicado e suspender itens com inconsistência sem apagar histórico"
+          >
+            🛡️ Qualidade do Banco
           </button>
           <button
             className={`btn ${activeTab === 'UPLOAD' ? '' : 'btn-secondary'}`}
             style={activeTab === 'UPLOAD' ? { background: '#0284c7', color: '#fff', fontWeight: 600 } : {}}
             onClick={() => setActiveTab('UPLOAD')}
+            title="Upload manual com drag-and-drop de arquivos para extração"
           >
-            📤 Upload Manual / Nova Sessão Local
+            📤 Upload Local
           </button>
         </div>
+      )}
+
+      {/* T30: Central de Processamento */}
+      {(!session && !selectedStagingFile || questions.length === 0) && activeTab === 'CENTRAL' && (
+        <CentralProcessamento
+          stagingFiles={stagingFiles}
+          onOpenAudit={(fileId: string) => {
+            const f = stagingFiles.find((s) => s.id === fileId);
+            if (f) handleSelectStagingFile(f);
+          }}
+          onOpenWizard={() => setActiveTab('WIZARD')}
+          onRefresh={loadStagingFiles}
+        />
+      )}
+
+      {/* T29: Assistente de Importação de Provas (5 Etapas) */}
+      {(!session && !selectedStagingFile || questions.length === 0) && activeTab === 'WIZARD' && (
+        <AssistenteImportacaoWizard
+          onComplete={(_res?: any) => {
+            loadStagingFiles();
+            setActiveTab('CENTRAL');
+          }}
+          onCancel={() => setActiveTab('CENTRAL')}
+        />
+      )}
+
+      {/* T35: Qualidade do Banco de Questões */}
+      {(!session && !selectedStagingFile || questions.length === 0) && activeTab === 'QUALIDADE' && (
+        <QualidadeBancoQuestoes
+          onOpenAudit={(_questionId?: string) => {
+            // Se encontrar a prova correspondente no acervo, abre auditoria
+            if (stagingFiles.length > 0) {
+              handleSelectStagingFile(stagingFiles[0]);
+            }
+          }}
+        />
       )}
 
       {/* Acervo Browser View */}
       {(!session && !selectedStagingFile || questions.length === 0) && activeTab === 'ACERVO' && (
         <div className="upload-card glass animate-fade-in" style={{ marginBottom: '1.5rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '1rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '1rem' }}>
             <div>
-              <h3 style={{ fontSize: '1.15rem', color: '#f8fafc', margin: 0 }}>
-                Catálogo de Documentos do Acervo (Isolamento Staging)
+              <h3 style={{ fontSize: '1.15rem', color: 'var(--text-color, #1e293b)', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                📚 Catálogo de Documentos do Acervo (Isolamento Staging)
               </h3>
-              <p style={{ color: '#94a3b8', fontSize: '0.85rem', margin: '0.25rem 0 0' }}>
-                Selecione qualquer caderno de prova para abrir o visualizador de auditoria lado a lado com a evidência PDF original.
+              <p style={{ color: 'var(--text-muted, #64748b)', fontSize: '0.85rem', margin: '0.25rem 0 0' }}>
+                Audite provas lado a lado com o PDF original, filtre inconsistências ou cadastre cadernos e questões manualmente.
               </p>
             </div>
-            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-              <span className="stat-pill pill-valid" style={{ fontSize: '0.8rem' }}>
-                {stagingFiles.filter((f) => f.questionCount > 0).length} Provas Processadas
-              </span>
-              <span className="stat-pill pill-total" style={{ fontSize: '0.8rem' }}>
-                {stagingFiles.reduce((acc, f) => acc + f.questionCount, 0)} Questões Extraídas
-              </span>
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+              <button
+                className="btn"
+                onClick={() => setIsCreateExamModalOpen(true)}
+                style={{ padding: '6px 14px', fontSize: '0.85rem', background: '#10b981', color: '#fff' }}
+              >
+                ➕ Cadastrar Nova Prova Manualmente
+              </button>
               <button
                 className="btn btn-secondary"
                 onClick={loadStagingFiles}
-                style={{ padding: '4px 10px', fontSize: '0.8rem' }}
+                style={{ padding: '6px 12px', fontSize: '0.85rem' }}
                 title="Recarregar catálogo"
               >
                 🔄 Atualizar
               </button>
+            </div>
+          </div>
+
+          {/* Quick Filter Tabs & Summary Pills */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+            <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+              <button
+                className={`tab-filter-btn ${stagingFilter === 'ALL' ? 'active' : ''}`}
+                onClick={() => setStagingFilter('ALL')}
+              >
+                Todas ({stagingFiles.length})
+              </button>
+              <button
+                className={`tab-filter-btn ${stagingFilter === 'INCONSISTENT' ? 'active' : ''}`}
+                onClick={() => setStagingFilter('INCONSISTENT')}
+                style={stagingFilter === 'INCONSISTENT' ? { background: '#d97706', borderColor: '#f59e0b' } : {}}
+              >
+                ⚠️ Com Inconsistências ({stagingFiles.filter((f) => f.hasInconsistency).length})
+              </button>
+              <button
+                className={`tab-filter-btn ${stagingFilter === 'VERIFIED' ? 'active' : ''}`}
+                onClick={() => setStagingFilter('VERIFIED')}
+                style={stagingFilter === 'VERIFIED' ? { background: '#059669', borderColor: '#10b981' } : {}}
+              >
+                ✓ 100% Verificadas ({stagingFiles.filter((f) => f.questionCount > 0 && f.verifiedCount === f.questionCount).length})
+              </button>
+              <button
+                className={`tab-filter-btn ${stagingFilter === 'MANUAL' ? 'active' : ''}`}
+                onClick={() => setStagingFilter('MANUAL')}
+              >
+                ✏️ Manuais ({stagingFiles.filter((f) => f.relPath?.startsWith('manual/')).length})
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              <span className="stat-pill pill-total" style={{ fontSize: '0.8rem' }}>
+                {stagingFiles.reduce((acc, f) => acc + f.questionCount, 0)} Questões Extraídas
+              </span>
             </div>
           </div>
 
@@ -796,7 +1330,7 @@ export default function ImportStudio() {
             <input
               type="text"
               className="form-control"
-              placeholder="🔍 Filtrar por Banca (ex: FGV, IBGP, CONSULPAM), Ano, Cargo ou nome do arquivo..."
+              placeholder="🔍 Filtrar por Banca (ex: FGV, IBGP, CONSULPAM), Ano, Cargo, motivo de inconsistência ou arquivo..."
               value={stagingSearch}
               onChange={(e) => setStagingSearch(e.target.value)}
               style={{ width: '100%', padding: '0.6rem 1rem', fontSize: '0.9rem' }}
@@ -804,84 +1338,133 @@ export default function ImportStudio() {
           </div>
 
           {/* Files List Table */}
-          <div style={{ maxHeight: '420px', overflowY: 'auto', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px' }}>
+          <div style={{ maxHeight: '460px', overflowY: 'auto', border: '1px solid var(--border-color, #cbd5e1)', borderRadius: '8px' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
               <thead>
-                <tr style={{ background: 'rgba(15, 23, 42, 0.7)', borderBottom: '1px solid rgba(255,255,255,0.1)', color: '#94a3b8' }}>
+                <tr style={{ background: 'var(--calm-bg-subtle, #f8fafc)', borderBottom: '1px solid var(--border-color, #cbd5e1)', color: 'var(--text-muted, #64748b)' }}>
                   <th style={{ padding: '0.75rem 1rem' }}>Documento / Prova</th>
                   <th style={{ padding: '0.75rem 1rem' }}>Banca</th>
                   <th style={{ padding: '0.75rem 1rem' }}>Ano</th>
                   <th style={{ padding: '0.75rem 1rem' }}>Cargo</th>
-                  <th style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>Questões Extraídas</th>
-                  <th style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>Ação</th>
+                  <th style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>Status / Questões</th>
+                  <th style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>Ações</th>
                 </tr>
               </thead>
               <tbody>
                 {stagingFiles
                   .filter((f) => {
+                    if (stagingFilter === 'INCONSISTENT' && !f.hasInconsistency) return false;
+                    if (stagingFilter === 'VERIFIED' && (f.questionCount === 0 || f.verifiedCount !== f.questionCount)) return false;
+                    if (stagingFilter === 'MANUAL' && !f.relPath?.startsWith('manual/')) return false;
+
                     if (!stagingSearch.trim()) return true;
                     const q = stagingSearch.toLowerCase();
                     return (
                       f.filename.toLowerCase().includes(q) ||
                       (f.banca && f.banca.toLowerCase().includes(q)) ||
                       (f.cargo && f.cargo.toLowerCase().includes(q)) ||
-                      (f.ano && String(f.ano).includes(q))
+                      (f.ano && String(f.ano).includes(q)) ||
+                      (f.inconsistencyReason && f.inconsistencyReason.toLowerCase().includes(q))
                     );
                   })
-                  .slice(0, 100)
-                  .map((f) => (
-                    <tr
-                      key={f.id}
-                      style={{
-                        borderBottom: '1px solid rgba(255,255,255,0.05)',
-                        background: f.questionCount > 0 ? 'rgba(56, 189, 248, 0.03)' : 'transparent',
-                      }}
-                    >
-                      <td style={{ padding: '0.75rem 1rem', color: '#f8fafc', fontWeight: 500 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <span>📄</span>
-                          <span title={f.filename} style={{ maxWidth: '320px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {f.filename}
+                  .slice(0, 150)
+                  .map((f) => {
+                    const isManual = f.relPath?.startsWith('manual/');
+                    return (
+                      <tr
+                        key={f.id}
+                        style={{
+                          borderBottom: '1px solid var(--border-color, #e2e8f0)',
+                          background: f.hasInconsistency ? 'rgba(245, 158, 11, 0.04)' : f.questionCount > 0 ? 'rgba(56, 189, 248, 0.03)' : 'transparent',
+                        }}
+                      >
+                        <td style={{ padding: '0.75rem 1rem', color: 'var(--text-color, #1e293b)', fontWeight: 500 }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                              <span>{isManual ? '✏️' : '📄'}</span>
+                              <span title={f.filename} style={{ maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {f.filename}
+                              </span>
+                              {isManual && (
+                                <span className="suggestion-chip" style={{ fontSize: '0.7rem', padding: '2px 6px', background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', borderColor: '#10b981' }}>
+                                  Manual
+                                </span>
+                              )}
+                            </div>
+                            {f.hasInconsistency && f.inconsistencyReason && (
+                              <div>
+                                <span className="inconsistency-pill">
+                                  ⚠️ {f.inconsistencyReason}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                        <td style={{ padding: '0.75rem 1rem' }}>
+                          <span className="suggestion-chip" style={{ fontSize: '0.75rem' }}>
+                            {f.banca || 'N/A'}
                           </span>
-                        </div>
-                      </td>
-                      <td style={{ padding: '0.75rem 1rem' }}>
-                        <span className="suggestion-chip" style={{ fontSize: '0.75rem' }}>
-                          {f.banca || 'N/A'}
-                        </span>
-                      </td>
-                      <td style={{ padding: '0.75rem 1rem', color: '#cbd5e1' }}>
-                        {f.ano || '—'}
-                      </td>
-                      <td style={{ padding: '0.75rem 1rem', color: '#cbd5e1', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {f.cargo || '—'}
-                      </td>
-                      <td style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>
-                        {f.questionCount > 0 ? (
-                          <span style={{ color: '#38bdf8', fontWeight: 600 }}>
-                            {f.questionCount} questões
-                            {f.verifiedCount > 0 && ` (${f.verifiedCount} verificadas)`}
-                          </span>
-                        ) : (
-                          <span style={{ color: '#64748b' }}>Aguardando extração</span>
-                        )}
-                      </td>
-                      <td style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>
-                        <button
-                          className="btn"
-                          disabled={f.questionCount === 0 || isProcessing}
-                          onClick={() => handleSelectStagingFile(f)}
-                          style={{
-                            padding: '4px 12px',
-                            fontSize: '0.8rem',
-                            background: f.questionCount > 0 ? '#0284c7' : '#334155',
-                          }}
-                        >
-                          {f.questionCount > 0 ? '👁️ Auditar Prova' : 'Sem questões'}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                        <td style={{ padding: '0.75rem 1rem', color: 'var(--text-muted, #64748b)' }}>
+                          {f.ano || '—'}
+                        </td>
+                        <td style={{ padding: '0.75rem 1rem', color: 'var(--text-muted, #64748b)', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {f.cargo || '—'}
+                        </td>
+                        <td style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>
+                          {f.questionCount > 0 ? (
+                            <div>
+                              <span style={{ color: '#38bdf8', fontWeight: 600 }}>
+                                {f.questionCount} questões
+                              </span>
+                              {f.verifiedCount > 0 && (
+                                <div style={{ fontSize: '0.75rem', color: '#34d399' }}>
+                                  {f.verifiedCount} verificadas
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <span style={{ color: '#ef4444', fontSize: '0.8rem', fontWeight: 500 }}>
+                              0 questões
+                            </span>
+                          )}
+                        </td>
+                        <td style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>
+                          <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'flex-end', alignItems: 'center' }}>
+                            <button
+                              className="btn btn-secondary"
+                              onClick={() => handleOpenPdfInNewTab(f.id)}
+                              style={{ padding: '4px 8px', fontSize: '0.78rem', color: '#38bdf8' }}
+                              title="Abrir o PDF desta prova em uma nova aba"
+                            >
+                              📄 Ver PDF ↗
+                            </button>
+                            <button
+                              className="btn"
+                              disabled={isProcessing}
+                              onClick={() => handleSelectStagingFile(f)}
+                              style={{
+                                padding: '4px 10px',
+                                fontSize: '0.78rem',
+                                background: f.questionCount > 0 ? '#0284c7' : '#059669',
+                              }}
+                              title={f.questionCount > 0 ? 'Auditar questões extraídas' : 'Cadastrar questões manualmente'}
+                            >
+                              {f.questionCount > 0 ? '👁️ Auditar Prova' : '✏️ Cadastrar Questões'}
+                            </button>
+                            <button
+                              className="btn btn-secondary"
+                              onClick={() => handleDeleteExam(f.id, f.filename)}
+                              style={{ padding: '4px 8px', fontSize: '0.78rem', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.3)' }}
+                              title="Excluir esta prova do acervo"
+                            >
+                              🗑️
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
               </tbody>
             </table>
           </div>
@@ -891,7 +1474,7 @@ export default function ImportStudio() {
       {/* Section 1: Upload & Configuration (Show if in UPLOAD mode and no active questions) */}
       {(!session && !selectedStagingFile || questions.length === 0) && activeTab === 'UPLOAD' && (
         <div className="upload-card glass">
-          <h3 style={{ fontSize: '1.1rem', color: '#f8fafc', marginBottom: '0.5rem' }}>
+          <h3 style={{ fontSize: '1.1rem', color: 'var(--text-color, #1e293b)', marginBottom: '0.5rem' }}>
             1. Selecionar Documentos do Computador
           </h3>
 
@@ -1062,16 +1645,16 @@ export default function ImportStudio() {
         </div>
       )}
 
-      {/* Section 2: Review Studio Side-by-Side (When questions are loaded) */}
-      {questions.length > 0 && (
+      {/* Section 2: Review Studio Side-by-Side (When exam is selected or session active) */}
+      {(selectedStagingFile || (session && questions.length > 0)) && (
         <div className="review-studio">
           {/* Active File/Session Information Banner */}
-          <div className="glass" style={{ padding: '0.75rem 1.25rem', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderLeft: '4px solid #0284c7' }}>
+          <div className="glass" style={{ padding: '0.75rem 1.25rem', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderLeft: '4px solid #0284c7', flexWrap: 'wrap', gap: '0.75rem' }}>
             <div>
-              <span style={{ fontSize: '0.75rem', color: '#38bdf8', fontWeight: 700, textTransform: 'uppercase' }}>
+              <span style={{ fontSize: '0.75rem', color: '#0284c7', fontWeight: 700, textTransform: 'uppercase' }}>
                 {selectedStagingFile ? '📚 Caderno do Acervo em Auditoria:' : '📤 Sessão Manual / Upload:'}
               </span>
-              <h4 style={{ margin: '0.2rem 0 0', color: '#f8fafc', fontSize: '1.05rem' }}>
+              <h4 style={{ margin: '0.2rem 0 0', color: 'var(--text-color, #1e293b)', fontSize: '1.05rem' }}>
                 {selectedStagingFile ? selectedStagingFile.filename : 'Upload Direto'}
               </h4>
               <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
@@ -1080,13 +1663,55 @@ export default function ImportStudio() {
                   : `${banca} • ${ano} • ${cargo}`}
               </span>
             </div>
-            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+              {questions.length > 0 && (
+                <button
+                  className="btn"
+                  onClick={() => setIsAuditingCockpitOpen(true)}
+                  style={{
+                    fontSize: '0.85rem',
+                    padding: '6px 16px',
+                    background: 'linear-gradient(135deg, #0284c7, #0369a1)',
+                    color: '#fff',
+                    fontWeight: 700,
+                    boxShadow: '0 0 12px rgba(2, 132, 199, 0.4)',
+                  }}
+                  title="Abrir página dedicada em foco total para auditoria com gabarito sincronizado"
+                >
+                  ⚡ Modo Foco de Auditoria (Tela Cheia)
+                </button>
+              )}
+              <button
+                className="btn btn-secondary"
+                onClick={() => handleOpenPdfInNewTab(selectedStagingFile?.id, activeQuestion?.pages?.[0])}
+                style={{ fontSize: '0.85rem', padding: '6px 14px', background: 'rgba(56, 189, 248, 0.1)', borderColor: '#38bdf8', color: '#38bdf8' }}
+                title="Abrir o PDF em tela cheia numa nova aba"
+              >
+                📄 Abrir PDF em Nova Aba ↗
+              </button>
+              <button
+                className="btn"
+                onClick={() => setIsAddQuestionModalOpen(true)}
+                style={{ fontSize: '0.85rem', padding: '6px 14px', background: '#10b981', color: '#fff' }}
+              >
+                ➕ Nova Questão Manual
+              </button>
+              {selectedStagingFile && (
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => handleDeleteExam(selectedStagingFile.id, selectedStagingFile.filename)}
+                  style={{ fontSize: '0.85rem', padding: '6px 14px', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.4)' }}
+                  title="Excluir este caderno de prova do acervo após auditar"
+                >
+                  🗑️ Excluir Prova
+                </button>
+              )}
               <button
                 className="btn btn-secondary"
                 onClick={handleResetSession}
                 style={{ fontSize: '0.85rem', padding: '6px 14px' }}
               >
-                ← Voltar ao Catálogo do Acervo
+                ← Voltar ao Catálogo
               </button>
             </div>
           </div>
@@ -1154,63 +1779,349 @@ export default function ImportStudio() {
           </div>
 
           {/* Side-by-Side Split View */}
-          {activeQuestion && (
+          {questions.length === 0 ? (
             <div className="side-by-side-grid">
               {/* Left Pane: Evidence Viewer */}
               <div className="evidence-pane glass">
                 <div className="evidence-toolbar">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{ fontWeight: 600, color: '#f8fafc', fontSize: '0.95rem' }}>
-                      📄 Evidência Documental (Página {activeQuestion.pages.join(', ')})
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                    <span style={{ fontWeight: 600, color: 'var(--text-color, #1e293b)', fontSize: '0.95rem' }}>
+                      📄 Prova Original (PDF Interativo)
                     </span>
                   </div>
-                  <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
-                    <button
-                      className="btn btn-secondary"
-                      style={{ padding: '4px 10px', fontSize: '0.8rem' }}
-                      onClick={() => setZoomLevel((z) => Math.max(z - 15, 60))}
-                    >
-                      -
-                    </button>
-                    <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{zoomLevel}%</span>
-                    <button
-                      className="btn btn-secondary"
-                      style={{ padding: '4px 10px', fontSize: '0.8rem' }}
-                      onClick={() => setZoomLevel((z) => Math.min(z + 15, 200))}
-                    >
-                      +
-                    </button>
-                  </div>
+                  <button
+                    className="btn btn-secondary"
+                    onClick={() => handleOpenPdfInNewTab(selectedStagingFile?.id)}
+                    style={{ padding: '4px 10px', fontSize: '0.8rem', color: '#0284c7' }}
+                  >
+                    ↗ Abrir PDF em Nova Aba
+                  </button>
                 </div>
-
-                <div className="evidence-img-container">
-                  {session && activeQuestion.evidenceImage ? (
-                    <img
-                      src={`/api/v1/ingestion/sessions/${session.sessionId}/evidence/${activeQuestion.evidenceImage}`}
-                      alt={`Página ${activeQuestion.pages[0]} da prova`}
-                      className="evidence-img"
-                      style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top center' }}
-                    />
-                  ) : activeQuestion ? (
-                    <img
-                      src={`/api/v1/ingestion/staging-questions/${activeQuestion.id}/evidence-image`}
-                      alt="Página da prova original"
-                      className="evidence-img"
-                      style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top center' }}
-                      onError={(e) => {
-                        (e.target as HTMLElement).style.display = 'none';
-                        const fallback = (e.target as HTMLElement).nextElementSibling as HTMLElement;
-                        if (fallback) fallback.style.display = 'block';
-                      }}
+                <div className="evidence-img-container" style={{ padding: 0, overflow: 'hidden' }}>
+                  {selectedStagingFile ? (
+                    <iframe
+                      src={`/api/v1/ingestion/staging-files/${selectedStagingFile.id}/pdf`}
+                      title="PDF da Prova Original"
+                      className="evidence-pdf-frame"
                     />
                   ) : (
                     <div style={{ padding: '3rem', color: '#64748b', textAlign: 'center' }}>
-                      Visualização de página não disponível para este formato.
+                      Nenhum arquivo PDF carregado para este caderno.
                     </div>
                   )}
-                  <div style={{ display: 'none', padding: '3rem', color: '#64748b', textAlign: 'center' }}>
-                    Visualização de página não disponível para este documento.
+                </div>
+              </div>
+
+              {/* Right Pane: Empty state allowing manual question entry */}
+              <div className="editor-pane glass" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center', padding: '3rem 2rem' }}>
+                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📝</div>
+                <h3 style={{ color: 'var(--text-color, #1e293b)', fontSize: '1.25rem', marginBottom: '0.5rem' }}>
+                  Caderno de Prova Sem Questões Extraídas
+                </h3>
+                <p style={{ color: 'var(--text-muted, #64748b)', fontSize: '0.9rem', maxWidth: '460px', marginBottom: '1.5rem', lineHeight: 1.6 }}>
+                  A extração automática não detectou questões neste arquivo ou o documento requer transcrição. Você pode consultar o PDF original ao lado e cadastrar as questões manualmente.
+                </p>
+                <button
+                  className="btn"
+                  onClick={() => setIsAddQuestionModalOpen(true)}
+                  style={{ padding: '10px 24px', fontSize: '0.95rem', background: '#10b981', color: '#fff' }}
+                >
+                  ➕ Cadastrar 1ª Questão Desta Prova
+                </button>
+              </div>
+            </div>
+          ) : activeQuestion ? (
+            <div className="side-by-side-grid">
+              {/* Left Pane: Evidence Viewer (Prova + Gabarito) */}
+              <div className="evidence-pane glass">
+                <div className="evidence-toolbar">
+                  {/* Abas de Visualização: Dividida, Só Prova, Só Gabarito */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'inline-flex', background: 'rgba(0,0,0,0.4)', borderRadius: '6px', padding: '2px' }}>
+                      <button
+                        className={`opt-btn-mini ${evidenceTab === 'DUAL' ? 'active' : ''}`}
+                        style={evidenceTab === 'DUAL' ? { background: '#0284c7', color: '#fff', fontWeight: 600 } : {}}
+                        onClick={() => setEvidenceTab('DUAL')}
+                        title="Visualizar Prova e Gabarito lado a lado para auditoria simultânea"
+                      >
+                        ◫ Prova + Gabarito
+                      </button>
+                      <button
+                        className={`opt-btn-mini ${evidenceTab === 'PROVA' ? 'active' : ''}`}
+                        style={evidenceTab === 'PROVA' ? { background: '#0284c7', color: '#fff', fontWeight: 600 } : {}}
+                        onClick={() => setEvidenceTab('PROVA')}
+                        title="Exibir caderno de prova completo"
+                      >
+                        📄 Prova (Pág. {activeProvaPage})
+                      </button>
+                      <button
+                        className={`opt-btn-mini ${evidenceTab === 'GABARITO' ? 'active' : ''}`}
+                        style={evidenceTab === 'GABARITO' ? { background: '#0284c7', color: '#fff', fontWeight: 600 } : {}}
+                        onClick={() => setEvidenceTab('GABARITO')}
+                        title="Exibir folha do gabarito oficial"
+                      >
+                        📑 Gabarito (Pág. {activeGabaritoPage})
+                      </button>
+                    </div>
+
+                    {/* Toggle PDF vs Foto */}
+                    <div style={{ display: 'inline-flex', background: 'rgba(0,0,0,0.4)', borderRadius: '6px', padding: '2px' }}>
+                      <button
+                        className={`opt-btn-mini ${evidenceMode === 'PDF' ? 'active' : ''}`}
+                        style={evidenceMode === 'PDF' ? { background: '#059669', color: '#fff', fontWeight: 600 } : {}}
+                        onClick={() => setEvidenceMode('PDF')}
+                      >
+                        📄 PDF
+                      </button>
+                      <button
+                        className={`opt-btn-mini ${evidenceMode === 'IMAGE' ? 'active' : ''}`}
+                        style={evidenceMode === 'IMAGE' ? { background: '#059669', color: '#fff', fontWeight: 600 } : {}}
+                        onClick={() => setEvidenceMode('IMAGE')}
+                      >
+                        🖼️ Foto
+                      </button>
+                    </div>
+
+                    {fileDocuments.length > 0 && (
+                      <span className="suggestion-chip" style={{ fontSize: '0.72rem', background: 'rgba(255,255,255,0.06)' }}>
+                        {fileDocuments.map((d) => `${d.docRole.replace('_PRELIMINAR', '').replace('_DEFINITIVO', '')}: p.${d.pageStart}-${d.pageEnd}`).join(' • ')}
+                      </span>
+                    )}
                   </div>
+
+                  <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                    {/* Botão de abrir em nova aba */}
+                    <button
+                      className="btn btn-secondary"
+                      onClick={() => handleOpenPdfInNewTab(selectedStagingFile?.id, activeProvaPage)}
+                      style={{ padding: '4px 10px', fontSize: '0.8rem', color: '#38bdf8' }}
+                      title="Abrir PDF original em tela cheia em nova aba"
+                    >
+                      ↗ Nova Aba
+                    </button>
+                    {evidenceMode === 'IMAGE' && (
+                      <>
+                        <button
+                          className="btn btn-secondary"
+                          style={{ padding: '3px 8px', fontSize: '0.8rem' }}
+                          onClick={() => setZoomLevel((z) => Math.max(z - 15, 60))}
+                        >
+                          -
+                        </button>
+                        <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{zoomLevel}%</span>
+                        <button
+                          className="btn btn-secondary"
+                          style={{ padding: '3px 8px', fontSize: '0.8rem' }}
+                          onClick={() => setZoomLevel((z) => Math.min(z + 15, 200))}
+                        >
+                          +
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Conteúdo do Visualizador de Evidências */}
+                <div className="evidence-img-container" style={{ padding: 0, overflow: 'hidden' }}>
+                  {evidenceTab === 'DUAL' ? (
+                    <div className="dual-evidence-split">
+                      {/* Sub-painel 1: Prova */}
+                      <div className="evidence-subpane" style={{ borderRight: '1px solid rgba(56, 189, 248, 0.25)' }}>
+                        <div className="evidence-subpane-header">
+                          <span style={{ fontWeight: 600, color: '#38bdf8', fontSize: '0.82rem' }}>
+                            📄 Caderno de Prova
+                          </span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                            <button
+                              className="btn btn-secondary"
+                              style={{ padding: '2px 7px', fontSize: '0.75rem' }}
+                              onClick={() => handleProvaPageChange(-1)}
+                              title="Página anterior da prova"
+                            >
+                              ◄
+                            </button>
+                            <span style={{ fontSize: '0.78rem', color: 'var(--text-color, #1e293b)', fontWeight: 600 }}>
+                              Pág. {activeProvaPage}
+                            </span>
+                            <button
+                              className="btn btn-secondary"
+                              style={{ padding: '2px 7px', fontSize: '0.75rem' }}
+                              onClick={() => handleProvaPageChange(1)}
+                              title="Próxima página da prova"
+                            >
+                              ►
+                            </button>
+                            <button
+                              className="btn btn-secondary"
+                              style={{ padding: '2px 6px', fontSize: '0.75rem', color: '#38bdf8' }}
+                              onClick={() => handleOpenPdfInNewTab(selectedStagingFile?.id, activeProvaPage)}
+                              title="Abrir página da prova em nova aba"
+                            >
+                              ↗
+                            </button>
+                          </div>
+                        </div>
+                        <div className="evidence-subpane-body">
+                          {evidenceMode === 'PDF' && selectedStagingFile ? (
+                            <iframe
+                              key={`pdf-dual-prova-${selectedStagingFile.id}-p${activeProvaPage}`}
+                              src={`/api/v1/ingestion/staging-files/${selectedStagingFile.id}/pdf#page=${activeProvaPage}`}
+                              title="Caderno de Prova"
+                              className="evidence-pdf-frame"
+                            />
+                          ) : evidenceMode === 'PDF' && session ? (
+                            <iframe
+                              key={`pdf-dual-sess-prova-${session.sessionId}-p${activeProvaPage}`}
+                              src={`/api/v1/ingestion/sessions/${session.sessionId}/pdf#page=${activeProvaPage}`}
+                              title="Caderno de Prova"
+                              className="evidence-pdf-frame"
+                            />
+                          ) : selectedStagingFile ? (
+                            <img
+                              key={`img-dual-prova-${selectedStagingFile.id}-p${activeProvaPage}`}
+                              src={`/api/v1/ingestion/staging-files/${selectedStagingFile.id}/page-image?page=${activeProvaPage}`}
+                              alt={`Página ${activeProvaPage} da prova`}
+                              className="evidence-img"
+                              style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top center' }}
+                            />
+                          ) : (
+                            <div style={{ padding: '2rem', color: '#64748b', fontSize: '0.85rem' }}>
+                              Arquivo da prova não localizado.
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Sub-painel 2: Gabarito Oficial */}
+                      <div className="evidence-subpane" style={{ borderLeft: '1px solid rgba(52, 211, 153, 0.25)' }}>
+                        <div className="evidence-subpane-header">
+                          <span style={{ fontWeight: 600, color: '#059669', fontSize: '0.82rem' }}>
+                            📑 Gabarito Oficial
+                          </span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                            <button
+                              className="btn btn-secondary"
+                              style={{ padding: '2px 7px', fontSize: '0.75rem' }}
+                              onClick={() => handleGabaritoPageChange(-1)}
+                              title="Página anterior do gabarito"
+                            >
+                              ◄
+                            </button>
+                            <span style={{ fontSize: '0.78rem', color: 'var(--text-color, #1e293b)', fontWeight: 600 }}>
+                              Pág. {activeGabaritoPage}
+                            </span>
+                            <button
+                              className="btn btn-secondary"
+                              style={{ padding: '2px 7px', fontSize: '0.75rem' }}
+                              onClick={() => handleGabaritoPageChange(1)}
+                              title="Próxima página do gabarito"
+                            >
+                              ►
+                            </button>
+                            <button
+                              className="btn btn-secondary"
+                              style={{ padding: '2px 6px', fontSize: '0.75rem', color: '#34d399' }}
+                              onClick={() => handleOpenPdfInNewTab(selectedStagingFile?.id, activeGabaritoPage)}
+                              title="Abrir gabarito em nova aba"
+                            >
+                              ↗
+                            </button>
+                          </div>
+                        </div>
+                        <div className="evidence-subpane-body">
+                          {evidenceMode === 'PDF' && selectedStagingFile ? (
+                            <iframe
+                              key={`pdf-dual-gab-${selectedStagingFile.id}-p${activeGabaritoPage}`}
+                              src={`/api/v1/ingestion/staging-files/${selectedStagingFile.id}/pdf#page=${activeGabaritoPage}`}
+                              title="Gabarito Oficial"
+                              className="evidence-pdf-frame"
+                            />
+                          ) : evidenceMode === 'PDF' && session ? (
+                            <iframe
+                              key={`pdf-dual-sess-gab-${session.sessionId}-p${activeGabaritoPage}`}
+                              src={`/api/v1/ingestion/sessions/${session.sessionId}/pdf#page=${activeGabaritoPage}`}
+                              title="Gabarito Oficial"
+                              className="evidence-pdf-frame"
+                            />
+                          ) : selectedStagingFile ? (
+                            <img
+                              key={`img-dual-gab-${selectedStagingFile.id}-p${activeGabaritoPage}`}
+                              src={`/api/v1/ingestion/staging-files/${selectedStagingFile.id}/page-image?page=${activeGabaritoPage}`}
+                              alt={`Página ${activeGabaritoPage} do gabarito`}
+                              className="evidence-img"
+                              style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top center' }}
+                            />
+                          ) : (
+                            <div style={{ padding: '2rem', color: '#64748b', fontSize: '0.85rem' }}>
+                              Arquivo do gabarito não localizado.
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ) : evidenceTab === 'PROVA' ? (
+                    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
+                      <div className="evidence-subpane-header">
+                        <span style={{ fontWeight: 600, color: '#38bdf8', fontSize: '0.85rem' }}>
+                          📄 Caderno de Prova (Página {activeProvaPage})
+                        </span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                          <button className="btn btn-secondary" style={{ padding: '3px 8px' }} onClick={() => handleProvaPageChange(-1)}>◄</button>
+                          <span style={{ fontSize: '0.85rem', color: '#fff', fontWeight: 600 }}>Pág. {activeProvaPage}</span>
+                          <button className="btn btn-secondary" style={{ padding: '3px 8px' }} onClick={() => handleProvaPageChange(1)}>►</button>
+                        </div>
+                      </div>
+                      <div style={{ flex: 1, minHeight: '620px' }}>
+                        {evidenceMode === 'PDF' && selectedStagingFile ? (
+                          <iframe
+                            key={`pdf-full-prova-${selectedStagingFile.id}-p${activeProvaPage}`}
+                            src={`/api/v1/ingestion/staging-files/${selectedStagingFile.id}/pdf#page=${activeProvaPage}`}
+                            title="Caderno de Prova"
+                            className="evidence-pdf-frame"
+                          />
+                        ) : selectedStagingFile ? (
+                          <img
+                            key={`img-full-prova-${selectedStagingFile.id}-p${activeProvaPage}`}
+                            src={`/api/v1/ingestion/staging-files/${selectedStagingFile.id}/page-image?page=${activeProvaPage}`}
+                            alt={`Página ${activeProvaPage} da prova`}
+                            className="evidence-img"
+                            style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top center' }}
+                          />
+                        ) : null}
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
+                      <div className="evidence-subpane-header">
+                        <span style={{ fontWeight: 600, color: '#34d399', fontSize: '0.85rem' }}>
+                          📑 Gabarito Oficial (Página {activeGabaritoPage})
+                        </span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                          <button className="btn btn-secondary" style={{ padding: '3px 8px' }} onClick={() => handleGabaritoPageChange(-1)}>◄</button>
+                          <span style={{ fontSize: '0.85rem', color: '#fff', fontWeight: 600 }}>Pág. {activeGabaritoPage}</span>
+                          <button className="btn btn-secondary" style={{ padding: '3px 8px' }} onClick={() => handleGabaritoPageChange(1)}>►</button>
+                        </div>
+                      </div>
+                      <div style={{ flex: 1, minHeight: '620px' }}>
+                        {evidenceMode === 'PDF' && selectedStagingFile ? (
+                          <iframe
+                            key={`pdf-full-gab-${selectedStagingFile.id}-p${activeGabaritoPage}`}
+                            src={`/api/v1/ingestion/staging-files/${selectedStagingFile.id}/pdf#page=${activeGabaritoPage}`}
+                            title="Gabarito Oficial"
+                            className="evidence-pdf-frame"
+                          />
+                        ) : selectedStagingFile ? (
+                          <img
+                            key={`img-full-gab-${selectedStagingFile.id}-p${activeGabaritoPage}`}
+                            src={`/api/v1/ingestion/staging-files/${selectedStagingFile.id}/page-image?page=${activeGabaritoPage}`}
+                            alt={`Página ${activeGabaritoPage} do gabarito`}
+                            className="evidence-img"
+                            style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top center' }}
+                          />
+                        ) : null}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1237,11 +2148,36 @@ export default function ImportStudio() {
                   </button>
                 </div>
 
-                <div className="editor-header">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <h3 style={{ fontSize: '1.2rem', color: '#f8fafc' }}>
-                      Questão {activeQuestion.numeroOriginal}
-                    </h3>
+                <div className="editor-header" style={{ flexWrap: 'wrap', gap: '0.75rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      <label style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: 600 }}>Nº:</label>
+                      <input
+                        type="number"
+                        className="form-control"
+                        style={{ width: '65px', padding: '0.3rem 0.4rem', fontSize: '0.9rem', textAlign: 'center', fontWeight: 'bold' }}
+                        value={activeQuestion.numeroOriginal}
+                        onChange={(e) => handleUpdateQuestionField('numeroOriginal', parseInt(e.target.value) || 1)}
+                        title="Corrigir número da questão na prova"
+                      />
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      <label style={{ fontSize: '0.85rem', color: '#38bdf8', fontWeight: 600 }}>Pág. Prova:</label>
+                      <input
+                        type="number"
+                        className="form-control"
+                        style={{ width: '65px', padding: '0.3rem 0.4rem', fontSize: '0.9rem', textAlign: 'center', color: '#38bdf8', fontWeight: 'bold' }}
+                        value={activeProvaPage}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value) || 1;
+                          setActiveProvaPage(val);
+                          handleUpdateQuestionField('pages', [val]);
+                        }}
+                        title="Página do caderno em que a questão se localiza"
+                      />
+                    </div>
+
                     <span
                       className={`status-badge ${
                         activeQuestion.status === 'SOURCE_VERIFIED'
@@ -1266,6 +2202,137 @@ export default function ImportStudio() {
                       onChange={(e) => handleUpdateQuestionField('disciplina', e.target.value)}
                       style={{ padding: '0.35rem 0.6rem', fontSize: '0.85rem', width: '180px' }}
                     />
+                  </div>
+                </div>
+
+                {/* Barra de Correção Rápida de Gabarito (Auditoria Prova x Gabarito) */}
+                <div style={{ background: 'rgba(15, 23, 42, 0.6)', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(52, 211, 153, 0.25)', marginBottom: '1rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                      <label style={{ fontSize: '0.85rem', color: '#34d399', fontWeight: 600 }}>
+                        🎯 Gabarito Oficial (Clique para Auditar / Corrigir):
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setForceMultipleChoice((prev) => !prev)}
+                        style={{
+                          fontSize: '0.72rem',
+                          padding: '3px 8px',
+                          borderRadius: '4px',
+                          background: 'rgba(56, 189, 248, 0.12)',
+                          color: '#38bdf8',
+                          border: '1px solid rgba(56, 189, 248, 0.3)',
+                          cursor: 'pointer',
+                          fontWeight: 500,
+                        }}
+                        title="Alternar entre modo Cebraspe (Certo/Errado) e Múltipla Escolha tradicional (A-E)"
+                      >
+                        {isQuestionCertoErrado(activeQuestion) && !forceMultipleChoice
+                          ? '🔄 Mudar para Múltipla Escolha (A-E)'
+                          : '🔄 Mudar para C/E (Cebraspe)'}
+                      </button>
+                    </div>
+                    <span style={{ fontSize: '0.8rem', color: activeQuestion.correctOption ? '#34d399' : '#f59e0b', fontWeight: 'bold' }}>
+                      {activeQuestion.correctOption ? `Gabarito Definido: ${activeQuestion.correctOption}` : '⚠️ Sem Gabarito'}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    {isQuestionCertoErrado(activeQuestion) && !forceMultipleChoice ? (
+                      <>
+                        <button
+                          type="button"
+                          className="fast-gabarito-btn"
+                          style={{
+                            padding: '8px 22px',
+                            fontSize: '0.95rem',
+                            fontWeight: 'bold',
+                            borderRadius: '6px',
+                            background: (activeQuestion.correctOption === 'C' || activeQuestion.correctOption === 'A') ? '#10b981' : 'rgba(255,255,255,0.06)',
+                            color: (activeQuestion.correctOption === 'C' || activeQuestion.correctOption === 'A') ? '#ffffff' : '#cbd5e1',
+                            border: (activeQuestion.correctOption === 'C' || activeQuestion.correctOption === 'A') ? '2px solid #34d399' : '1px solid rgba(255,255,255,0.15)',
+                            boxShadow: (activeQuestion.correctOption === 'C' || activeQuestion.correctOption === 'A') ? '0 0 12px rgba(16, 185, 129, 0.5)' : 'none',
+                            cursor: 'pointer',
+                          }}
+                          onClick={() => handleUpdateQuestionField('correctOption', 'C')}
+                        >
+                          ✓ C (CERTO)
+                        </button>
+                        <button
+                          type="button"
+                          className="fast-gabarito-btn"
+                          style={{
+                            padding: '8px 22px',
+                            fontSize: '0.95rem',
+                            fontWeight: 'bold',
+                            borderRadius: '6px',
+                            background: (activeQuestion.correctOption === 'E' || activeQuestion.correctOption === 'B') ? '#ef4444' : 'rgba(255,255,255,0.06)',
+                            color: (activeQuestion.correctOption === 'E' || activeQuestion.correctOption === 'B') ? '#ffffff' : '#cbd5e1',
+                            border: (activeQuestion.correctOption === 'E' || activeQuestion.correctOption === 'B') ? '2px solid #f87171' : '1px solid rgba(255,255,255,0.15)',
+                            boxShadow: (activeQuestion.correctOption === 'E' || activeQuestion.correctOption === 'B') ? '0 0 12px rgba(239, 68, 68, 0.5)' : 'none',
+                            cursor: 'pointer',
+                          }}
+                          onClick={() => handleUpdateQuestionField('correctOption', 'E')}
+                        >
+                          ✗ E (ERRADO)
+                        </button>
+                      </>
+                    ) : (
+                      ['A', 'B', 'C', 'D', 'E'].map((opt) => (
+                        <button
+                          key={opt}
+                          type="button"
+                          className="fast-gabarito-btn"
+                          style={{
+                            padding: '6px 16px',
+                            fontSize: '0.95rem',
+                            fontWeight: 'bold',
+                            borderRadius: '6px',
+                            background: activeQuestion.correctOption === opt ? '#10b981' : 'rgba(255,255,255,0.06)',
+                            color: activeQuestion.correctOption === opt ? '#ffffff' : '#cbd5e1',
+                            border: activeQuestion.correctOption === opt ? '2px solid #34d399' : '1px solid rgba(255,255,255,0.15)',
+                            boxShadow: activeQuestion.correctOption === opt ? '0 0 10px rgba(16, 185, 129, 0.5)' : 'none',
+                            cursor: 'pointer',
+                          }}
+                          onClick={() => handleUpdateQuestionField('correctOption', opt)}
+                        >
+                          {opt}
+                        </button>
+                      ))
+                    )}
+                    <button
+                      type="button"
+                      className="fast-gabarito-btn"
+                      style={{
+                        padding: '6px 12px',
+                        fontSize: '0.85rem',
+                        fontWeight: 'bold',
+                        borderRadius: '6px',
+                        background: activeQuestion.correctOption === 'ANULADA' ? '#f59e0b' : 'rgba(255,255,255,0.06)',
+                        color: activeQuestion.correctOption === 'ANULADA' ? '#000000' : '#fbbf24',
+                        border: activeQuestion.correctOption === 'ANULADA' ? '2px solid #f59e0b' : '1px solid rgba(245, 158, 11, 0.3)',
+                        cursor: 'pointer',
+                      }}
+                      onClick={() => handleUpdateQuestionField('correctOption', 'ANULADA')}
+                    >
+                      ⚠️ ANULADA
+                    </button>
+                    <button
+                      type="button"
+                      className="fast-gabarito-btn"
+                      style={{
+                        padding: '6px 12px',
+                        fontSize: '0.85rem',
+                        fontWeight: 'bold',
+                        borderRadius: '6px',
+                        background: activeQuestion.correctOption === 'DESCONSIDERADA' ? '#ef4444' : 'rgba(255,255,255,0.06)',
+                        color: activeQuestion.correctOption === 'DESCONSIDERADA' ? '#ffffff' : '#f87171',
+                        border: activeQuestion.correctOption === 'DESCONSIDERADA' ? '2px solid #ef4444' : '1px solid rgba(239, 68, 68, 0.3)',
+                        cursor: 'pointer',
+                      }}
+                      onClick={() => handleUpdateQuestionField('correctOption', 'DESCONSIDERADA')}
+                    >
+                      🚫 DESCONSIDERADA
+                    </button>
                   </div>
                 </div>
 
@@ -1465,8 +2532,13 @@ export default function ImportStudio() {
                   </div>
                   <div className="options-editor-list">
                     {activeQuestion.options.map((optText, optIdx) => {
-                      const letter = String.fromCharCode(65 + optIdx);
-                      const isCurrentCorrect = activeQuestion.correctOption === letter;
+                      const isCE = isQuestionCertoErrado(activeQuestion) && !forceMultipleChoice;
+                      const letter = isCE ? (optIdx === 0 ? 'C' : 'E') : String.fromCharCode(65 + optIdx);
+                      const isCurrentCorrect = isCE
+                        ? (optIdx === 0
+                            ? (activeQuestion.correctOption === 'C' || activeQuestion.correctOption === 'A')
+                            : (activeQuestion.correctOption === 'E' || activeQuestion.correctOption === 'B'))
+                        : activeQuestion.correctOption === letter;
                       return (
                         <div key={optIdx} className="option-edit-row">
                           <div
@@ -1531,7 +2603,11 @@ export default function ImportStudio() {
                     <label>Opção Correta (Gabarito Oficial)</label>
                     <select
                       className="form-control"
-                      value={activeQuestion.correctOption || 'AUSENTE'}
+                      value={
+                        (isQuestionCertoErrado(activeQuestion) && !forceMultipleChoice)
+                          ? (activeQuestion.correctOption === 'A' ? 'C' : activeQuestion.correctOption === 'B' ? 'E' : activeQuestion.correctOption || 'AUSENTE')
+                          : (activeQuestion.correctOption || 'AUSENTE')
+                      }
                       onChange={(e) =>
                         handleUpdateQuestionField(
                           'correctOption',
@@ -1540,12 +2616,22 @@ export default function ImportStudio() {
                       }
                     >
                       <option value="AUSENTE">AUSENTE / NÃO INFORMADO</option>
-                      <option value="A">A</option>
-                      <option value="B">B</option>
-                      <option value="C">C</option>
-                      <option value="D">D</option>
-                      <option value="E">E</option>
+                      {isQuestionCertoErrado(activeQuestion) && !forceMultipleChoice ? (
+                        <>
+                          <option value="C">C (CERTO)</option>
+                          <option value="E">E (ERRADO)</option>
+                        </>
+                      ) : (
+                        <>
+                          <option value="A">A</option>
+                          <option value="B">B</option>
+                          <option value="C">C</option>
+                          <option value="D">D</option>
+                          <option value="E">E</option>
+                        </>
+                      )}
                       <option value="ANULADA">ANULADA</option>
+                      <option value="DESCONSIDERADA">DESCONSIDERADA</option>
                     </select>
                   </div>
 
@@ -1579,9 +2665,19 @@ export default function ImportStudio() {
 
                 {/* Action Buttons */}
                 <div className="editor-actions">
-                  <button className="btn btn-secondary" onClick={handleSaveCorrections}>
-                    💾 Salvar Alterações
-                  </button>
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <button className="btn btn-secondary" onClick={handleSaveCorrections}>
+                      💾 Salvar Alterações
+                    </button>
+                    <button
+                      className="btn btn-secondary"
+                      onClick={handleDeleteCurrentQuestion}
+                      style={{ color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.4)' }}
+                      title="Excluir esta questão permanentemente deste caderno"
+                    >
+                      🗑️ Excluir Questão
+                    </button>
+                  </div>
 
                   <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                     <button
@@ -1611,8 +2707,28 @@ export default function ImportStudio() {
                 </div>
               </div>
             </div>
-          )}
+          ) : null}
         </div>
+      )}
+
+      {/* Cockpit de Auditoria Imersivo / Foco Total */}
+      {isAuditingCockpitOpen && questions.length > 0 && (
+        <AuditCockpit
+          file={selectedStagingFile}
+          session={session}
+          questions={questions}
+          activeQuestionId={activeQuestionId}
+          fileDocuments={fileDocuments}
+          editalTopicos={editalTopicos}
+          onSelectQuestion={(id) => setActiveQuestionId(id)}
+          onUpdateQuestionField={handleUpdateQuestionField}
+          onReplicateSupportMaterial={handleReplicateSupportMaterial}
+          onSaveCorrections={handleSaveCorrections}
+          onMarkVerified={handleMarkVerified}
+          onMarkRejected={handleMarkRejected}
+          onClose={() => setIsAuditingCockpitOpen(false)}
+          onReloadAcervo={loadStagingFiles}
+        />
       )}
 
       {/* Simulation Dry-Run Modal */}
@@ -1678,6 +2794,324 @@ export default function ImportStudio() {
                 Concluir Importação Segura
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Cadastrar Novo Caderno de Prova Manualmente */}
+      {isCreateExamModalOpen && (
+        <div className="modal-backdrop" onClick={() => setIsCreateExamModalOpen(false)}>
+          <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>➕ Cadastrar Nova Prova Manualmente</h3>
+              <button className="btn-close" onClick={() => setIsCreateExamModalOpen(false)}>
+                ×
+              </button>
+            </div>
+
+            <p style={{ color: '#94a3b8', fontSize: '0.85rem' }}>
+              Crie a entrada de um novo caderno no acervo para digitar ou colar as questões manualmente quando a extração automática do PDF não for possível.
+            </p>
+
+            <form onSubmit={handleCreateManualExam}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
+                <div className="form-group">
+                  <label>Banca Examinadora *</label>
+                  <input
+                    className="form-control"
+                    required
+                    placeholder="Ex: FGV, Cebraspe, IBGP, FCC..."
+                    value={newExamData.banca}
+                    onChange={(e) => setNewExamData({ ...newExamData, banca: e.target.value })}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Ano do Concurso *</label>
+                  <input
+                    className="form-control"
+                    type="number"
+                    required
+                    value={newExamData.ano}
+                    onChange={(e) => setNewExamData({ ...newExamData, ano: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
+                <div className="form-group">
+                  <label>Órgão</label>
+                  <input
+                    className="form-control"
+                    placeholder="Ex: SEFAZ-MG, Pref. Araguari..."
+                    value={newExamData.orgao}
+                    onChange={(e) => setNewExamData({ ...newExamData, orgao: e.target.value })}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Cargo</label>
+                  <input
+                    className="form-control"
+                    placeholder="Ex: Auditor Fiscal da Receita Estadual..."
+                    value={newExamData.cargo}
+                    onChange={(e) => setNewExamData({ ...newExamData, cargo: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+                <label>Nome / Identificador do Caderno (Opcional)</label>
+                <input
+                  className="form-control"
+                  placeholder="Deixe em branco para gerar automaticamente"
+                  value={newExamData.filename}
+                  onChange={(e) => setNewExamData({ ...newExamData, filename: e.target.value })}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setIsCreateExamModalOpen(false)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="btn"
+                  style={{ background: '#10b981' }}
+                  disabled={isProcessing}
+                >
+                  {isProcessing ? 'Cadastrando...' : 'Criar Caderno de Prova'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Cadastrar Nova Questão Manual */}
+      {isAddQuestionModalOpen && (
+        <div className="modal-backdrop" onClick={() => setIsAddQuestionModalOpen(false)}>
+          <div className="modal-dialog" style={{ maxWidth: '820px' }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>
+                ➕ Cadastrar Nova Questão Manual
+                {selectedStagingFile && (
+                  <span style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: 'normal', marginLeft: '0.5rem' }}>
+                    ({selectedStagingFile.banca} • {selectedStagingFile.cargo || selectedStagingFile.filename})
+                  </span>
+                )}
+              </h3>
+              <button className="btn-close" onClick={() => setIsAddQuestionModalOpen(false)}>
+                ×
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateManualQuestion}>
+              <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
+                <div className="form-group">
+                  <label>Número</label>
+                  <input
+                    className="form-control"
+                    type="number"
+                    required
+                    value={newQuestionData.numeroOriginal}
+                    onChange={(e) => setNewQuestionData({ ...newQuestionData, numeroOriginal: parseInt(e.target.value, 10) || 1 })}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Disciplina *</label>
+                  <input
+                    className="form-control"
+                    required
+                    placeholder="Ex: Direito Tributário, Contabilidade, etc."
+                    value={newQuestionData.disciplina}
+                    onChange={(e) => setNewQuestionData({ ...newQuestionData, disciplina: e.target.value })}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Assunto (Opcional)</label>
+                  <input
+                    className="form-control"
+                    placeholder="Ex: Impostos Municipais, ISS, etc."
+                    value={newQuestionData.assunto}
+                    onChange={(e) => setNewQuestionData({ ...newQuestionData, assunto: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              {/* Enunciado */}
+              <div className="form-group" style={{ marginBottom: '1rem' }}>
+                <label>Enunciado da Questão * (Cole o texto copiado do PDF)</label>
+                <textarea
+                  className="form-control"
+                  rows={5}
+                  required
+                  placeholder="Copie e cole o texto do enunciado diretamente da prova em PDF..."
+                  value={newQuestionData.statement}
+                  onChange={(e) => setNewQuestionData({ ...newQuestionData, statement: e.target.value })}
+                  style={{ resize: 'vertical', fontSize: '0.9rem' }}
+                />
+              </div>
+
+              {/* Formato da Questão (Múltipla Escolha vs Cebraspe C/E) */}
+              <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.75rem', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Formato da Questão:</span>
+                <button
+                  type="button"
+                  style={{
+                    padding: '4px 12px',
+                    fontSize: '0.8rem',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    background: newQuestionData.options.length !== 2 ? '#3b82f6' : 'rgba(255,255,255,0.08)',
+                    color: '#fff',
+                    border: '1px solid rgba(255,255,255,0.15)',
+                  }}
+                  onClick={() => {
+                    setNewQuestionData({
+                      ...newQuestionData,
+                      options: ['A) ', 'B) ', 'C) ', 'D) ', 'E) '],
+                      correctOption: 'A',
+                    });
+                  }}
+                >
+                  Múltipla Escolha (A-E)
+                </button>
+                <button
+                  type="button"
+                  style={{
+                    padding: '4px 12px',
+                    fontSize: '0.8rem',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    background: newQuestionData.options.length === 2 ? '#10b981' : 'rgba(255,255,255,0.08)',
+                    color: '#fff',
+                    border: '1px solid rgba(255,255,255,0.15)',
+                  }}
+                  onClick={() => {
+                    setNewQuestionData({
+                      ...newQuestionData,
+                      options: ['C) CERTO', 'E) ERRADO'],
+                      correctOption: 'C',
+                    });
+                  }}
+                >
+                  Certo / Errado (Cebraspe)
+                </button>
+              </div>
+
+              {/* Alternativas */}
+              <div className="form-group" style={{ marginBottom: '1rem' }}>
+                <label>Alternativas (Preencha as opções da questão)</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.25rem' }}>
+                  {newQuestionData.options.map((opt, idx) => {
+                    const isCE = newQuestionData.options.length === 2;
+                    const letter = isCE ? (idx === 0 ? 'C' : 'E') : String.fromCharCode(65 + idx);
+                    return (
+                      <div key={idx} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                        <div
+                          style={{
+                            width: '32px',
+                            height: '32px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            background: newQuestionData.correctOption === letter ? '#10b981' : 'rgba(255,255,255,0.08)',
+                            color: newQuestionData.correctOption === letter ? '#fff' : '#94a3b8',
+                            borderRadius: '6px',
+                            fontWeight: 'bold',
+                            fontSize: '0.85rem',
+                          }}
+                        >
+                          {letter}
+                        </div>
+                        <input
+                          className="form-control"
+                          style={{ flex: 1, fontSize: '0.85rem' }}
+                          placeholder={`Texto da alternativa ${letter}...`}
+                          value={opt}
+                          onChange={(e) => {
+                            const updated = [...newQuestionData.options];
+                            updated[idx] = e.target.value;
+                            setNewQuestionData({ ...newQuestionData, options: updated });
+                          }}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Gabarito e Página */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 120px', gap: '0.75rem', marginBottom: '1.25rem' }}>
+                <div className="form-group">
+                  <label>Gabarito Correto</label>
+                  <select
+                    className="form-control"
+                    value={newQuestionData.correctOption}
+                    onChange={(e) => setNewQuestionData({ ...newQuestionData, correctOption: e.target.value })}
+                  >
+                    {newQuestionData.options.length === 2 ? (
+                      <>
+                        <option value="C">C (CERTO)</option>
+                        <option value="E">E (ERRADO)</option>
+                      </>
+                    ) : (
+                      <>
+                        <option value="A">A</option>
+                        <option value="B">B</option>
+                        <option value="C">C</option>
+                        <option value="D">D</option>
+                        <option value="E">E</option>
+                      </>
+                    )}
+                    <option value="ANULADA">ANULADA</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Status do Gabarito</label>
+                  <select
+                    className="form-control"
+                    value={newQuestionData.gabaritoStatus}
+                    onChange={(e) => setNewQuestionData({ ...newQuestionData, gabaritoStatus: e.target.value })}
+                  >
+                    <option value="DEFINITIVO">DEFINITIVO</option>
+                    <option value="PRELIMINAR">PRELIMINAR</option>
+                    <option value="ANULADA">ANULADA</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Página no PDF</label>
+                  <input
+                    className="form-control"
+                    type="number"
+                    min={1}
+                    value={newQuestionData.page}
+                    onChange={(e) => setNewQuestionData({ ...newQuestionData, page: parseInt(e.target.value, 10) || 1 })}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setIsAddQuestionModalOpen(false)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="btn"
+                  style={{ background: '#10b981' }}
+                  disabled={isProcessing}
+                >
+                  {isProcessing ? 'Salvando...' : 'Salvar Questão e Validar'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

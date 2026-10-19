@@ -1,0 +1,551 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  Filter,
+  CheckCircle2,
+  AlertTriangle,
+  Bookmark,
+  Flag,
+  FileText,
+  Play,
+  Layers,
+  ChevronLeft,
+  ChevronRight
+} from 'lucide-react';
+import type { ConcursoItem } from '../concursos/MeusConcursos';
+import { MontagemCadernoModal } from './MontagemCadernoModal';
+import './BancoQuestoes.css';
+
+interface BancoQuestoesProps {
+  activeConcurso: ConcursoItem | null;
+  onResolveQuestion: (questionId: string) => void;
+  onStartCaderno: (cadernoConfig: any) => void;
+}
+
+export const BancoQuestoes: React.FC<BancoQuestoesProps> = ({
+  activeConcurso,
+  onResolveQuestion,
+  onStartCaderno
+}) => {
+  // Filtros
+  const [selectedDisciplina, setSelectedDisciplina] = useState<string>('TODAS');
+  const [selectedAssunto, setSelectedAssunto] = useState<string>('TODOS');
+  const [selectedBanca, setSelectedBanca] = useState<string>('TODAS');
+  const [selectedAno, setSelectedAno] = useState<string>('TODOS');
+  const [selectedCargo, setSelectedCargo] = useState<string>('TODOS');
+  const [selectedOrgao, setSelectedOrgao] = useState<string>('TODOS');
+  const [selectedTipo, setSelectedTipo] = useState<string>('TODOS');
+  const [selectedSituacao, setSelectedSituacao] = useState<string>('TODAS');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Metadados dos filtros (bancas, anos, órgãos...)
+  const [filterMetadata, setFilterMetadata] = useState<{
+    bancas: string[];
+    anos: number[];
+    orgaos: string[];
+    cargos: string[];
+    disciplinas: string[];
+  }>({
+    bancas: [],
+    anos: [],
+    orgaos: [],
+    cargos: [],
+    disciplinas: []
+  });
+
+  // Resultados
+  const [questions, setQuestions] = useState<any[]>([]);
+  const [totalElements, setTotalElements] = useState<number>(0);
+  const [page, setPage] = useState<number>(0);
+  const [totalPages, setTotalPages] = useState<number>(1);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  // Modais
+  const [isCadernoModalOpen, setIsCadernoModalOpen] = useState(false);
+  const [reportQuestionId, setReportQuestionId] = useState<string | null>(null);
+  const [reportReason, setReportReason] = useState('ERRO_GABARITO');
+  const [reportDesc, setReportDesc] = useState('');
+
+  // Feedback
+  const [feedback, setFeedback] = useState<string | null>(null);
+
+  const showFeedback = (text: string) => {
+    setFeedback(text);
+    setTimeout(() => setFeedback(null), 3500);
+  };
+
+  // Carregar metadados dos filtros uma vez
+  useEffect(() => {
+    fetch('/api/v1/bank/filters-metadata')
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data) setFilterMetadata(data);
+      })
+      .catch(() => {});
+  }, []);
+
+  // Buscar questões
+  const fetchQuestions = useCallback(async (targetPage = 0) => {
+    setIsLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (activeConcurso?.id) params.set('concursoId', activeConcurso.id);
+      if (selectedDisciplina !== 'TODAS') params.set('disciplina', selectedDisciplina);
+      if (selectedAssunto !== 'TODOS') params.set('assunto', selectedAssunto);
+      if (selectedBanca !== 'TODAS') params.set('banca', selectedBanca);
+      if (selectedAno !== 'TODOS') params.set('ano', selectedAno);
+      if (selectedCargo !== 'TODOS') params.set('cargo', selectedCargo);
+      if (selectedOrgao !== 'TODOS') params.set('orgao', selectedOrgao);
+      if (selectedTipo !== 'TODOS') params.set('tipoQuestao', selectedTipo);
+      if (selectedSituacao !== 'TODAS') params.set('situacao', selectedSituacao);
+      if (searchQuery.trim()) params.set('q', searchQuery.trim());
+      params.set('page', targetPage.toString());
+      params.set('limit', '15');
+
+      const res = await fetch(`/api/v1/bank/questions?${params.toString()}`);
+      if (res.ok) {
+        const data = await res.json();
+        setQuestions(data.questions || []);
+        setTotalElements(data.totalElements || 0);
+        setPage(data.page || 0);
+        setTotalPages(data.totalPages || 1);
+      }
+    } catch {
+      showFeedback('Erro ao carregar banco de questões.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [
+    activeConcurso?.id,
+    selectedDisciplina,
+    selectedAssunto,
+    selectedBanca,
+    selectedAno,
+    selectedCargo,
+    selectedOrgao,
+    selectedTipo,
+    selectedSituacao,
+    searchQuery
+  ]);
+
+  useEffect(() => {
+    fetchQuestions(0);
+  }, [fetchQuestions]);
+
+  // Alternar favorito
+  const handleToggleFavorite = async (questionId: string) => {
+    try {
+      const res = await fetch(`/api/v1/bank/questions/${questionId}/favorite`, { method: 'POST' });
+      if (res.ok) {
+        const data = await res.json();
+        setQuestions(prev => prev.map(q => q.questionId === questionId ? { ...q, isFavorite: data.isFavorite } : q));
+        showFeedback(data.isFavorite ? 'Questão adicionada aos favoritos!' : 'Questão removida dos favoritos.');
+      }
+    } catch {
+      showFeedback('Falha ao atualizar favorito.');
+    }
+  };
+
+  // Enviar reporte
+  const handleSendReport = async () => {
+    if (!reportQuestionId) return;
+    try {
+      await fetch(`/api/v1/bank/questions/${reportQuestionId}/report`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ motivo: reportReason, descricao: reportDesc })
+      });
+      showFeedback('Obrigado! O reporte foi registrado para auditoria.');
+      setReportQuestionId(null);
+      setReportDesc('');
+    } catch {
+      showFeedback('Falha ao registrar reporte.');
+    }
+  };
+
+  const limparFiltros = () => {
+    setSelectedDisciplina('TODAS');
+    setSelectedAssunto('TODOS');
+    setSelectedBanca('TODAS');
+    setSelectedAno('TODOS');
+    setSelectedCargo('TODOS');
+    setSelectedOrgao('TODOS');
+    setSelectedTipo('TODOS');
+    setSelectedSituacao('TODAS');
+    setSearchQuery('');
+  };
+
+  return (
+    <div className="banco-questoes-wrapper">
+      {/* Header */}
+      <div className="banco-header">
+        <div className="banco-header-info">
+          <h1>Banco de Questões</h1>
+          <p>
+            Pesquise e selecione questões de provas anteriores calibradas para seu objetivo. Sem gabarito prévio visível para preservar o objetivo pedagógico.
+          </p>
+        </div>
+
+        <button
+          className="btn-q-action primary"
+          style={{ padding: '0.65rem 1.25rem', fontSize: '0.84rem' }}
+          onClick={() => setIsCadernoModalOpen(true)}
+        >
+          <Layers className="w-4 h-4" /> Criar Caderno com Estes Filtros
+        </button>
+      </div>
+
+      {feedback && (
+        <div style={{
+          padding: '0.65rem 1rem',
+          borderRadius: '8px',
+          background: 'rgba(79, 70, 229, 0.1)',
+          border: '1px solid var(--calm-primary, #4f46e5)',
+          color: 'var(--calm-primary, #4f46e5)',
+          fontSize: '0.84rem',
+          fontWeight: 600
+        }}>
+          {feedback}
+        </div>
+      )}
+
+      {/* Grid Principal: Filtros à esquerda e Resultados à direita */}
+      <div className="banco-layout-grid">
+        {/* ===================================================================
+            PAINEL ESQUERDO: FILTROS (T18)
+            =================================================================== */}
+        <aside className="banco-filtros-aside">
+          <div className="filtros-header-row">
+            <h3>
+              <Filter className="w-4 h-4 text-indigo-400" /> Filtros de Pesquisa
+            </h3>
+            <button className="btn-limpar-filtros" onClick={limparFiltros}>
+              Limpar
+            </button>
+          </div>
+
+          {/* Busca por texto */}
+          <div className="filtro-group">
+            <label className="filtro-label">Termo no Enunciado</label>
+            <input
+              type="text"
+              className="filtro-input"
+              placeholder="Digite palavra-chave..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+
+          {/* Situação da Questão */}
+          <div className="filtro-group">
+            <label className="filtro-label">Situação da Questão</label>
+            <select
+              className="filtro-select"
+              value={selectedSituacao}
+              onChange={(e) => setSelectedSituacao(e.target.value)}
+            >
+              <option value="TODAS">Todas as Questões</option>
+              <option value="NUNCA_RESPONDIDA">Nunca Respondida</option>
+              <option value="ERRADAS">Respondida Incorretamente</option>
+              <option value="BAIXA_CONFIANCA">Acertada com Baixa Confiança</option>
+              <option value="FAVORITAS">Favoritas ⭐</option>
+              <option value="PENDENTE_REVISAO">Pendente de Revisão</option>
+            </select>
+          </div>
+
+          {/* Disciplina */}
+          <div className="filtro-group">
+            <label className="filtro-label">Disciplina</label>
+            <select
+              className="filtro-select"
+              value={selectedDisciplina}
+              onChange={(e) => setSelectedDisciplina(e.target.value)}
+            >
+              <option value="TODAS">Todas as Disciplinas</option>
+              {filterMetadata.disciplinas.map(d => (
+                <option key={d} value={d}>{d}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Banca */}
+          <div className="filtro-group">
+            <label className="filtro-label">Banca Examinadora</label>
+            <select
+              className="filtro-select"
+              value={selectedBanca}
+              onChange={(e) => setSelectedBanca(e.target.value)}
+            >
+              <option value="TODAS">Todas as Bancas</option>
+              {filterMetadata.bancas.map(b => (
+                <option key={b} value={b}>{b}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Ano */}
+          <div className="filtro-group">
+            <label className="filtro-label">Ano</label>
+            <select
+              className="filtro-select"
+              value={selectedAno}
+              onChange={(e) => setSelectedAno(e.target.value)}
+            >
+              <option value="TODOS">Todos os Anos</option>
+              {filterMetadata.anos.map(a => (
+                <option key={a} value={a.toString()}>{a}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Tipo de Questão */}
+          <div className="filtro-group">
+            <label className="filtro-label">Tipo de Questão</label>
+            <select
+              className="filtro-select"
+              value={selectedTipo}
+              onChange={(e) => setSelectedTipo(e.target.value)}
+            >
+              <option value="TODOS">Todos os Tipos</option>
+              <option value="MULTIPLA_ESCOLHA">Múltipla Escolha</option>
+              <option value="CERTO_ERRADO">Certo / Errado</option>
+            </select>
+          </div>
+        </aside>
+
+        {/* ===================================================================
+            PAINEL DIREITO: RESULTADOS (T18)
+            =================================================================== */}
+        <main className="banco-resultados-col">
+          {/* Barra de Contagem e Paginação */}
+          <div className="resultados-topo-bar">
+            <span style={{ fontSize: '0.86rem', color: 'var(--calm-text)' }}>
+              Encontradas <strong>{totalElements}</strong> questões elegíveis
+            </span>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ fontSize: '0.78rem', color: 'var(--calm-text-muted)' }}>
+                Página {page + 1} de {totalPages || 1}
+              </span>
+              <button
+                className="btn-q-action"
+                disabled={page <= 0 || isLoading}
+                onClick={() => fetchQuestions(page - 1)}
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                className="btn-q-action"
+                disabled={page >= totalPages - 1 || isLoading}
+                onClick={() => fetchQuestions(page + 1)}
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Lista de Questões */}
+          {isLoading ? (
+            <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--calm-text-muted)' }}>
+              Carregando questões do acervo...
+            </div>
+          ) : questions.length === 0 ? (
+            <div style={{
+              padding: '3rem',
+              textAlign: 'center',
+              borderRadius: '14px',
+              border: '1px dashed var(--calm-card-border)',
+              background: 'var(--calm-card-bg)',
+              color: 'var(--calm-text-muted)'
+            }}>
+              Nenhuma questão encontrada com os filtros selecionados. Tente expandir sua busca.
+            </div>
+          ) : (
+            questions.map(q => {
+              const isAnulada = q.gabaritoStatus === 'ANULADA';
+              return (
+                <div key={q.questionId} className="question-card-item">
+                  <div className="question-card-header">
+                    <div className="question-tags-row">
+                      <span className="badge-tag-q discipline">{q.discipline}</span>
+                      <span className="badge-tag-q">{q.topic || 'Geral'}</span>
+                      <span className="badge-tag-q">{q.board} • {q.year}</span>
+                      {q.orgao && <span className="badge-tag-q">{q.orgao}</span>}
+                      {q.tipoQuestao && (
+                        <span className="badge-tag-q">
+                          {q.tipoQuestao === 'CERTO_ERRADO' ? 'C/E' : 'Múltipla Escolha'}
+                        </span>
+                      )}
+                      {isAnulada ? (
+                        <span className="badge-tag-q anulada">
+                          <AlertTriangle className="w-3 h-3 inline mr-1" /> Anulada
+                        </span>
+                      ) : (
+                        <span className="badge-tag-q validada">
+                          <CheckCircle2 className="w-3 h-3 inline mr-1" /> Validada
+                        </span>
+                      )}
+                    </div>
+
+                    <div style={{ fontSize: '0.74rem', color: 'var(--calm-text-muted)', fontFamily: 'monospace' }}>
+                      ID: {q.questionId}
+                    </div>
+                  </div>
+
+                  {/* Enunciado */}
+                  <div className="question-statement-text">
+                    {q.statement}
+                  </div>
+
+                  {/* Prévia de Alternativas (GABARITO OCULTO) */}
+                  {Array.isArray(q.options) && q.options.length > 0 && (
+                    <div className="question-options-preview">
+                      {q.options.map((opt: string, i: number) => (
+                        <div key={i} style={{ display: 'flex', gap: '0.4rem' }}>
+                          <span style={{ fontWeight: 600 }}>{String.fromCharCode(65 + i)})</span>
+                          <span>{opt.replace(/^[A-E]\)\s*/, '')}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Rodapé: Histórico Pessoal & Ações */}
+                  <div className="question-card-footer">
+                    <div className="question-history-stat">
+                      {q.tentativasTotal > 0 ? (
+                        <span>
+                          Você respondeu {q.tentativasTotal}x • Taxa de acerto pessoal: <strong>{q.taxaAcertoPessoal}%</strong>
+                        </span>
+                      ) : (
+                        <span style={{ color: '#34d399' }}>Nunca resolvida por você</span>
+                      )}
+                    </div>
+
+                    <div className="question-actions-group">
+                      <button
+                        className={`btn-q-action favorite ${q.isFavorite ? 'active' : ''}`}
+                        onClick={() => handleToggleFavorite(q.questionId)}
+                        title="Favoritar questão"
+                      >
+                        <Bookmark className="w-3.5 h-3.5" fill={q.isFavorite ? 'currentColor' : 'none'} />
+                      </button>
+
+                      <button
+                        className="btn-q-action"
+                        onClick={() => setReportQuestionId(q.questionId)}
+                        title="Reportar problema de gabarito ou digitação"
+                      >
+                        <Flag className="w-3.5 h-3.5" />
+                      </button>
+
+                      {q.arquivoOrigem && (
+                        <button
+                          className="btn-q-action"
+                          onClick={() => showFeedback(`Fonte: ${q.arquivoOrigem}`)}
+                          title="Abrir prova ou fonte original"
+                        >
+                          <FileText className="w-3.5 h-3.5" /> Fonte
+                        </button>
+                      )}
+
+                      <button
+                        className="btn-q-action"
+                        onClick={() => setIsCadernoModalOpen(true)}
+                        title="Adicionar ao caderno de exercícios"
+                      >
+                        <Layers className="w-3.5 h-3.5" /> + Caderno
+                      </button>
+
+                      <button
+                        className="btn-q-action primary"
+                        onClick={() => onResolveQuestion(q.questionId)}
+                      >
+                        <Play className="w-3.5 h-3.5" /> Resolver
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </main>
+      </div>
+
+      {/* Modal T19: Montagem de Cadernos */}
+      {isCadernoModalOpen && (
+        <MontagemCadernoModal
+          activeConcurso={activeConcurso}
+          initialFilters={{
+            disciplina: selectedDisciplina !== 'TODAS' ? selectedDisciplina : undefined,
+            assunto: selectedAssunto !== 'TODOS' ? selectedAssunto : undefined,
+            banca: selectedBanca !== 'TODAS' ? selectedBanca : undefined,
+            ano: selectedAno !== 'TODOS' ? parseInt(selectedAno) : undefined,
+            situacao: selectedSituacao !== 'TODAS' ? selectedSituacao : undefined
+          }}
+          totalElegiveis={totalElements}
+          onClose={() => setIsCadernoModalOpen(false)}
+          onSaveCaderno={async (caderno) => {
+            try {
+              const res = await fetch('/api/v1/bank/notebooks', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(caderno)
+              });
+              if (res.ok) {
+                showFeedback('✓ Caderno salvo com sucesso!');
+                setIsCadernoModalOpen(false);
+              }
+            } catch {
+              showFeedback('Erro ao salvar caderno.');
+            }
+          }}
+          onStartInstantResolucao={(caderno) => {
+            setIsCadernoModalOpen(false);
+            onStartCaderno(caderno);
+          }}
+        />
+      )}
+
+      {/* Modal: Reportar Problema */}
+      {reportQuestionId && (
+        <div className="montagem-caderno-backdrop" onClick={() => setReportQuestionId(null)}>
+          <div className="montagem-caderno-modal" style={{ maxWidth: '460px' }} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--calm-text)' }}>Reportar Problema na Questão</h3>
+            <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--calm-text-muted)' }}>
+              Identificou gabarito desatualizado, erro de digitação ou formatação? Informe abaixo para auditoria.
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+              <label style={{ fontSize: '0.78rem', color: 'var(--calm-text-muted)' }}>Motivo</label>
+              <select
+                className="filtro-select"
+                value={reportReason}
+                onChange={(e) => setReportReason(e.target.value)}
+              >
+                <option value="ERRO_GABARITO">Gabarito Incorreto / Anulado</option>
+                <option value="ERRO_TEXTO">Erro de Digitação / Caracteres</option>
+                <option value="IMAGEM_FALTANDO">Imagem ou Tabela Faltando</option>
+                <option value="OUTRO">Outro Problema</option>
+              </select>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+              <label style={{ fontSize: '0.78rem', color: 'var(--calm-text-muted)' }}>Detalhes</label>
+              <textarea
+                className="filtro-input"
+                rows={3}
+                placeholder="Explique o que deve ser corrigido..."
+                value={reportDesc}
+                onChange={(e) => setReportDesc(e.target.value)}
+              />
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+              <button className="btn-q-action" onClick={() => setReportQuestionId(null)}>Cancelar</button>
+              <button className="btn-q-action primary" onClick={handleSendReport}>Enviar Reporte</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};

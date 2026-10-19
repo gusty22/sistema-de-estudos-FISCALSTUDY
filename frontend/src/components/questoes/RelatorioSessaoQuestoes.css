@@ -1,0 +1,248 @@
+/* ============================================================================
+   T22 — RELATÓRIO DA SESSÃO DE QUESTÕES (TECNOLOGIA CALMA)
+   6 Seções: Oficial, Integridade, Calibração, Conteúdos, Gabarito, Recuperação
+   ============================================================================ */
+
+.relatorio-sessao-wrapper {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+  padding: 1.5rem 1rem 3rem 1rem;
+}
+
+.relatorio-header-hero {
+  padding: 1.75rem 2rem;
+  border-radius: 16px;
+  background: var(--calm-card-bg, #16181a);
+  border: 1px solid var(--calm-card-border, #282a30);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+
+.relatorio-title-box h1 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin: 0 0 0.35rem 0;
+  color: var(--calm-text, #f3f4f6);
+}
+
+.relatorio-title-box p {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--calm-text-muted, #9ca3af);
+}
+
+.relatorio-actions-top {
+  display: flex;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.btn-relatorio-action {
+  padding: 0.55rem 1rem;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--calm-card-border, #282a30);
+  background: var(--calm-bg-subtle, #121316);
+  color: var(--calm-text, #f3f4f6);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: all 0.15s ease;
+}
+
+.btn-relatorio-action:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.btn-relatorio-action.primary {
+  background: #6366f1;
+  border-color: #6366f1;
+  color: #fff;
+}
+
+.btn-relatorio-action.primary:hover {
+  background: #4f46e5;
+}
+
+/* ----------------------------------------------------------------------------
+   SEÇÃO 1: RESULTADO OFICIAL
+   ---------------------------------------------------------------------------- */
+.secao-card {
+  padding: 1.5rem;
+  border-radius: 14px;
+  background: var(--calm-card-bg, #16181a);
+  border: 1px solid var(--calm-card-border, #282a30);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.secao-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--calm-card-border, #282a30);
+  padding-bottom: 0.75rem;
+}
+
+.secao-header h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--calm-text, #f3f4f6);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.stats-grid-oficial {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem;
+}
+
+.stat-metric-card {
+  padding: 1rem;
+  border-radius: 10px;
+  background: var(--calm-bg-subtle, #121316);
+  border: 1px solid var(--calm-card-border, #282a30);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.stat-metric-label {
+  font-size: 0.74rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--calm-text-muted, #9ca3af);
+}
+
+.stat-metric-val {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--calm-text, #f3f4f6);
+}
+
+/* ----------------------------------------------------------------------------
+   SEÇÃO 2: INTEGRIDADE DA EVIDÊNCIA
+   ---------------------------------------------------------------------------- */
+.evidencia-badges-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.85rem;
+}
+
+.evidencia-item {
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--calm-card-border, #282a30);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* ----------------------------------------------------------------------------
+   SEÇÃO 3: CALIBRAÇÃO (MATRIZ 2x2 DE CONFIANÇA)
+   ---------------------------------------------------------------------------- */
+.calibracao-matrix-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 650px) {
+  .calibracao-matrix-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.matrix-quadrant {
+  padding: 1rem 1.15rem;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  border: 1px solid var(--calm-card-border, #282a30);
+}
+
+.matrix-quadrant.calibrado {
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.matrix-quadrant.inseguro {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.matrix-quadrant.ilusao {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.matrix-quadrant.consciente {
+  background: rgba(99, 102, 241, 0.08);
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+.quadrant-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.quadrant-desc {
+  font-size: 0.78rem;
+  color: var(--calm-text-muted, #9ca3af);
+  line-height: 1.4;
+}
+
+/* ----------------------------------------------------------------------------
+   SEÇÃO 4: DESEMPENHO POR CONTEÚDO
+   ---------------------------------------------------------------------------- */
+.conteudo-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.84rem;
+}
+
+.conteudo-table th {
+  padding: 0.65rem 0.85rem;
+  text-align: left;
+  font-weight: 600;
+  color: var(--calm-text-muted, #9ca3af);
+  border-bottom: 1px solid var(--calm-card-border, #282a30);
+}
+
+.conteudo-table td {
+  padding: 0.75rem 0.85rem;
+  border-bottom: 1px solid var(--calm-card-border, #282a30);
+  color: var(--calm-text, #f3f4f6);
+}
+
+/* ----------------------------------------------------------------------------
+   SEÇÃO 6: PLANO DE RECUPERAÇÃO
+   ---------------------------------------------------------------------------- */
+.recuperacao-item-card {
+  padding: 1rem 1.15rem;
+  border-radius: 10px;
+  background: rgba(99, 102, 241, 0.06);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}

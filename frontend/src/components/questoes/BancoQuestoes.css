@@ -1,0 +1,308 @@
+/* ============================================================================
+   T18 — BANCO DE QUESTÕES (TECNOLOGIA CALMA)
+   Barra de filtros à esquerda (310px) e resultados à direita
+   Compatibilidade total com Modo Claro (Paper) e Modo Escuro (Night)
+   ============================================================================ */
+
+.banco-questoes-wrapper {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1.5rem 1rem 3rem 1rem;
+}
+
+.banco-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  background: var(--calm-card-bg, #ffffff);
+  border: 1px solid var(--calm-card-border, #e2e8f0);
+  border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.banco-header-info h1 {
+  font-size: 1.45rem;
+  font-weight: 700;
+  margin: 0 0 0.25rem 0;
+  color: var(--calm-text, #0f172a);
+}
+
+.banco-header-info p {
+  margin: 0;
+  font-size: 0.84rem;
+  color: var(--calm-text-muted, #64748b);
+  line-height: 1.5;
+}
+
+.banco-layout-grid {
+  display: grid;
+  grid-template-columns: 310px 1fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .banco-layout-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ----------------------------------------------------------------------------
+   PAINEL ESQUERDO: BARRA DE FILTROS
+   ---------------------------------------------------------------------------- */
+.banco-filtros-aside {
+  background: var(--calm-card-bg, #ffffff);
+  border: 1px solid var(--calm-card-border, #e2e8f0);
+  border-radius: 14px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  position: sticky;
+  top: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.filtros-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--calm-card-border, #e2e8f0);
+}
+
+.filtros-header-row h3 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--calm-text, #0f172a);
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.btn-limpar-filtros {
+  background: none;
+  border: none;
+  color: var(--calm-primary, #4f46e5);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: opacity 0.15s ease;
+}
+
+.btn-limpar-filtros:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
+.filtro-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.filtro-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--calm-text-muted, #64748b);
+}
+
+.filtro-select, .filtro-input {
+  padding: 0.55rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--form-border, #cbd5e1);
+  background: var(--form-bg, #ffffff);
+  color: var(--form-text, #0f172a);
+  font-size: 0.84rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.2s ease;
+}
+
+.filtro-select:focus, .filtro-input:focus {
+  outline: none;
+  border-color: var(--calm-primary, #4f46e5);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+}
+
+.filtro-select option {
+  background: var(--calm-card-bg, #ffffff);
+  color: var(--calm-text, #0f172a);
+}
+
+/* ----------------------------------------------------------------------------
+   PAINEL DIREITO: RESULTADOS DAS QUESTÕES
+   ---------------------------------------------------------------------------- */
+.banco-resultados-col {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.resultados-topo-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.85rem 1.15rem;
+  border-radius: 12px;
+  background: var(--calm-card-bg, #ffffff);
+  border: 1px solid var(--calm-card-border, #e2e8f0);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.question-card-item {
+  background: var(--calm-card-bg, #ffffff);
+  border: 1px solid var(--calm-card-border, #e2e8f0);
+  border-radius: 14px;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.2s ease;
+}
+
+.question-card-item:hover {
+  border-color: var(--calm-primary, #4f46e5);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+}
+
+.question-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.question-tags-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.badge-tag-q {
+  font-size: 0.74rem;
+  font-weight: 600;
+  padding: 0.25rem 0.55rem;
+  border-radius: 6px;
+  background: var(--calm-bg-subtle, #f1f5f9);
+  color: var(--calm-text-muted, #475569);
+  border: 1px solid var(--calm-card-border, #e2e8f0);
+}
+
+.badge-tag-q.discipline {
+  background: rgba(79, 70, 229, 0.08);
+  border-color: rgba(79, 70, 229, 0.2);
+  color: var(--calm-primary, #4f46e5);
+}
+
+.badge-tag-q.validada {
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.25);
+  color: #059669;
+}
+
+.badge-tag-q.anulada {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.3);
+  color: #d97706;
+}
+
+.question-statement-text {
+  font-size: 0.94rem;
+  line-height: 1.6;
+  color: var(--calm-text, #0f172a);
+}
+
+.question-options-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  background: var(--calm-bg-subtle, #f8fafc);
+  border: 1px dashed var(--calm-card-border, #e2e8f0);
+  font-size: 0.84rem;
+  color: var(--calm-text-muted, #64748b);
+}
+
+.question-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--calm-card-border, #e2e8f0);
+}
+
+.question-history-stat {
+  font-size: 0.78rem;
+  color: var(--calm-text-muted, #64748b);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.question-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.btn-q-action {
+  padding: 0.45rem 0.85rem;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--calm-card-border, #cbd5e1);
+  background: var(--calm-bg-subtle, #f8fafc);
+  color: var(--calm-text, #0f172a);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: all 0.15s ease;
+}
+
+.btn-q-action:hover:not(:disabled) {
+  background: var(--bg-card-hover, #f1f5f9);
+  border-color: var(--calm-primary, #4f46e5);
+}
+
+.btn-q-action:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-q-action.primary {
+  background: var(--calm-primary, #4f46e5);
+  border-color: var(--calm-primary, #4f46e5);
+  color: #ffffff;
+}
+
+.btn-q-action.primary:hover:not(:disabled) {
+  background: var(--calm-primary-hover, #4338ca);
+}
+
+.btn-q-action.favorite.active {
+  color: #d97706;
+  border-color: rgba(217, 119, 6, 0.4);
+  background: rgba(245, 158, 11, 0.1);
+}

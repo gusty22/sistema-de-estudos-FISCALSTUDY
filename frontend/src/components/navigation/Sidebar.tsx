@@ -7,9 +7,15 @@ export type NavTab =
   | 'maestro'
   | 'concursos' 
   | 'cronograma' 
-  | 'materiais'
+  | 'rotina'
+  | 'materiais' 
+  | 'resumos'
+  | 'anki'
   | 'edital' 
+  | 'banco'
   | 'study' 
+  | 'session'
+  | 'historico'
   | 'simulados' 
   | 'revisoes' 
   | 'digitaltwin'
@@ -18,7 +24,8 @@ export type NavTab =
   | 'feynman'
   | 'metodoera'
   | 'pontoschave'
-  | 'premortem';
+  | 'premortem'
+  | 'configuracoes';
 
 interface SidebarProps {
   activeTab: NavTab;
@@ -27,7 +34,9 @@ interface SidebarProps {
   concursosList: ConcursoItem[];
   onSelectConcurso: (c: ConcursoItem) => void;
   onOpenNewConcurso: () => void;
-  onOpenAnkiHub?: () => void;
+  onOpenBuscaGlobal?: () => void;
+  theme?: 'paper' | 'night';
+  onToggleTheme?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -37,16 +46,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
   concursosList,
   onSelectConcurso,
   onOpenNewConcurso,
-  onOpenAnkiHub,
+  onOpenBuscaGlobal,
+  theme = 'paper',
+  onToggleTheme,
 }) => {
   return (
     <aside className="sidebar">
       {/* Brand & Logo */}
       <div className="sidebar-brand">
-        <div className="brand-icon">⚡</div>
-        <div className="brand-text">
-          <span className="brand-title">FiscalStudy</span>
-          <span className="brand-subtitle">Adaptive Prep Platform</span>
+        <div className="brand-logo-group">
+          <div className="brand-icon">⚡</div>
+          <div className="brand-text">
+            <span className="brand-title">FiscalStudy</span>
+            <span className="brand-subtitle">Adaptive Prep Platform</span>
+          </div>
         </div>
       </div>
 
@@ -114,26 +127,77 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Navigation Links */}
       <nav className="sidebar-nav">
-        <div className="nav-section-title">PRINCIPAL</div>
+        {onOpenBuscaGlobal && (
+          <button
+            type="button"
+            className="nav-btn busca-global-trigger-btn"
+            onClick={onOpenBuscaGlobal}
+            title="Busca Global Unificada (Ctrl+K)"
+            style={{
+              background: 'rgba(255, 255, 255, 0.04)',
+              border: '1px solid rgba(255, 255, 255, 0.09)',
+              marginBottom: '1rem',
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '0.55rem 0.85rem'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span className="nav-icon" style={{ fontSize: '0.95rem' }}>🔍</span>
+              <span className="nav-text" style={{ fontSize: '0.82rem', color: '#cbd5e1' }}>Busca Global...</span>
+            </div>
+            <kbd style={{
+              background: 'rgba(0, 0, 0, 0.35)',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+              borderRadius: '4px',
+              padding: '2px 5px',
+              fontSize: '0.68rem',
+              color: '#94a3b8'
+            }}>Ctrl K</kbd>
+          </button>
+        )}
+
+        <div className="nav-section-title">ROTINA & EXECUÇÃO</div>
         <button
           className={`nav-btn ${activeTab === 'dashboard' ? 'active' : ''}`}
           onClick={() => onSelectTab('dashboard')}
         >
           <span className="nav-icon">📊</span>
-          <span className="nav-text">Dashboard</span>
+          <span className="nav-text">Início / Meu Plano</span>
         </button>
 
         <button
-          className={`nav-btn ${activeTab === 'maestro' ? 'active' : ''}`}
-          onClick={() => onSelectTab('maestro')}
-          style={activeTab === 'maestro' ? {
-            background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(239, 68, 68, 0.25))',
-            borderLeft: '3px solid #f59e0b',
-            color: '#f59e0b'
-          } : {}}
+          className={`nav-btn ${activeTab === 'banco' ? 'active' : ''}`}
+          onClick={() => onSelectTab('banco')}
+        >
+          <span className="nav-icon">🔍</span>
+          <span className="nav-text">Banco de Questões</span>
+        </button>
+
+        <button
+          className={`nav-btn ${activeTab === 'study' ? 'active' : ''}`}
+          onClick={() => onSelectTab('study')}
         >
           <span className="nav-icon">⚡</span>
-          <span className="nav-text" style={{ fontWeight: 700 }}>Maestro (Modo Batalha)</span>
+          <span className="nav-text" style={{ fontWeight: 700 }}>Estudo Ativo & Questões</span>
+        </button>
+
+        <button
+          className={`nav-btn ${activeTab === 'session' ? 'active' : ''}`}
+          onClick={() => onSelectTab('session')}
+        >
+          <span className="nav-icon">🎯</span>
+          <span className="nav-text">Sessão Focada (Timer)</span>
+        </button>
+
+        <button
+          className={`nav-btn ${activeTab === 'historico' ? 'active' : ''}`}
+          onClick={() => onSelectTab('historico')}
+        >
+          <span className="nav-icon">📜</span>
+          <span className="nav-text">Histórico de Sessões</span>
         </button>
 
         <button
@@ -141,9 +205,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
           onClick={() => onSelectTab('cronograma')}
         >
           <span className="nav-icon">📅</span>
-          <span className="nav-text">Cronograma & Ciclos</span>
+          <span className="nav-text">Planejamento Adaptativo</span>
         </button>
 
+        <button
+          className={`nav-btn ${activeTab === 'rotina' ? 'active' : ''}`}
+          onClick={() => onSelectTab('rotina')}
+        >
+          <span className="nav-icon">🗓️</span>
+          <span className="nav-text">Rotina & Disponibilidade</span>
+        </button>
+
+        <button
+          className={`nav-btn ${activeTab === 'revisoes' ? 'active' : ''}`}
+          onClick={() => onSelectTab('revisoes')}
+        >
+          <span className="nav-icon">🔄</span>
+          <span className="nav-text">Revisões & Caderno de Erros</span>
+        </button>
+
+        <div className="nav-section-title">CONTEÚDO & MATERIAIS</div>
         <button
           className={`nav-btn ${activeTab === 'materiais' ? 'active' : ''}`}
           onClick={() => onSelectTab('materiais')}
@@ -152,13 +233,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <span className="nav-text">Biblioteca & Teoria</span>
         </button>
 
-        <div className="nav-section-title">PRÁTICA & RESOLUÇÃO</div>
         <button
-          className={`nav-btn ${activeTab === 'study' ? 'active' : ''}`}
-          onClick={() => onSelectTab('study')}
+          className={`nav-btn ${activeTab === 'resumos' ? 'active' : ''}`}
+          onClick={() => onSelectTab('resumos')}
         >
-          <span className="nav-icon">📝</span>
-          <span className="nav-text">Banco de Questões</span>
+          <span className="nav-icon">📑</span>
+          <span className="nav-text">Resumos Estratégicos</span>
+        </button>
+
+        <button
+          className={`nav-btn ${activeTab === 'anki' ? 'active' : ''}`}
+          onClick={() => onSelectTab('anki')}
+        >
+          <span className="nav-icon">🧠</span>
+          <span className="nav-text">Curadoria para o Anki</span>
         </button>
 
         <button
@@ -169,75 +257,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <span className="nav-text">Cadernos & Simulados</span>
         </button>
 
-        <button
-          className={`nav-btn ${activeTab === 'revisoes' ? 'active' : ''}`}
-          onClick={() => onSelectTab('revisoes')}
-        >
-          <span className="nav-icon">🔄</span>
-          <span className="nav-text">Ciclo de Revisões & Erros</span>
-        </button>
-
-        <button
-          className={`nav-btn ${activeTab === 'digitaltwin' ? 'active' : ''}`}
-          onClick={() => onSelectTab('digitaltwin')}
-        >
-          <span className="nav-icon">🧠</span>
-          <span className="nav-text">Gêmeo Digital (Lucas)</span>
-        </button>
-
-        <div className="nav-section-title">CIÊNCIA COGNITIVA & MÉTODOS</div>
-        <button
-          className={`nav-btn ${activeTab === 'metodoera' ? 'active' : ''}`}
-          onClick={() => onSelectTab('metodoera')}
-        >
-          <span className="nav-icon">⚡</span>
-          <span className="nav-text">Método ERA</span>
-        </button>
-
-        <button
-          className={`nav-btn ${activeTab === 'feynman' ? 'active' : ''}`}
-          onClick={() => onSelectTab('feynman')}
-        >
-          <span className="nav-icon">🔬</span>
-          <span className="nav-text">Sessão Feynman</span>
-        </button>
-
-        <button
-          className={`nav-btn ${activeTab === 'pontoschave' ? 'active' : ''}`}
-          onClick={() => onSelectTab('pontoschave')}
-        >
-          <span className="nav-icon">🎯</span>
-          <span className="nav-text">Pontos-Chave (SRS)</span>
-        </button>
-
-        {onOpenAnkiHub && (
-          <button
-            type="button"
-            className="nav-btn"
-            onClick={onOpenAnkiHub}
-            title="Automação Extrema: Integração Silenciosa com o Anki"
-            style={{ borderLeft: '3px solid #3b82f6', background: 'rgba(59, 130, 246, 0.08)' }}
-          >
-            <span className="nav-icon">⚡</span>
-            <span className="nav-text" style={{ color: '#93c5fd' }}>Anki Hub (Silencioso)</span>
-          </button>
-        )}
-
-        <button
-          className={`nav-btn ${activeTab === 'premortem' ? 'active' : ''}`}
-          onClick={() => onSelectTab('premortem')}
-        >
-          <span className="nav-icon">🔮</span>
-          <span className="nav-text">Pré-Mortem (Gary Klein)</span>
-        </button>
-
-        <div className="nav-section-title">GESTÃO & INGESTÃO</div>
+        <div className="nav-section-title">GESTÃO & EDITAL</div>
         <button
           className={`nav-btn ${activeTab === 'concursos' ? 'active' : ''}`}
           onClick={() => onSelectTab('concursos')}
         >
           <span className="nav-icon">🏛️</span>
-          <span className="nav-text">Meus Concursos</span>
+          <span className="nav-text">Meus Concursos / Metas</span>
+        </button>
+
+        <button
+          className={`nav-btn ${activeTab === 'edital' ? 'active' : ''}`}
+          onClick={() => onSelectTab('edital')}
+        >
+          <span className="nav-icon">🗺️</span>
+          <span className="nav-text">Mapa de Conteúdos</span>
         </button>
 
         <button
@@ -245,7 +279,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           onClick={() => onSelectTab('import')}
         >
           <span className="nav-icon">📥</span>
-          <span className="nav-text">Ingestão & Studio</span>
+          <span className="nav-text">Ingestão & Provas</span>
         </button>
 
         <button
@@ -253,12 +287,42 @@ export const Sidebar: React.FC<SidebarProps> = ({
           onClick={() => onSelectTab('analytics')}
         >
           <span className="nav-icon">📈</span>
-          <span className="nav-text">Estatísticas & MVT</span>
+          <span className="nav-text">Desempenho & Diagnósticos</span>
+        </button>
+
+        <div className="nav-section-title">SISTEMA & ADMINISTRAÇÃO</div>
+        <button
+          className={`nav-btn ${activeTab === 'configuracoes' ? 'active' : ''}`}
+          onClick={() => onSelectTab('configuracoes')}
+        >
+          <span className="nav-icon">⚙️</span>
+          <span className="nav-text">Configurações & Dados</span>
         </button>
       </nav>
 
       {/* Sidebar Footer */}
       <div className="sidebar-footer">
+        {onToggleTheme && (
+          <button
+            type="button"
+            className="sidebar-theme-toggle-btn"
+            onClick={onToggleTheme}
+            title={theme === 'night' ? 'Mudar para Modo Claro (Paper)' : 'Mudar para Modo Escuro (Night)'}
+          >
+            <div className="theme-toggle-content">
+              <span className="theme-toggle-icon">
+                {theme === 'night' ? '🌙' : '☀️'}
+              </span>
+              <span className="theme-toggle-text">
+                {theme === 'night' ? 'Modo Escuro' : 'Modo Claro'}
+              </span>
+            </div>
+            <div className={`theme-toggle-pill ${theme === 'night' ? 'active-night' : 'active-paper'}`}>
+              <div className="theme-toggle-thumb" />
+            </div>
+          </button>
+        )}
+
         <div className="footer-status">
           <span className="status-dot"></span>
           <span>Local-First • SQLite</span>

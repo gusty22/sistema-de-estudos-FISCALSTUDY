@@ -68,6 +68,11 @@ export const PontosChaveView: React.FC = () => {
     e.preventDefault();
     if (!textoComOmissao.trim()) return;
 
+    let preparedText = textoComOmissao.trim();
+    if (!preparedText.includes('{{c') && preparedText.includes('[') && preparedText.includes(']')) {
+      preparedText = preparedText.replace(/\[(.*?)\]/g, '{{c1::$1}}');
+    }
+
     try {
       const res = await fetch('/api/v1/cognitive/pontos-chave', {
         method: 'POST',
@@ -76,7 +81,7 @@ export const PontosChaveView: React.FC = () => {
           disciplina: disciplina.trim() || 'Geral',
           topico: topico.trim() || 'Geral',
           criterioCritico: criterio,
-          textoComOmissao: textoComOmissao.trim(),
+          textoComOmissao: preparedText,
           explicacao: explicacao.trim()
         })
       });
@@ -119,14 +124,16 @@ export const PontosChaveView: React.FC = () => {
   };
 
   const renderClozeText = (text: string, revealed: boolean) => {
-    const regex = /\{\{c1::(.*?)\}\}/g;
+    // Normaliza colchetes simples [termo] ou {{c1::termo}} para renderização limpa
+    const normalized = text.replace(/\[(.*?)\]/g, '{{c1::$1}}');
+    const regex = /\{\{c\d+::(.*?)(?:::.*?)?\}\}/g;
     const parts = [];
     let lastIndex = 0;
     let match;
 
-    while ((match = regex.exec(text)) !== null) {
+    while ((match = regex.exec(normalized)) !== null) {
       if (match.index > lastIndex) {
-        parts.push(text.substring(lastIndex, match.index));
+        parts.push(normalized.substring(lastIndex, match.index));
       }
       const hiddenWord = match[1];
       if (revealed) {
@@ -150,8 +157,8 @@ export const PontosChaveView: React.FC = () => {
       lastIndex = regex.lastIndex;
     }
 
-    if (lastIndex < text.length) {
-      parts.push(text.substring(lastIndex));
+    if (lastIndex < normalized.length) {
+      parts.push(normalized.substring(lastIndex));
     }
 
     return parts;
@@ -165,10 +172,7 @@ export const PontosChaveView: React.FC = () => {
       <div className="pontos-chave-hero">
         <h2>🎯 Material de Pontos-Chave (Cloze Deletion / SRS)</h2>
         <p>
-          Rejeitamos o resumo passivo e a releitura frágil. O Material de Pontos-Chave utiliza omissão ativa
-          de palavras (<em>Cloze deletion</em> com sintaxe <code>{'{{c1::termo}}'}</code>) cobrindo estritamente os
-          <strong> 5 critérios críticos</strong> do concurso: (1) o que mais cai, (2) o mais difícil, (3) o que mais erra,
-          (4) o que mais esquece e (5) pegadinhas clássicas da banca examinadora.
+          Rejeitamos o resumo passivo e a releitura frágil. O Material de Pontos-Chave utiliza <strong>recuperação ativa com omissão de termos essenciais (lacunas)</strong> cobrindo estritamente os <strong>5 critérios críticos</strong> do concurso: (1) o que mais cai, (2) o mais difícil, (3) o que mais erra, (4) o que mais esquece e (5) pegadinhas clássicas da banca examinadora.
         </p>
       </div>
 
@@ -255,16 +259,16 @@ export const PontosChaveView: React.FC = () => {
 
           <div className="form-group" style={{ marginBottom: '1rem' }}>
             <label style={{ color: '#cbd5e1', fontSize: '0.85rem' }}>
-              Texto com Omissão (use <code>{'{{c1::palavra que será oculta}}'}</code>):
+              Texto com Termo Oculto (coloque entre colchetes a palavra-chave a memorizar, ex: <strong>[prazo de 5 anos]</strong>):
             </label>
             <textarea
               className="form-control"
               rows={3}
-              placeholder="Ex.: A ação para a cobrança do crédito tributário prescreve em {{c1::5 anos}}, contados da data da sua constituição definitiva."
+              placeholder="Ex.: A revogação do ato administrativo incide exclusivamente sobre atos [válidos e discricionários], com base em conveniência e oportunidade."
               value={textoComOmissao}
               onChange={(e) => setTextoComOmissao(e.target.value)}
               required
-              style={{ width: '100%', fontFamily: 'monospace' }}
+              style={{ width: '100%', fontSize: '0.88rem' }}
             />
           </div>
 

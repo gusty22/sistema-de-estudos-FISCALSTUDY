@@ -1,36 +1,51 @@
+/* ==========================================================================
+   SIDEBAR NAVIGATION — FISCALSTUDY
+   Suporte completo a Modo Claro (Paper padrão) e Modo Escuro (Night)
+   ========================================================================== */
+
 .sidebar {
   position: fixed;
   left: 0;
   top: 0;
   bottom: 0;
   width: 250px;
-  background-color: #11141c;
-  border-right: 1px solid #1f2533;
+  background-color: var(--sidebar-bg, #ffffff);
+  border-right: 1px solid var(--sidebar-border, #e2e8f0);
   display: flex;
   flex-direction: column;
   z-index: 1000;
-  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.4);
+  box-shadow: 2px 0 16px rgba(0, 0, 0, 0.04);
+  transition: background-color 0.25s ease, border-color 0.25s ease;
 }
 
+/* --------------------------------------------------------------------------
+   BRAND & LOGO
+   -------------------------------------------------------------------------- */
 .sidebar-brand {
-  padding: 1.25rem 1.2rem;
+  padding: 1.15rem 1.15rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--sidebar-border-subtle, #f1f5f9);
+  background: var(--sidebar-header-bg, #ffffff);
+}
+
+.brand-logo-group {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  border-bottom: 1px solid #1a202c;
-  background: linear-gradient(180deg, rgba(30, 41, 59, 0.3) 0%, transparent 100%);
 }
 
 .brand-icon {
   width: 36px;
   height: 36px;
-  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
   border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1.2rem;
-  box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 4px 10px rgba(79, 70, 229, 0.25);
 }
 
 .brand-text {
@@ -42,29 +57,51 @@
   font-size: 1.15rem;
   font-weight: 800;
   letter-spacing: -0.02em;
-  background: linear-gradient(90deg, #60a5fa, #c084fc);
+  background: var(--brand-gradient, linear-gradient(90deg, #1e3a8a, #4338ca));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
 .brand-subtitle {
   font-size: 0.68rem;
-  color: #64748b;
+  color: var(--sidebar-muted, #64748b);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  font-weight: 600;
+  font-weight: 700;
 }
 
-/* Active Concurso Card */
+.brand-theme-btn {
+  background: var(--theme-toggle-bg, #f1f5f9);
+  border: 1px solid var(--sidebar-border, #e2e8f0);
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.brand-theme-btn:hover {
+  background: var(--sidebar-hover-bg, #e2e8f0);
+  transform: scale(1.05);
+}
+
+/* --------------------------------------------------------------------------
+   ACTIVE CONCURSO CARD
+   -------------------------------------------------------------------------- */
 .sidebar-concurso-card {
-  margin: 1rem 0.85rem;
+  margin: 0.85rem 0.85rem;
   padding: 0.85rem;
-  background: rgba(22, 28, 42, 0.7);
-  border: 1px solid #232b3d;
+  background: var(--concurso-card-bg, #f8fafc);
+  border: 1px solid var(--sidebar-border, #e2e8f0);
   border-radius: 10px;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
 }
 
 .concurso-badge-label {
@@ -74,13 +111,13 @@
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.08em;
-  color: #60a5fa;
+  color: var(--primary, #4f46e5);
 }
 
 .concurso-switch-btn {
   background: none;
   border: none;
-  color: #94a3b8;
+  color: var(--sidebar-muted, #64748b);
   font-size: 0.7rem;
   cursor: pointer;
   text-decoration: underline;
@@ -89,13 +126,13 @@
 }
 
 .concurso-switch-btn:hover {
-  color: #e2e8f0;
+  color: var(--sidebar-text, #0f172a);
 }
 
 .active-concurso-name {
   font-size: 0.85rem;
   font-weight: 700;
-  color: #f1f5f9;
+  color: var(--sidebar-text, #0f172a);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -108,9 +145,9 @@
 }
 
 .concurso-tag {
-  background: rgba(59, 130, 246, 0.15);
-  border: 1px solid rgba(59, 130, 246, 0.3);
-  color: #93c5fd;
+  background: var(--tag-bg, #eef2ff);
+  border: 1px solid var(--tag-border, #c7d2fe);
+  color: var(--tag-color, #4338ca);
   font-size: 0.68rem;
   padding: 2px 6px;
   border-radius: 4px;
@@ -119,18 +156,18 @@
 
 .active-concurso-date {
   font-size: 0.72rem;
-  color: #f59e0b;
-  font-weight: 500;
+  color: #d97706;
+  font-weight: 600;
 }
 
 .concurso-edital-btn {
   margin-top: 0.35rem;
   width: 100%;
   padding: 6px 10px;
-  background: rgba(59, 130, 246, 0.1);
-  border: 1px solid rgba(59, 130, 246, 0.25);
+  background: var(--tag-bg, #eef2ff);
+  border: 1px solid var(--tag-border, #c7d2fe);
   border-radius: 6px;
-  color: #93c5fd;
+  color: var(--tag-color, #4338ca);
   font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
@@ -143,18 +180,18 @@
 
 .concurso-edital-btn:hover,
 .concurso-edital-btn.active {
-  background: #3b82f6;
+  background: var(--primary, #4f46e5);
   color: #ffffff;
-  border-color: #3b82f6;
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+  border-color: var(--primary, #4f46e5);
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.25);
 }
 
 .concurso-quick-select {
   width: 100%;
   margin-top: 0.3rem;
-  background: #0f131a;
-  border: 1px solid #232b3d;
-  color: #cbd5e1;
+  background: var(--sidebar-input-bg, #ffffff);
+  border: 1px solid var(--sidebar-border, #cbd5e1);
+  color: var(--sidebar-text, #1e293b);
   font-size: 0.75rem;
   padding: 5px 8px;
   border-radius: 6px;
@@ -163,10 +200,12 @@
 }
 
 .concurso-quick-select:hover {
-  border-color: #3b82f6;
+  border-color: var(--primary, #4f46e5);
 }
 
-/* Nav links */
+/* --------------------------------------------------------------------------
+   NAV LINKS
+   -------------------------------------------------------------------------- */
 .sidebar-nav {
   flex: 1;
   padding: 0.5rem 0.75rem;
@@ -180,9 +219,28 @@
   font-size: 0.65rem;
   font-weight: 700;
   letter-spacing: 0.08em;
-  color: #475569;
+  color: var(--sidebar-muted, #64748b);
   padding: 0.6rem 0.6rem 0.3rem;
   text-transform: uppercase;
+}
+
+.busca-global-trigger-btn {
+  background: var(--search-btn-bg, #f8fafc) !important;
+  border: 1px solid var(--sidebar-border, #e2e8f0) !important;
+  color: var(--sidebar-text-muted, #475569) !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  transition: all 0.15s ease;
+}
+
+.busca-global-trigger-btn:hover {
+  background: var(--sidebar-hover-bg, #f1f5f9) !important;
+  border-color: var(--primary, #4f46e5) !important;
+}
+
+.busca-global-trigger-btn kbd {
+  background: var(--kbd-bg, #ffffff) !important;
+  border: 1px solid var(--sidebar-border, #cbd5e1) !important;
+  color: var(--sidebar-muted, #64748b) !important;
 }
 
 .nav-btn {
@@ -194,7 +252,7 @@
   background: transparent;
   border: none;
   border-radius: 7px;
-  color: #94a3b8;
+  color: var(--sidebar-text-muted, #475569);
   font-size: 0.82rem;
   font-weight: 500;
   cursor: pointer;
@@ -203,16 +261,16 @@
 }
 
 .nav-btn:hover {
-  background: rgba(30, 41, 59, 0.5);
-  color: #f1f5f9;
+  background: var(--sidebar-hover-bg, #f1f5f9);
+  color: var(--sidebar-text, #0f172a);
   transform: translateX(2px);
 }
 
 .nav-btn.active {
-  background: rgba(59, 130, 246, 0.16);
-  color: #60a5fa;
+  background: var(--sidebar-active-bg, #eef2ff);
+  color: var(--primary, #4f46e5);
   font-weight: 600;
-  border-left: 3px solid #3b82f6;
+  border-left: 3px solid var(--primary, #4f46e5);
 }
 
 .nav-icon {
@@ -226,14 +284,76 @@
   flex: 1;
 }
 
-/* Footer */
+/* --------------------------------------------------------------------------
+   FOOTER & THEME TOGGLE
+   -------------------------------------------------------------------------- */
 .sidebar-footer {
   padding: 0.85rem 1rem;
-  border-top: 1px solid #1a202c;
-  background: #0d1017;
+  border-top: 1px solid var(--sidebar-border, #e2e8f0);
+  background: var(--sidebar-footer-bg, #f8fafc);
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.5rem;
+}
+
+.sidebar-theme-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.5rem 0.65rem;
+  background: var(--sidebar-bg, #ffffff);
+  border: 1px solid var(--sidebar-border, #e2e8f0);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--sidebar-text, #0f172a);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.sidebar-theme-toggle-btn:hover {
+  background: var(--sidebar-hover-bg, #f1f5f9);
+  border-color: var(--primary, #4f46e5);
+}
+
+.theme-toggle-content {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.theme-toggle-icon {
+  font-size: 0.95rem;
+}
+
+.theme-toggle-pill {
+  width: 34px;
+  height: 18px;
+  border-radius: 12px;
+  padding: 2px;
+  transition: background-color 0.25s ease;
+  display: flex;
+  align-items: center;
+}
+
+.theme-toggle-pill.active-paper {
+  background-color: #cbd5e1;
+  justify-content: flex-start;
+}
+
+.theme-toggle-pill.active-night {
+  background-color: #4f46e5;
+  justify-content: flex-end;
+}
+
+.theme-toggle-thumb {
+  width: 14px;
+  height: 14px;
+  background-color: #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: transform 0.25s ease;
 }
 
 .footer-status {
@@ -241,7 +361,7 @@
   align-items: center;
   gap: 0.4rem;
   font-size: 0.7rem;
-  color: #10b981;
+  color: #059669;
   font-weight: 600;
 }
 
@@ -250,10 +370,62 @@
   height: 7px;
   background-color: #10b981;
   border-radius: 50%;
-  box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.5);
 }
 
 .footer-version {
   font-size: 0.65rem;
-  color: #475569;
+  color: var(--sidebar-muted, #94a3b8);
+}
+
+/* --------------------------------------------------------------------------
+   THEME VARIABLES OVERRIDES
+   -------------------------------------------------------------------------- */
+:root,
+[data-theme="paper"],
+.theme-paper {
+  --sidebar-bg: #ffffff;
+  --sidebar-border: #e2e8f0;
+  --sidebar-border-subtle: #f1f5f9;
+  --sidebar-header-bg: #ffffff;
+  --sidebar-footer-bg: #f8fafc;
+  --sidebar-text: #0f172a;
+  --sidebar-text-muted: #475569;
+  --sidebar-muted: #64748b;
+  --sidebar-hover-bg: #f1f5f9;
+  --sidebar-active-bg: #eef2ff;
+  --concurso-card-bg: #f8fafc;
+  --tag-bg: #eef2ff;
+  --tag-border: #c7d2fe;
+  --tag-color: #4338ca;
+  --sidebar-input-bg: #ffffff;
+  --search-btn-bg: #f8fafc;
+  --kbd-bg: #ffffff;
+  --theme-toggle-bg: #f1f5f9;
+  --brand-gradient: linear-gradient(90deg, #1e3a8a, #4338ca);
+}
+
+[data-theme="night"],
+[data-theme="dark"],
+.theme-night,
+.theme-dark {
+  --sidebar-bg: #11141c;
+  --sidebar-border: #1f2533;
+  --sidebar-border-subtle: #1a202c;
+  --sidebar-header-bg: linear-gradient(180deg, rgba(30, 41, 59, 0.3) 0%, transparent 100%);
+  --sidebar-footer-bg: #0d1017;
+  --sidebar-text: #f1f5f9;
+  --sidebar-text-muted: #94a3b8;
+  --sidebar-muted: #64748b;
+  --sidebar-hover-bg: rgba(30, 41, 59, 0.5);
+  --sidebar-active-bg: rgba(59, 130, 246, 0.16);
+  --concurso-card-bg: rgba(22, 28, 42, 0.7);
+  --tag-bg: rgba(59, 130, 246, 0.15);
+  --tag-border: rgba(59, 130, 246, 0.3);
+  --tag-color: #93c5fd;
+  --sidebar-input-bg: #0f131a;
+  --search-btn-bg: rgba(255, 255, 255, 0.04);
+  --kbd-bg: rgba(0, 0, 0, 0.35);
+  --theme-toggle-bg: rgba(255, 255, 255, 0.08);
+  --brand-gradient: linear-gradient(90deg, #60a5fa, #c084fc);
 }

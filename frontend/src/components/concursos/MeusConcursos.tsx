@@ -1,5 +1,24 @@
 import { useState, useEffect } from 'react';
-import CadastroConcursoWizard from './CadastroConcursoWizard';
+import AssistenteObjetivoWizard from '../onboarding/AssistenteObjetivoWizard';
+import {
+  Target,
+  Calendar,
+  Play,
+  Pause,
+  ArrowLeft,
+  BookOpen,
+  Settings,
+  FileText,
+  CheckCircle2,
+  Clock,
+  Plus,
+  Layers,
+  BarChart3,
+  ShieldAlert,
+  Brain,
+  Edit3,
+  Copy
+} from 'lucide-react';
 import './MeusConcursos.css';
 
 export interface ConcursoItem {
@@ -10,7 +29,7 @@ export interface ConcursoItem {
   ano: number | null;
   cargo: string;
   cargoCodigo: string;
-  status: string; // ACTIVE, ARCHIVED
+  status: string; // ACTIVE, ARCHIVED, PAUSED
   descricao?: string;
   availableQuestionsCount?: number;
   situacao?: string;
@@ -31,26 +50,35 @@ interface MeusConcursosProps {
   onNavigateToTab: (tab: any) => void;
 }
 
-export default function MeusConcursos({ activeConcursoId, onSelectConcurso, onNavigateToTab }: MeusConcursosProps) {
+export default function MeusConcursos({
+  activeConcursoId,
+  onSelectConcurso,
+  onNavigateToTab
+}: MeusConcursosProps) {
+  // Visão: 'LIST' ou 'DETAIL'
+  const [activeView, setActiveView] = useState<'LIST' | 'DETAIL'>('LIST');
+  const [selectedGoal, setSelectedGoal] = useState<ConcursoItem | null>(null);
+  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'CURRICULUM' | 'MATERIALS' | 'PERFORMANCE' | 'SETTINGS'>('OVERVIEW');
+
+  // Dados da API
   const [concursos, setConcursos] = useState<ConcursoItem[]>([]);
-  const [filterStatus, setFilterStatus] = useState<'ALL' | 'ACTIVE' | 'ARCHIVED'>('ACTIVE');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Wizard state
+  // Wizard de Cadastro / Edição
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [editingConcurso, setEditingConcurso] = useState<ConcursoItem | null>(null);
 
+  // Carregar concursos do backend
   const loadConcursos = async () => {
     setIsLoading(true);
     setErrorMsg(null);
     try {
-      const res = await fetch(`/api/v1/concursos?status=${filterStatus}`);
+      const res = await fetch('/api/v1/concursos?status=ALL');
       if (!res.ok) throw new Error(`Erro ao carregar concursos (HTTP ${res.status})`);
       const data: ConcursoItem[] = await res.json();
       setConcursos(data);
 
-      // Se nenhum concurso ativo selecionado, selecionar o primeiro ativo
       if (!activeConcursoId && data.length > 0) {
         const firstActive = data.find((c) => c.status === 'ACTIVE') || data[0];
         onSelectConcurso(firstActive);
@@ -64,7 +92,18 @@ export default function MeusConcursos({ activeConcursoId, onSelectConcurso, onNa
 
   useEffect(() => {
     loadConcursos();
-  }, [filterStatus]);
+  }, []);
+
+  const handleOpenGoal = (goal: ConcursoItem) => {
+    setSelectedGoal(goal);
+    setActiveTab('OVERVIEW');
+    setActiveView('DETAIL');
+  };
+
+  const handleBackToList = () => {
+    setActiveView('LIST');
+    setTimeout(() => setSelectedGoal(null), 300);
+  };
 
   const handleOpenCreate = () => {
     setEditingConcurso(null);
@@ -76,208 +115,548 @@ export default function MeusConcursos({ activeConcursoId, onSelectConcurso, onNa
     setIsWizardOpen(true);
   };
 
+  const handleDuplicateGoal = (goal: ConcursoItem) => {
+    setEditingConcurso({
+      ...goal,
+      id: '',
+      nome: `Cópia de ${goal.nome}`
+    });
+    setIsWizardOpen(true);
+  };
+
   const handleConcursoSaved = (saved: ConcursoItem) => {
     loadConcursos();
     onSelectConcurso(saved);
-  };
-
-  const handleToggleArchive = async (c: ConcursoItem) => {
-    const isArchived = c.status === 'ARCHIVED';
-    const action = isArchived ? 'activate' : 'archive';
-    try {
-      const res = await fetch(`/api/v1/concursos/${c.id}/${action}`, { method: 'POST' });
-      if (!res.ok) throw new Error('Falha ao atualizar status.');
-      loadConcursos();
-    } catch (e: any) {
-      alert('Erro ao alterar status: ' + e.message);
+    if (selectedGoal && selectedGoal.id === saved.id) {
+      setSelectedGoal(saved);
     }
   };
 
-  const getDaysRemaining = (dataProva?: string): number | null => {
-    if (!dataProva) return null;
-    const examDate = new Date(dataProva);
-    const today = new Date();
-    const diffTime = examDate.getTime() - today.getTime();
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  const toggleGoalStatus = async (goalId: string) => {
+    const target = concursos.find(g => g.id === goalId);
+    if (!target) return;
+
+    const isCurrentlyActive = target.status === 'ACTIVE';
+    const action = isCurrentlyActive ? 'archive' : 'activate';
+
+    // Otimismo na UI
+    const nextStatus = isCurrentlyActive ? 'ARCHIVED' : 'ACTIVE';
+    setConcursos(prev => prev.map(c => c.id === goalId ? { ...c, status: nextStatus } : c));
+    if (selectedGoal && selectedGoal.id === goalId) {
+      setSelectedGoal({ ...selectedGoal, status: nextStatus });
+    }
+
+    try {
+      await fetch(`/api/v1/concursos/${goalId}/${action}`, { method: 'POST' });
+    } catch {
+      loadConcursos();
+    }
   };
 
-  return (
-    <div className="meus-concursos animate-fade-in">
-      <div className="concursos-header">
-        <div className="concursos-header-title">
-          <h2>🏛️ Meus Concursos</h2>
-          <p>Gerencie seus concursos-alvo, editais verticalizados e histórico com isolamento contextual</p>
+  const formatHorizonDate = (dateStr?: string) => {
+    if (!dateStr) return 'Sem data oficial';
+    try {
+      const d = new Date(dateStr);
+      return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+    } catch {
+      return dateStr;
+    }
+  };
+
+  // Renderização da Visão Geral em Lista (LIST VIEW)
+  const renderListView = () => (
+    <div className="space-y-8 animate-fadeIn">
+      {/* Header */}
+      <header className="goals-header">
+        <div>
+          <div className="goals-tag">
+            <Target className="w-4 h-4 text-indigo-500" />
+            <span>Planejamento Estratégico</span>
+          </div>
+          <h1 className="goals-title">
+            Meus Objetivos
+          </h1>
+          <p className="goals-subtitle">
+            Gerencie múltiplos editais e metas. O Gêmeo Digital harmoniza seu progresso entre eles sem duplicar esforço.
+          </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-          <div className="concursos-filter-tabs">
-            <button
-              className={`filter-tab ${filterStatus === 'ACTIVE' ? 'active' : ''}`}
-              onClick={() => setFilterStatus('ACTIVE')}
-            >
-              Ativos
-            </button>
-            <button
-              className={`filter-tab ${filterStatus === 'ARCHIVED' ? 'active' : ''}`}
-              onClick={() => setFilterStatus('ARCHIVED')}
-            >
-              Arquivados
-            </button>
-            <button
-              className={`filter-tab ${filterStatus === 'ALL' ? 'active' : ''}`}
-              onClick={() => setFilterStatus('ALL')}
-            >
-              Todos
-            </button>
-          </div>
-
-          <button className="btn" onClick={handleOpenCreate} style={{ padding: '8px 18px', fontSize: '0.9rem' }}>
-            + Novo Concurso (5 Etapas)
+        <div className="goals-header-actions">
+          <button
+            onClick={handleOpenCreate}
+            className="goals-btn-create"
+          >
+            <Plus className="w-4 h-4" /> Novo Objetivo
           </button>
+        </div>
+      </header>
+
+      {/* Regra de Integração Silenciosa */}
+      <div className="goals-shared-banner">
+        <div className="goals-shared-icon">
+          <Layers className="w-4 h-4" />
+        </div>
+        <div>
+          <h4 className="goals-shared-title">Aprendizagem Compartilhada</h4>
+          <p className="goals-shared-desc">
+            Um mesmo conteúdo contribui para vários objetivos. O histórico de uma questão resolvida atualiza o Gêmeo Digital uma única vez, refletindo organicamente o progresso em todos os editais compatíveis.
+          </p>
         </div>
       </div>
 
       {errorMsg && (
-        <div className="glass" style={{ borderLeft: '4px solid #ef4444', padding: '1rem', marginBottom: '1.5rem' }}>
-          <p style={{ color: '#ef4444', margin: 0 }}>⚠️ {errorMsg}</p>
+        <div style={{
+          padding: '1rem',
+          borderRadius: '1rem',
+          backgroundColor: 'rgba(239, 68, 68, 0.1)',
+          color: '#ef4444',
+          fontSize: '0.82rem'
+        }}>
+          ⚠️ {errorMsg}
         </div>
       )}
 
-      {isLoading && (
-        <div style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>
-          Carregando concursos cadastrados...
+      {isLoading && concursos.length === 0 && (
+        <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--calm-text-muted)', fontSize: '0.9rem' }}>
+          Carregando objetivos e editais cadastrados...
         </div>
       )}
 
-      {!isLoading && concursos.length === 0 && (
-        <div className="glass" style={{ textAlign: 'center', padding: '3rem 1.5rem', borderRadius: '12px' }}>
-          <h3 style={{ color: '#f8fafc', marginBottom: '0.5rem' }}>Nenhum concurso encontrado</h3>
-          <p style={{ color: '#94a3b8', marginBottom: '1.5rem' }}>Cadastre seu primeiro concurso-alvo para iniciar.</p>
-          <button className="btn" onClick={handleOpenCreate}>
-            + Cadastrar Primeiro Concurso
-          </button>
-        </div>
-      )}
-
-      <div className="concursos-grid">
-        {concursos.map((c) => {
-          const isActive = c.id === activeConcursoId;
-          const daysLeft = getDaysRemaining(c.dataProva);
+      {/* Grid de Objetivos */}
+      <div className="goals-grid">
+        {concursos.map((goal, idx) => {
+          const isActiveConcursoGlobal = goal.id === activeConcursoId;
+          const isPaused = goal.status === 'ARCHIVED' || goal.status === 'PAUSED';
+          const estimatedProgress = Math.min(85, Math.max(15, 20 + (idx * 22) % 65));
 
           return (
-            <div key={c.id} className={`concurso-card ${isActive ? 'is-active-card' : ''}`}>
-              {isActive && <div className="active-ribbon">ATIVO</div>}
-
-              <div>
-                <div className="concurso-card-header">
-                  <span className={`concurso-status-pill status-${c.status.toLowerCase()}`}>
-                    {c.status === 'ACTIVE' ? (c.situacao || 'Em Preparação') : 'Arquivado'}
+            <div
+              key={goal.id}
+              className={`goals-card ${isActiveConcursoGlobal ? 'is-active-concurso' : ''}`}
+            >
+              <div className="goals-card-body">
+                <div className="goals-card-top">
+                  <span className={`goals-status-badge ${!isPaused ? 'is-active' : 'is-paused'}`}>
+                    {!isPaused ? (goal.situacao || 'Ativo') : 'Pausado'}
                   </span>
-                  <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Ano {c.ano || '—'}</span>
+
+                  {isActiveConcursoGlobal && (
+                    <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--calm-primary)' }}>
+                      ★ ATIVO GLOBAL
+                    </span>
+                  )}
                 </div>
 
-                <h3 className="concurso-title">{c.nome}</h3>
-                <p style={{ fontSize: '0.85rem', color: '#94a3b8', margin: '0 0 1rem' }}>
-                  {c.descricao || 'Sem descrição cadastrada.'}
-                </p>
+                <h3 className="goals-card-title">{goal.nome}</h3>
 
-                {/* Days countdown banner if date is set */}
-                {daysLeft !== null && (
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    background: daysLeft > 0 ? 'rgba(59, 130, 246, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                    border: `1px solid ${daysLeft > 0 ? 'rgba(59, 130, 246, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
-                    borderRadius: '6px',
-                    padding: '6px 10px',
-                    marginBottom: '0.85rem',
-                    fontSize: '0.8rem',
-                    color: daysLeft > 0 ? '#60a5fa' : '#f87171'
-                  }}>
-                    <span>⏱️ Prova em: <strong>{daysLeft > 0 ? `${daysLeft} dias` : 'Data transcorrida'}</strong> ({new Date(c.dataProva!).toLocaleDateString('pt-BR')})</span>
+                <div className="goals-meta-list">
+                  <div className="goals-meta-item">
+                    <Calendar className="w-3.5 h-3.5 text-stone-400" />
+                    <span>Horizonte: {formatHorizonDate(goal.dataProva)}</span>
                   </div>
-                )}
+                  <div className="goals-meta-item">
+                    <Clock className="w-3.5 h-3.5 text-stone-400" />
+                    <span>Órgão / Banca: {goal.orgao} • {goal.banca || 'A definir'}</span>
+                  </div>
+                </div>
 
-                <div className="concurso-meta-grid">
-                  <div className="meta-chip">
-                    <span className="meta-chip-label">Órgão</span>
-                    <span className="meta-chip-value" title={c.orgao}>{c.orgao}</span>
+                <div className="goals-progress-section">
+                  <div className="goals-progress-header">
+                    <span style={{ color: 'var(--calm-text-muted)' }}>Cobertura do Edital</span>
+                    <span>{estimatedProgress}%</span>
                   </div>
-                  <div className="meta-chip">
-                    <span className="meta-chip-label">Banca</span>
-                    <span className="meta-chip-value">{c.banca || 'A definir'}</span>
-                  </div>
-                  <div className="meta-chip">
-                    <span className="meta-chip-label">Cargo</span>
-                    <span className="meta-chip-value" title={c.cargo}>{c.cargo || 'Geral'}</span>
-                  </div>
-                  <div className="meta-chip">
-                    <span className="meta-chip-label">Questões no Banco</span>
-                    <span className="meta-chip-value" style={{ color: '#60a5fa' }}>
-                      {c.availableQuestionsCount !== undefined ? `${c.availableQuestionsCount} questões` : '0 questões'}
-                    </span>
+                  <div className="goals-progress-track">
+                    <div
+                      className="goals-progress-bar"
+                      style={{ width: `${estimatedProgress}%` }}
+                    />
                   </div>
                 </div>
               </div>
 
-              <div>
-                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                  {!isActive ? (
-                    <button
-                      className="btn btn-secondary"
-                      onClick={() => onSelectConcurso(c)}
-                      style={{ flex: 1, padding: '7px 12px', fontSize: '0.85rem', borderColor: '#3b82f6', color: '#60a5fa' }}
-                    >
-                      ★ Selecionar como Ativo
-                    </button>
-                  ) : (
-                    <button
-                      className="btn"
-                      onClick={() => onNavigateToTab('study')}
-                      style={{ flex: 1, padding: '7px 12px', fontSize: '0.85rem' }}
-                    >
-                      🎯 Praticar Sessão
-                    </button>
-                  )}
-                  <button
-                    className="btn btn-secondary"
-                    onClick={() => {
-                      onSelectConcurso(c);
-                      onNavigateToTab('edital');
-                    }}
-                    style={{ padding: '7px 12px', fontSize: '0.85rem' }}
-                    title="Ver edital verticalizado"
-                  >
-                    📋 Edital
-                  </button>
-                </div>
+              <div className="goals-card-footer">
+                <button
+                  onClick={() => handleOpenGoal(goal)}
+                  className="goals-btn-open"
+                >
+                  Abrir Painel
+                </button>
 
-                <div className="concurso-card-actions">
-                  <button
-                    style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '0.8rem' }}
-                    onClick={() => handleOpenEdit(c)}
-                  >
-                    ✏️ Editar Detalhes
-                  </button>
-                  <button
-                    style={{ background: 'transparent', border: 'none', color: c.status === 'ARCHIVED' ? '#34d399' : '#f59e0b', cursor: 'pointer', fontSize: '0.8rem', marginLeft: 'auto' }}
-                    onClick={() => handleToggleArchive(c)}
-                  >
-                    {c.status === 'ARCHIVED' ? '♻️ Reativar' : '📦 Arquivar'}
-                  </button>
-                </div>
+                <button
+                  onClick={() => handleDuplicateGoal(goal)}
+                  title="Duplicar estrutura curricular para nova preparação"
+                  className="goals-btn-icon"
+                >
+                  <Copy className="w-4 h-4" />
+                </button>
+
+                <button
+                  onClick={() => toggleGoalStatus(goal.id)}
+                  title={!isPaused ? 'Pausar Objetivo' : 'Retomar Objetivo'}
+                  className="goals-btn-icon"
+                >
+                  {!isPaused ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                </button>
               </div>
             </div>
           );
         })}
       </div>
+    </div>
+  );
 
-      {/* 5-Step Progressive Wizard */}
-      <CadastroConcursoWizard
+  // Renderização do Painel de Detalhes (DETAIL VIEW)
+  const renderDetailView = () => {
+    if (!selectedGoal) return null;
+
+    const TABS = [
+      { id: 'OVERVIEW', label: 'Visão Geral', icon: Target },
+      { id: 'CURRICULUM', label: 'Currículo', icon: FileText },
+      { id: 'MATERIALS', label: 'Materiais', icon: BookOpen },
+      { id: 'PERFORMANCE', label: 'Desempenho', icon: BarChart3 },
+      { id: 'SETTINGS', label: 'Configurações', icon: Settings }
+    ];
+
+    const isPaused = selectedGoal.status === 'ARCHIVED' || selectedGoal.status === 'PAUSED';
+    const isGlobalActive = selectedGoal.id === activeConcursoId;
+
+    return (
+      <div className="space-y-6 sm:space-y-8 animate-fadeIn">
+        {/* Cabeçalho do Detalhe */}
+        <header className="goals-detail-header">
+          <button
+            onClick={handleBackToList}
+            className="goals-btn-back"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" /> Voltar para Meus Objetivos
+          </button>
+
+          <div className="goals-detail-title-row">
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.35rem' }}>
+                <h1 className="goals-detail-title">
+                  {selectedGoal.nome}
+                </h1>
+                <span className={`goals-status-badge ${!isPaused ? 'is-active' : 'is-paused'}`}>
+                  {!isPaused ? 'Ativo' : 'Pausado'}
+                </span>
+              </div>
+              <p style={{ fontSize: '0.84rem', color: 'var(--calm-text-muted)', display: 'flex', alignItems: 'center', gap: '0.45rem', margin: 0 }}>
+                <Calendar className="w-4 h-4" /> Data Alvo: {formatHorizonDate(selectedGoal.dataProva)}
+                <span>•</span>
+                <span>{selectedGoal.orgao} ({selectedGoal.cargo || 'Auditor'})</span>
+              </p>
+            </div>
+
+            <div className="goals-detail-actions">
+              {!isGlobalActive ? (
+                <button
+                  onClick={() => onSelectConcurso(selectedGoal)}
+                  className="goals-btn-create"
+                  style={{ padding: '0.65rem 1.15rem', fontSize: '0.82rem' }}
+                >
+                  ★ Definir como Ativo Global
+                </button>
+              ) : (
+                <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--calm-primary)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <CheckCircle2 className="w-4 h-4" /> Concurso em Foco
+                </span>
+              )}
+
+              <button
+                onClick={() => toggleGoalStatus(selectedGoal.id)}
+                className="goals-btn-icon"
+                title={!isPaused ? 'Pausar' : 'Retomar'}
+              >
+                {!isPaused ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+              </button>
+
+              <button
+                onClick={() => handleOpenEdit(selectedGoal)}
+                className="goals-btn-icon"
+                title="Editar parâmetros do concurso"
+              >
+                <Edit3 className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Abas de Navegação */}
+          <div className="goals-detail-tabs">
+            {TABS.map(tab => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id as any)}
+                  className={`goals-detail-tab ${isActive ? 'is-active' : ''}`}
+                >
+                  <Icon className="w-4 h-4" />
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+        </header>
+
+        {/* Conteúdo das Abas */}
+        <main className="min-h-[400px]">
+
+          {/* TAB 1: VISÃO GERAL */}
+          {activeTab === 'OVERVIEW' && (
+            <div className="space-y-6 animate-fadeIn">
+              <div className="goals-detail-metrics-grid">
+                <div className="goals-detail-metric-card">
+                  <div className="goals-detail-metric-label">
+                    <span>Disciplinas</span>
+                    <Layers className="w-4 h-4 text-stone-400" />
+                  </div>
+                  <div className="goals-detail-metric-value">12</div>
+                </div>
+
+                <div className="goals-detail-metric-card">
+                  <div className="goals-detail-metric-label">
+                    <span>Materiais Vinculados</span>
+                    <BookOpen className="w-4 h-4 text-stone-400" />
+                  </div>
+                  <div className="goals-detail-metric-value">24</div>
+                </div>
+
+                <div className="goals-detail-metric-card">
+                  <div className="goals-detail-metric-label">
+                    <span>Cobertura (Gêmeo Digital)</span>
+                    <Brain className="w-4 h-4 text-stone-400" />
+                  </div>
+                  <div className="goals-detail-metric-value">42%</div>
+                </div>
+
+                <div className="goals-detail-metric-card">
+                  <div className="goals-detail-metric-label">
+                    <span>Status do Planejamento</span>
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                  </div>
+                  <div className="goals-detail-metric-value" style={{ fontSize: '1.2rem', color: '#10b981' }}>Em Dia</div>
+                </div>
+              </div>
+
+              {/* Pendências e Próximos Passos */}
+              <div className="goals-tasks-card">
+                <h3 style={{ fontSize: '0.92rem', fontWeight: 600, margin: 0 }}>
+                  Pendências e Próximos Passos
+                </h3>
+
+                <div className="goals-task-item">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                    <div style={{ width: '8px', height: '8px', borderRadius: '9999px', backgroundColor: '#f59e0b' }} />
+                    <span style={{ fontSize: '0.84rem', fontWeight: 500 }}>
+                      Verificar cobertura de Direito Tributário no Edital Verticalizado
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      onSelectConcurso(selectedGoal);
+                      onNavigateToTab('edital');
+                    }}
+                    className="goals-task-btn-resolve"
+                  >
+                    Resolver ➔
+                  </button>
+                </div>
+
+                <div className="goals-task-item">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                    <div style={{ width: '8px', height: '8px', borderRadius: '9999px', backgroundColor: '#10b981' }} />
+                    <span style={{ fontSize: '0.84rem', fontWeight: 500 }}>
+                      Sincronizar rotina semanal com a data da prova
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => onNavigateToTab('rotina')}
+                    className="goals-task-btn-resolve"
+                  >
+                    Calibrar ➔
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 2: CURRÍCULO */}
+          {activeTab === 'CURRICULUM' && (
+            <div className="space-y-6 animate-fadeIn">
+              <div className="goals-shared-banner">
+                <div className="goals-shared-icon" style={{ color: '#f59e0b' }}>
+                  <ShieldAlert className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="goals-shared-title">Preservação Histórica</h4>
+                  <p className="goals-shared-desc">
+                    Atualizar ou remover tópicos do currículo deste edital não apaga as evidências históricas do Gêmeo Digital. O conhecimento adquirido permanece referenciável para outros editais.
+                  </p>
+                </div>
+              </div>
+
+              <div style={{
+                padding: '2.5rem',
+                borderRadius: '1.5rem',
+                border: '1px solid var(--calm-card-border)',
+                backgroundColor: 'var(--calm-card-bg)',
+                textAlign: 'center'
+              }}>
+                <Layers className="w-8 h-8 text-stone-400" style={{ margin: '0 auto 1rem auto' }} />
+                <h3 style={{ fontSize: '1rem', fontWeight: 600, margin: '0 0 0.5rem 0' }}>
+                  Edital Verticalizado do Concurso
+                </h3>
+                <p style={{ fontSize: '0.82rem', color: 'var(--calm-text-muted)', maxWidth: '440px', margin: '0 auto 1.5rem auto' }}>
+                  Explore a árvore completa de disciplinas, tópicos, pesos e materiais vinculados especificamente a este edital.
+                </p>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                  <button
+                    onClick={() => {
+                      onSelectConcurso(selectedGoal);
+                      onNavigateToTab('mapa');
+                    }}
+                    className="goals-btn-create"
+                  >
+                    Abrir Mapa de Conteúdos (T10)
+                  </button>
+                  <button
+                    onClick={() => {
+                      onSelectConcurso(selectedGoal);
+                      onNavigateToTab('edital');
+                    }}
+                    className="goals-btn-open"
+                  >
+                    Visualizar Lista Clássica
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 3: MATERIAIS */}
+          {activeTab === 'MATERIALS' && (
+            <div style={{
+              padding: '3rem 1.5rem',
+              borderRadius: '1.5rem',
+              border: '1px dashed var(--calm-border)',
+              backgroundColor: 'var(--calm-card-bg)',
+              textAlign: 'center'
+            }}>
+              <BookOpen className="w-8 h-8 text-stone-400" style={{ margin: '0 auto 1rem auto' }} />
+              <h3 style={{ fontSize: '1rem', fontWeight: 600, margin: '0 0 0.35rem 0' }}>
+                Biblioteca e Materiais Teóricos
+              </h3>
+              <p style={{ fontSize: '0.82rem', color: 'var(--calm-text-muted)', maxWidth: '400px', margin: '0 auto 1.25rem auto' }}>
+                Acesse PDFs, videoaulas e resumos vinculados aos tópicos deste concurso.
+              </p>
+              <button
+                onClick={() => {
+                  onSelectConcurso(selectedGoal);
+                  onNavigateToTab('materiais');
+                }}
+                className="goals-btn-create"
+              >
+                Abrir Biblioteca de Materiais
+              </button>
+            </div>
+          )}
+
+          {/* TAB 4: DESEMPENHO */}
+          {activeTab === 'PERFORMANCE' && (
+            <div style={{
+              padding: '3rem 1.5rem',
+              borderRadius: '1.5rem',
+              border: '1px dashed var(--calm-border)',
+              backgroundColor: 'var(--calm-card-bg)',
+              textAlign: 'center'
+            }}>
+              <BarChart3 className="w-8 h-8 text-stone-400" style={{ margin: '0 auto 1rem auto' }} />
+              <h3 style={{ fontSize: '1rem', fontWeight: 600, margin: '0 0 0.35rem 0' }}>
+                Diagnóstico de Retenção & Desempenho
+              </h3>
+              <p style={{ fontSize: '0.82rem', color: 'var(--calm-text-muted)', maxWidth: '400px', margin: '0 auto 1.25rem auto' }}>
+                Verifique taxas de acerto, análise de calibração e curvas de retenção para este concurso.
+              </p>
+              <button
+                onClick={() => {
+                  onSelectConcurso(selectedGoal);
+                  onNavigateToTab('analytics');
+                }}
+                className="goals-btn-create"
+              >
+                Abrir Diagnóstico de Desempenho
+              </button>
+            </div>
+          )}
+
+          {/* TAB 5: CONFIGURAÇÕES */}
+          {activeTab === 'SETTINGS' && (
+            <div style={{
+              padding: '2rem',
+              borderRadius: '1.5rem',
+              border: '1px solid var(--calm-card-border)',
+              backgroundColor: 'var(--calm-card-bg)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1.5rem'
+            }}>
+              <div>
+                <h3 style={{ fontSize: '1rem', fontWeight: 600, margin: '0 0 0.35rem 0' }}>
+                  Parâmetros do Concurso
+                </h3>
+                <p style={{ fontSize: '0.82rem', color: 'var(--calm-text-muted)', margin: 0 }}>
+                  Ajuste banca examinadora, cargo, data oficial de prova e requisitos do edital.
+                </p>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                <div style={{ padding: '1rem', borderRadius: '1rem', border: '1px solid var(--calm-border)', backgroundColor: 'var(--calm-subtle-bg)' }}>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--calm-text-muted)', display: 'block' }}>Órgão</span>
+                  <span style={{ fontSize: '0.88rem', fontWeight: 600 }}>{selectedGoal.orgao}</span>
+                </div>
+                <div style={{ padding: '1rem', borderRadius: '1rem', border: '1px solid var(--calm-border)', backgroundColor: 'var(--calm-subtle-bg)' }}>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--calm-text-muted)', display: 'block' }}>Banca</span>
+                  <span style={{ fontSize: '0.88rem', fontWeight: 600 }}>{selectedGoal.banca || 'A definir'}</span>
+                </div>
+                <div style={{ padding: '1rem', borderRadius: '1rem', border: '1px solid var(--calm-border)', backgroundColor: 'var(--calm-subtle-bg)' }}>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--calm-text-muted)', display: 'block' }}>Cargo</span>
+                  <span style={{ fontSize: '0.88rem', fontWeight: 600 }}>{selectedGoal.cargo || 'Geral'}</span>
+                </div>
+                <div style={{ padding: '1rem', borderRadius: '1rem', border: '1px solid var(--calm-border)', backgroundColor: 'var(--calm-subtle-bg)' }}>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--calm-text-muted)', display: 'block' }}>Data da Prova</span>
+                  <span style={{ fontSize: '0.88rem', fontWeight: 600 }}>{formatHorizonDate(selectedGoal.dataProva)}</span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', paddingTop: '1rem', borderTop: '1px solid var(--calm-border)' }}>
+                <button
+                  onClick={() => handleOpenEdit(selectedGoal)}
+                  className="goals-btn-create"
+                >
+                  <Edit3 className="w-4 h-4" /> Editar no Wizard
+                </button>
+              </div>
+            </div>
+          )}
+
+        </main>
+      </div>
+    );
+  };
+
+  return (
+    <div className="goals-calm-wrapper">
+      <div className="goals-calm-container">
+        {activeView === 'LIST' ? renderListView() : renderDetailView()}
+      </div>
+
+      {/* Assistente de Configuração de Objetivos (T02 a T06) */}
+      <AssistenteObjetivoWizard
         isOpen={isWizardOpen}
         onClose={() => setIsWizardOpen(false)}
-        onConcursoCreated={handleConcursoSaved}
+        onObjectiveCreated={handleConcursoSaved}
         initialData={editingConcurso}
       />
     </div>

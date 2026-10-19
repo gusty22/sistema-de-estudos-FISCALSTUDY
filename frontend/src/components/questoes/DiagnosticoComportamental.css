@@ -1,0 +1,194 @@
+/* ============================================================================
+   T21 — CORREÇÃO E DIAGNÓSTICO COMPORTAMENTAL (TECNOLOGIA CALMA)
+   Componente Reutilizável para Prática, Relatório, Histórico e Revisão
+   ============================================================================ */
+
+.diagnostico-box {
+  margin-top: 1.25rem;
+  padding: 1.25rem 1.5rem;
+  border-radius: 14px;
+  background: var(--calm-bg-subtle, #16181a);
+  border: 1px solid var(--calm-card-border, #282a30);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  animation: fadeIn 0.25s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Header de Resultado */
+.diagnostico-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid var(--calm-card-border, #282a30);
+}
+
+.diagnostico-status-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  letter-spacing: 0.02em;
+}
+
+.diagnostico-status-tag.correta {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.diagnostico-status-tag.incorreta {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+.diagnostico-status-tag.anulada {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.diagnostico-respostas-row {
+  display: flex;
+  gap: 1.5rem;
+  font-size: 0.85rem;
+}
+
+.respostas-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.respostas-item span {
+  color: var(--calm-text-muted, #9ca3af);
+}
+
+.respostas-item strong {
+  color: var(--calm-text, #f3f4f6);
+  font-size: 0.95rem;
+}
+
+/* Diagnóstico Comportamental */
+.diagnostico-insight-card {
+  padding: 1rem 1.15rem;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.2);
+  border-left: 4px solid #6366f1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.diagnostico-insight-card.overconfidence {
+  border-left-color: #ef4444;
+  background: rgba(239, 68, 68, 0.06);
+}
+
+.diagnostico-insight-card.underconfidence {
+  border-left-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.06);
+}
+
+.diagnostico-insight-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.diagnostico-insight-text {
+  font-size: 0.86rem;
+  line-height: 1.5;
+  color: var(--calm-text, #d1d5db);
+  margin: 0;
+}
+
+/* Explicação / Fundamentação */
+.diagnostico-explicacao {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.diagnostico-section-label {
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--calm-text-muted, #9ca3af);
+}
+
+.diagnostico-explicacao-text {
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: var(--calm-text, #d1d5db);
+  background: rgba(255, 255, 255, 0.02);
+  padding: 0.85rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--calm-card-border, #282a30);
+}
+
+/* Classificação do Erro (E1–E6) */
+.diagnostico-erro-classificacao {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.diagnostico-e-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.chip-erro {
+  padding: 0.35rem 0.65rem;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid var(--calm-card-border, #282a30);
+  background: var(--calm-card-bg, #18191c);
+  color: var(--calm-text, #d1d5db);
+  transition: all 0.15s ease;
+}
+
+.chip-erro:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.chip-erro.selected {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: #ef4444;
+  color: #f87171;
+  font-weight: 600;
+}
+
+/* Próxima Ação */
+.diagnostico-proxima-acao {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  font-size: 0.82rem;
+  color: #a5b4fc;
+}

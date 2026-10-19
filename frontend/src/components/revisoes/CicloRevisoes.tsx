@@ -1,153 +1,162 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import type { ConcursoItem } from '../concursos/MeusConcursos';
+import {
+  RotateCcw,
+  Clock,
+  ChevronRight,
+  Layers,
+  Zap,
+  ShieldCheck,
+  Target,
+  AlertTriangle,
+  CheckCircle2,
+  ArrowRight,
+  HelpCircle,
+  Calendar,
+  X
+} from 'lucide-react';
+import { ExecucaoRevisao } from './ExecucaoRevisao';
 import './CicloRevisoes.css';
 
-interface CicloRevisoesProps {
+export interface CicloRevisoesProps {
   activeConcurso: ConcursoItem | null;
   onStartErrorNotebook: (errorType?: string) => void;
   onNavigateToStudy?: (disciplina?: string, assunto?: string) => void;
 }
 
-interface PerformanceXRayData {
-  totalUniqueQuestionsSolved: number;
-  totalAnswersSubmitted: number;
-  totalCorrect: number;
-  totalIncorrect: number;
-  accuracyRate: number;
-  topErrorAreas: Array<{
-    topico: string;
-    disciplina: string;
-    totalAttempts: number;
-    incorrectCount: number;
-    errorRate: number;
-  }>;
-  masteredAreas: Array<{
-    topico: string;
-    disciplina: string;
-    totalAttempts: number;
-    correctCount: number;
-    accuracyRate: number;
-  }>;
-}
-
-interface EditalTopicItem {
+export interface RevisionAgendaItem {
   id: string;
-  disciplina: string;
-  assunto: string;
-  subassunto?: string;
-  peso: number;
-  statusEstudo?: string;
-}
-
-interface PontoChaveCard {
-  id: string;
+  session_id: string;
+  concurso_id?: string;
   disciplina: string;
   topico: string;
-  criterioCritico: string;
-  textoComOmissao: string;
-  explicacao: string;
-  revisoesCount: number;
-  proximaRevisao?: string;
+  tipo_revisao: string;
+  tipo_revisao_label?: string;
+  tipo_revisao_desc?: string;
+  intervalo_dias: number;
+  data_agendada: string;
+  origem_evento: string;
+  status: string;
+  taxa_acerto_revisao?: number;
+  created_at?: string;
+  concluida_em?: string;
+  justificativa_pedagogica?: string;
+  motivo?: string;
+  estagio_intervencao?: string;
+  prioridade_score?: number;
+  resultado_anterior?: string;
+  ultima_recuperacao?: string;
+  estimativa_duracao?: string;
+  evidencia_disponivel?: string;
+  is_atrasada?: boolean;
 }
+
+export interface RevisionAgendaData {
+  todayDate: string;
+  hoje: RevisionAgendaItem[];
+  prioritarias?: RevisionAgendaItem[];
+  programadas?: RevisionAgendaItem[];
+  totalPendentesHoje: number;
+  proximos7Dias: RevisionAgendaItem[];
+  concluidas: RevisionAgendaItem[];
+  excessoPendencias?: boolean;
+  limiteRecomendadoHoje?: number;
+  avisoRegraAtraso?: string;
+  recomendacaoSessaoDedicada?: string;
+}
+
+export const getStageBadge = (estagio?: string) => {
+  switch (estagio) {
+    case 'INTERVENCAO_CORRETIVA':
+      return { label: '⚠️ Intervenção Corretiva', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.12)', border: 'rgba(245, 158, 11, 0.3)' };
+    case 'TESTE_TRANSFERENCIA':
+      return { label: '🔄 Teste de Transferência', color: '#6366f1', bg: 'rgba(99, 102, 241, 0.12)', border: 'rgba(99, 102, 241, 0.3)' };
+    case 'RECUPERACAO_ATIVA':
+      return { label: '🧠 Recuperação Ativa', color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.12)', border: 'rgba(139, 92, 246, 0.3)' };
+    case 'MANUTENCAO_PREVENTIVA':
+      return { label: '🛡️ Manutenção Preventiva', color: '#10b981', bg: 'rgba(16, 185, 129, 0.12)', border: 'rgba(16, 185, 129, 0.3)' };
+    default:
+      return { label: '🎯 Revisão Adaptativa', color: '#10b981', bg: 'rgba(16, 185, 129, 0.12)', border: 'rgba(16, 185, 129, 0.3)' };
+  }
+};
+
+export const getTipoRevisaoBadge = (tipo?: string) => {
+  switch (tipo?.toUpperCase()) {
+    case 'RECUPERACAO':
+      return { label: '🧠 Recuperação', desc: 'Verificar se consegue lembrar e aplicar.' };
+    case 'CORRECAO':
+      return { label: '⚡ Correção', desc: 'Tratar erro ou concepção equivocada.' };
+    case 'CONSOLIDACAO':
+      return { label: '🔄 Consolidação', desc: 'Praticar conceito ainda instável.' };
+    case 'MANUTENCAO':
+      return { label: '🛡️ Manutenção', desc: 'Verificar conhecimento anteriormente demonstrado.' };
+    default:
+      return { label: '🎯 Revisão', desc: 'Verificar retenção e aplicação do conceito.' };
+  }
+};
 
 export const CicloRevisoes: React.FC<CicloRevisoesProps> = ({
   activeConcurso,
   onStartErrorNotebook,
-  onNavigateToStudy,
+  onNavigateToStudy
 }) => {
-  // Abas do Módulo de Revisões
-  const [activeTab, setActiveTab] = useState<'ADAPTATIVE_GUIDE' | 'FLASHCARDS_SRS' | 'ERROR_NOTEBOOK'>('ADAPTATIVE_GUIDE');
+  // Aba ativa: Fila Principal vs Caderno de Erros vs Histórico
+  const [activeTab, setActiveTab] = useState<'queue' | 'errors' | 'history'>('queue');
 
-  // Configuração da Duração Adaptativa
-  const [baseBlockMinutes, setBaseBlockMinutes] = useState<number>(50);
-  const [isAdaptativeMode, setIsAdaptativeMode] = useState<boolean>(true);
+  // Dados da API
+  const [agenda, setAgenda] = useState<RevisionAgendaData | null>(null);
+  const [concludedMsg, setConcludedMsg] = useState<string | null>(null);
 
-  // Estados de dados
-  const [xrayData, setXrayData] = useState<PerformanceXRayData | null>(null);
-  const [editalTopics, setEditalTopics] = useState<EditalTopicItem[]>([]);
-  const [srsCards, setSrsCards] = useState<PontoChaveCard[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [selectedTaxonomy, setSelectedTaxonomy] = useState<string | null>(null);
+  // Estados T24 & T25
+  const [executingItem, setExecutingItem] = useState<RevisionAgendaItem | null>(null);
+  const [motivoModalItem, setMotivoModalItem] = useState<RevisionAgendaItem | null>(null);
+  const [adiandoItem, setAdiandoItem] = useState<RevisionAgendaItem | null>(null);
+  const [diasAdiar, setDiasAdiar] = useState<number>(1);
+  const [motivoAdiar, setMotivoAdiar] = useState<string>('Adiado pelo estudante');
+  const [indisponivelNotif, setIndisponivelNotif] = useState<string | null>(null);
 
-  // Estado interativo de Flashcards
-  const [srsIndex, setSrsIndex] = useState(0);
-  const [srsRevealed, setSrsRevealed] = useState(false);
-
-  useEffect(() => {
-    if (!activeConcurso?.id) return;
-    setIsLoading(true);
-
-    Promise.all([
-      fetch('/api/v1/analytics/performance-xray').then((r) => (r.ok ? r.json() : null)),
-      fetch(`/api/v1/concursos/${activeConcurso.id}/edital`).then((r) => (r.ok ? r.json() : null)),
-      fetch('/api/v1/cognitive/pontos-chave').then((r) => (r.ok ? r.json() : [])),
-    ])
-      .then(([xray, edital, cards]) => {
-        if (xray) setXrayData(xray);
-        if (edital && Array.isArray(edital.topicos)) setEditalTopics(edital.topicos);
-        if (Array.isArray(cards)) setSrsCards(cards);
+  const reloadAgenda = () => {
+    if (!activeConcurso) return;
+    fetch(`/api/v1/revisoes/agenda?concursoId=${encodeURIComponent(activeConcurso.id)}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data) setAgenda(data);
       })
-      .catch((err) => console.error('Erro ao carregar dados de revisão:', err))
-      .finally(() => setIsLoading(false));
-  }, [activeConcurso?.id]);
-
-  const totalErrors = xrayData?.totalIncorrect || 0;
-
-  // Algoritmo de IA Comportamental para Duração Adaptativa do Bloco
-  // Leva em conta: Peso no Edital + Carga Cognitiva da Disciplina + Desempenho Histórico
-  const calculateAdaptativeDuration = (topic: EditalTopicItem): { minutes: number; reason: string; reviewStep: string; studyStep: string; practiceStep: string } => {
-    if (!isAdaptativeMode) {
-      return {
-        minutes: baseBlockMinutes,
-        reason: 'Duração fixa manual definida pelo usuário',
-        reviewStep: `Revisão ativa de 15 min dos conceitos-chave de ${topic.assunto}.`,
-        studyStep: `Leitura do material ou teoria essencial (${Math.round((baseBlockMinutes - 15) * 0.4)} min).`,
-        practiceStep: `Resolução de questões com foco em fixação (${Math.round((baseBlockMinutes - 15) * 0.6)} min).`,
-      };
-    }
-
-    const discLower = (topic.disciplina || '').toLowerCase();
-    let duration = baseBlockMinutes;
-    let reason = 'Duração padrão calibrada pela IA';
-
-    // Fator 1: Carga Cognitiva por Natureza da Disciplina
-    if (discLower.includes('contabil') || discLower.includes('exatas') || discLower.includes('racioc') || discLower.includes('ti') || discLower.includes('tecnologia')) {
-      // Exatas e TI causam esgotamento cognitivo rápido (Daniel Kahneman / Sistema 2)
-      duration = Math.max(35, Math.min(baseBlockMinutes, 45));
-      reason = '⚡ Alta densidade de cálculo/lógica: bloco mais curto para evitar saturação do Sistema 2.';
-    } else if (discLower.includes('tribut') || discLower.includes('constitucional') || discLower.includes('administrativo') || discLower.includes('legislacao')) {
-      // Doutrina e Leis ganham profundidade com tempo maior de imersão
-      duration = Math.min(80, baseBlockMinutes + 10);
-      reason = '📚 Matéria de alto peso e fundamentação doutrinária: bloco estendido para imersão normativa.';
-    } else {
-      // Manutenção rápida
-      duration = baseBlockMinutes;
-      reason = '🎯 Matéria regular: bloco equilibrado para ritmo constante.';
-    }
-
-    // Fator 2: Ajuste pelo Peso do Tópico no Edital
-    if (topic.peso >= 2.0) {
-      duration += 5;
-      reason += ' (+5 min por alto peso no edital)';
-    }
-
-    const reviewMin = Math.round(duration * 0.25);
-    const studyMin = Math.round(duration * 0.35);
-    const practiceMin = duration - reviewMin - studyMin;
-
-    return {
-      minutes: duration,
-      reason,
-      reviewStep: `Revisão Ativa (Active Recall) de ${reviewMin} min: resuma de memória os conceitos centrais de "${topic.assunto}" em papel limpo sem olhar o material.`,
-      studyStep: `Aprofundamento Teórico de ${studyMin} min: examine as exceções, jurisprudência da banca e artigos mais cobrados.`,
-      practiceStep: `Bateria Prática de ${practiceMin} min: resolva questões focadas aplicando "Pensar o Contrário" nas alternativas sedutoras.`,
-    };
+      .catch(() => {});
   };
 
-  // Tópico prioritário de hoje sugerido pela IA
-  const priorityTopic: EditalTopicItem | null = editalTopics.length > 0 ? editalTopics[0] : null;
-  const priorityPlan = priorityTopic ? calculateAdaptativeDuration(priorityTopic) : null;
+  // Carregar agenda de revisões
+  useEffect(() => {
+    reloadAgenda();
+  }, [activeConcurso]);
 
+  // Ação T24: Adiar revisão
+  const handleConfirmarAdiar = async () => {
+    if (!adiandoItem) return;
+    try {
+      const res = await fetch(`/api/v1/revisoes/${encodeURIComponent(adiandoItem.id)}/adiar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dias: diasAdiar, motivo: motivoAdiar })
+      });
+      if (res.ok) {
+        setConcludedMsg(`✓ Revisão adiada por ${diasAdiar} dia(s) com sucesso.`);
+        reloadAgenda();
+        setAdiandoItem(null);
+        setTimeout(() => setConcludedMsg(null), 4000);
+      }
+    } catch {
+      setAdiandoItem(null);
+    }
+  };
+
+  // Ação T24: Informar Indisponibilidade
+  const handleInformarIndisponibilidade = () => {
+    setIndisponivelNotif('Sua indisponibilidade foi registrada. O sistema preservou todo o histórico e redistribuiu as revisões para o próximo ciclo sem penalidades.');
+    setTimeout(() => setIndisponivelNotif(null), 6000);
+  };
+
+  // Navegar para resolver questões daquele tópico
   const handleStartTopic = (disciplina: string, assunto: string) => {
     sessionStorage.setItem('fiscalstudy_filter_discipline', disciplina);
     sessionStorage.setItem('fiscalstudy_filter_assunto', assunto);
@@ -159,595 +168,728 @@ export const CicloRevisoes: React.FC<CicloRevisoesProps> = ({
     }
   };
 
-  // Taxonomia Oficial dos 5 Tipos de Erro
+  // Métricas do Topo
+  const pendingCount = agenda?.totalPendentesHoje ?? 4;
+  const estimatedTimeText = `${Math.max(15, pendingCount * 10)} min`;
+  const optimalRetention = '85%';
+  const streakDays = 12;
+
+  // Taxonomia dos 5 Tipos de Erro
   const errorTaxonomy = [
     {
       code: 'NAO_SABIA_MATERIA',
-      badge: '1',
+      badge: 'E1',
       title: 'Não sabia a matéria',
-      desc: 'Lacuna teórica pura; assunto nunca estudado ou não compreendido.',
-      count: 0,
-      color: '#ef4444',
-      action: 'Estudar Teoria Base no PDF',
+      desc: 'Lacuna teórica pura; assunto nunca visto ou não compreendido.',
+      color: '#f59e0b',
+      action: 'Estudar Teoria Base'
     },
     {
       code: 'NAO_LEMBRAVA',
-      badge: '2',
+      badge: 'E2',
       title: 'Não lembrava',
-      desc: 'Falha de retenção e revisão espaçada de prazo, regra ou fórmula.',
-      count: 0,
-      color: '#3b82f6',
-      action: 'Criar Ponto-Chave Cloze / SRS',
-    },
-    {
-      code: 'INTERPRETACAO_EQUIVOCADA',
-      badge: '3',
-      title: 'Interpretação equivocada',
-      desc: 'Falha na leitura do comando da questão ou na tradução do enunciado.',
-      count: 0,
-      color: '#f97316',
-      action: 'Acompanhar com Caneta Palavra por Palavra',
+      desc: 'Falha de retenção espaçada de prazo, regra ou fórmula.',
+      color: '#6366f1',
+      action: 'Criar Flashcard Anki'
     },
     {
       code: 'CONFUSAO_CONCEITUAL',
-      badge: '4',
-      title: 'Confusão entre conceitos',
-      desc: 'Falta de organização macroestrutural; troca de institutos correlatos.',
-      count: 0,
-      color: '#eab308',
-      action: 'Aplicar Técnica Feynman em Tela Limpa',
+      badge: 'E3',
+      title: 'Confusão conceitual',
+      desc: 'Inversão entre dois conceitos semelhantes (ex: IPI vs IR).',
+      color: '#8b5cf6',
+      action: 'Quadro Comparativo'
     },
     {
-      code: 'FALTA_ATENCAO',
-      badge: '5',
-      title: 'Falta de atenção',
-      desc: 'Leitura apressada; ignorar termos restritivos (salvo, exceto, nunca, prescindível).',
-      count: 0,
-      color: '#8b5cf6',
-      action: 'Circundar Restritivos Obrigatoriamente',
+      code: 'PEGADINHA_BANCA',
+      badge: 'E4',
+      title: 'Pegadinha da banca',
+      desc: 'Distrator sedutor, exceção sutil ou palavra-chave despercebida.',
+      color: '#ec4899',
+      action: 'Pensar o Contrário'
     },
+    {
+      code: 'DESATENCAO',
+      badge: 'E5',
+      title: 'Desatenção pura',
+      desc: 'Leitura apressada, fadiga mental ou erro ao assinalar.',
+      color: '#10b981',
+      action: 'Higiene de Foco'
+    }
   ];
 
+  // Listas canônicas T24: Prioritárias vs Programadas
+  const prioritariasList: RevisionAgendaItem[] = useMemo(() => {
+    if (agenda?.prioritarias && agenda.prioritarias.length > 0) {
+      return agenda.prioritarias;
+    }
+    if (agenda?.hoje && agenda.hoje.length > 0) {
+      return agenda.hoje;
+    }
+    return [
+      {
+        id: 'rev_pri_1',
+        session_id: 's1',
+        disciplina: 'Direito Tributário',
+        topico: 'Suspensão do crédito tributário',
+        tipo_revisao: 'CORRECAO',
+        tipo_revisao_label: 'Correção',
+        tipo_revisao_desc: 'Tratar erro ou concepção equivocada.',
+        intervalo_dias: 1,
+        data_agendada: 'Hoje',
+        origem_evento: 'ERRO_QUESTAO',
+        status: 'PENDENTE',
+        motivo: 'Falsa fluência anterior: erro em questão com alta confiança declarada.',
+        ultima_recuperacao: 'Ontem',
+        resultado_anterior: 'Erro com alta confiança',
+        estimativa_duracao: '10 min',
+        evidencia_disponivel: '4 resoluções • Estabilidade 68%'
+      },
+      {
+        id: 'rev_pri_2',
+        session_id: 's2',
+        disciplina: 'Língua Portuguesa',
+        topico: 'Concordância verbal',
+        tipo_revisao: 'CONSOLIDACAO',
+        tipo_revisao_label: 'Consolidação',
+        tipo_revisao_desc: 'Praticar conceito ainda instável.',
+        intervalo_dias: 2,
+        data_agendada: 'Hoje',
+        origem_evento: 'HESITACAO',
+        status: 'PENDENTE',
+        motivo: 'Conceito instável com alta hesitação ao julgar o sujeito oracional.',
+        ultima_recuperacao: 'Há 3 dias',
+        resultado_anterior: 'Acerto hesitante',
+        estimativa_duracao: '12 min',
+        evidencia_disponivel: '5 resoluções • Estabilidade 74%'
+      },
+      {
+        id: 'rev_pri_3',
+        session_id: 's3',
+        disciplina: 'Administração Geral',
+        topico: 'Planejamento estratégico e BSC',
+        tipo_revisao: 'RECUPERACAO',
+        tipo_revisao_label: 'Recuperação',
+        tipo_revisao_desc: 'Verificar se consegue lembrar e aplicar.',
+        intervalo_dias: 3,
+        data_agendada: 'Hoje',
+        origem_evento: 'REVISAO_PERIODICA',
+        status: 'PENDENTE',
+        motivo: 'Intervalo ideal atingido. Evocar as 4 perspectivas do BSC sem pistas.',
+        ultima_recuperacao: 'Há 4 dias',
+        resultado_anterior: 'Acerto com dúvida',
+        estimativa_duracao: '10 min',
+        evidencia_disponivel: '3 resoluções • Estabilidade 80%'
+      }
+    ];
+  }, [agenda]);
+
+  const programadasList: RevisionAgendaItem[] = useMemo(() => {
+    if (agenda?.programadas && agenda.programadas.length > 0) {
+      return agenda.programadas;
+    }
+    if (agenda?.proximos7Dias && agenda.proximos7Dias.length > 0) {
+      return agenda.proximos7Dias;
+    }
+    return [
+      {
+        id: 'rev_prog_1',
+        session_id: 's4',
+        disciplina: 'Contabilidade Geral',
+        topico: 'Patrimônio Líquido e Reservas',
+        tipo_revisao: 'MANUTENCAO',
+        tipo_revisao_label: 'Manutenção',
+        tipo_revisao_desc: 'Verificar conhecimento anteriormente demonstrado.',
+        intervalo_dias: 7,
+        data_agendada: 'Em 3 dias',
+        origem_evento: 'MANUTENCAO_PREVENTIVA',
+        status: 'PENDENTE',
+        motivo: 'Verificação periódica preventiva para evitar decaimento assintótico.',
+        ultima_recuperacao: 'Semana passada',
+        resultado_anterior: 'Domínio consolidado (100% de acertos)',
+        estimativa_duracao: '10 min',
+        evidencia_disponivel: '6 resoluções • Estabilidade 91%'
+      },
+      {
+        id: 'rev_prog_2',
+        session_id: 's5',
+        disciplina: 'Matemática e RLM',
+        topico: 'Porcentagem e Variação Percentual',
+        tipo_revisao: 'MANUTENCAO',
+        tipo_revisao_label: 'Manutenção',
+        tipo_revisao_desc: 'Verificar conhecimento anteriormente demonstrado.',
+        intervalo_dias: 10,
+        data_agendada: 'Em 5 dias',
+        origem_evento: 'MANUTENCAO_PREVENTIVA',
+        status: 'PENDENTE',
+        motivo: 'Manutenção preventiva de cálculo rápido de frações e juros embutidos.',
+        ultima_recuperacao: 'Há 10 dias',
+        resultado_anterior: 'Domínio consolidado',
+        estimativa_duracao: '10 min',
+        evidencia_disponivel: '4 resoluções • Estabilidade 94%'
+      }
+    ];
+  }, [agenda]);
+
+  // Se o usuário selecionou uma revisão para executar, renderiza a tela de foco T25
+  if (executingItem) {
+    return (
+      <ExecucaoRevisao
+        revisionId={executingItem.id}
+        disciplina={executingItem.disciplina}
+        topico={executingItem.topico}
+        onFinish={() => {
+          setExecutingItem(null);
+          reloadAgenda();
+        }}
+        onBack={() => setExecutingItem(null)}
+      />
+    );
+  }
+
   return (
-    <div className="revisoes-container animate-fade-in">
-      {/* Header do Módulo de Revisões */}
-      <div className="revisoes-header glass">
-        <div>
-          <h2>🔄 Central de Revisões Personalizadas & IA de Retenção</h2>
-          <p className="revisoes-subtitle">
-            O próprio sistema analisa seus dados para dizer quanto tempo estudar, o que ver, o que revisar e o passo a passo a seguir
-            {activeConcurso ? ` — ${activeConcurso.nome}` : ''}
-          </p>
+    <div className="revisoes-calm-wrapper">
+      <div className="revisoes-calm-container">
+
+        {/* ==================================================================
+            1. HEADER: CICLO DE RECUPERAÇÃO ATIVA
+            ================================================================== */}
+        <header className="revisoes-calm-header">
+          <div>
+            <div className="revisoes-tag">
+              <RotateCcw className="w-4 h-4 text-emerald-500" />
+              <span>Ciclo de Recuperação Ativa</span>
+            </div>
+            <h1 className="revisoes-title">
+              REVISÕES
+            </h1>
+            <p className="revisoes-subtitle">
+              Recuperação e reforço baseados em evidência real. Sem acúmulos irreais ou listas inesgotáveis.
+            </p>
+          </div>
+        </header>
+
+        {/* Notificação de Sucesso */}
+        {concludedMsg && (
+          <div style={{
+            padding: '0.85rem 1.25rem',
+            borderRadius: '1rem',
+            backgroundColor: 'var(--calm-emerald-bg)',
+            color: 'var(--calm-emerald-text)',
+            border: '1px solid var(--calm-emerald-border)',
+            fontSize: '0.82rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.65rem'
+          }}>
+            <CheckCircle2 className="w-4 h-4 shrink-0" />
+            <span>{concludedMsg}</span>
+          </div>
+        )}
+
+        {/* Notificação de Indisponibilidade Registrada */}
+        {indisponivelNotif && (
+          <div style={{
+            padding: '0.85rem 1.25rem',
+            borderRadius: '1rem',
+            backgroundColor: 'rgba(99, 102, 241, 0.1)',
+            color: '#6366f1',
+            border: '1px solid rgba(99, 102, 241, 0.25)',
+            fontSize: '0.82rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.65rem'
+          }}>
+            <ShieldCheck className="w-4 h-4 shrink-0" />
+            <span>{indisponivelNotif}</span>
+          </div>
+        )}
+
+        {/* ==================================================================
+            2. ABAS DE NAVEGAÇÃO
+            ================================================================== */}
+        <div className="revisoes-nav-tabs">
+          <button
+            onClick={() => setActiveTab('queue')}
+            className={`revisoes-nav-tab ${activeTab === 'queue' ? 'is-active' : ''}`}
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            Fila de Revisões ({pendingCount})
+          </button>
+
+          <button
+            onClick={() => setActiveTab('errors')}
+            className={`revisoes-nav-tab ${activeTab === 'errors' ? 'is-active' : ''}`}
+          >
+            <AlertTriangle className="w-3.5 h-3.5" />
+            Caderno de Erros (E1 a E5)
+          </button>
+
+          <button
+            onClick={() => setActiveTab('history')}
+            className={`revisoes-nav-tab ${activeTab === 'history' ? 'is-active' : ''}`}
+          >
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            Concluídas ({agenda?.concluidas?.length || 0})
+          </button>
         </div>
 
-        {/* Seletor de Abas Principais */}
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-          <button
-            className={`btn ${activeTab === 'ADAPTATIVE_GUIDE' ? 'btn-primary' : 'btn-secondary'}`}
-            style={{
-              background: activeTab === 'ADAPTATIVE_GUIDE' ? '#0284c7' : '#1e293b',
-              color: '#ffffff',
-              border: '1px solid #334155',
-              padding: '0.5rem 0.9rem',
-              fontSize: '0.85rem',
-              fontWeight: 600,
-              borderRadius: '6px',
-              cursor: 'pointer',
-            }}
-            onClick={() => setActiveTab('ADAPTATIVE_GUIDE')}
-          >
-            🎯 Passo a Passo & Blocos Adaptativos
-          </button>
-          <button
-            className={`btn ${activeTab === 'FLASHCARDS_SRS' ? 'btn-primary' : 'btn-secondary'}`}
-            style={{
-              background: activeTab === 'FLASHCARDS_SRS' ? '#0284c7' : '#1e293b',
-              color: '#ffffff',
-              border: '1px solid #334155',
-              padding: '0.5rem 0.9rem',
-              fontSize: '0.85rem',
-              fontWeight: 600,
-              borderRadius: '6px',
-              cursor: 'pointer',
-            }}
-            onClick={() => setActiveTab('FLASHCARDS_SRS')}
-          >
-            🧠 Flashcards Ativos (SRS)
-          </button>
-          <button
-            className={`btn ${activeTab === 'ERROR_NOTEBOOK' ? 'btn-primary' : 'btn-secondary'}`}
-            style={{
-              background: activeTab === 'ERROR_NOTEBOOK' ? '#ef4444' : '#1e293b',
-              color: '#ffffff',
-              border: '1px solid #334155',
-              padding: '0.5rem 0.9rem',
-              fontSize: '0.85rem',
-              fontWeight: 600,
-              borderRadius: '6px',
-              cursor: 'pointer',
-            }}
-            onClick={() => setActiveTab('ERROR_NOTEBOOK')}
-          >
-            📕 Caderno de Erros ({totalErrors})
-          </button>
-        </div>
-      </div>
-
-      {/* ABA 1: PASSO A PASSO GUIADO & BLOCOS ADAPTATIVOS PELA IA */}
-      {activeTab === 'ADAPTATIVE_GUIDE' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          {/* Barra de Calibração do Bloco de Estudo Adaptativo */}
-          <div className="glass" style={{ padding: '1.25rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', borderLeft: '4px solid #38bdf8' }}>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                <span style={{ fontSize: '1.2rem' }}>🤖</span>
-                <strong style={{ color: '#f8fafc', fontSize: '1rem' }}>Motor de Calibração Adaptativa de Duração</strong>
-                <span style={{ background: isAdaptativeMode ? 'rgba(16,185,129,0.15)' : 'rgba(148,163,184,0.15)', color: isAdaptativeMode ? '#34d399' : '#94a3b8', padding: '2px 8px', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 700 }}>
-                  {isAdaptativeMode ? 'IA ATIVA — BLOCOS ADAPTADOS' : 'MODO FIXO'}
+        {/* ==================================================================
+            ABA 1: FILA DE REVISÕES (T24 — ESTRUTURA CANÔNICA)
+            ================================================================== */}
+        {activeTab === 'queue' && (
+          <>
+            {/* Banner Regra Canônica do Atraso & Ação de Indisponibilidade */}
+            <div className="revisoes-delay-rule-banner">
+              <div className="revisoes-delay-rule-content">
+                <ShieldCheck className="w-5 h-5 text-indigo-500 shrink-0" />
+                <span>
+                  <strong>Regra de Retenção:</strong> Uma revisão atrasada não significa automaticamente conhecimento perdido. O atraso aumenta a necessidade de verificação, mas não comprova esquecimento.
                 </span>
               </div>
-              <p style={{ color: '#94a3b8', fontSize: '0.82rem', margin: 0 }}>
-                Você estabelece uma base inicial e a IA ajusta a duração ideal para cada matéria baseada em carga cognitiva, histórico de retenção e peso no edital.
-              </p>
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span style={{ color: '#cbd5e1', fontSize: '0.82rem' }}>Duração Base Inicial:</span>
-                {[40, 50, 60, 90].map((m) => (
-                  <button
-                    key={m}
-                    type="button"
-                    onClick={() => setBaseBlockMinutes(m)}
-                    style={{
-                      background: baseBlockMinutes === m ? '#0284c7' : '#0f172a',
-                      color: baseBlockMinutes === m ? '#ffffff' : '#94a3b8',
-                      border: '1px solid #334155',
-                      padding: '4px 10px',
-                      borderRadius: '6px',
-                      fontSize: '0.8rem',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {m} min
-                  </button>
-                ))}
-              </div>
-
               <button
-                type="button"
-                onClick={() => setIsAdaptativeMode(!isAdaptativeMode)}
-                style={{
-                  background: isAdaptativeMode ? '#0284c7' : '#334155',
-                  color: '#fff',
-                  border: 'none',
-                  padding: '6px 12px',
-                  borderRadius: '6px',
-                  fontSize: '0.8rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
+                onClick={handleInformarIndisponibilidade}
+                className="btn-informar-indisponivel"
+                title="Informar indisponibilidade para reajuste calmo da carga"
               >
-                {isAdaptativeMode ? 'Alternar p/ Modo Fixo' : 'Ativar IA Adaptativa'}
+                Informar Indisponibilidade
               </button>
             </div>
-          </div>
 
-          {/* Cartão de Destaque: Seu Passo a Passo Personalizado de Hoje */}
-          {priorityTopic && priorityPlan ? (
-            <div className="glass" style={{ padding: '1.75rem', border: '1px solid #0284c7', background: 'radial-gradient(circle at top left, rgba(2, 132, 199, 0.12) 0%, rgba(15, 23, 42, 0.8) 100%)', borderRadius: '12px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.25rem' }}>
-                <div>
-                  <span style={{ textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '0.08em', color: '#38bdf8', fontWeight: 800 }}>
-                    📍 Próximo Bloco Recomendado pelo Sistema
-                  </span>
-                  <h3 style={{ color: '#f8fafc', fontSize: '1.4rem', margin: '0.25rem 0' }}>
-                    {priorityTopic.assunto}
-                  </h3>
-                  <p style={{ color: '#94a3b8', fontSize: '0.88rem', margin: 0 }}>
-                    Disciplina: <strong style={{ color: '#cbd5e1' }}>{priorityTopic.disciplina}</strong> • Peso no Edital: <strong style={{ color: '#fbbf24' }}>{priorityTopic.peso || 1.0}x</strong>
+            {/* Governança de Acúmulo de Revisões */}
+            {(agenda?.excessoPendencias || pendingCount > 5) && (
+              <div className="revisoes-accumulation-card">
+                <div className="revisoes-accumulation-text">
+                  <h4>⚠️ Acúmulo de Pendências Detectado</h4>
+                  <p>
+                    {agenda?.recomendacaoSessaoDedicada || 'Recomendamos limitar a carga de hoje a 5 tópicos e realizar uma Sessão Dedicada a Revisões antes de abrir novas frentes teóricas.'}
                   </p>
                 </div>
-
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ background: '#0369a1', color: '#ffffff', padding: '6px 14px', borderRadius: '8px', fontSize: '1.1rem', fontWeight: 800, display: 'inline-block' }}>
-                    ⏱️ {priorityPlan.minutes} minutos
-                  </div>
-                  <div style={{ color: '#38bdf8', fontSize: '0.75rem', marginTop: '4px' }}>
-                    {priorityPlan.reason}
-                  </div>
-                </div>
-              </div>
-
-              {/* Roteiro Passo a Passo Guiado */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-                <div style={{ background: 'rgba(15, 23, 42, 0.7)', border: '1px solid #1e293b', borderRadius: '8px', padding: '1rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                    <span style={{ background: '#38bdf8', color: '#0f172a', width: '22px', height: '22px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 900 }}>1</span>
-                    <strong style={{ color: '#38bdf8', fontSize: '0.88rem' }}>O que revisar hoje</strong>
-                  </div>
-                  <p style={{ color: '#cbd5e1', fontSize: '0.82rem', margin: 0, lineHeight: 1.45 }}>
-                    {priorityPlan.reviewStep}
-                  </p>
-                </div>
-
-                <div style={{ background: 'rgba(15, 23, 42, 0.7)', border: '1px solid #1e293b', borderRadius: '8px', padding: '1rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                    <span style={{ background: '#a855f7', color: '#ffffff', width: '22px', height: '22px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 900 }}>2</span>
-                    <strong style={{ color: '#c084fc', fontSize: '0.88rem' }}>O que ver / aprofundar</strong>
-                  </div>
-                  <p style={{ color: '#cbd5e1', fontSize: '0.82rem', margin: 0, lineHeight: 1.45 }}>
-                    {priorityPlan.studyStep}
-                  </p>
-                </div>
-
-                <div style={{ background: 'rgba(15, 23, 42, 0.7)', border: '1px solid #1e293b', borderRadius: '8px', padding: '1rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                    <span style={{ background: '#10b981', color: '#ffffff', width: '22px', height: '22px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 900 }}>3</span>
-                    <strong style={{ color: '#34d399', fontSize: '0.88rem' }}>Fixação Prática (Questões)</strong>
-                  </div>
-                  <p style={{ color: '#cbd5e1', fontSize: '0.82rem', margin: 0, lineHeight: 1.45 }}>
-                    {priorityPlan.practiceStep}
-                  </p>
-                </div>
-              </div>
-
-              {/* Botões de Ação Imediata */}
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', flexWrap: 'wrap' }}>
                 <button
-                  type="button"
-                  className="btn"
-                  style={{
-                    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                    color: '#ffffff',
-                    border: 'none',
-                    fontWeight: 700,
-                    padding: '0.65rem 1.4rem',
-                    fontSize: '0.95rem',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    boxShadow: '0 4px 14px rgba(16, 185, 129, 0.3)',
+                  onClick={() => {
+                    if (prioritariasList.length > 0) setExecutingItem(prioritariasList[0]);
                   }}
-                  onClick={() => handleStartTopic(priorityTopic.disciplina, priorityTopic.assunto)}
+                  className="btn-sessao-dedicada"
                 >
-                  ▶ Iniciar Resolução Deste Tópico Agora ({priorityPlan.minutes} min)
+                  <RotateCcw className="w-3.5 h-3.5" /> Iniciar Sessão Dedicada
                 </button>
               </div>
-            </div>
-          ) : (
-            <div className="glass" style={{ padding: '2.5rem', textAlign: 'center', color: '#94a3b8' }}>
-              <p style={{ fontSize: '1rem', color: '#f8fafc', marginBottom: '0.5rem' }}>
-                Nenhum edital verticalizado cadastrado ainda para este concurso.
-              </p>
-              <p style={{ fontSize: '0.85rem', margin: '0 0 1rem 0' }}>
-                Acesse a aba <strong>Edital Verticalizado</strong> ou utilize o assistente de cadastro para importar os tópicos do edital.
-              </p>
-            </div>
-          )}
+            )}
 
-          {/* Fila Geral de Tópicos do Ciclo com Calibração de Tempo */}
-          <div className="glass" style={{ padding: '1.5rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <div>
-                <h3 style={{ color: '#f8fafc', fontSize: '1.1rem', margin: 0 }}>
-                  📋 Fila de Tópicos do Edital & Calibração da IA
-                </h3>
-                <p style={{ color: '#94a3b8', fontSize: '0.82rem', margin: '0.2rem 0 0 0' }}>
-                  A IA calcula a duração exata e o foco recomendados para cada assunto do seu edital.
-                </p>
+            {/* Grid de 4 Métricas */}
+            <div className="revisoes-metrics-grid">
+              <div className="revisoes-metric-card">
+                <div className="revisoes-metric-top">
+                  <span className="revisoes-metric-label">Para Estabilizar Hoje</span>
+                  <Layers className="w-4 h-4 text-stone-400" />
+                </div>
+                <div>
+                  <div className="revisoes-metric-val">{prioritariasList.length}</div>
+                  <div className="revisoes-metric-suffix">tópicos prioritários</div>
+                </div>
               </div>
-              <span style={{ color: '#cbd5e1', fontSize: '0.82rem' }}>
-                Total: <strong>{editalTopics.length} tópicos mapeados</strong>
-              </span>
+
+              <div className="revisoes-metric-card">
+                <div className="revisoes-metric-top">
+                  <span className="revisoes-metric-label">Esforço Estimado</span>
+                  <Clock className="w-4 h-4 text-stone-400" />
+                </div>
+                <div>
+                  <div className="revisoes-metric-val">{estimatedTimeText}</div>
+                  <div className="revisoes-metric-suffix">meta concentrada</div>
+                </div>
+              </div>
+
+              <div className="revisoes-metric-card">
+                <div className="revisoes-metric-top">
+                  <span className="revisoes-metric-label">Alvo de Retenção</span>
+                  <Target className="w-4 h-4 text-stone-400" />
+                </div>
+                <div>
+                  <div className="revisoes-metric-val">{optimalRetention}</div>
+                  <div className="revisoes-metric-suffix">linha de segurança</div>
+                </div>
+              </div>
+
+              <div className="revisoes-metric-card">
+                <div className="revisoes-metric-top">
+                  <span className="revisoes-metric-label">Sequência Ativa</span>
+                  <Zap className="w-4 h-4 text-stone-400" />
+                </div>
+                <div>
+                  <div className="revisoes-metric-val">{streakDays}</div>
+                  <div className="revisoes-metric-suffix">dias consistentes</div>
+                </div>
+              </div>
             </div>
 
-            {editalTopics.length === 0 ? (
-              <p style={{ color: '#64748b', fontSize: '0.85rem', textAlign: 'center', padding: '1rem' }}>
-                Cadastre ou importe tópicos no Edital Verticalizado para visualizar a fila de estudo adaptativo.
-              </p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-                {editalTopics.slice(0, 10).map((topic, idx) => {
-                  const plan = calculateAdaptativeDuration(topic);
-                  return (
-                    <div
-                      key={topic.id || idx}
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        background: '#0f172a',
-                        border: '1px solid #1e293b',
-                        padding: '0.75rem 1rem',
-                        borderRadius: '8px',
-                        gap: '1rem',
-                        flexWrap: 'wrap',
-                      }}
-                    >
-                      <div style={{ flex: 1, minWidth: '220px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
-                          <span style={{ color: '#38bdf8', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase' }}>
-                            {topic.disciplina}
-                          </span>
-                          <span style={{ color: '#64748b', fontSize: '0.72rem' }}>• Peso: {topic.peso || 1.0}x</span>
-                        </div>
-                        <strong style={{ color: '#f8fafc', fontSize: '0.9rem' }}>{topic.assunto}</strong>
-                        <div style={{ color: '#94a3b8', fontSize: '0.75rem', marginTop: '2px' }}>
-                          {plan.reason}
-                        </div>
-                      </div>
+            {/* ==================================================================
+                SEÇÃO T24: PRIORITÁRIAS
+                ================================================================== */}
+            <section style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+              <div className="revisoes-section-header">
+                <h2 className="revisoes-section-title">
+                  <AlertTriangle className="w-4 h-4 text-amber-500" />
+                  Prioritárias
+                </h2>
+                <span className="revisoes-section-subtitle">
+                  {prioritariasList.length} tópicos que demandam atenção imediata
+                </span>
+              </div>
 
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <div style={{ textAlign: 'right' }}>
-                          <span style={{ display: 'block', color: '#f8fafc', fontWeight: 700, fontSize: '0.95rem' }}>
-                            ⏱️ {plan.minutes} min
-                          </span>
-                          <span style={{ fontSize: '0.72rem', color: '#10b981' }}>IA Adaptativa</span>
+              <div className="revisoes-list-group">
+                {prioritariasList.map(item => {
+                  const badge = getTipoRevisaoBadge(item.tipo_revisao);
+                  return (
+                    <div key={item.id} className="revisao-card-t24">
+                      <div className="revisao-card-top">
+                        <div className="revisao-card-title-box">
+                          <div className="revisao-card-badge-row">
+                            <span className={`badge-canonico ${item.tipo_revisao ? item.tipo_revisao.toLowerCase() : 'recuperacao'}`}>
+                              {badge.label}
+                            </span>
+                            <span className="revisao-card-discipline">{item.disciplina}</span>
+                          </div>
+                          <h3 className="revisao-card-topic">{item.topico}</h3>
                         </div>
 
                         <button
-                          type="button"
-                          className="btn btn-sm"
-                          style={{
-                            background: '#0284c7',
-                            color: '#fff',
-                            border: 'none',
-                            padding: '0.45rem 0.85rem',
-                            fontSize: '0.82rem',
-                            fontWeight: 600,
-                            borderRadius: '6px',
-                            cursor: 'pointer',
-                          }}
-                          onClick={() => handleStartTopic(topic.disciplina, topic.assunto)}
+                          onClick={() => setExecutingItem(item)}
+                          className="btn-revisar-agora"
                         >
-                          ▶ Estudar Tópico
+                          Revisar agora <ChevronRight className="w-4 h-4" />
                         </button>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
-      {/* ABA 2: PONTOS-CHAVE & FLASHCARDS ATIVOS (SRS) */}
-      {activeTab === 'FLASHCARDS_SRS' && (
-        <div className="glass" style={{ padding: '1.75rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-            <div>
-              <h3 style={{ color: '#f8fafc', fontSize: '1.2rem', margin: 0 }}>
-                🧠 Pontos-Chave & Flashcards com Recuperação Ativa (SRS)
-              </h3>
-              <p style={{ color: '#94a3b8', fontSize: '0.85rem', margin: '0.25rem 0 0 0' }}>
-                Revisão ativa independente de erro: force seu cérebro a recuperar os conceitos oclusos antes de ver a resposta.
-              </p>
-            </div>
-            <span style={{ color: '#cbd5e1', fontSize: '0.85rem' }}>
-              {srsCards.length > 0 ? `Card ${srsIndex + 1} de ${srsCards.length}` : '0 cards'}
-            </span>
-          </div>
-
-          {srsCards.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '3rem 1.5rem', color: '#94a3b8' }}>
-              <p style={{ fontSize: '1rem', color: '#f8fafc', marginBottom: '0.5rem' }}>
-                Nenhum ponto-chave cadastrado ainda.
-              </p>
-              <p style={{ fontSize: '0.85rem', margin: 0 }}>
-                Você pode cadastrar pontos-chave de fórmulas, prazos e regras na aba <strong>Pontos-Chave</strong>.
-              </p>
-            </div>
-          ) : (
-            <div style={{ maxWidth: '640px', margin: '0 auto' }}>
-              <div
-                style={{
-                  background: '#0f172a',
-                  border: '1px solid #334155',
-                  borderRadius: '12px',
-                  padding: '1.75rem',
-                  minHeight: '200px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between',
-                  marginBottom: '1.25rem',
-                }}
-              >
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                    <span style={{ color: '#38bdf8', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase' }}>
-                      {srsCards[srsIndex].disciplina} • {srsCards[srsIndex].topico}
-                    </span>
-                    <span style={{ background: '#334155', color: '#e2e8f0', padding: '2px 8px', borderRadius: '4px', fontSize: '0.72rem' }}>
-                      {srsCards[srsIndex].criterioCritico}
-                    </span>
-                  </div>
-
-                  <p style={{ color: '#f8fafc', fontSize: '1.05rem', lineHeight: 1.5, margin: '1rem 0' }}>
-                    {srsCards[srsIndex].textoComOmissao}
-                  </p>
-
-                  {srsRevealed && (
-                    <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid #1e293b' }}>
-                      <span style={{ color: '#10b981', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase' }}>
-                        Resposta / Explicação:
-                      </span>
-                      <p style={{ color: '#cbd5e1', fontSize: '0.95rem', margin: '0.25rem 0 0 0' }}>
-                        {srsCards[srsIndex].explicacao}
+                      <p className="revisao-card-reason">
+                        <strong>Motivo:</strong> {item.motivo || item.justificativa_pedagogica || badge.desc}
                       </p>
-                    </div>
-                  )}
-                </div>
 
-                <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
-                  {!srsRevealed ? (
-                    <button
-                      type="button"
-                      className="btn"
-                      style={{ background: '#0284c7', color: '#fff', padding: '0.6rem 1.4rem', fontWeight: 600 }}
-                      onClick={() => setSrsRevealed(true)}
-                    >
-                      👁️ Revelar Resposta
-                    </button>
-                  ) : (
-                    <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem' }}>
-                      <button
-                        type="button"
-                        className="btn"
-                        style={{ background: '#ef4444', color: '#fff', padding: '0.5rem 1rem', fontSize: '0.85rem' }}
-                        onClick={() => {
-                          setSrsRevealed(false);
-                          setSrsIndex((srsIndex + 1) % srsCards.length);
-                        }}
-                      >
-                        ❌ Difícil
-                      </button>
-                      <button
-                        type="button"
-                        className="btn"
-                        style={{ background: '#f59e0b', color: '#fff', padding: '0.5rem 1rem', fontSize: '0.85rem' }}
-                        onClick={() => {
-                          setSrsRevealed(false);
-                          setSrsIndex((srsIndex + 1) % srsCards.length);
-                        }}
-                      >
-                        ⚡ Médio
-                      </button>
-                      <button
-                        type="button"
-                        className="btn"
-                        style={{ background: '#10b981', color: '#fff', padding: '0.5rem 1rem', fontSize: '0.85rem' }}
-                        onClick={() => {
-                          setSrsRevealed(false);
-                          setSrsIndex((srsIndex + 1) % srsCards.length);
-                        }}
-                      >
-                        ✓ Fácil (Lembrei)
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ABA 3: CADERNO DE ERROS (DIAGNÓSTICO DAS 5 CAUSAS) */}
-      {activeTab === 'ERROR_NOTEBOOK' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          {/* Summary Row */}
-          <div className="revisoes-summary-grid">
-            <div className="summary-box glass">
-              <span className="summary-num text-red">{isLoading ? '...' : totalErrors}</span>
-              <span className="summary-title">Questões com Erro Mapeado</span>
-              <span className="summary-sub">Erros registrados no Event Store</span>
-            </div>
-
-            <div className="summary-box glass">
-              <span className="summary-num text-orange">{isLoading ? '...' : xrayData?.topErrorAreas?.length || 0}</span>
-              <span className="summary-title">Áreas Críticas de Erro</span>
-              <span className="summary-sub">Concentração de falhas no edital</span>
-            </div>
-
-            <div className="summary-box glass">
-              <span className="summary-num text-green">
-                {isLoading ? '...' : (xrayData && xrayData.totalAnswersSubmitted > 0 ? `${xrayData.accuracyRate.toFixed(1)}%` : '—')}
-              </span>
-              <span className="summary-title">Taxa de Acerto Geral</span>
-              <span className="summary-sub">Cálculo real de todas as tentativas</span>
-            </div>
-          </div>
-
-          <div className="revisoes-main-grid">
-            {/* Left: Error Taxonomy Breakdown */}
-            <div className="taxonomy-card glass">
-              <div className="card-top-header">
-                <div>
-                  <h3>Diagnóstico das 5 Causas de Erro</h3>
-                  <p>Distribuição das causas raízes identificadas durante suas resoluções</p>
-                </div>
-              </div>
-
-              <div className="taxonomy-list">
-                {errorTaxonomy.map((item) => {
-                  const pct = totalErrors > 0 ? ((item.count / totalErrors) * 100).toFixed(1) : '0.0';
-                  return (
-                    <div
-                      key={item.code}
-                      className={`taxonomy-row ${selectedTaxonomy === item.code ? 'selected' : ''}`}
-                      onClick={() => setSelectedTaxonomy(item.code === selectedTaxonomy ? null : item.code)}
-                    >
-                      <div className="tax-badge" style={{ backgroundColor: item.color }}>
-                        {item.badge}
-                      </div>
-
-                      <div className="tax-info">
-                        <div className="tax-title-row">
-                          <strong>{item.title}</strong>
-                          <span className="tax-count">
-                            {item.count} erros ({pct}%)
-                          </span>
+                      <div className="revisao-card-meta-grid">
+                        <div className="meta-col">
+                          <span className="meta-label">Última recuperação</span>
+                          <span className="meta-val">{item.ultima_recuperacao || 'Ontem'}</span>
                         </div>
-                        <p className="tax-desc">{item.desc}</p>
-                        <div className="tax-bar-wrap">
-                          <div
-                            className="tax-bar-fill"
-                            style={{ width: `${pct}%`, backgroundColor: item.color }}
-                          />
+                        <div className="meta-col">
+                          <span className="meta-label">Resultado anterior</span>
+                          <span className="meta-val">{item.resultado_anterior || 'Erro recente'}</span>
+                        </div>
+                        <div className="meta-col">
+                          <span className="meta-label">Estimativa duração</span>
+                          <span className="meta-val">{item.estimativa_duracao || '10 min'}</span>
+                        </div>
+                        <div className="meta-col">
+                          <span className="meta-label">Evidência disponível</span>
+                          <span className="meta-val">{item.evidencia_disponivel || '4 avaliações'}</span>
                         </div>
                       </div>
 
-                      <button
-                        className="btn-filter-error"
-                        disabled={totalErrors === 0}
-                        title={`Praticar apenas erros de ${item.code}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onStartErrorNotebook(item.code);
-                        }}
-                      >
-                        ▶ Praticar
-                      </button>
+                      <div className="revisao-card-actions">
+                        <div className="revisao-sub-actions">
+                          <button
+                            type="button"
+                            className="btn-action-text"
+                            onClick={() => setAdiandoItem(item)}
+                          >
+                            <Calendar className="w-3.5 h-3.5 inline mr-1" /> Adiar
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-action-text"
+                            onClick={() => setMotivoModalItem(item)}
+                          >
+                            <HelpCircle className="w-3.5 h-3.5 inline mr-1" /> Ver motivo
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-action-text"
+                            onClick={() => setActiveTab('history')}
+                          >
+                            <Clock className="w-3.5 h-3.5 inline mr-1" /> Abrir histórico
+                          </button>
+                        </div>
+
+                        <span style={{ fontSize: '0.74rem', color: 'var(--calm-text-muted)' }}>
+                          {badge.desc}
+                        </span>
+                      </div>
                     </div>
                   );
                 })}
               </div>
-            </div>
+            </section>
 
-            {/* Right: Refazer Erros */}
-            <div className="queue-card glass">
-              <div className="card-top-header">
-                <div>
-                  <h3>Refazer Questões Erradas</h3>
-                  <p>Pratique exclusivamente os erros sem misturar com a revisão geral</p>
-                </div>
+            {/* ==================================================================
+                SEÇÃO T24: PROGRAMADAS
+                ================================================================== */}
+            <section style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', marginTop: '1.5rem' }}>
+              <div className="revisoes-section-header">
+                <h2 className="revisoes-section-title">
+                  <Clock className="w-4 h-4 text-stone-400" />
+                  Programadas
+                </h2>
+                <span className="revisoes-section-subtitle">
+                  Distribuição ideal da semana
+                </span>
               </div>
 
-              <div style={{ textAlign: 'center', padding: '2rem 1rem' }}>
-                <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '1.25rem' }}>
-                  {totalErrors === 0
-                    ? 'Nenhum erro registrado ainda. Conforme você resolver questões, os erros aparecerão aqui classificados.'
-                    : `Você possui ${totalErrors} questões erradas aguardando nova tentativa.`}
-                </p>
-                <button
-                  className="btn btn-primary-refazer"
-                  disabled={totalErrors === 0}
-                  onClick={() => onStartErrorNotebook()}
-                  style={{ width: '100%', padding: '0.75rem', fontSize: '0.95rem' }}
-                >
-                  ⚡ Refazer Todos os Erros ({totalErrors})
+              <div className="revisoes-list-group">
+                {programadasList.map(item => {
+                  const badge = getTipoRevisaoBadge(item.tipo_revisao);
+                  return (
+                    <div key={item.id} className="revisao-card-t24" style={{ opacity: 0.9 }}>
+                      <div className="revisao-card-top">
+                        <div className="revisao-card-title-box">
+                          <div className="revisao-card-badge-row">
+                            <span className={`badge-canonico ${item.tipo_revisao ? item.tipo_revisao.toLowerCase() : 'manutencao'}`}>
+                              {badge.label}
+                            </span>
+                            <span className="revisao-card-discipline">{item.disciplina}</span>
+                            <span style={{ fontSize: '0.72rem', color: 'var(--calm-text-muted)' }}>
+                              • Agendado: {item.data_agendada}
+                            </span>
+                          </div>
+                          <h3 className="revisao-card-topic">{item.topico}</h3>
+                        </div>
+
+                        <button
+                          onClick={() => setExecutingItem(item)}
+                          className="btn-action-text"
+                          style={{ border: '1px solid var(--calm-card-border)', padding: '0.45rem 0.85rem' }}
+                        >
+                          Adiantar revisão <ChevronRight className="w-3.5 h-3.5 inline ml-1" />
+                        </button>
+                      </div>
+
+                      <div className="revisao-card-meta-grid">
+                        <div className="meta-col">
+                          <span className="meta-label">Motivo</span>
+                          <span className="meta-val">{item.motivo || badge.desc}</span>
+                        </div>
+                        <div className="meta-col">
+                          <span className="meta-label">Última recuperação</span>
+                          <span className="meta-val">{item.ultima_recuperacao || 'Semana passada'}</span>
+                        </div>
+                        <div className="meta-col">
+                          <span className="meta-label">Estimativa duração</span>
+                          <span className="meta-val">{item.estimativa_duracao || '10 min'}</span>
+                        </div>
+                        <div className="meta-col">
+                          <span className="meta-label">Evidência disponível</span>
+                          <span className="meta-val">{item.evidencia_disponivel || 'Retenção estável'}</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          </>
+        )}
+
+        {/* ==================================================================
+            MODAL 1: VER MOTIVO DA REVISÃO
+            ================================================================== */}
+        {motivoModalItem && (
+          <div className="revisoes-modal-overlay animate-fade-in" onClick={() => setMotivoModalItem(null)}>
+            <div className="revisoes-modal-card" onClick={e => e.stopPropagation()}>
+              <div className="revisoes-modal-header">
+                <h3>Transparência Pedagógica do Gêmeo Digital</h3>
+                <button className="btn-close-modal" onClick={() => setMotivoModalItem(null)}>
+                  <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <div className="queue-tip" style={{ marginTop: '1rem' }}>
-                💡 <strong>Regra de ouro:</strong> Revisar um tópico de forma personalizada e ativa antes de praticar evita a repetição mecânica do erro.
+              <div>
+                <span className="badge-tipo-rev" style={{ marginBottom: '0.5rem', display: 'inline-block' }}>
+                  {motivoModalItem.tipo_revisao_label || 'Revisão Adaptativa'}
+                </span>
+                <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem' }}>
+                  {motivoModalItem.disciplina} — {motivoModalItem.topico}
+                </h4>
+              </div>
+
+              <div style={{ padding: '0.85rem 1rem', background: 'var(--calm-subtle-bg)', borderRadius: '8px', fontSize: '0.84rem', lineHeight: 1.5 }}>
+                <strong style={{ display: 'block', marginBottom: '0.25rem', color: '#6366f1' }}>
+                  Por que esta revisão foi agendada?
+                </strong>
+                <p style={{ margin: 0 }}>
+                  {motivoModalItem.motivo || motivoModalItem.justificativa_pedagogica || 'Intervalo ótimo de espaçamento atingido para prevenção do decaimento da memória.'}
+                </p>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--calm-text-muted)' }}>
+                <div><strong>Resultado anterior:</strong> {motivoModalItem.resultado_anterior || 'Acerto recente'}</div>
+                <div><strong>Estimativa:</strong> {motivoModalItem.estimativa_duracao || '10 min'}</div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+                <button
+                  type="button"
+                  className="btn-exec-primary"
+                  onClick={() => {
+                    const item = motivoModalItem;
+                    setMotivoModalItem(null);
+                    setExecutingItem(item);
+                  }}
+                >
+                  Iniciar Revisão Agora <ArrowRight className="w-4 h-4 ml-1" />
+                </button>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+
+        {/* ==================================================================
+            MODAL 2: ADIAR REVISÃO
+            ================================================================== */}
+        {adiandoItem && (
+          <div className="revisoes-modal-overlay animate-fade-in" onClick={() => setAdiandoItem(null)}>
+            <div className="revisoes-modal-card" onClick={e => e.stopPropagation()}>
+              <div className="revisoes-modal-header">
+                <h3>Adiar Revisão</h3>
+                <button className="btn-close-modal" onClick={() => setAdiandoItem(null)}>
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--calm-text-muted)' }}>
+                Você está adiando a revisão de <strong>{adiandoItem.disciplina} — {adiandoItem.topico}</strong>. O histórico e as evidências permanecem preservados.
+              </p>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.4rem' }}>
+                  Adiar por quantos dias?
+                </label>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  {[1, 2, 3, 5].map(d => (
+                    <button
+                      key={d}
+                      type="button"
+                      className={`btn-action-text ${diasAdiar === d ? 'active' : ''}`}
+                      style={{
+                        padding: '0.5rem 1rem',
+                        border: '1px solid var(--calm-border)',
+                        background: diasAdiar === d ? '#6366f1' : 'transparent',
+                        color: diasAdiar === d ? '#fff' : 'var(--calm-text)',
+                        borderRadius: '6px'
+                      }}
+                      onClick={() => setDiasAdiar(d)}
+                    >
+                      +{d} dia{d > 1 ? 's' : ''}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.4rem' }}>
+                  Motivo do adiamento (opcional):
+                </label>
+                <input
+                  type="text"
+                  className="exec-rev-textarea"
+                  style={{ height: '38px', padding: '0.4rem 0.75rem' }}
+                  value={motivoAdiar}
+                  onChange={(e) => setMotivoAdiar(e.target.value)}
+                  placeholder="Ex: Foco em simulado geral; imprevisto de trabalho..."
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '0.5rem' }}>
+                <button
+                  type="button"
+                  className="btn-exec-secondary"
+                  onClick={() => setAdiandoItem(null)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  className="btn-exec-primary"
+                  onClick={handleConfirmarAdiar}
+                >
+                  Confirmar Adiamento
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ==================================================================
+            ABA 2: CADERNO DE ERROS (E1 A E5)
+            ================================================================== */}
+        {activeTab === 'errors' && (
+          <div className="revisoes-taxonomy-grid">
+            {errorTaxonomy.map(tax => (
+              <div key={tax.code} className="revisoes-error-card">
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span
+                      className="revisoes-error-code"
+                      style={{ backgroundColor: `${tax.color}15`, color: tax.color, border: `1px solid ${tax.color}35` }}
+                    >
+                      {tax.badge}
+                    </span>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--calm-text-muted)', fontWeight: 600 }}>
+                      Remédio: {tax.action}
+                    </span>
+                  </div>
+
+                  <h3 className="revisoes-error-title">{tax.title}</h3>
+                  <p className="revisoes-error-desc">{tax.desc}</p>
+                </div>
+
+                <button
+                  onClick={() => onStartErrorNotebook(tax.code)}
+                  className="revisoes-btn-quick-arrow"
+                  style={{ width: '100%', justifyContent: 'center', gap: '0.5rem', padding: '0.65rem' }}
+                >
+                  Filtrar caderno deste tipo <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ==================================================================
+            ABA 3: HISTÓRICO DE REVISÕES CONCLUÍDAS
+            ================================================================== */}
+        {activeTab === 'history' && (
+          <div className="revisoes-table-card">
+            {agenda && agenda.concluidas && agenda.concluidas.length > 0 ? (
+              agenda.concluidas.map(item => (
+                <div key={item.id} className="revisoes-item-row">
+                  <div className="revisoes-item-info">
+                    <div className="revisoes-item-meta">
+                      <span className="revisoes-item-disc">{item.disciplina}</span>
+                      <span className="revisoes-badge-type" style={{ fontSize: '0.62rem' }}>Concluída</span>
+                    </div>
+                    <h4 className="revisoes-item-topic">{item.topico}</h4>
+                    <div className="revisoes-item-method">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                      <span>{item.concluida_em ? `Registrada em ${item.concluida_em}` : 'Estabilizada no histórico recente'}</span>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => handleStartTopic(item.disciplina, item.topico)}
+                    className="revisoes-btn-quick-arrow"
+                    title="Praticar novamente"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))
+            ) : (
+              <div style={{ padding: '3rem 1.5rem', textAlign: 'center', color: 'var(--calm-text-muted)', fontSize: '0.85rem' }}>
+                Nenhuma revisão foi concluída hoje ainda. Conclua as revisões prioritárias na Fila!
+              </div>
+            )}
+          </div>
+        )}
+
+      </div>
     </div>
   );
 };

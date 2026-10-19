@@ -36,7 +36,6 @@ interface MaestroBattleViewProps {
   onNavigateToStudy: (disciplina?: string, assunto?: string) => void;
   onNavigateToTab?: (tab: string) => void;
   onSwitchToWeekly?: () => void;
-  onOpenAnkiHub?: () => void;
 }
 
 export const MaestroBattleView: React.FC<MaestroBattleViewProps> = ({
@@ -45,7 +44,6 @@ export const MaestroBattleView: React.FC<MaestroBattleViewProps> = ({
   onNavigateToStudy,
   onNavigateToTab,
   onSwitchToWeekly,
-  onOpenAnkiHub,
 }) => {
   const [selectedMinutes, setSelectedMinutes] = useState<number>(() => {
     const saved = localStorage.getItem('fiscalstudy_maestro_custom_minutes');
@@ -93,8 +91,46 @@ export const MaestroBattleView: React.FC<MaestroBattleViewProps> = ({
     }
   };
 
+  // Sinais Analíticos e Diagnósticos Pedagógicos do R
+  const [analyticalSignals, setAnalyticalSignals] = useState<any[]>([]);
+  const [isSyncingEngine, setIsSyncingEngine] = useState<boolean>(false);
+
+  const loadAnalyticalDiagnostics = async () => {
+    try {
+      const res = await fetch('/api/v1/analytics-bridge/signals');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setAnalyticalSignals(data);
+        }
+      }
+    } catch (ignored) {}
+  };
+
+  const handleTriggerMotorR = async () => {
+    setIsSyncingEngine(true);
+    setActionFeedback('⚡ Calibrando motor estatístico em R...');
+    try {
+      const res = await fetch('/api/v1/analytics-bridge/run', { method: 'POST' });
+      if (res.ok) {
+        await res.json();
+        setActionFeedback('✓ Motor R executado com sucesso! Ciclo Robin Hood atualizado.');
+        loadAnalyticalDiagnostics();
+        loadPlan(selectedMinutes);
+      } else {
+        setActionFeedback('⚠️ Falha ao acionar motor R. Usando pesos padrão de contingência.');
+      }
+    } catch {
+      setActionFeedback('⚠️ Comunicação offline com motor R. Pesos seguros preservados.');
+    } finally {
+      setIsSyncingEngine(false);
+      setTimeout(() => setActionFeedback(null), 5000);
+    }
+  };
+
   useEffect(() => {
     loadPlan(selectedMinutes);
+    loadAnalyticalDiagnostics();
   }, [concursoId, selectedMinutes]);
 
   // Atualizar timer quando muda de passo
@@ -183,11 +219,8 @@ export const MaestroBattleView: React.FC<MaestroBattleViewProps> = ({
           }
         })
         .catch(() => {
-          setActionFeedback('AnkiConnect offline. Fila de cards mantida segura no SQLite local.');
+          setActionFeedback('Fila de cards mantida segura no SQLite local.');
         });
-      if (onOpenAnkiHub) {
-        onOpenAnkiHub();
-      }
       setTimeout(() => setActionFeedback(null), 5000);
     } else if (step.actionType === 'DESCANSO_TIMER') {
       setIsTimerRunning(true);
@@ -213,32 +246,6 @@ export const MaestroBattleView: React.FC<MaestroBattleViewProps> = ({
   const completedCount = plan && plan.passos ? plan.passos.filter((p) => p.concluido).length : 0;
   const progressPercent = plan && plan.passos.length > 0 ? Math.round((completedCount / plan.passos.length) * 100) : 0;
 
-  // Automação Extrema: Gerar 15 flashcards de fechamento ao concluir a sessão de batalha
-  const [ankiBatchTriggered, setAnkiBatchTriggered] = useState(false);
-  const [ankiBatchMsg, setAnkiBatchMsg] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (isAllCompleted && !ankiBatchTriggered && plan) {
-      setAnkiBatchTriggered(true);
-      fetch('/api/v1/anki/batch-15', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          concursoId,
-          disciplina: plan.disciplinaPrincipal || 'Direito Administrativo',
-          assunto: plan.assuntoPrincipal || 'Geral'
-        })
-      })
-        .then((res) => (res.ok ? res.json() : null))
-        .then((data) => {
-          if (data) {
-            setAnkiBatchMsg(`✨ ${data.totalGenerated || 15} Flashcards gerados magicamente e agendados no Anki para amanhã!`);
-          }
-        })
-        .catch((err) => console.warn('Erro ao gerar lote 15 do Anki:', err));
-    }
-  }, [isAllCompleted, ankiBatchTriggered, plan, concursoId]);
-
   return (
     <div className="maestro-container animate-fade-in">
       {/* Top Header com Seletor de Tempo */}
@@ -255,6 +262,23 @@ export const MaestroBattleView: React.FC<MaestroBattleViewProps> = ({
         </div>
 
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={handleTriggerMotorR}
+            disabled={isSyncingEngine}
+            style={{
+              fontSize: '0.82rem',
+              padding: '7px 14px',
+              background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+              border: 'none',
+              boxShadow: '0 2px 8px rgba(2, 132, 199, 0.4)'
+            }}
+            title="Executar pipeline analítico em R (ajuste de decaimento, Wilson e Robin Hood)"
+          >
+            {isSyncingEngine ? '⏳ Calibrando R...' : '⚡ Sincronizar Motor R'}
+          </button>
+
           {onSwitchToWeekly && (
             <button
               type="button"
@@ -384,6 +408,44 @@ export const MaestroBattleView: React.FC<MaestroBattleViewProps> = ({
             <span>🧠 Retenção Atual: {plan.telemetriaCognitiva?.retencaoAtual || 82}%</span>
             <span style={{ opacity: 0.6 }}>➔</span>
             <span>Meta: {plan.telemetriaCognitiva?.metaRetencao || 90}%</span>
+          </div>
+        </div>
+      )}
+
+      {/* Orientações Pedagógicas Humanizadas do Motor R */}
+      {analyticalSignals && analyticalSignals.length > 0 && (
+        <div className="glass" style={{
+          padding: '0.85rem 1.25rem',
+          borderRadius: '12px',
+          borderLeft: '4px solid #f59e0b',
+          background: 'rgba(245, 158, 11, 0.08)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '0.4rem'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '1rem' }}>💡</span>
+            <strong style={{ color: '#fbbf24', fontSize: '0.88rem' }}>
+              Orientação do Mentor (Calibrado pelo Motor Estatístico R):
+            </strong>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', fontSize: '0.84rem', color: '#cbd5e1' }}>
+            {analyticalSignals.some(s => s.signal_type === 'OVERCONFIDENCE_MISCONCEPTION') && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ color: '#ef4444' }}>⚠️</span>
+                <span>
+                  <strong>Atenção a pegadinhas sutis:</strong> Detectamos respostas erradas em questões onde você tinha certeza absoluta. Redobre a atenção ao comando e às exceções da banca.
+                </span>
+              </div>
+            )}
+            {analyticalSignals.some(s => s.signal_type === 'INSUFFICIENT_EVIDENCE') && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ color: '#38bdf8' }}>🔍</span>
+                <span>
+                  <strong>Fase de Exploração:</strong> Tópicos com poucas resoluções estão recebendo blocos exploratórios para mapear com segurança o seu domínio real.
+                </span>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -597,47 +659,6 @@ export const MaestroBattleView: React.FC<MaestroBattleViewProps> = ({
           <p>
             Você executou com maestria todos os {plan?.totalPassos} passos do roteiro diário ({plan?.tempoTotalMinutos} min líquidos). A retenção foi fortalecida e suas sinapses consolidadas!
           </p>
-
-          {/* Automação Extrema: Card de Fechamento Silencioso no Anki */}
-          <div style={{
-            background: 'rgba(59, 130, 246, 0.12)',
-            border: '1px solid rgba(59, 130, 246, 0.35)',
-            borderRadius: '12px',
-            padding: '1.25rem',
-            margin: '1.25rem 0',
-            textAlign: 'left'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-              <div>
-                <span style={{ fontSize: '0.78rem', color: '#60a5fa', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                  ⚡ Automação Extrema: Integração Silenciosa Anki
-                </span>
-                <h4 style={{ margin: '0.25rem 0', color: '#f8fafc', fontSize: '1.1rem', fontWeight: 700 }}>
-                  {ankiBatchMsg || '✨ 15 Flashcards gerados magicamente para o seu Anki'}
-                </h4>
-                <p style={{ margin: 0, fontSize: '0.84rem', color: '#cbd5e1', lineHeight: 1.4 }}>
-                  Você terminou a sessão de estudos. Ao abrir seu Anki local, os 15 flashcards das regras e pegadinhas mais importantes já estão lá (Frente/Verso e Omissão de Palavras - Cloze), agendados para amanhã.
-                </p>
-              </div>
-              {onOpenAnkiHub && (
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={onOpenAnkiHub}
-                  style={{
-                    background: '#3b82f6',
-                    border: 'none',
-                    padding: '10px 18px',
-                    fontSize: '0.88rem',
-                    fontWeight: 700,
-                    whiteSpace: 'nowrap'
-                  }}
-                >
-                  Abrir Anki Hub ➔
-                </button>
-              )}
-            </div>
-          </div>
 
           <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
             <button
