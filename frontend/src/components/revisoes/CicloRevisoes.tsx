@@ -105,6 +105,7 @@ export const CicloRevisoes: React.FC<CicloRevisoesProps> = ({
 
   // Dados da API
   const [agenda, setAgenda] = useState<RevisionAgendaData | null>(null);
+  const [errorTaxonomyStats, setErrorTaxonomyStats] = useState<Record<string, number>>({});
   const [concludedMsg, setConcludedMsg] = useState<string | null>(null);
 
   // Estados T24 & T25
@@ -123,9 +124,16 @@ export const CicloRevisoes: React.FC<CicloRevisoesProps> = ({
         if (data) setAgenda(data);
       })
       .catch(() => {});
+
+    fetch(`/api/v1/revisoes/error-taxonomy-counts?concursoId=${encodeURIComponent(activeConcurso.id)}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && data.counts) setErrorTaxonomyStats(data.counts);
+      })
+      .catch(() => {});
   };
 
-  // Carregar agenda de revisões
+  // Carregar agenda de revisões e contagens de erro
   useEffect(() => {
     reloadAgenda();
   }, [activeConcurso]);
@@ -821,34 +829,53 @@ export const CicloRevisoes: React.FC<CicloRevisoesProps> = ({
             ================================================================== */}
         {activeTab === 'errors' && (
           <div className="revisoes-taxonomy-grid">
-            {errorTaxonomy.map(tax => (
-              <div key={tax.code} className="revisoes-error-card">
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span
-                      className="revisoes-error-code"
-                      style={{ backgroundColor: `${tax.color}15`, color: tax.color, border: `1px solid ${tax.color}35` }}
-                    >
-                      {tax.badge}
-                    </span>
-                    <span style={{ fontSize: '0.72rem', color: 'var(--calm-text-muted)', fontWeight: 600 }}>
-                      Remédio: {tax.action}
-                    </span>
+            {errorTaxonomy.map(tax => {
+              const count = errorTaxonomyStats[tax.badge] ?? errorTaxonomyStats[tax.code] ?? 0;
+              return (
+                <div key={tax.code} className="revisoes-error-card">
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span
+                          className="revisoes-error-code"
+                          style={{ backgroundColor: `${tax.color}15`, color: tax.color, border: `1px solid ${tax.color}35` }}
+                        >
+                          {tax.badge}
+                        </span>
+                        <span
+                          className="revisoes-error-count-pill"
+                          style={{
+                            fontSize: '0.72rem',
+                            fontWeight: 700,
+                            padding: '0.15rem 0.55rem',
+                            borderRadius: '999px',
+                            backgroundColor: count > 0 ? `${tax.color}20` : 'var(--calm-badge-bg)',
+                            color: count > 0 ? tax.color : 'var(--calm-text-muted)',
+                            border: `1px solid ${count > 0 ? `${tax.color}40` : 'var(--calm-border)'}`
+                          }}
+                        >
+                          {count === 1 ? '1 questão' : `${count} questões`}
+                        </span>
+                      </div>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--calm-text-muted)', fontWeight: 600 }}>
+                        Remédio: {tax.action}
+                      </span>
+                    </div>
+
+                    <h3 className="revisoes-error-title">{tax.title}</h3>
+                    <p className="revisoes-error-desc">{tax.desc}</p>
                   </div>
 
-                  <h3 className="revisoes-error-title">{tax.title}</h3>
-                  <p className="revisoes-error-desc">{tax.desc}</p>
+                  <button
+                    onClick={() => onStartErrorNotebook(tax.code)}
+                    className="revisoes-btn-quick-arrow"
+                    style={{ width: '100%', justifyContent: 'center', gap: '0.5rem', padding: '0.65rem' }}
+                  >
+                    {count > 0 ? `Filtrar caderno (${count} questões)` : 'Filtrar caderno deste tipo'} <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
                 </div>
-
-                <button
-                  onClick={() => onStartErrorNotebook(tax.code)}
-                  className="revisoes-btn-quick-arrow"
-                  style={{ width: '100%', justifyContent: 'center', gap: '0.5rem', padding: '0.65rem' }}
-                >
-                  Filtrar caderno deste tipo <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 

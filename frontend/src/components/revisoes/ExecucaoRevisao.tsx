@@ -453,31 +453,52 @@ export const ExecucaoRevisao: React.FC<ExecucaoRevisaoProps> = ({
       {/* ==================================================================
           ETAPA 5: PRÓXIMA REVISÃO
           ================================================================== */}
-      {etapa === 'PROXIMA_REVISAO' && (
-        <div className="exec-rev-card animate-fade-in">
-          <div className="exec-rev-card-header">
-            <span className="badge-tipo-rev">Etapa 5 — Planejamento Futuro</span>
-            <span className="disc-pill">{context.disciplina} › {context.topico}</span>
-          </div>
+      {etapa === 'PROXIMA_REVISAO' && (() => {
+        const proximoIntervalo = outcomeResult?.proximoIntervalo || 7;
+        const proximoEstagio = outcomeResult?.proximoEstagio || 'MANUTENCAO_PREVENTIVA';
+        const isRecuo = proximoIntervalo <= 1;
+        
+        const estagioLabel = 
+          proximoEstagio === 'TESTE_TRANSFERENCIA' ? 'Teste de Transferência' :
+          proximoEstagio === 'RECUPERACAO_ATIVA' ? 'Recuperação Ativa' :
+          proximoEstagio === 'INTERVENCAO_CORRETIVA' ? 'Intervenção Corretiva' : 'Manutenção Preventiva';
 
-          <div className="next-revision-card">
-            <div className="next-rev-top">
-              <span className="next-rev-badge">Intervalo Dilatado</span>
-              <span className="next-rev-date">Próximo teste: em 7 dias</span>
+        return (
+          <div className="exec-rev-card animate-fade-in">
+            <div className="exec-rev-card-header">
+              <span className="badge-tipo-rev">Etapa 5 — Planejamento Futuro</span>
+              <span className="disc-pill">{context.disciplina} › {context.topico}</span>
             </div>
-            <h2 className="next-rev-topic">{context.topico}</h2>
-            <p className="next-rev-desc">
-              Com o resultado desta recuperação ativa, a curva de esquecimento foi estabilizada. O intervalo foi recalculado para o estágio de <strong>Consolidação Preventiva</strong>.
-            </p>
-          </div>
 
-          <div className="exec-rev-actions-row">
-            <button onClick={onFinish} className="btn-exec-primary">
-              <Check className="w-4 h-4" /> Concluir e Retornar à Fila
-            </button>
+            <div className="next-revision-card">
+              <div className="next-rev-top">
+                <span className={`next-rev-badge ${isRecuo ? 'badge-amber' : ''}`}>
+                  {isRecuo ? 'Reforço Imediato' : 'Intervalo Dilatado'}
+                </span>
+                <span className="next-rev-date">
+                  Próximo teste: em {proximoIntervalo} {proximoIntervalo === 1 ? 'dia' : 'dias'}
+                </span>
+              </div>
+              <h2 className="next-rev-topic">{context.topico}</h2>
+              <p className="next-rev-desc">
+                {outcomeResult?.justificativaPedagogica ? (
+                  outcomeResult.justificativaPedagogica
+                ) : (
+                  <>
+                    Com base no desempenho registrado pelo motor adaptativo, o intervalo foi recalculado para o estágio de <strong>{estagioLabel}</strong>.
+                  </>
+                )}
+              </p>
+            </div>
+
+            <div className="exec-rev-actions-row">
+              <button onClick={onFinish} className="btn-exec-primary">
+                <Check className="w-4 h-4" /> Concluir e Retornar à Fila
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 };
