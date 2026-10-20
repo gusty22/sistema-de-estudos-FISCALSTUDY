@@ -81,6 +81,7 @@ export interface TopicMaterialLink {
 interface BibliotecaMateriaisProps {
   activeConcurso: ConcursoItem | null;
   onNavigateToStudy: (disciplina: string, assunto?: string) => void;
+  onNavigateToEdital?: () => void;
 }
 
 interface SubtopicGroup {
@@ -108,7 +109,7 @@ interface DisciplineGroup {
   totalLinks: number;
 }
 
-export const BibliotecaMateriais: React.FC<BibliotecaMateriaisProps> = ({ activeConcurso, onNavigateToStudy }) => {
+export const BibliotecaMateriais: React.FC<BibliotecaMateriaisProps> = ({ activeConcurso, onNavigateToStudy, onNavigateToEdital }) => {
   // Tema: Paper (Clean Calm Light) vs Night (Calm Dark)
   const [theme, setTheme] = useState<'paper' | 'night'>('night');
 
@@ -778,6 +779,16 @@ export const BibliotecaMateriais: React.FC<BibliotecaMateriaisProps> = ({ active
               <FolderSearch className="w-4 h-4 text-emerald-400" /> Selecionar Pasta
             </button>
 
+            {onNavigateToEdital && (
+              <button
+                className="calm-btn-secondary"
+                onClick={onNavigateToEdital}
+                title="Abrir o Edital Verticalizado global do concurso"
+              >
+                <Layers className="w-4 h-4 text-emerald-400" /> Ver Edital Verticalizado
+              </button>
+            )}
+
             <button
               className="calm-btn-secondary"
               onClick={() => {
@@ -872,9 +883,10 @@ export const BibliotecaMateriais: React.FC<BibliotecaMateriaisProps> = ({ active
             <button
               className={`calm-tab-btn ${activeView === 'TREE' ? 'active' : ''}`}
               onClick={() => setActiveView('TREE')}
+              title="Visualizar tópicos e subtópicos vinculados a cada material da biblioteca"
             >
               <Layers className="w-4 h-4" />
-              Edital Verticalizado ({hierarchyTree.reduce((acc, d) => acc + d.totalTopics, 0)} tópicos)
+              Tópicos Curriculares ({hierarchyTree.reduce((acc, d) => acc + d.totalTopics, 0)})
             </button>
             <button
               className={`calm-tab-btn ${activeView === 'COVERAGE' ? 'active' : ''}`}

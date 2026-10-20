@@ -33,12 +33,36 @@ export const LeitorMaterialModal: React.FC<LeitorMaterialModalProps> = ({
   const [inputVal, setInputVal] = useState<string>(String(initialPage));
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving'>('saved');
   const [showTopicsSidebar, setShowTopicsSidebar] = useState<boolean>(true);
+  const [fileCheckStatus, setFileCheckStatus] = useState<'CHECKING' | 'FOUND' | 'NOT_FOUND' | 'EXTERNAL'>('CHECKING');
   const saveTimeoutRef = useRef<any>(null);
   const currentPageRef = useRef<number>(currentPage);
 
   useEffect(() => {
     currentPageRef.current = currentPage;
   }, [currentPage]);
+
+  // Verifica se o arquivo local físico realmente existe no backend
+  useEffect(() => {
+    if (!material.urlOuCaminho || material.formato === 'LINK') {
+      setFileCheckStatus('EXTERNAL');
+      return;
+    }
+    let isMounted = true;
+    fetch(`/api/v1/materials/${encodeURIComponent(material.id)}/file`, { method: 'HEAD' })
+      .then(res => {
+        if (!isMounted) return;
+        if (res.ok) {
+          setFileCheckStatus('FOUND');
+        } else {
+          setFileCheckStatus('NOT_FOUND');
+        }
+      })
+      .catch(() => {
+        if (isMounted) setFileCheckStatus('NOT_FOUND');
+      });
+
+    return () => { isMounted = false; };
+  }, [material.id, material.urlOuCaminho, material.formato]);
 
   // Função para salvar progresso automaticamente no backend
   const persistProgress = useCallback(async (page: number) => {
@@ -260,7 +284,7 @@ export const LeitorMaterialModal: React.FC<LeitorMaterialModalProps> = ({
                 title={material.titulo}
                 sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
               />
-            ) : material.urlOuCaminho ? (
+            ) : material.urlOuCaminho && fileCheckStatus !== 'NOT_FOUND' ? (
               /* PDF ou arquivo local através do backend stream */
               <iframe
                 src={backendFileUrl}
@@ -268,16 +292,38 @@ export const LeitorMaterialModal: React.FC<LeitorMaterialModalProps> = ({
                 title={material.titulo}
               />
             ) : (
-              /* Fallback Calmo: Quando não há arquivo físico ou é referência de livro */
+              /* Fallback Calmo: Quando não há arquivo físico no caminho informado ou é referência de livro */
               <div className="leitor-fallback-container">
                 <div className="leitor-fallback-icon">
                   <BookOpen className="w-8 h-8" />
                 </div>
                 <h3 className="leitor-fallback-title">{material.titulo}</h3>
-                <p className="leitor-fallback-desc">
-                  Este material está registrado como <strong>{material.formato || 'LIVRO'}</strong> na sua biblioteca.
-                  Conforme você lê, utilize as setas <strong>←</strong> e <strong>→</strong> do teclado ou os botões superiores para folhear e registrar seu avanço. O sistema salvará cada página lida automaticamente sem que você precise preencher nada manualmente.
-                </p>
+                {fileCheckStatus === 'NOT_FOUND' ? (
+                  <div style={{
+                    background: 'rgba(245, 158, 11, 0.1)',
+                    border: '1px solid rgba(245, 158, 11, 0.3)',
+                    borderRadius: '10px',
+                    padding: '0.85rem 1.15rem',
+                    color: '#fbbf24',
+                    fontSize: '0.84rem',
+                    textAlign: 'left',
+                    lineHeight: 1.5,
+                    marginBottom: '0.5rem'
+                  }}>
+                    <strong>⚠️ Arquivo local não encontrado no caminho registrado:</strong>
+                    <div style={{ fontFamily: 'monospace', fontSize: '0.78rem', marginTop: '0.3rem', color: 'var(--calm-text)' }}>
+                      {material.urlOuCaminho}
+                    </div>
+                    <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: 'var(--calm-text-muted)' }}>
+                      Como os navegadores modernos bloqueiam o acesso direto a arquivos <code style={{ color: 'inherit' }}>C:\</code> por diretrizes de segurança, o leitor serve os bytes pelo backend (<code>/api/v1/materials/{material.id}/stream</code>). Se o arquivo foi movido ou renomeado, você pode relocalizá-lo na Biblioteca de Materiais ou continuar registrando seu avanço de leitura pelas páginas abaixo.
+                    </div>
+                  </div>
+                ) : (
+                  <p className="leitor-fallback-desc">
+                    Este material está registrado como <strong>{material.formato || 'LIVRO'}</strong> na sua biblioteca.
+                    Conforme você lê, utilize as setas <strong>←</strong> e <strong>→</strong> do teclado ou os botões superiores para folhear e registrar seu avanço. O sistema salvará cada página lida automaticamente sem que você precise preencher nada manualmente.
+                  </p>
+                )}
 
                 <div className="leitor-fallback-actions">
                   <button
