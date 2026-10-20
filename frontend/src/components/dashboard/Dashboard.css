@@ -366,15 +366,9 @@ body.theme-dark .dashboard-calm-wrapper,
 
 .calm-adjusts-bar {
   display: flex;
-  overflow-x: auto;
+  flex-wrap: wrap;
   gap: 0.65rem;
   padding-bottom: 0.5rem;
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-.calm-adjusts-bar::-webkit-scrollbar {
-  display: none;
 }
 
 .calm-adjust-chip {

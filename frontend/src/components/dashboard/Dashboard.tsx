@@ -16,6 +16,7 @@ import {
   CalendarDays,
   Zap
 } from 'lucide-react';
+import { useSimplifiedMode } from '../../context/SimplifiedModeContext';
 import './Dashboard.css';
 
 interface DashboardProps {
@@ -53,6 +54,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   activeConcurso,
   onNavigateToTab,
 }) => {
+  const { isSimplifiedMode, toggleSimplifiedMode } = useSimplifiedMode();
+
   // Estados de Interface e Transparência
   const [showWhy, setShowWhy] = useState(false);
   const [availableTime, setAvailableTime] = useState<number>(0);
@@ -291,7 +294,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   // Disparar atividade ao clicar em Começar Agora
   const handleStartActivity = (activity = currentActivity) => {
-    onNavigateToTab('study', {
+    sessionStorage.setItem('fiscalstudy_session_discipline', activity.discipline);
+    sessionStorage.setItem('fiscalstudy_session_topic', activity.topic);
+    sessionStorage.setItem('fiscalstudy_session_objective', activity.pedagogyNote || activity.reason);
+    if (activity.type === 'Revisão') {
+      sessionStorage.setItem('fiscalstudy_session_type', 'REVISAO');
+    } else if (activity.type === 'Questões' || modeOnlyQuestions) {
+      sessionStorage.setItem('fiscalstudy_session_type', 'QUESTOES');
+    } else {
+      sessionStorage.setItem('fiscalstudy_session_type', 'ESTUDO_ORIENTADO');
+    }
+
+    onNavigateToTab('session', {
       disciplina: activity.discipline,
       assunto: activity.topic,
       mode: modeOnlyQuestions ? 'ONLY_QUESTIONS' : 'STANDARD'
@@ -347,7 +361,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         {/* ==================================================================
             1. HEADER DE TECNOLOGIA CALMA (HUMANIZADO)
             ================================================================== */}
-        <header className="calm-home-header">
+        <header className="calm-home-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <h1 className="calm-home-greeting">
               Bons Estudos!
@@ -357,6 +371,28 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <span>Objetivo: {activeConcurso?.nome || 'Auditor Fiscal (RFB)'}</span>
             </div>
           </div>
+
+          <button
+            onClick={toggleSimplifiedMode}
+            title={isSimplifiedMode ? 'Modo Aluno ativo: interface simplificada, foco em prática e mentoria. Clique para ver métricas e fórmulas de engenharia.' : 'Modo Avançado ativo: exibindo metadados técnicos e fórmulas. Clique para simplificar a interface.'}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.45rem',
+              padding: '0.45rem 0.85rem',
+              borderRadius: '9999px',
+              border: isSimplifiedMode ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid var(--calm-card-border, #e2e8f0)',
+              background: isSimplifiedMode ? 'rgba(16, 185, 129, 0.08)' : 'var(--calm-card-bg, #ffffff)',
+              color: isSimplifiedMode ? '#059669' : 'var(--calm-text-muted, #64748b)',
+              fontSize: '0.78rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <span>{isSimplifiedMode ? '🎓 Modo Aluno' : '⚙️ Modo Avançado'}</span>
+          </button>
         </header>
 
         {/* Feedback de Pausa Consciente */}
@@ -391,7 +427,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
                 <span style={{ fontSize: '0.78rem', fontWeight: 700, letterSpacing: '0.04em', color: '#f43f5e', textTransform: 'uppercase' }}>
-                  Auditoria de Logs: {anomalyReport.anomalies.length} Anomalia(s) Detectada(s)
+                  {isSimplifiedMode
+                    ? `Diagnóstico de Estudos: ${anomalyReport.anomalies.length} Ponto(s) de Atenção`
+                    : `Auditoria de Logs: ${anomalyReport.anomalies.length} Anomalia(s) Detectada(s)`}
                 </span>
               </div>
               <button
@@ -410,7 +448,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   gap: '0.35rem'
                 }}
               >
-                Abrir Diagnóstico Automático <ChevronRight className="w-3.5 h-3.5" />
+                {isSimplifiedMode ? 'Ver Diagnóstico' : 'Abrir Diagnóstico Automático'} <ChevronRight className="w-3.5 h-3.5" />
               </button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
@@ -473,13 +511,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       color: ankiStatus.connected ? '#059669' : '#d97706'
                     }}
                   >
-                    {ankiStatus.connected ? 'Anki Desktop Aberto (Porta 8765)' : 'Aguardando Anki Desktop'}
+                    {isSimplifiedMode
+                      ? (ankiStatus.connected ? 'Anki Conectado' : 'Aguardando Anki')
+                      : (ankiStatus.connected ? 'Anki Desktop Aberto (Porta 8765)' : 'Aguardando Anki Desktop')}
                   </span>
                 </div>
                 <p style={{ margin: '0.15rem 0 0 0', fontSize: '0.78rem', color: 'var(--calm-text-muted, #64748b)' }}>
                   {ankiStatus.connected
                     ? 'Flashcards sintetizados a partir das suas sessões. Clique para injetar nos baralhos por disciplina.'
-                    : 'Fila segura no SQLite. Abra o Anki Desktop para sincronização automática em segundo plano.'}
+                    : (isSimplifiedMode
+                        ? 'Seus flashcards estão salvos. Abra o Anki Desktop para sincronizar com seus baralhos.'
+                        : 'Fila segura no SQLite. Abra o Anki Desktop para sincronização automática em segundo plano.')}
                 </p>
               </div>
             </div>
