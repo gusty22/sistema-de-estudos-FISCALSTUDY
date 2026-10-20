@@ -14,9 +14,12 @@ import {
   ChevronRight,
   BrainCircuit,
   ListTodo,
-  ExternalLink,
   HelpCircle
 } from 'lucide-react';
+import { LeitorMaterialModal } from '../materiais/LeitorMaterialModal';
+import { ResolucaoQuestaoModal } from '../questoes/ResolucaoQuestaoModal';
+import type { QuestionItem } from '../questoes/BancoQuestoes';
+import type { StudyMaterialItem } from '../materiais/BibliotecaMateriais';
 import type { ConcursoItem } from '../concursos/MeusConcursos';
 import './SessaoEstudoAtiva.css';
 
@@ -127,14 +130,22 @@ export default function SessaoEstudoAtiva({
   onOpenMaterial
 }: SessaoEstudoAtivaProps) {
   // 2. Tipo de Atividade e Sessão
-  const [activityType, setActivityType] = useState<ActivityType>(initialActivityType);
+  const [activityType, setActivityType] = useState<ActivityType>(() => {
+    if (initialActivityType && initialActivityType !== 'ESTUDO_ORIENTADO') return initialActivityType;
+    const storedType = sessionStorage.getItem('fiscalstudy_session_type') as ActivityType;
+    return storedType && STEPS_BY_TYPE[storedType] ? storedType : initialActivityType;
+  });
   const [sessionId] = useState<string>(() => `sess_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`);
+
+  const effectiveDiscipline = initialDiscipline || sessionStorage.getItem('fiscalstudy_session_discipline') || activeConcurso?.nome || DEFAULT_SESSION.discipline;
+  const effectiveTopic = initialTopic || sessionStorage.getItem('fiscalstudy_session_topic') || DEFAULT_SESSION.topic;
+  const effectiveObjective = initialObjective || sessionStorage.getItem('fiscalstudy_session_objective') || DEFAULT_SESSION.objective;
 
   const session: SessionData = {
     ...DEFAULT_SESSION,
-    discipline: initialDiscipline || activeConcurso?.nome || DEFAULT_SESSION.discipline,
-    topic: initialTopic || DEFAULT_SESSION.topic,
-    objective: initialObjective || DEFAULT_SESSION.objective,
+    discipline: effectiveDiscipline,
+    topic: effectiveTopic,
+    objective: effectiveObjective,
     steps: STEPS_BY_TYPE[activityType] || DEFAULT_SESSION.steps
   };
 
@@ -150,11 +161,100 @@ export default function SessaoEstudoAtiva({
   const [isSavingSession, setIsSavingSession] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
 
-  // Modais de suporte
+  // Modais de suporte e Conteúdo Embutido (Tecnologia Calma)
   const [showInterruption, setShowInterruption] = useState(false);
   const [showDifficulty, setShowDifficulty] = useState(false);
   const [difficultyText, setDifficultyText] = useState('');
   const [fatigueDismissed, setFatigueDismissed] = useState(false);
+
+  // Estados para leitor de PDF e questões embutidos na sessão
+  const [embeddedMaterial, setEmbeddedMaterial] = useState<StudyMaterialItem | null>(null);
+  const [isLoadingMaterial, setIsLoadingMaterial] = useState(false);
+  const [sessionQuestions, setSessionQuestions] = useState<QuestionItem[]>([]);
+  const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
+  const [isEmbeddedQuestionsOpen, setIsEmbeddedQuestionsOpen] = useState(false);
+  const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
+
+  // Abre material embutido diretamente na tela do timer
+  const handleOpenEmbeddedMaterial = async () => {
+    setIsLoadingMaterial(true);
+    try {
+      // 1. Tenta carregar materiais vinculados ao concurso ou disciplina
+      const res = await fetch(`/api/v1/materials?concursoId=${encodeURIComponent(activeConcurso?.id || '')}`);
+      if (res.ok) {
+        const list: StudyMaterialItem[] = await res.json();
+        // Procura material que coincida com a disciplina ou id
+        const match = list.find(m => 
+          (session.material.materialId && m.id === session.material.materialId) ||
+          m.disciplina?.toLowerCase() === session.discipline.toLowerCase() ||
+          m.titulo?.toLowerCase().includes(session.topic.toLowerCase())
+        ) || list[0];
+
+        if (match) {
+          setEmbeddedMaterial(match);
+          return;
+        }
+      }
+      
+      // Fallback: cria objeto temporário com os dados da sessão
+      setEmbeddedMaterial({
+        id: session.material.materialId || 'temp_mat',
+        titulo: session.material.title,
+        disciplina: session.discipline,
+        formato: 'PDF',
+        totalPaginas: 150,
+        paginaAtual: 142
+      });
+    } catch (e) {
+      console.warn('Fallback para visualização de material:', e);
+      setEmbeddedMaterial({
+        id: 'temp_mat',
+        titulo: session.material.title,
+        disciplina: session.discipline,
+        formato: 'PDF',
+        totalPaginas: 150,
+        paginaAtual: 142
+      });
+    } finally {
+      setIsLoadingMaterial(false);
+    }
+  };
+
+  // Carrega e abre questões do tópico embutidas na sessão
+  const handleOpenEmbeddedQuestions = async () => {
+    setIsLoadingQuestions(true);
+    try {
+      const url = `/api/v1/bank/questions?disciplina=${encodeURIComponent(session.discipline)}&page=0&size=5`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        const items = data.items || [];
+        if (items.length > 0) {
+          setSessionQuestions(items);
+          setCurrentQuestionIdx(0);
+          setIsEmbeddedQuestionsOpen(true);
+          return;
+        }
+      }
+      // Se não encontrou por disciplina específica, busca as gerais
+      const fallbackRes = await fetch('/api/v1/bank/questions?page=0&size=5');
+      if (fallbackRes.ok) {
+        const fallbackData = await fallbackRes.json();
+        if (fallbackData.items && fallbackData.items.length > 0) {
+          setSessionQuestions(fallbackData.items);
+          setCurrentQuestionIdx(0);
+          setIsEmbeddedQuestionsOpen(true);
+          return;
+        }
+      }
+      alert('Nenhuma questão cadastrada para este tópico no momento.');
+    } catch (e) {
+      console.error('Erro ao carregar questões para a sessão:', e);
+      alert('Não foi possível carregar as questões no momento.');
+    } finally {
+      setIsLoadingQuestions(false);
+    }
+  };
 
   useEffect(() => {
     let interval: any;
@@ -292,6 +392,49 @@ export default function SessaoEstudoAtiva({
             </div>
           </div>
         </div>
+      );
+    }
+
+    if (embeddedMaterial) {
+      return (
+        <LeitorMaterialModal
+          material={embeddedMaterial}
+          onClose={() => setEmbeddedMaterial(null)}
+          onUpdateProgress={(_matId, newPage) => {
+            setEmbeddedMaterial(prev => prev ? { ...prev, paginaAtual: newPage } : null);
+          }}
+        />
+      );
+    }
+
+    if (isEmbeddedQuestionsOpen && sessionQuestions.length > 0) {
+      const activeQ = sessionQuestions[currentQuestionIdx];
+      return (
+        <ResolucaoQuestaoModal
+          question={activeQ}
+          currentIndex={currentQuestionIdx}
+          totalInBatch={sessionQuestions.length}
+          onClose={() => setIsEmbeddedQuestionsOpen(false)}
+          onNext={() => {
+            if (currentQuestionIdx < sessionQuestions.length - 1) {
+              setCurrentQuestionIdx(prev => prev + 1);
+            }
+          }}
+          onPrev={() => {
+            if (currentQuestionIdx > 0) {
+              setCurrentQuestionIdx(prev => prev - 1);
+            }
+          }}
+          onQuestionAnswered={(_qId: string, _isCorrect: boolean) => {
+            if (currentQuestionIdx < sessionQuestions.length - 1) {
+              setCurrentQuestionIdx(prev => prev + 1);
+            } else {
+              setIsEmbeddedQuestionsOpen(false);
+            }
+          }}
+          onToggleFavorite={() => {}}
+          onReportQuestion={() => {}}
+        />
       );
     }
 
@@ -521,8 +664,8 @@ export default function SessaoEstudoAtiva({
 
       {/* CORPO DA SESSÃO */}
       <main className="session-main-body">
-        {/* Seletor Sutil do Tipo de Atividade (T13) */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 mb-2 no-scrollbar">
+        {/* Seletor Elegante do Tipo de Atividade (Tecnologia Calma) */}
+        <div className="session-activity-bar">
           {[
             { id: 'ESTUDO_ORIENTADO', label: 'Estudo Orientado' },
             { id: 'QUESTOES', label: 'Resolução de Questões' },
@@ -538,11 +681,7 @@ export default function SessaoEstudoAtiva({
                 setActivityType(t.id as ActivityType);
                 setCurrentStepIndex(0);
               }}
-              className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition border ${
-                activityType === t.id
-                  ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
-                  : 'bg-white dark:bg-[#16181a] border-stone-200 dark:border-[#26282b] text-stone-500 hover:text-stone-800 dark:hover:text-stone-200'
-              }`}
+              className={`session-activity-pill ${activityType === t.id ? 'active' : ''}`}
             >
               {t.label}
             </button>
@@ -645,11 +784,20 @@ export default function SessaoEstudoAtiva({
             onClick={() => {
               if (onOpenMaterial) {
                 onOpenMaterial(session.material.materialId, session.material.title);
+              } else {
+                handleOpenEmbeddedMaterial();
               }
             }}
             className="session-material-open-btn flex items-center gap-1.5"
+            disabled={isLoadingMaterial}
           >
-            <ExternalLink className="w-3.5 h-3.5" /> Abrir Material
+            {isLoadingMaterial ? (
+              <span>Carregando...</span>
+            ) : (
+              <>
+                <BookOpen className="w-3.5 h-3.5" /> Ler PDF Embutido
+              </>
+            )}
           </button>
         </div>
 
@@ -704,18 +852,23 @@ export default function SessaoEstudoAtiva({
                           {step.description}
                         </p>
 
-                        {/* Atalho especial no passo 3 (Prática de Fixação) */}
-                        {step.id === 'step_3' && onOpenQuestions && (
+                        {/* Atalho especial no passo 3 (Prática de Fixação) ou atividade QUESTOES */}
+                        {(step.id === 'step_3' || activityType === 'QUESTOES') && (
                           <div className="mt-3">
                             <button
                               type="button"
-                              onClick={() =>
-                                onOpenQuestions(session.discipline, session.topic)
-                              }
-                              className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 hover:opacity-85 cursor-pointer"
+                              onClick={() => {
+                                if (onOpenQuestions) {
+                                  onOpenQuestions(session.discipline, session.topic);
+                                } else {
+                                  handleOpenEmbeddedQuestions();
+                                }
+                              }}
+                              disabled={isLoadingQuestions}
+                              className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 hover:opacity-85 cursor-pointer transition shadow-sm"
                             >
                               <Play className="w-3 h-3 fill-current" />
-                              Resolver Questões de Fixação Agora
+                              {isLoadingQuestions ? 'Buscando questões...' : 'Resolver Questões de Fixação Embutidas'}
                             </button>
                           </div>
                         )}

@@ -3,8 +3,7 @@ import {
   History,
   Clock,
   MessageSquarePlus,
-  X,
-  ShieldCheck
+  X
 } from 'lucide-react';
 import type { ConcursoItem } from '../concursos/MeusConcursos';
 import './HistoricoSessoes.css';
@@ -20,6 +19,7 @@ export interface StudySessionItem {
   questoesFeitas?: number;
   questoesAcertadas?: number;
   rendimentoPercentual?: number;
+  confiancaMedia?: number;
   modo?: string;
   activityType?: string;
   nextSessionHandoff?: string;
@@ -153,6 +153,8 @@ export default function HistoricoSessoes({
   };
 
   const formatSessionTime = (seconds: number) => {
+    if (!seconds || seconds <= 0) return '0 min';
+    if (seconds < 60) return `${seconds}s`;
     const mins = Math.floor(seconds / 60);
     if (mins < 60) return `${mins} min`;
     const hours = Math.floor(mins / 60);
@@ -201,16 +203,6 @@ export default function HistoricoSessoes({
           </div>
         </header>
 
-        {/* REGRA DE IMUTABILIDADE */}
-        <div className="history-banner-rule">
-          <ShieldCheck className="w-5 h-5 text-indigo-500 shrink-0 mt-0.5" />
-          <div>
-            <strong>Regra de Preservação e Imutabilidade:</strong> Todos os registros de
-            sessão são estritamente <em>append-only</em>. Qualquer correção de classificação ou
-            anotação posterior é armazenada como aditamento ao log, preservando fielmente os dados
-            originais da execução.
-          </div>
-        </div>
 
         {/* BARRA DE FILTROS */}
         <div className="history-filters-bar">
@@ -345,6 +337,15 @@ export default function HistoricoSessoes({
                         <span className="label">Aproveitamento</span>
                         <span className="val text-emerald-600 dark:text-emerald-400">
                           {session.rendimentoPercentual ?? Math.round((qAcert / qFeitas) * 100)}%
+                        </span>
+                      </div>
+                    )}
+
+                    {session.confiancaMedia !== undefined && session.confiancaMedia > 0 && (
+                      <div className="history-metric-box">
+                        <span className="label">Certeza Média</span>
+                        <span className="val text-indigo-600 dark:text-indigo-400">
+                          {session.confiancaMedia.toFixed(1)} / 5
                         </span>
                       </div>
                     )}
