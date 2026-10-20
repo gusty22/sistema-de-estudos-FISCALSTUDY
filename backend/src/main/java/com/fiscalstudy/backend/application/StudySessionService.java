@@ -56,7 +56,48 @@ public class StudySessionService {
         Number questoesAcertadas = (Number) sessionData.get("questoesAcertadas");
         int qFeitas = questoesFeitas != null ? questoesFeitas.intValue() : 0;
         int qAcertadas = questoesAcertadas != null ? Math.min(qFeitas, questoesAcertadas.intValue()) : 0;
+
+        // Se durationSeconds ou questões vierem zerados, consultar respostas reais gravadas para a mesma sessão
+        List<String> answerPayloads = (sessionId != null && !sessionId.isBlank())
+                ? eventStoreRepository.getEventPayloads(sessionId, "ANSWER_SUBMITTED")
+                : Collections.emptyList();
+        long sumActiveTimeMs = 0;
+        int answersCount = 0;
+        int answersCorrect = 0;
+        double sumConf = 0.0;
+
+        for (String ap : answerPayloads) {
+            try {
+                com.fasterxml.jackson.databind.JsonNode n = objectMapper.readTree(ap);
+                sumActiveTimeMs += n.path("activeTimeMs").asLong(0);
+                answersCount++;
+                if (n.path("isCorrect").asBoolean(false)) {
+                    answersCorrect++;
+                }
+                sumConf += n.path("confidenceLevel").asDouble(3.0);
+            } catch (Exception ignored) {}
+        }
+
+        if (answersCount > 0) {
+            if (durationSec.intValue() <= 0) {
+                durationSec = Math.max(1, (int) Math.round(sumActiveTimeMs / 1000.0));
+            }
+            if (qFeitas <= 0) {
+                qFeitas = answersCount;
+                qAcertadas = answersCorrect;
+            }
+        } else if (qFeitas > 0 && durationSec.intValue() <= 0) {
+            // Piso mínimo de integridade: pelo menos 1s por questão resolvida
+            durationSec = Math.max(1, qFeitas);
+        }
+
         double rendimentoPct = qFeitas > 0 ? Math.round(((qAcertadas * 100.0) / qFeitas) * 10.0) / 10.0 : 0.0;
+        Double confMedia = null;
+        if (sessionData.get("confiancaMedia") instanceof Number n) {
+            confMedia = Math.round(n.doubleValue() * 10.0) / 10.0;
+        } else if (answersCount > 0) {
+            confMedia = Math.round((sumConf / answersCount) * 10.0) / 10.0;
+        }
 
         double hoursDuration = durationSec.doubleValue() / 3600.0;
         double velPagsHora = hoursDuration > 0 ? Math.round((finalPaginasLidas / hoursDuration) * 10.0) / 10.0 : 0.0;
@@ -76,8 +117,8 @@ public class StudySessionService {
         Map<String, Object> payloadMap = new LinkedHashMap<>();
         payloadMap.put("sessionId", sessionId);
         payloadMap.put("concursoId", concursoId);
-        payloadMap.put("disciplina", disciplina);
-        payloadMap.put("topicoId", topicoId);
+        payloadMap.put("disciplina", disciplina != null ? disciplina : "Geral");
+        payloadMap.put("topicoId", topicoId != null ? topicoId : "Resolução de Questões");
         payloadMap.put("materialId", materialId);
         payloadMap.put("durationSeconds", durationSec.intValue());
         payloadMap.put("paginaInicio", paginaInicio);
@@ -86,6 +127,9 @@ public class StudySessionService {
         payloadMap.put("questoesFeitas", qFeitas);
         payloadMap.put("questoesAcertadas", qAcertadas);
         payloadMap.put("rendimentoPercentual", rendimentoPct);
+        if (confMedia != null) {
+            payloadMap.put("confiancaMedia", confMedia);
+        }
         payloadMap.put("velocidadePaginasPorHora", velPagsHora);
         payloadMap.put("velocidadeQuestoesPorHora", velQuestoesHora);
         payloadMap.put("modo", modo);
@@ -126,6 +170,7 @@ public class StudySessionService {
         int totalQuestoesAcertadas = 0;
         Map<String, Long> secondsPorDisciplina = new LinkedHashMap<>();
         String latestHandoff = null;
+        Set<String> processedSessionIds = new HashSet<>();
 
         for (String p : payloads) {
             try {
@@ -134,6 +179,11 @@ public class StudySessionService {
                 if (concursoId != null && !concursoId.isBlank() && !concursoId.equals(cid)) {
                     continue;
                 }
+                String sId = (String) map.get("sessionId");
+                if (sId != null) {
+                    processedSessionIds.add(sId);
+                }
+
                 Number dur = (Number) map.getOrDefault("durationSeconds", 0);
                 Number pags = (Number) map.getOrDefault("paginasLidas", 0);
                 Number qsts = (Number) map.getOrDefault("questoesFeitas", 0);
@@ -146,6 +196,32 @@ public class StudySessionService {
                 }
 
                 long s = dur != null ? dur.longValue() : 0L;
+                int q = qsts != null ? qsts.intValue() : 0;
+                int a = qAcert != null ? qAcert.intValue() : 0;
+
+                // Se durationSeconds ou questões vierem zeradas, checar respostas da sessão
+                if ((s <= 0 || q <= 0) && sId != null && !sId.isBlank()) {
+                    List<String> aPayloads = eventStoreRepository.getEventPayloads(sId, "ANSWER_SUBMITTED");
+                    long sumMs = 0;
+                    int aCount = 0;
+                    int aCorr = 0;
+                    for (String ap : aPayloads) {
+                        try {
+                            com.fasterxml.jackson.databind.JsonNode n = objectMapper.readTree(ap);
+                            sumMs += n.path("activeTimeMs").asLong(0);
+                            aCount++;
+                            if (n.path("isCorrect").asBoolean(false)) aCorr++;
+                        } catch (Exception ignored) {}
+                    }
+                    if (aCount > 0) {
+                        if (s <= 0) s = Math.max(1L, (long) Math.round(sumMs / 1000.0));
+                        if (q <= 0) {
+                            q = aCount;
+                            a = aCorr;
+                        }
+                    }
+                }
+
                 totalSeconds += s;
                 if ("HRE".equalsIgnoreCase(activityType)) {
                     hreSeconds += s;
@@ -153,11 +229,47 @@ public class StudySessionService {
                     heSeconds += s;
                 }
                 totalPaginas += pags != null ? pags.intValue() : 0;
-                totalQuestoes += qsts != null ? qsts.intValue() : 0;
-                totalQuestoesAcertadas += qAcert != null ? qAcert.intValue() : 0;
+                totalQuestoes += q;
+                totalQuestoesAcertadas += a;
 
                 secondsPorDisciplina.put(disc, secondsPorDisciplina.getOrDefault(disc, 0L) + s);
             } catch (Exception ignored) {}
+        }
+
+        // Incorporar sessões de questões em ANSWER_SUBMITTED que não possuam STUDY_SESSION_RECORDED
+        List<com.fiscalstudy.backend.domain.EventRecord> allAnswers = eventStoreRepository.getAllEvents("ANSWER_SUBMITTED");
+        Map<String, List<com.fiscalstudy.backend.domain.EventRecord>> answersBySession = new HashMap<>();
+        for (com.fiscalstudy.backend.domain.EventRecord ar : allAnswers) {
+            String sid = ar.getSessionId();
+            if (sid != null && !sid.isBlank() && !processedSessionIds.contains(sid)) {
+                answersBySession.computeIfAbsent(sid, k -> new ArrayList<>()).add(ar);
+            }
+        }
+
+        for (Map.Entry<String, List<com.fiscalstudy.backend.domain.EventRecord>> entry : answersBySession.entrySet()) {
+            long sessActiveMs = 0;
+            int sessCount = 0;
+            int sessCorrect = 0;
+            String sessDisc = "Geral";
+
+            for (com.fiscalstudy.backend.domain.EventRecord ar : entry.getValue()) {
+                sessCount++;
+                try {
+                    com.fasterxml.jackson.databind.JsonNode n = objectMapper.readTree(ar.getPayloadJson());
+                    sessActiveMs += n.path("activeTimeMs").asLong(0);
+                    if (n.path("isCorrect").asBoolean(false)) sessCorrect++;
+                    if (n.hasNonNull("disciplina") && !n.path("disciplina").asText().isBlank()) {
+                        sessDisc = n.path("disciplina").asText();
+                    }
+                } catch (Exception ignored) {}
+            }
+
+            long sessSec = Math.max(1L, (long) Math.round(sessActiveMs / 1000.0));
+            totalSeconds += sessSec;
+            heSeconds += sessSec;
+            totalQuestoes += sessCount;
+            totalQuestoesAcertadas += sessCorrect;
+            secondsPorDisciplina.put(sessDisc, secondsPorDisciplina.getOrDefault(sessDisc, 0L) + sessSec);
         }
 
         double hrePercentage = totalSeconds > 0 ? Math.round(((hreSeconds * 100.0) / totalSeconds) * 10.0) / 10.0 : 0.0;
@@ -210,7 +322,9 @@ public class StudySessionService {
             } catch (Exception ignored) {}
         }
 
+        Set<String> recordedSessionIds = new HashSet<>();
         List<Map<String, Object>> result = new ArrayList<>();
+
         for (com.fiscalstudy.backend.domain.EventRecord event : sessionEvents) {
             try {
                 Map<String, Object> map = objectMapper.readValue(event.getPayloadJson(), Map.class);
@@ -228,6 +342,47 @@ public class StudySessionService {
                 }
 
                 String sId = (String) map.get("sessionId");
+                if (sId != null) {
+                    recordedSessionIds.add(sId);
+                }
+
+                Number durNum = (Number) map.getOrDefault("durationSeconds", 0);
+                Number qFeitasNum = (Number) map.getOrDefault("questoesFeitas", 0);
+                long currentSec = durNum != null ? durNum.longValue() : 0L;
+                int currentQFeitas = qFeitasNum != null ? qFeitasNum.intValue() : 0;
+
+                // Enriquecer registros com dados de tentativas reais se estiverem com tempo zerado
+                if ((currentSec <= 0 || currentQFeitas <= 0) && sId != null && !sId.isBlank()) {
+                    List<String> aPayloads = eventStoreRepository.getEventPayloads(sId, "ANSWER_SUBMITTED");
+                    long sumMs = 0;
+                    int aCount = 0;
+                    int aCorr = 0;
+                    double cSum = 0.0;
+                    for (String ap : aPayloads) {
+                        try {
+                            com.fasterxml.jackson.databind.JsonNode n = objectMapper.readTree(ap);
+                            sumMs += n.path("activeTimeMs").asLong(0);
+                            aCount++;
+                            if (n.path("isCorrect").asBoolean(false)) aCorr++;
+                            cSum += n.path("confidenceLevel").asDouble(3.0);
+                        } catch (Exception ignored) {}
+                    }
+                    if (aCount > 0) {
+                        if (currentSec <= 0) {
+                            currentSec = Math.max(1L, (long) Math.round(sumMs / 1000.0));
+                            map.put("durationSeconds", currentSec);
+                        }
+                        if (currentQFeitas <= 0) {
+                            map.put("questoesFeitas", aCount);
+                            map.put("questoesAcertadas", aCorr);
+                            map.put("rendimentoPercentual", Math.round(((aCorr * 100.0) / aCount) * 10.0) / 10.0);
+                        }
+                        if (!map.containsKey("confiancaMedia") || map.get("confiancaMedia") == null) {
+                            map.put("confiancaMedia", Math.round((cSum / aCount) * 10.0) / 10.0);
+                        }
+                    }
+                }
+
                 map.put("occurredAt", event.getOccurredAt());
                 if (sId != null && annotationsBySession.containsKey(sId)) {
                     map.put("annotations", annotationsBySession.get(sId));
@@ -237,6 +392,77 @@ public class StudySessionService {
 
                 result.add(map);
             } catch (Exception ignored) {}
+        }
+
+        // Sintetizar sessões de questões em ANSWER_SUBMITTED não registradas em STUDY_SESSION_RECORDED
+        if (tipo == null || tipo.isBlank() || "ALL".equalsIgnoreCase(tipo) || "QUESTOES".equalsIgnoreCase(tipo)) {
+            List<com.fiscalstudy.backend.domain.EventRecord> allAnswers = eventStoreRepository.getAllEvents("ANSWER_SUBMITTED");
+            Map<String, List<com.fiscalstudy.backend.domain.EventRecord>> answersBySession = new LinkedHashMap<>();
+
+            for (com.fiscalstudy.backend.domain.EventRecord ar : allAnswers) {
+                String sid = ar.getSessionId();
+                if (sid != null && !sid.isBlank() && !recordedSessionIds.contains(sid)) {
+                    answersBySession.computeIfAbsent(sid, k -> new ArrayList<>()).add(ar);
+                }
+            }
+
+            for (Map.Entry<String, List<com.fiscalstudy.backend.domain.EventRecord>> entry : answersBySession.entrySet()) {
+                String sid = entry.getKey();
+                List<com.fiscalstudy.backend.domain.EventRecord> recs = entry.getValue();
+                if (recs.isEmpty()) continue;
+
+                long totalMs = 0;
+                int qCount = 0;
+                int qCorrect = 0;
+                double confSum = 0.0;
+                String sessDisc = "Geral";
+                String sessTopico = "Resolução de Questões";
+                String lastOccurred = recs.get(recs.size() - 1).getOccurredAt();
+
+                for (com.fiscalstudy.backend.domain.EventRecord er : recs) {
+                    qCount++;
+                    if (er.getOccurredAt() != null && er.getOccurredAt().compareTo(lastOccurred) > 0) {
+                        lastOccurred = er.getOccurredAt();
+                    }
+                    try {
+                        com.fasterxml.jackson.databind.JsonNode n = objectMapper.readTree(er.getPayloadJson());
+                        totalMs += n.path("activeTimeMs").asLong(0);
+                        if (n.path("isCorrect").asBoolean(false)) qCorrect++;
+                        confSum += n.path("confidenceLevel").asDouble(3.0);
+                        if (n.hasNonNull("disciplina") && !n.path("disciplina").asText().isBlank()) {
+                            sessDisc = n.path("disciplina").asText();
+                        }
+                        if (n.hasNonNull("assunto") && !n.path("assunto").asText().isBlank()) {
+                            sessTopico = n.path("assunto").asText();
+                        }
+                    } catch (Exception ignored) {}
+                }
+
+                if (disciplina != null && !disciplina.isBlank() && !disciplina.equalsIgnoreCase(sessDisc)) {
+                    continue;
+                }
+
+                long durSec = Math.max(1L, (long) Math.round(totalMs / 1000.0));
+                double rendPct = qCount > 0 ? Math.round(((qCorrect * 100.0) / qCount) * 10.0) / 10.0 : 0.0;
+                double confMed = qCount > 0 ? Math.round((confSum / qCount) * 10.0) / 10.0 : 3.0;
+
+                Map<String, Object> synth = new LinkedHashMap<>();
+                synth.put("sessionId", sid);
+                synth.put("concursoId", concursoId != null ? concursoId : "");
+                synth.put("disciplina", sessDisc);
+                synth.put("topicoId", sessTopico);
+                synth.put("durationSeconds", durSec);
+                synth.put("questoesFeitas", qCount);
+                synth.put("questoesAcertadas", qCorrect);
+                synth.put("rendimentoPercentual", rendPct);
+                synth.put("confiancaMedia", confMed);
+                synth.put("modo", "BANCO_QUESTOES");
+                synth.put("activityType", "QUESTOES");
+                synth.put("occurredAt", lastOccurred);
+                synth.put("annotations", annotationsBySession.getOrDefault(sid, Collections.emptyList()));
+
+                result.add(synth);
+            }
         }
 
         // Ordena decrescente pela data do evento

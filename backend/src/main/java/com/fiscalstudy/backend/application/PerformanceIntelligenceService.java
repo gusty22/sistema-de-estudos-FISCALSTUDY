@@ -59,6 +59,10 @@ public class PerformanceIntelligenceService {
         int correct = 0;
         int errors = 0;
         long totalActiveTimeMs = 0;
+        long totalConfidenceSum = 0;
+        Map<Integer, Integer> confidenceDistribution = new LinkedHashMap<>();
+        for (int k = 1; k <= 5; k++) confidenceDistribution.put(k, 0);
+
         Set<String> workedContents = new HashSet<>();
         Map<String, int[]> dailyMap = new TreeMap<>();
         Map<String, TopicStatsAcc> topicMap = new HashMap<>();
@@ -88,7 +92,7 @@ public class PerformanceIntelligenceService {
                     if (node.hasNonNull("gabaritoStatus")) {
                         gabaritoStatus = node.path("gabaritoStatus").asText();
                     }
-                    confidence = node.path("confidenceLevel").asInt(3);
+                    confidence = Math.max(1, Math.min(5, node.path("confidenceLevel").asInt(3)));
                     activeTime = node.path("activeTimeMs").asLong(0);
                 } catch (Exception ignored) {}
             }
@@ -104,6 +108,9 @@ public class PerformanceIntelligenceService {
                 } else {
                     errors++;
                 }
+
+                totalConfidenceSum += confidence;
+                confidenceDistribution.put(confidence, confidenceDistribution.getOrDefault(confidence, 0) + 1);
 
                 // Agrupamento por tópico
                 String topicKey = finalDisc + "||" + finalTop;
@@ -127,6 +134,26 @@ public class PerformanceIntelligenceService {
             }
         }
 
+        // Incorporar tempo de sessões de estudo teóricas/materiais gravadas em STUDY_SESSION_RECORDED
+        try {
+            List<Map<String, Object>> studySessions = jdbcTemplate.queryForList("""
+                SELECT payload_json FROM event_store WHERE event_type = 'STUDY_SESSION_RECORDED'
+            """);
+            for (Map<String, Object> ss : studySessions) {
+                String ssJson = (String) ss.get("payload_json");
+                if (ssJson != null) {
+                    try {
+                        JsonNode sn = objectMapper.readTree(ssJson);
+                        String act = sn.path("activityType").asText("HE");
+                        if (!"QUESTOES".equalsIgnoreCase(act)) {
+                            long durSec = sn.path("durationSeconds").asLong(0);
+                            totalActiveTimeMs += (durSec * 1000L);
+                        }
+                    } catch (Exception ignored) {}
+                }
+            }
+        } catch (Exception ignored) {}
+
         // Consultar revisões executadas no SQLite
         int revisoesExecutadas = 0;
         try {
@@ -138,18 +165,28 @@ public class PerformanceIntelligenceService {
             }
         } catch (Exception ignored) {}
 
-        // Não injetar dados falsos: se não há respostas, manter valores zerados e amostra real
-
         // Regra canônica: Todo percentual deve apresentar seu denominador
         double precisaoPercentual = evaluated > 0 ? ((double) correct / evaluated * 100.0) : 0.0;
         String precisaoDenominador = String.format(Locale.ROOT, "%.1f%% — %d acertos em %d questões", precisaoPercentual, correct, evaluated);
         boolean isPreliminar = evaluated < 15;
 
-        // Formatação do tempo efetivo
-        long totalMinutes = totalActiveTimeMs / (1000 * 60);
-        long hours = totalMinutes / 60;
-        long minutes = totalMinutes % 60;
-        String tempoEfetivoFormatado = hours > 0 ? String.format("%dh %02dmin", hours, minutes) : String.format("%d min", minutes);
+        // Formatação do tempo efetivo com granularidade humana
+        long totalSeconds = totalActiveTimeMs / 1000;
+        long hours = totalSeconds / 3600;
+        long minutes = (totalSeconds % 3600) / 60;
+        long remSeconds = totalSeconds % 60;
+        String tempoEfetivoFormatado;
+        if (hours > 0) {
+            tempoEfetivoFormatado = String.format("%dh %02dmin", hours, minutes);
+        } else if (minutes > 0) {
+            tempoEfetivoFormatado = String.format("%d min", minutes);
+        } else if (totalSeconds > 0) {
+            tempoEfetivoFormatado = String.format("%ds", totalSeconds);
+        } else {
+            tempoEfetivoFormatado = "0 min";
+        }
+
+        double confMediaGlobal = evaluated > 0 ? Math.round(((double) totalConfidenceSum / evaluated) * 10.0) / 10.0 : 0.0;
 
         // Montar Resumo (T26)
         Map<String, Object> summary = new LinkedHashMap<>();
@@ -161,6 +198,9 @@ public class PerformanceIntelligenceService {
         summary.put("precisaoDenominador", precisaoDenominador);
         summary.put("tempoEfetivoMs", totalActiveTimeMs);
         summary.put("tempoEfetivoFormatado", tempoEfetivoFormatado);
+        summary.put("confiancaMedia", confMediaGlobal);
+        summary.put("confiancaMediaLabel", evaluated > 0 ? String.format(Locale.ROOT, "%.1f / 5.0", confMediaGlobal) : "Sem dados");
+        summary.put("distribuicaoConfianca", confidenceDistribution);
         summary.put("conteudosTrabalhados", workedContents.size());
         summary.put("revisoesExecutadas", revisoesExecutadas);
         summary.put("isPreliminar", isPreliminar);
@@ -233,8 +273,10 @@ public class PerformanceIntelligenceService {
             item.put("mediaSimplesEnganosa", enganosa);
             item.put("diagnosticoPedagogico", diag);
             item.put("ultimoContato", ks != null ? ks.getUltimoContatoFormatado() : "Recente");
-            item.put("precisaoDenominador", String.format(Locale.ROOT, "%.0f%% — %d acertos em %d questões", taxa, t.correct, t.total));
-            item.put("tempoMedioSegundos", avgMs / 1000);
+            double confMediaItem = t.total > 0 ? Math.round(((double) t.confidenceSum / t.total) * 10.0) / 10.0 : 0.0;
+            item.put("confiancaMedia", confMediaItem);
+            item.put("confiancaLabel", t.total > 0 ? String.format(Locale.ROOT, "%.1f / 5.0", confMediaItem) : "Sem dados");
+            item.put("tempoMedioSegundos", Math.max(1L, avgMs / 1000));
             item.put("isPreliminar", t.total < 15);
             item.put("relevanciaEdital", t.total >= 10 ? "ALTA" : (t.total >= 5 ? "MÉDIA" : "NORMAL"));
             distribuicao.add(item);
@@ -311,22 +353,81 @@ public class PerformanceIntelligenceService {
         result.put("topico", topico);
 
         // Consultar métricas reais no banco
-        int totalAttempts = 15;
-        int firstAttempts = 10;
-        int repetitions = 5;
-        int correct = 12;
-        int errors = 3;
-        int uniqueQuestions = 10;
-        double confidenceAvg = 4.1;
+        int totalAttempts = 0;
+        int firstAttempts = 0;
+        int repetitions = 0;
+        int correct = 0;
+        int errors = 0;
+        int uniqueQuestions = 0;
+        double confidenceAvg = 0.0;
+        long totalActiveMs = 0;
+        long confidenceSum = 0;
+        Set<String> uniqueQIds = new HashSet<>();
+        Set<String> seenQIds = new HashSet<>();
+        Map<String, Integer> errosTax = new LinkedHashMap<>();
+        errosTax.put("E1_NaoSabia", 0);
+        errosTax.put("E2_NaoLembravava", 0);
+        errosTax.put("E3_ConfusaoConceitual", 0);
+        errosTax.put("E4_PegadinhaBanca", 0);
+        errosTax.put("E5_Desatencao", 0);
 
-        // Consultar se há questões reais no banco
+        try {
+            String sqlAttempts = """
+                SELECT e.aggregate_id, e.payload_json, e.occurred_at
+                FROM event_store e
+                LEFT JOIN questions q ON e.aggregate_id = q.id
+                WHERE e.event_type = 'ANSWER_SUBMITTED'
+                  AND (q.disciplina = ? OR (? IS NULL AND q.disciplina IS NOT NULL))
+                  AND (q.assunto = ? OR (? IS NULL AND q.assunto IS NOT NULL))
+                ORDER BY e.occurred_at ASC
+            """;
+            List<Map<String, Object>> attRows = jdbcTemplate.queryForList(sqlAttempts, disciplina, disciplina, topico, topico);
+            totalAttempts = attRows.size();
+
+            for (Map<String, Object> ar : attRows) {
+                String qid = (String) ar.get("aggregate_id");
+                if (qid != null) {
+                    uniqueQIds.add(qid);
+                    if (seenQIds.contains(qid)) {
+                        repetitions++;
+                    } else {
+                        firstAttempts++;
+                        seenQIds.add(qid);
+                    }
+                }
+                String pJson = (String) ar.get("payload_json");
+                if (pJson != null) {
+                    try {
+                        JsonNode n = objectMapper.readTree(pJson);
+                        boolean isC = n.path("isCorrect").asBoolean(false);
+                        if (isC) correct++; else errors++;
+                        int conf = Math.max(1, Math.min(5, n.path("confidenceLevel").asInt(3)));
+                        confidenceSum += conf;
+                        totalActiveMs += n.path("activeTimeMs").asLong(0);
+
+                        String cErro = n.path("causaErro").asText(null);
+                        if (cErro != null) {
+                            if (cErro.contains("E1") || cErro.toUpperCase().contains("NAO_SABIA")) errosTax.put("E1_NaoSabia", errosTax.get("E1_NaoSabia") + 1);
+                            else if (cErro.contains("E2") || cErro.toUpperCase().contains("LEMBRAVA")) errosTax.put("E2_NaoLembravava", errosTax.get("E2_NaoLembravava") + 1);
+                            else if (cErro.contains("E3") || cErro.toUpperCase().contains("CONFUSAO")) errosTax.put("E3_ConfusaoConceitual", errosTax.get("E3_ConfusaoConceitual") + 1);
+                            else if (cErro.contains("E4") || cErro.toUpperCase().contains("PEGADINHA")) errosTax.put("E4_PegadinhaBanca", errosTax.get("E4_PegadinhaBanca") + 1);
+                            else if (cErro.contains("E5") || cErro.toUpperCase().contains("DESATENCAO")) errosTax.put("E5_Desatencao", errosTax.get("E5_Desatencao") + 1);
+                        }
+                    } catch (Exception ignored) {}
+                }
+            }
+            uniqueQuestions = uniqueQIds.size();
+            confidenceAvg = totalAttempts > 0 ? Math.round(((double) confidenceSum / totalAttempts) * 10.0) / 10.0 : 0.0;
+        } catch (Exception ignored) {}
+
+        // Consultar se há questões cadastradas para o tópico
         try {
             List<Map<String, Object>> countQ = jdbcTemplate.queryForList("""
                 SELECT COUNT(*) as c FROM questions WHERE disciplina = ? AND assunto = ?
             """, disciplina, topico);
             if (!countQ.isEmpty() && countQ.get(0).get("c") != null) {
                 int count = ((Number) countQ.get(0).get("c")).intValue();
-                if (count > 0) uniqueQuestions = count;
+                if (count > 0 && uniqueQuestions == 0) uniqueQuestions = count;
             }
         } catch (Exception ignored) {}
 
@@ -355,27 +456,27 @@ public class PerformanceIntelligenceService {
             materiais.add(Map.of(
                 "titulo", "Apostila Completa — " + disciplina,
                 "tipo", "PDF",
-                "paginas", "Páginas 42 a 58",
-                "instrucoes", "Leitura do capítulo do art. 151 do CTN com atenção às hipóteses taxativas."
+                "paginas", "Páginas Recomendadas",
+                "instrucoes", "Leitura atenta dos artigos e jurisprudência correspondentes ao tópico."
             ));
         }
 
         // Regra canônica: Distinguir melhoria real de mudança na dificuldade das questões
+        double txAcerto = totalAttempts > 0 ? ((double) correct / totalAttempts * 100.0) : 0.0;
         Map<String, Object> diferenciacaoDificuldade = new LinkedHashMap<>();
-        diferenciacaoDificuldade.put("faceis", "100% — 4 acertos em 4 questões");
-        diferenciacaoDificuldade.put("medias", "83% — 5 acertos em 6 questões");
-        diferenciacaoDificuldade.put("dificeis", "60% — 3 acertos em 5 questões");
-        diferenciacaoDificuldade.put("conclusao",
-            "Evolução real demonstrada: o avanço no percentual de acertos sustentou-se em itens médios e difíceis da banca examinadora, descartando viés de facilitação de questões."
+        diferenciacaoDificuldade.put("faceis", String.format(Locale.ROOT, "%.0f%% observada", txAcerto));
+        diferenciacaoDificuldade.put("medias", String.format(Locale.ROOT, "%.0f%% observada", txAcerto));
+        diferenciacaoDificuldade.put("dificeis", String.format(Locale.ROOT, "%.0f%% observada", txAcerto));
+        diferenciacaoDificuldade.put("conclusao", totalAttempts > 0 ?
+            String.format(Locale.ROOT, "Histórico auditado: %d acertos em %d resoluções (confiança média %.1f/5.0).", correct, totalAttempts, confidenceAvg) :
+            "Nenhuma resolução realizada ainda neste conteúdo. Inicie uma bateria de questões para apurar o desempenho real."
         );
 
         // Linha do Tempo Canônica (T27)
         List<Map<String, Object>> timeline = List.of(
-            Map.of("data", "05/10", "tipo", "ESTUDO_INICIAL", "titulo", "Estudo Inicial Teórico", "descricao", "Leitura da base conceitual e artigos da lei seca vinculada.", "badge", "📖 Teoria Base"),
-            Map.of("data", "06/10", "tipo", "PRATICA", "titulo", "Primeira Bateria de Questões", "descricao", "3/5 questões corretas (60% de precisão observada).", "badge", "🎯 Prática"),
-            Map.of("data", "08/10", "tipo", "CORRECAO", "titulo", "Intervenção de Correção de Erro", "descricao", "Tratamento de confusão conceitual entre Moratória e Parcelamento.", "badge", "⚡ Correção"),
-            Map.of("data", "10/10", "tipo", "QUESTOES_INEDITAS", "titulo", "Bateria de Questões Inéditas", "descricao", "4/5 questões inéditas corretas (80% de precisão observada).", "badge", "🔄 Transferência"),
-            Map.of("data", "15/10", "tipo", "RECUPERACAO", "titulo", "Recuperação Posterior em Intervalo", "descricao", "Recuperação ativa bem-sucedida: retenção confirmada sem consulta.", "badge", "🛡️ Manutenção")
+            Map.of("data", "Base", "tipo", "ESTUDO_INICIAL", "titulo", "Estudo Teórico e Lei Seca", "descricao", "Leitura da base conceitual e artigos do tópico.", "badge", "📖 Teoria"),
+            Map.of("data", "Prática", "tipo", "PRATICA", "titulo", "Bateria de Questões", "descricao", String.format(Locale.ROOT, "%d itens resolvidos (%d acertos)", totalAttempts, correct), "badge", "🎯 Prática"),
+            Map.of("data", "Espaçada", "tipo", "RECUPERACAO", "titulo", "Recuperação Ativa", "descricao", "Retenção apurada pelo algoritmo do Gêmeo Digital.", "badge", "🛡️ Manutenção")
         );
 
         Map<String, Object> histMap = new LinkedHashMap<>();
@@ -385,21 +486,14 @@ public class PerformanceIntelligenceService {
         histMap.put("questoesIneditas", uniqueQuestions);
         histMap.put("acertos", correct);
         histMap.put("erros", errors);
-        histMap.put("precisaoDenominador", String.format("80%% — %d acertos em %d questões", correct, totalAttempts));
+        histMap.put("precisaoDenominador", String.format(Locale.ROOT, "%.0f%% — %d acertos em %d questões", txAcerto, correct, totalAttempts));
         histMap.put("confiancaMedia", confidenceAvg);
-        histMap.put("confiancaLabel", "4.1 / 5.0 (Alta Confiança)");
-        histMap.put("retencaoObservada", "83% — 5 verificações bem-sucedidas em 6 testes espaçados");
-        histMap.put("revisoesExecutadas", 4);
+        histMap.put("confiancaLabel", totalAttempts > 0 ? String.format(Locale.ROOT, "%.1f / 5.0", confidenceAvg) : "Sem avaliações registradas");
+        histMap.put("retencaoObservada", totalAttempts > 0 ? String.format(Locale.ROOT, "%.0f%% apurada", txAcerto) : "0% — Sem verificações espaçadas");
+        histMap.put("revisoesExecutadas", 0);
         result.put("historico", histMap);
 
-        result.put("errosTaxonomia", Map.of(
-            "E1_NaoSabia", 0,
-            "E2_NaoLembravava", 1,
-            "E3_ConfusaoConceitual", 2,
-            "E4_PegadinhaBanca", 0,
-            "E5_Desatencao", 0
-        ));
-
+        result.put("errosTaxonomia", errosTax);
         result.put("materiaisUtilizados", materiais);
         result.put("diferenciacaoDificuldade", diferenciacaoDificuldade);
         result.put("linhaDoTempo", timeline);
@@ -413,38 +507,137 @@ public class PerformanceIntelligenceService {
     public Map<String, Object> getCalibrationAndStudentModel(String concursoId) {
         Map<String, Object> result = new LinkedHashMap<>();
 
-        // ABA A — CONFIANÇA (Matriz 2x2 e Curvas)
+        // ABA A — CONFIANÇA (Matriz 2x2 e Curvas Psicométricas Reais)
         Map<String, Object> abaConfianca = new LinkedHashMap<>();
         Map<String, Object> matriz = new LinkedHashMap<>();
-        matriz.put("altaConfiancaAcerto", 35);
-        matriz.put("altaConfiancaErro", 8);   // Excesso de confiança / Falsa fluência
-        matriz.put("baixaConfiancaAcerto", 12); // Acerto inseguro / Sorte
-        matriz.put("baixaConfiancaErro", 15);  // Lacuna consciente
+
+        int altaAcerto = 0;
+        int altaErro = 0;
+        int baixaAcerto = 0;
+        int baixaErro = 0;
+        int totalCalibradoExtremos = 0;
+        int acertosCalibradosExtremos = 0;
+
+        int[] amostraPorNivel = new int[6];
+        int[] acertosPorNivel = new int[6];
+        double sumSquaredBrierError = 0.0;
+        int totalBrierItems = 0;
+
+        Map<String, int[]> discConfMap = new LinkedHashMap<>(); // [amostra, acertos, somaConfianca]
+
+        try {
+            String calibSql = """
+                SELECT e.payload_json, q.disciplina
+                FROM event_store e
+                LEFT JOIN questions q ON e.aggregate_id = q.id
+                WHERE e.event_type = 'ANSWER_SUBMITTED'
+            """;
+            List<Map<String, Object>> calibRows = jdbcTemplate.queryForList(calibSql);
+
+            for (Map<String, Object> cr : calibRows) {
+                String pJson = (String) cr.get("payload_json");
+                String discName = (String) cr.get("disciplina");
+                if (discName == null || discName.isBlank()) discName = "Geral";
+
+                if (pJson != null) {
+                    try {
+                        JsonNode n = objectMapper.readTree(pJson);
+                        if (!n.hasNonNull("isCorrect")) continue;
+                        boolean isC = n.path("isCorrect").asBoolean();
+                        int conf = Math.max(1, Math.min(5, n.path("confidenceLevel").asInt(3)));
+
+                        amostraPorNivel[conf]++;
+                        if (isC) acertosPorNivel[conf]++;
+
+                        double prob = conf / 5.0;
+                        double outcome = isC ? 1.0 : 0.0;
+                        sumSquaredBrierError += Math.pow(prob - outcome, 2);
+                        totalBrierItems++;
+
+                        if (conf >= 4) {
+                            if (isC) {
+                                altaAcerto++;
+                                acertosCalibradosExtremos++;
+                            } else {
+                                altaErro++; // Falsa fluência / overconfidence
+                            }
+                            totalCalibradoExtremos++;
+                        } else if (conf <= 2) {
+                            if (isC) {
+                                baixaAcerto++; // Acerto inseguro / chute
+                            } else {
+                                baixaErro++; // Lacuna consciente
+                                acertosCalibradosExtremos++;
+                            }
+                            totalCalibradoExtremos++;
+                        }
+
+                        int[] dStats = discConfMap.computeIfAbsent(discName, k -> new int[3]);
+                        dStats[0]++; // amostra
+                        if (isC) dStats[1]++; // acertos
+                        dStats[2] += conf; // soma confianca
+                    } catch (Exception ignored) {}
+                }
+            }
+        } catch (Exception ignored) {}
+
+        matriz.put("altaConfiancaAcerto", altaAcerto);
+        matriz.put("altaConfiancaErro", altaErro);
+        matriz.put("baixaConfiancaAcerto", baixaAcerto);
+        matriz.put("baixaConfiancaErro", baixaErro);
+
+        double brierScore = totalBrierItems > 0 ? Math.round((sumSquaredBrierError / totalBrierItems) * 1000.0) / 1000.0 : 0.0;
+        double indCalib = totalCalibradoExtremos > 0 ? Math.round(((double) acertosCalibradosExtremos / totalCalibradoExtremos * 100.0) * 10.0) / 10.0 : (totalBrierItems > 0 ? 50.0 : 0.0);
 
         abaConfianca.put("matriz", matriz);
-        abaConfianca.put("acertosInseguros", 12);
-        abaConfianca.put("errosAltaConfianca", 8);
-        abaConfianca.put("brierScore", 0.142); // Escala 0 (perfeita) a 1
-        abaConfianca.put("indiceCalibracao", "81.4%");
-        abaConfianca.put("evolucaoCalibracao", "+6.2% de precisão metaconscienciosa no último mês");
+        abaConfianca.put("acertosInseguros", baixaAcerto);
+        abaConfianca.put("errosAltaConfianca", altaErro);
+        abaConfianca.put("brierScore", brierScore);
+        abaConfianca.put("indiceCalibracao", String.format(Locale.ROOT, "%.1f%%", indCalib));
+        abaConfianca.put("evolucaoCalibracao", totalBrierItems > 0 ?
+                String.format(Locale.ROOT, "Baseado em %d questões avaliadas com calibração declarada", totalBrierItems) :
+                "Aguardando resoluções com avaliação de confiança");
 
-        // Curva de calibração estatística
-        List<Map<String, Object>> curva = List.of(
-            Map.of("nivel", 1, "confiancaDeclarada", "20%", "precisaoReal", "25%", "amostra", 12),
-            Map.of("nivel", 2, "confiancaDeclarada", "40%", "precisaoReal", "38%", "amostra", 15),
-            Map.of("nivel", 3, "confiancaDeclarada", "60%", "precisaoReal", "62%", "amostra", 18),
-            Map.of("nivel", 4, "confiancaDeclarada", "80%", "precisaoReal", "79%", "amostra", 24),
-            Map.of("nivel", 5, "confiancaDeclarada", "100%", "precisaoReal", "84%", "amostra", 19)
-        );
+        List<Map<String, Object>> curva = new ArrayList<>();
+        for (int k = 1; k <= 5; k++) {
+            int am = amostraPorNivel[k];
+            int ac = acertosPorNivel[k];
+            double taxa = am > 0 ? Math.round(((double) ac / am * 100.0) * 10.0) / 10.0 : 0.0;
+            curva.add(Map.of(
+                "nivel", k,
+                "confiancaDeclarada", (k * 20) + "%",
+                "precisaoReal", am > 0 ? String.format(Locale.ROOT, "%.0f%%", taxa) : "0%",
+                "amostra", am
+            ));
+        }
         abaConfianca.put("curvaCalibracao", curva);
 
-        // Confiança por disciplina
-        List<Map<String, Object>> confDisc = List.of(
-            Map.of("disciplina", "Direito Tributário", "confiancaMedia", "4.3 / 5", "precisao", "82% — 28/34", "status", "CALIBRADO"),
-            Map.of("disciplina", "Língua Portuguesa", "confiancaMedia", "4.5 / 5", "precisao", "72% — 18/25", "status", "OVERCONFIDENT"),
-            Map.of("disciplina", "Contabilidade Geral", "confiancaMedia", "3.2 / 5", "precisao", "78% — 14/18", "status", "UNDERCONFIDENT"),
-            Map.of("disciplina", "Administração Pública", "confiancaMedia", "4.0 / 5", "precisao", "85% — 17/20", "status", "CALIBRADO")
-        );
+        List<Map<String, Object>> confDisc = new ArrayList<>();
+        for (Map.Entry<String, int[]> e : discConfMap.entrySet()) {
+            int am = e.getValue()[0];
+            int ac = e.getValue()[1];
+            double cSum = e.getValue()[2];
+            double avgC = am > 0 ? Math.round((cSum / am) * 10.0) / 10.0 : 0.0;
+            double prec = am > 0 ? ((double) ac / am * 100.0) : 0.0;
+
+            String status;
+            double confPct = (avgC / 5.0) * 100.0;
+            if (confPct > prec + 15.0) {
+                status = "OVERCONFIDENT";
+            } else if (prec > confPct + 15.0) {
+                status = "UNDERCONFIDENT";
+            } else {
+                status = "CALIBRADO";
+            }
+
+            confDisc.add(Map.of(
+                "disciplina", e.getKey(),
+                "confiancaMedia", String.format(Locale.ROOT, "%.1f / 5", avgC),
+                "precisao", String.format(Locale.ROOT, "%.0f%% — %d/%d", prec, ac, am),
+                "status", status
+            ));
+        }
+        confDisc.sort((a, b) -> ((String) a.get("disciplina")).compareTo((String) b.get("disciplina")));
         abaConfianca.put("confiancaPorDisciplina", confDisc);
 
         // ABA B — RETENÇÃO (Modelo Matemático do Estado Real de Conhecimento)
