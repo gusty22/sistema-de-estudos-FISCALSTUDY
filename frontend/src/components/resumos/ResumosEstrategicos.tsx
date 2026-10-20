@@ -14,7 +14,9 @@ import {
   Plus,
   ChevronLeft,
   ChevronRight,
-  Play
+  Play,
+  BookOpen,
+  ShieldCheck
 } from 'lucide-react';
 import './ResumosEstrategicos.css';
 
@@ -46,10 +48,13 @@ export const ResumosEstrategicos: React.FC<ResumosEstrategicosProps> = ({
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
 
-  // Modal de Criação / Geração de Novo Resumo
+  // Modal de Criação / Geração de Novo Resumo (Pipeline Híbrido)
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newDisciplina, setNewDisciplina] = useState('Direito Tributário');
   const [newTopico, setNewTopico] = useState('');
+  const [newBanca, setNewBanca] = useState('FGV');
+  const [studentMaterials, setStudentMaterials] = useState<any[]>([]);
+  const [selectedMaterialId, setSelectedMaterialId] = useState<string>('');
   const [newMaterialNome, setNewMaterialNome] = useState('');
   const [newMaterialPaginas, setNewMaterialPaginas] = useState('');
   const [newTextoOrigem, setNewTextoOrigem] = useState('');
@@ -95,8 +100,28 @@ export const ResumosEstrategicos: React.FC<ResumosEstrategicosProps> = ({
     }
   };
 
+  // Carregar materiais didáticos cadastrados do estudante
+  const fetchStudentMaterials = async () => {
+    try {
+      const url = activeConcurso?.id
+        ? `/api/v1/materials?concursoId=${encodeURIComponent(activeConcurso.id)}`
+        : '/api/v1/materials';
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        setStudentMaterials(data);
+      }
+    } catch (err) {
+      console.error('Erro ao carregar materiais do estudante:', err);
+    }
+  };
+
   useEffect(() => {
     fetchSummaries();
+    fetchStudentMaterials();
+    if (activeConcurso?.banca) {
+      setNewBanca(activeConcurso.banca);
+    }
   }, [activeConcurso]);
 
   useEffect(() => {
@@ -104,6 +129,25 @@ export const ResumosEstrategicos: React.FC<ResumosEstrategicosProps> = ({
       fetchSelectedSummary(selectedSummaryId);
     }
   }, [selectedSummaryId]);
+
+  // Handler ao selecionar material pré-cadastrado no modal
+  const handleMaterialChange = (matId: string) => {
+    setSelectedMaterialId(matId);
+    if (!matId) return;
+    const mat = studentMaterials.find((m) => m.id === matId);
+    if (mat) {
+      setNewMaterialNome(mat.titulo || '');
+      if (mat.disciplina) {
+        setNewDisciplina(mat.disciplina);
+      }
+      if (mat.totalPaginas > 0) {
+        setNewMaterialPaginas(`Páginas 1 a ${Math.min(mat.totalPaginas, 45)}`);
+      }
+      if (mat.notas && !newTextoOrigem) {
+        setNewTextoOrigem(mat.notas);
+      }
+    }
+  };
 
   // Lista de disciplinas únicas para filtro
   const disciplinasList = useMemo(() => {
@@ -126,7 +170,7 @@ export const ResumosEstrategicos: React.FC<ResumosEstrategicosProps> = ({
     });
   }, [summariesList, selectedDisciplina, searchQuery]);
 
-  // Gerar novo resumo
+  // Gerar novo resumo (Pipeline Híbrido)
   const handleGenerateSummary = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTopico.trim()) return;
@@ -140,7 +184,8 @@ export const ResumosEstrategicos: React.FC<ResumosEstrategicosProps> = ({
           concursoId: activeConcurso?.id || 'GLOBAL',
           disciplina: newDisciplina,
           topico: newTopico.trim(),
-          banca: activeConcurso?.banca || 'Outra',
+          banca: newBanca || activeConcurso?.banca || 'FGV',
+          materialId: selectedMaterialId || null,
           materialOrigemNome: newMaterialNome || 'Material do Estudante',
           materialPaginas: newMaterialPaginas,
           textoOrigem: newTextoOrigem,
@@ -151,12 +196,13 @@ export const ResumosEstrategicos: React.FC<ResumosEstrategicosProps> = ({
         const created = await res.json();
         setIsModalOpen(false);
         setNewTopico('');
+        setSelectedMaterialId('');
         setNewMaterialNome('');
         setNewMaterialPaginas('');
         setNewTextoOrigem('');
         await fetchSummaries();
         setSelectedSummaryId(created.id);
-        setActionSuccessMsg('Novo resumo estratégico gerado com sucesso!');
+        setActionSuccessMsg('Novo resumo estratégico gerado com sucesso via Pipeline Híbrido!');
         setTimeout(() => setActionSuccessMsg(null), 4000);
       }
     } catch (err) {
@@ -203,6 +249,42 @@ export const ResumosEstrategicos: React.FC<ResumosEstrategicosProps> = ({
   // Rotação de flashcard
   const flashcards = activeSummary?.flashcards || [];
   const currentCard = flashcards[currentCardIndex] || null;
+
+  // Parser robusto de Markdown para o Resumo Estruturado
+  const renderMarkdown = (text: string | undefined | null) => {
+    if (!text || !text.trim()) return '<p>Sem conteúdo disponível.</p>';
+    
+    // Normalização inicial de quebras de linha
+    let md = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
+    // 1. Limpa cabeçalhos vazios ou com apenas espaços (ex: '#' ou '##' soltos)
+    md = md.replace(/^[ \t]*#{1,6}[ \t]*$/gm, '');
+
+    // 2. Converte cabeçalhos válidos
+    md = md.replace(/^###[ \t]+(.*)$/gm, '<h3>$1</h3>');
+    md = md.replace(/^##[ \t]+(.*)$/gm, '<h2>$1</h2>');
+    md = md.replace(/^#[ \t]+(.*)$/gm, '<h1>$1</h1>');
+
+    // 3. Negrito e Itálico
+    md = md.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    md = md.replace(/\*([^\*\n]+?)\*/g, '<em>$1</em>');
+
+    // 4. Citações (> bloco de proveniência)
+    md = md.replace(/^>[ \t]*(.*)$/gm, '<blockquote>$1</blockquote>');
+
+    // 5. Itens de lista
+    md = md.replace(/^[ \t]*\*[ \t]+(.*)$/gm, '<li>$1</li>');
+    md = md.replace(/^[ \t]*-[ \t]+(.*)$/gm, '<li>$1</li>');
+
+    // 6. Parágrafos e quebras limpas (evita acúmulo de múltiplos <br/>)
+    md = md.replace(/\n{3,}/g, '\n\n');
+    md = md.replace(/\n\n/g, '<br/><br/>');
+
+    // 7. Remove eventuais cerquilhas residuais no início de linhas
+    md = md.replace(/^[ \t]*#+[ \t]*/gm, '');
+
+    return md;
+  };
 
   return (
     <div className="resumos-container">
@@ -375,6 +457,29 @@ export const ResumosEstrategicos: React.FC<ResumosEstrategicosProps> = ({
         <div className="resumo-main-grid">
           {/* Painel Central de Conteúdo */}
           <div className="resumo-content-panel">
+            {/* Banner do Pipeline Híbrido (Blindagem Epistêmica e Proveniência) */}
+            {activeSummary.estatisticasBase?.pipelineHibrido && (
+              <div className="resumo-hibrido-banner">
+                <div className="hibrido-badge-left">
+                  <span className="hibrido-chip">⚡ Pipeline Híbrido</span>
+                  <span className="hibrido-domain-chip">
+                    <ShieldCheck className="w-3.5 h-3.5 inline mr-1" />
+                    Domínio: {activeSummary.estatisticasBase?.dominioEpistemico || 'EPISTÊMICO'}
+                  </span>
+                </div>
+                <div className="hibrido-badge-text">
+                  <span>
+                    <BookOpen className="w-3.5 h-3.5 inline mr-1" />
+                    <strong>Material Estudante:</strong> {activeSummary.estatisticasBase?.materialVinculado || activeSummary.material_origem_nome || 'Apostila Base'} ({activeSummary.estatisticasBase?.paginasVinculadas || activeSummary.material_paginas || 'Págs do Tópico'})
+                  </span>
+                  <span className="hibrido-divider">•</span>
+                  <span>
+                    🎯 <strong>Questões Banca:</strong> {activeSummary.estatisticasBase?.totalQuestoesBanca || 0} avaliadas da banca {activeConcurso?.banca || activeSummary.estatisticasBase?.bancaAlvo || activeSummary.banca || 'Oficial'}
+                  </span>
+                </div>
+              </div>
+            )}
+
             {/* Justificativa Pedagógica e Relevância */}
             <div className="resumo-justificativa-box">
               <Zap className="w-5 h-5 text-indigo-600 flex-shrink-0" />
@@ -389,14 +494,7 @@ export const ResumosEstrategicos: React.FC<ResumosEstrategicosProps> = ({
               <div className="resumo-markdown-body">
                 <div
                   dangerouslySetInnerHTML={{
-                    __html: activeSummary.resumo_markdown
-                      ?.replace(/# (.*)/g, '<h1>$1</h1>')
-                      ?.replace(/## (.*)/g, '<h2>$1</h2>')
-                      ?.replace(/### (.*)/g, '<h3>$1</h3>')
-                      ?.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                      ?.replace(/\*(.*?)\*/g, '<em>$1</em>')
-                      ?.replace(/\n\n/g, '<br/><br/>')
-                      ?.replace(/^\* (.*)/gm, '<li>$1</li>') || '<p>Sem conteúdo disponível.</p>',
+                    __html: renderMarkdown(activeSummary.resumo_markdown)
                   }}
                 />
               </div>
@@ -642,10 +740,10 @@ export const ResumosEstrategicos: React.FC<ResumosEstrategicosProps> = ({
                     <div
                       className="resumo-markdown-body"
                       dangerouslySetInnerHTML={{
-                        __html: activeSummary.resumo_reta_final_markdown
-                          ?.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                          ?.replace(/^\* (.*)/gm, '<li>$1</li>')
-                          ?.replace(/\n\n/g, '<br/>') || '',
+                        __html: renderMarkdown(
+                          activeSummary.resumo_reta_final_markdown
+                            ?.replace(/^[ \t]*#{1,4}[ \t]*⚡?[ \t]*Memorização Rápida de Véspera[^\n]*\n+/gim, '')
+                        ),
                       }}
                     />
                   </div>
@@ -695,6 +793,20 @@ export const ResumosEstrategicos: React.FC<ResumosEstrategicosProps> = ({
             {/* Card 2: Evidências Estatísticas Reais */}
             <div className="resumo-side-card">
               <span className="side-card-title">📊 Evidências da Prova & Estudante</span>
+
+              {activeSummary.estatisticasBase?.dominioEpistemico && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
+                  <span>Domínio Epistêmico:</span>
+                  <strong style={{ color: '#4f46e5' }}>{activeSummary.estatisticasBase.dominioEpistemico}</strong>
+                </div>
+              )}
+
+              {activeSummary.estatisticasBase?.bancaAlvo && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
+                  <span>Banca Examinadora:</span>
+                  <strong>{activeSummary.estatisticasBase.bancaAlvo} ({activeSummary.estatisticasBase.totalQuestoesBanca || 0} q.)</strong>
+                </div>
+              )}
 
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
                 <span>Questões no Banco:</span>
@@ -763,7 +875,7 @@ export const ResumosEstrategicos: React.FC<ResumosEstrategicosProps> = ({
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2 style={{ margin: 0, fontSize: '1.15rem', color: 'var(--calm-text-main)' }}>
-                📑 Gerar Novo Resumo Estratégico Orientado ao Edital
+                📑 Gerar Resumo Estratégico via Pipeline Híbrido
               </h2>
               <button
                 style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--calm-text-muted)' }}
@@ -776,24 +888,67 @@ export const ResumosEstrategicos: React.FC<ResumosEstrategicosProps> = ({
 
             <form onSubmit={handleGenerateSummary}>
               <div className="modal-body">
+                {/* Seletor de Material Didático do Aluno */}
                 <div>
                   <label style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--calm-text-main)' }}>
-                    Disciplina:
+                    📚 Vincular Material do Estudante (PDF / Livro / Apostila):
                   </label>
                   <select
                     className="custom-select"
                     style={{ width: '100%', marginTop: '0.3rem' }}
-                    value={newDisciplina}
-                    onChange={(e) => setNewDisciplina(e.target.value)}
+                    value={selectedMaterialId}
+                    onChange={(e) => handleMaterialChange(e.target.value)}
                   >
-                    <option value="Direito Tributário">Direito Tributário</option>
-                    <option value="Direito Constitucional">Direito Constitucional</option>
-                    <option value="Direito Administrativo">Direito Administrativo</option>
-                    <option value="Contabilidade Geral">Contabilidade Geral</option>
-                    <option value="Auditoria">Auditoria</option>
-                    <option value="Legislação Tributária Municipal">Legislação Tributária Municipal</option>
-                    <option value="Língua Portuguesa">Língua Portuguesa</option>
+                    <option value="">-- Selecionar da sua biblioteca ou digitar abaixo --</option>
+                    {studentMaterials.map((mat) => (
+                      <option key={mat.id} value={mat.id}>
+                        [{mat.disciplina || 'Geral'}] {mat.titulo} {mat.totalPaginas ? `(${mat.totalPaginas} págs)` : ''}
+                      </option>
+                    ))}
                   </select>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '0.85rem' }}>
+                  <div>
+                    <label style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--calm-text-main)' }}>
+                      Disciplina *:
+                    </label>
+                    <select
+                      className="custom-select"
+                      style={{ width: '100%', marginTop: '0.3rem' }}
+                      value={newDisciplina}
+                      onChange={(e) => setNewDisciplina(e.target.value)}
+                    >
+                      <option value="Direito Tributário">Direito Tributário</option>
+                      <option value="Contabilidade Geral">Contabilidade Geral</option>
+                      <option value="Direito Constitucional">Direito Constitucional</option>
+                      <option value="Direito Administrativo">Direito Administrativo</option>
+                      <option value="Auditoria">Auditoria</option>
+                      <option value="Direito Penal">Direito Penal</option>
+                      <option value="Tecnologia da Informação">Tecnologia da Informação</option>
+                      <option value="Legislação Tributária Municipal">Legislação Tributária Municipal</option>
+                      <option value="Língua Portuguesa">Língua Portuguesa</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--calm-text-main)' }}>
+                      Banca Examinadora *:
+                    </label>
+                    <select
+                      className="custom-select"
+                      style={{ width: '100%', marginTop: '0.3rem' }}
+                      value={newBanca}
+                      onChange={(e) => setNewBanca(e.target.value)}
+                    >
+                      <option value="FGV">FGV (Fundação Getulio Vargas)</option>
+                      <option value="Cebraspe">Cebraspe (CESPE)</option>
+                      <option value="FCC">FCC (Fundação Carlos Chagas)</option>
+                      <option value="Vunesp">VUNESP</option>
+                      <option value="Cesgranrio">Cesgranrio</option>
+                      <option value="Outra">Outra Banca</option>
+                    </select>
+                  </div>
                 </div>
 
                 <div>
@@ -804,7 +959,7 @@ export const ResumosEstrategicos: React.FC<ResumosEstrategicosProps> = ({
                     type="text"
                     className="custom-select"
                     style={{ width: '100%', marginTop: '0.3rem' }}
-                    placeholder="Ex: Lançamento Tributário e Decadência"
+                    placeholder="Ex: Demonstração dos Fluxos de Caixa (CPC 03) ou Lançamento Tributário"
                     value={newTopico}
                     onChange={(e) => setNewTopico(e.target.value)}
                     required
@@ -820,20 +975,20 @@ export const ResumosEstrategicos: React.FC<ResumosEstrategicosProps> = ({
                       type="text"
                       className="custom-select"
                       style={{ width: '100%', marginTop: '0.3rem' }}
-                      placeholder="Ex: Apostila Aula 04"
+                      placeholder="Ex: Contabilidade para Fiscais"
                       value={newMaterialNome}
                       onChange={(e) => setNewMaterialNome(e.target.value)}
                     />
                   </div>
                   <div>
                     <label style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--calm-text-main)' }}>
-                      Páginas / Seção:
+                      Páginas Vinculadas:
                     </label>
                     <input
                       type="text"
                       className="custom-select"
                       style={{ width: '100%', marginTop: '0.3rem' }}
-                      placeholder="Ex: Páginas 15-32"
+                      placeholder="Ex: Páginas 45-78"
                       value={newMaterialPaginas}
                       onChange={(e) => setNewMaterialPaginas(e.target.value)}
                     />
@@ -842,19 +997,19 @@ export const ResumosEstrategicos: React.FC<ResumosEstrategicosProps> = ({
 
                 <div>
                   <label style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--calm-text-main)' }}>
-                    Anotações Pessoais, Trecho de PDF ou Transcrição (Opcional):
+                    Trecho de PDF, Notas Pessoais ou Lei Seca (Opcional):
                   </label>
                   <textarea
                     className="custom-select"
-                    style={{ width: '100%', height: '110px', marginTop: '0.3rem', resize: 'vertical' }}
-                    placeholder="Cole aqui transcrições de aula, anotações de lei seca ou trechos de PDF para enriquecer a extração inteligente..."
+                    style={{ width: '100%', height: '100px', marginTop: '0.3rem', resize: 'vertical' }}
+                    placeholder="Cole aqui transcrições do professor, anotações de aula ou trechos do seu PDF para orientar o motor local..."
                     value={newTextoOrigem}
                     onChange={(e) => setNewTextoOrigem(e.target.value)}
                   />
                 </div>
 
                 <div style={{ background: 'var(--calm-bg-subtle, #f8fafc)', border: '1px solid var(--calm-card-border, #e2e8f0)', padding: '0.85rem', borderRadius: '8px', fontSize: '0.78rem', color: 'var(--calm-text-muted)', lineHeight: 1.45 }}>
-                  🎯 <strong>Garantia Epistêmica:</strong> A síntese cruzará os pesos do edital e as questões da banca com o material fornecido, preservando regras, exceções e rastreabilidade estrita sem alucinações.
+                  🛡️ <strong>Blindagem Epistêmica & Cruzamento Local:</strong> O motor local cruza as páginas do seu material com as questões da banca selecionada, isolando rigorosamente conceitos específicos da disciplina (sem misturar termos penais em matérias contábeis ou exatas).
                 </div>
               </div>
 

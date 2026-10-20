@@ -732,3 +732,66 @@
   border-top: 1px solid var(--calm-card-border, #e2e8f0);
   background: var(--calm-bg-subtle, #f8fafc);
 }
+
+/* =========================================================================
+   BANNER DO PIPELINE HÍBRIDO (PROVENIÊNCIA E BLINDAGEM EPISTÊMICA)
+   ========================================================================= */
+.resumo-hibrido-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 0.95rem 1.25rem;
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.05) 0%, rgba(5, 150, 105, 0.05) 100%);
+  border: 1px solid rgba(79, 70, 229, 0.2);
+  border-left: 4px solid #4f46e5;
+  border-radius: 10px;
+  margin-bottom: 0.5rem;
+}
+
+.hibrido-badge-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.hibrido-chip {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.2rem 0.55rem;
+  background: #4f46e5;
+  color: #ffffff;
+  border-radius: 6px;
+}
+
+.hibrido-domain-chip {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  background: rgba(5, 150, 105, 0.12);
+  color: #065f46;
+  border: 1px solid rgba(5, 150, 105, 0.25);
+  border-radius: 6px;
+}
+
+.hibrido-badge-text {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-size: 0.82rem;
+  color: var(--calm-text-main, #334155);
+  line-height: 1.45;
+  flex-wrap: wrap;
+}
+
+.hibrido-divider {
+  color: #94a3b8;
+  font-weight: bold;
+}
+
