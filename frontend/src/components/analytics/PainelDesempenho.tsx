@@ -12,6 +12,7 @@ import {
 import { AnaliseConteudoModal } from './AnaliseConteudoModal';
 import { CalibracaoRetencaoAbas } from './CalibracaoRetencaoAbas';
 import { AuditoriaAnomaliasEstudo } from './AuditoriaAnomaliasEstudo';
+import { useSimplifiedMode } from '../../context/SimplifiedModeContext';
 import './PainelDesempenho.css';
 
 export interface PainelDesempenhoProps {
@@ -29,6 +30,8 @@ export const PainelDesempenho: React.FC<PainelDesempenhoProps> = ({
   onNavigateToCycle,
   onNavigateToQuestions
 }) => {
+  const { isSimplifiedMode, toggleSimplifiedMode } = useSimplifiedMode();
+
   // Aba principal: Painel T26 vs Calibração/Retenção T28 vs Auditoria Anomalias T29
   const [activeMainTab, setActiveMainTab] = useState<'T26_PAINEL' | 'T28_CALIBRACAO' | 'T29_ANOMALIAS'>('T26_PAINEL');
 
@@ -88,6 +91,8 @@ export const PainelDesempenho: React.FC<PainelDesempenhoProps> = ({
     precisaoPercentual: 0.0,
     precisaoDenominador: '0% — 0 acertos em 0 questões',
     tempoEfetivoFormatado: '0 min',
+    confiancaMedia: 0,
+    confiancaMediaLabel: 'Sem dados',
     conteudosTrabalhados: 0,
     revisoesExecutadas: 0,
     isPreliminar: true
@@ -104,20 +109,41 @@ export const PainelDesempenho: React.FC<PainelDesempenhoProps> = ({
         <div className="desempenho-header-left">
           <div className="header-pill">
             <BarChart3 className="w-3.5 h-3.5 text-indigo-400" />
-            MÓDULO G — DESEMPENHO E INTELIGÊNCIA
+            {isSimplifiedMode ? 'MENTORIA DE DESEMPENHO' : 'MÓDULO G — DESEMPENHO E INTELIGÊNCIA'}
           </div>
-          <h1 className="desempenho-title">Painel de Desempenho & Inteligência</h1>
+          <h1 className="desempenho-title">
+            {isSimplifiedMode ? 'Painel de Desempenho & Mentoria' : 'Painel de Desempenho & Inteligência'}
+          </h1>
           <p className="desempenho-subtitle">
             Visão longitudinal confiável da preparação para{' '}
             <strong>{activeConcurso?.nome || 'o Concurso Ativo'}</strong>
           </p>
         </div>
 
-        <div className="desempenho-header-right">
-          <button className="btn-export-r" onClick={handleExportR}>
-            <Download className="w-4 h-4 inline mr-1.5" />
-            Dataset para R
+        <div className="desempenho-header-right" style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+          <button
+            onClick={toggleSimplifiedMode}
+            title={isSimplifiedMode ? 'Clique para ver métricas e fórmulas de engenharia' : 'Clique para ocultar fórmulas e simplificar a interface'}
+            style={{
+              padding: '0.45rem 0.8rem',
+              borderRadius: '9999px',
+              border: isSimplifiedMode ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(255, 255, 255, 0.15)',
+              background: isSimplifiedMode ? 'rgba(16, 185, 129, 0.1)' : 'rgba(255, 255, 255, 0.05)',
+              color: isSimplifiedMode ? '#34d399' : '#94a3b8',
+              fontSize: '0.76rem',
+              fontWeight: 600,
+              cursor: 'pointer'
+            }}
+          >
+            {isSimplifiedMode ? '🎓 Modo Aluno' : '⚙️ Modo Avançado'}
           </button>
+
+          {!isSimplifiedMode && (
+            <button className="btn-export-r" onClick={handleExportR}>
+              <Download className="w-4 h-4 inline mr-1.5" />
+              Dataset para R
+            </button>
+          )}
         </div>
       </header>
 
@@ -146,7 +172,7 @@ export const PainelDesempenho: React.FC<PainelDesempenhoProps> = ({
           onClick={() => setActiveMainTab('T28_CALIBRACAO')}
         >
           <Brain className="w-4 h-4 inline mr-2" />
-          Calibração, Retenção & Modelo do Estudante
+          {isSimplifiedMode ? 'Calibração & Retenção Prática' : 'Calibração, Retenção & Modelo do Estudante'}
         </button>
 
         <button
@@ -154,7 +180,7 @@ export const PainelDesempenho: React.FC<PainelDesempenhoProps> = ({
           onClick={() => setActiveMainTab('T29_ANOMALIAS')}
         >
           <ShieldAlert className="w-4 h-4 inline mr-2 text-rose-500" />
-          Auditoria de Anomalias (Diagnóstico Automático)
+          {isSimplifiedMode ? 'Diagnóstico de Hábitos' : 'Auditoria de Anomalias (Diagnóstico Automático)'}
         </button>
       </div>
 
@@ -163,7 +189,7 @@ export const PainelDesempenho: React.FC<PainelDesempenhoProps> = ({
           ========================================================================= */}
       {activeMainTab === 'T26_PAINEL' && (
         <div className="t26-content animate-fade-in">
-          {/* 1. RESUMO: 5 Métricas Centrais */}
+          {/* 1. RESUMO: Métricas Centrais */}
           <section className="resumo-grid">
             <div className="resumo-card">
               <span className="resumo-label">Questões Respondidas</span>
@@ -195,7 +221,9 @@ export const PainelDesempenho: React.FC<PainelDesempenhoProps> = ({
               <div className="resumo-num-box">
                 <span className="resumo-num">{summary.tempoEfetivoFormatado}</span>
               </div>
-              <span className="resumo-hint">Tempo líquido ativo de resolução</span>
+              <span className="resumo-hint">
+                {summary.confiancaMedia > 0 ? `Certeza Média: ${summary.confiancaMediaLabel}` : 'Tempo líquido ativo de estudo'}
+              </span>
             </div>
 
             <div className="resumo-card">
@@ -344,7 +372,7 @@ export const PainelDesempenho: React.FC<PainelDesempenhoProps> = ({
                       <th>Tópico Curricular</th>
                       <th>Respondidas</th>
                       <th>Precisão Observada</th>
-                      <th>Domínio Real (P<sub>atual</sub>)</th>
+                      <th>{isSimplifiedMode ? 'Domínio Estimado' : <>Domínio Real (P<sub>atual</sub>)</>}</th>
                       <th>Tempo Médio</th>
                       <th>Amostra</th>
                       <th>Ação</th>
@@ -368,7 +396,9 @@ export const PainelDesempenho: React.FC<PainelDesempenhoProps> = ({
                               </span>
                               {item.mediaSimplesEnganosa && (
                                 <span style={{ fontSize: '0.66rem', color: '#f87171', fontWeight: 700, marginTop: '0.1rem' }}>
-                                  ⚠️ Falsa Fluência ({item.deltaTDias}d sem contato)
+                                  {isSimplifiedMode
+                                    ? `⚠️ Revisão recomendada (${item.deltaTDias}d sem contato)`
+                                    : `⚠️ Falsa Fluência (${item.deltaTDias}d sem contato)`}
                                 </span>
                               )}
                             </div>
@@ -379,11 +409,18 @@ export const PainelDesempenho: React.FC<PainelDesempenhoProps> = ({
                                 {pReal}%
                               </span>
                               <span style={{ fontSize: '0.68rem', color: '#94a3b8' }}>
-                                {item.ultimoContato ? `${item.ultimoContato}` : 'Recente'} {item.forcaMemoriaDias !== undefined ? `(S: ${item.forcaMemoriaDias}d)` : ''}
+                                {item.ultimoContato ? `${item.ultimoContato}` : 'Recente'} {!isSimplifiedMode && item.forcaMemoriaDias !== undefined ? `(S: ${item.forcaMemoriaDias}d)` : ''}
                               </span>
                             </div>
                           </td>
-                          <td>{item.tempoMedioSegundos}s / questão</td>
+                          <td>
+                            <div>{item.tempoMedioSegundos}s / questão</div>
+                            {item.confiancaMedia > 0 && (
+                              <div style={{ fontSize: '0.68rem', color: '#818cf8', marginTop: '0.15rem' }}>
+                                ⭐ {item.confiancaMedia} / 5
+                              </div>
+                            )}
+                          </td>
                           <td>
                             {item.isPreliminar ? (
                               <span className="sample-badge preliminar">Amostra Preliminar (&lt;15)</span>

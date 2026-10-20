@@ -7,6 +7,7 @@ import {
   ChevronRight,
   X
 } from 'lucide-react';
+import { useSimplifiedMode } from '../../context/SimplifiedModeContext';
 import './CalibracaoRetencaoAbas.css';
 
 export interface CalibracaoRetencaoAbasProps {
@@ -18,6 +19,7 @@ export const CalibracaoRetencaoAbas: React.FC<CalibracaoRetencaoAbasProps> = ({
   concursoId,
   onNavigateToContentAnalysis
 }) => {
+  const { isSimplifiedMode } = useSimplifiedMode();
   const [activeSubTab, setActiveSubTab] = useState<'A_CONFIANCA' | 'B_RETENCAO' | 'C_MODELO'>('A_CONFIANCA');
   const [data, setData] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -65,7 +67,7 @@ export const CalibracaoRetencaoAbas: React.FC<CalibracaoRetencaoAbasProps> = ({
           onClick={() => setActiveSubTab('A_CONFIANCA')}
         >
           <Brain className="w-4 h-4 inline mr-1.5" />
-          Aba A — Confiança & Calibração
+          {isSimplifiedMode ? 'Aba A — Certeza & Calibração' : 'Aba A — Confiança & Calibração'}
         </button>
 
         <button
@@ -73,7 +75,7 @@ export const CalibracaoRetencaoAbas: React.FC<CalibracaoRetencaoAbasProps> = ({
           onClick={() => setActiveSubTab('B_RETENCAO')}
         >
           <Clock className="w-4 h-4 inline mr-1.5" />
-          Aba B — Retenção & Decaimento
+          {isSimplifiedMode ? 'Aba B — Retenção & Memória' : 'Aba B — Retenção & Decaimento'}
         </button>
 
         <button
@@ -81,12 +83,12 @@ export const CalibracaoRetencaoAbas: React.FC<CalibracaoRetencaoAbasProps> = ({
           onClick={() => setActiveSubTab('C_MODELO')}
         >
           <Sparkles className="w-4 h-4 inline mr-1.5" />
-          Aba C — Modelo do Estudante
+          {isSimplifiedMode ? 'Aba C — Perfil de Domínio' : 'Aba C — Modelo do Estudante'}
         </button>
       </div>
 
       {isLoading && (
-        <div className="t28-loading">Carregando telemetria analítica avançada...</div>
+        <div className="t28-loading">{isSimplifiedMode ? 'Carregando análise de retenção e calibração...' : 'Carregando telemetria analítica avançada...'}</div>
       )}
 
       {/* =========================================================================
@@ -152,7 +154,7 @@ export const CalibracaoRetencaoAbas: React.FC<CalibracaoRetencaoAbasProps> = ({
                   <span className="ind-val text-rose-400">{abaA.errosAltaConfianca}</span>
                 </div>
                 <div className="matriz-ind-box">
-                  <span className="ind-label">Brier Score</span>
+                  <span className="ind-label">{isSimplifiedMode ? 'Precisão da Certeza' : 'Brier Score'}</span>
                   <span className="ind-val text-indigo-400">{abaA.brierScore}</span>
                 </div>
                 <div className="matriz-ind-box">
@@ -220,52 +222,88 @@ export const CalibracaoRetencaoAbas: React.FC<CalibracaoRetencaoAbasProps> = ({
           ========================================================================= */}
       {activeSubTab === 'B_RETENCAO' && (
         <div className="t28-subview animate-fade-in">
-          {/* Hero do Modelo Matemático do Estado Real de Conhecimento */}
-          <div className="modelo-matematico-hero">
-            <div className="modelo-matematico-top">
-              <span className="modelo-matematico-badge">Modelo Matemático do Estado Real de Conhecimento (Student Knowledge State)</span>
-            </div>
-            <div className="modelo-matematico-equacao">
-              P<sub>atual</sub>(t) = P<sub>base</sub> · e<sup>-Δt / S</sup>
-            </div>
-            <p className="modelo-matematico-desc">
-              <strong>Por que a média simples é enganosa?</strong> Medir o domínio de um tópico apenas por acertos/total oculta que uma nota de 90% obtida há 45 dias decaiu severamente pela Curva do Esquecimento de Ebbinghaus. Além disso, resolver 10 questões no mesmo dia da leitura do PDF infla a nota com memória de trabalho imediata.
-            </p>
-
-            <div className="modelo-vars-grid">
-              <div className="modelo-var-card">
-                <div className="var-header">
-                  <span className="var-simbolo">P<sub>base</sub></span>
-                  <span className="var-nome">Taxa Ponderada</span>
-                </div>
-                <span className="var-expl">Simulados (1.5x) e retestes frios (1.2x) têm maior peso que resoluções imediatas pós-PDF (0.5x).</span>
+          {/* Hero: Mentoria Prática (Modo Aluno) vs Modelo Matemático Puro (Modo Avançado) */}
+          {isSimplifiedMode ? (
+            <div className="modelo-matematico-hero aluno-mentoria" style={{ background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(79, 70, 229, 0.05) 100%)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '1rem', padding: '1.5rem', marginBottom: '1.25rem' }}>
+              <div className="modelo-matematico-top" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.65rem' }}>
+                <span className="modelo-matematico-badge" style={{ background: '#10b981', color: '#ffffff', fontWeight: 700, padding: '0.2rem 0.6rem', borderRadius: '9999px', fontSize: '0.75rem' }}>
+                  🎓 Mentoria Prática de Retenção
+                </span>
+                <span style={{ fontSize: '0.78rem', color: '#059669', fontWeight: 600 }}>
+                  Ações recomendadas para não esquecer a matéria
+                </span>
               </div>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--calm-text-main, #0f172a)', margin: '0 0 0.45rem 0' }}>
+                Por que medimos seu Domínio Real em vez da média simples?
+              </h3>
+              <p className="modelo-matematico-desc" style={{ fontSize: '0.85rem', lineHeight: 1.6, color: 'var(--calm-text-muted, #475569)', margin: '0 0 1.25rem 0' }}>
+                Tirar 90% em questões feitas logo após a leitura do PDF não garante que o conteúdo foi fixado a longo prazo. Com o passar dos dias sem contato, a retenção natural diminui. A mentoria calcula o seu <strong>domínio de hoje</strong> para que você resolva apenas o que está esquecendo, no momento certo.
+              </p>
 
-              <div className="modelo-var-card">
-                <div className="var-header">
-                  <span className="var-simbolo">Δt</span>
-                  <span className="var-nome">Intervalo sem Contato</span>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '0.85rem' }}>
+                <div style={{ background: 'var(--calm-card-bg, #ffffff)', padding: '0.85rem', borderRadius: '0.75rem', border: '1px solid var(--calm-card-border, #e2e8f0)', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+                  <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#059669', marginBottom: '0.25rem' }}>🎯 1. Recuperação com Questões</div>
+                  <div style={{ fontSize: '0.74rem', color: 'var(--calm-text-muted, #64748b)', lineHeight: 1.45 }}>Em vez de reler PDFs inteiros, resolva de 5 a 10 questões para reativar o conteúdo com esforço ativo.</div>
                 </div>
-                <span className="var-expl">Número de dias decorridos desde a última exposição ou resolução ativa no conteúdo.</span>
-              </div>
 
-              <div className="modelo-var-card">
-                <div className="var-header">
-                  <span className="var-simbolo">S</span>
-                  <span className="var-nome">Força da Memória</span>
+                <div style={{ background: 'var(--calm-card-bg, #ffffff)', padding: '0.85rem', borderRadius: '0.75rem', border: '1px solid var(--calm-card-border, #e2e8f0)', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+                  <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#4f46e5', marginBottom: '0.25rem' }}>⏳ 2. Respeite os Alertas de Tempo</div>
+                  <div style={{ fontSize: '0.74rem', color: 'var(--calm-text-muted, #64748b)', lineHeight: 1.45 }}>Conteúdos há mais de 14 dias sem contato têm prioridade imediata na fila diária de estudos.</div>
                 </div>
-                <span className="var-expl">Estabilidade sináptica que se expande a cada revisão espaçada e reteste frio bem-sucedido.</span>
-              </div>
 
-              <div className="modelo-var-card destaque">
-                <div className="var-header">
-                  <span className="var-simbolo">P<sub>atual</sub>(t)</span>
-                  <span className="var-nome">Proficiência Real Hoje</span>
+                <div style={{ background: 'var(--calm-card-bg, #ffffff)', padding: '0.85rem', borderRadius: '0.75rem', border: '1px solid var(--calm-card-border, #e2e8f0)', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+                  <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#d97706', marginBottom: '0.25rem' }}>🛡️ 3. Simulados Frios Semanais</div>
+                  <div style={{ fontSize: '0.74rem', color: 'var(--calm-text-muted, #64748b)', lineHeight: 1.45 }}>Simulados medem sua resposta real de prova, consolidando a estabilidade da memória.</div>
                 </div>
-                <span className="var-expl">Estimativa autêntica decaída no tempo presente, prevenindo a falsa fluência.</span>
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="modelo-matematico-hero">
+              <div className="modelo-matematico-top">
+                <span className="modelo-matematico-badge">Modelo Matemático do Estado Real de Conhecimento (Student Knowledge State)</span>
+              </div>
+              <div className="modelo-matematico-equacao">
+                P<sub>atual</sub>(t) = P<sub>base</sub> · e<sup>-Δt / S</sup>
+              </div>
+              <p className="modelo-matematico-desc">
+                <strong>Por que a média simples é enganosa?</strong> Medir o domínio de um tópico apenas por acertos/total oculta que uma nota de 90% obtida há 45 dias decaiu severamente pela Curva do Esquecimento de Ebbinghaus. Além disso, resolver 10 questões no mesmo dia da leitura do PDF infla a nota com memória de trabalho imediata.
+              </p>
+
+              <div className="modelo-vars-grid">
+                <div className="modelo-var-card">
+                  <div className="var-header">
+                    <span className="var-simbolo">P<sub>base</sub></span>
+                    <span className="var-nome">Taxa Ponderada</span>
+                  </div>
+                  <span className="var-expl">Simulados (1.5x) e retestes frios (1.2x) têm maior peso que resoluções imediatas pós-PDF (0.5x).</span>
+                </div>
+
+                <div className="modelo-var-card">
+                  <div className="var-header">
+                    <span className="var-simbolo">Δt</span>
+                    <span className="var-nome">Intervalo sem Contato</span>
+                  </div>
+                  <span className="var-expl">Número de dias decorridos desde a última exposição ou resolução ativa no conteúdo.</span>
+                </div>
+
+                <div className="modelo-var-card">
+                  <div className="var-header">
+                    <span className="var-simbolo">S</span>
+                    <span className="var-nome">Força da Memória</span>
+                  </div>
+                  <span className="var-expl">Estabilidade sináptica que se expande a cada revisão espaçada e reteste frio bem-sucedido.</span>
+                </div>
+
+                <div className="modelo-var-card destaque">
+                  <div className="var-header">
+                    <span className="var-simbolo">P<sub>atual</sub>(t)</span>
+                    <span className="var-nome">Proficiência Real Hoje</span>
+                  </div>
+                  <span className="var-expl">Estimativa autêntica decaída no tempo presente, prevenindo a falsa fluência.</span>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Regra Canônica: Aviso de certeza metodológica */}
           <div className="banner-regra-estimativa">
@@ -297,7 +335,7 @@ export const CalibracaoRetencaoAbas: React.FC<CalibracaoRetencaoAbasProps> = ({
 
           <div className="t28-card" style={{ marginTop: '1.25rem' }}>
             <div className="t28-card-header">
-              <h4>Estado Real de Conhecimento por Tópico (Decaimento Sináptico de Ebbinghaus)</h4>
+              <h4>Retenção Estimada por Tópico (Curva de Memória)</h4>
             </div>
             <div className="retencao-table-container">
               {abaB.itens.length === 0 ? (
@@ -482,7 +520,7 @@ export const CalibracaoRetencaoAbas: React.FC<CalibracaoRetencaoAbasProps> = ({
 
               <div className="porque-item">
                 <span className="porque-label">🔍 Quantidade de Observações</span>
-                <p className="porque-text">{activePorQueModal.porQue?.quantidadeObservacoes} eventos auditados no Event Store</p>
+                <p className="porque-text">{activePorQueModal.porQue?.quantidadeObservacoes} resoluções e sessões analisadas no histórico</p>
               </div>
 
               <div className="porque-item">

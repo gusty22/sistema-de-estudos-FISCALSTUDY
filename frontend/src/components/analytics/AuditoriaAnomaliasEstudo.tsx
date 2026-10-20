@@ -137,7 +137,7 @@ export const AuditoriaAnomaliasEstudo: React.FC<AuditoriaAnomaliasEstudoProps> =
             </span>
             <span className="audit-source-tag">
               <Zap className="w-3 h-3 text-amber-400" />
-              Auditoria Automática 100% Determinística (Event Store)
+              Diagnóstico Inteligente Baseado na Rotina Real
             </span>
           </div>
 
@@ -499,14 +499,14 @@ export const AuditoriaAnomaliasEstudo: React.FC<AuditoriaAnomaliasEstudoProps> =
         )}
       </section>
 
-      {/* 4. COMPARATIVO METODOLÓGICO: PLANILHA DE 8 ÁREAS VS AUDITORIA AUTOMÁTICA */}
+      {/* 4. COMPARATIVO METODOLÓGICO: DIAGNÓSTICO INTELIGENTE VS PLANILHAS */}
       <section className="methodology-comparison-card">
         <div className="comparison-header">
           <div className="comparison-title-box">
             <BarChart2 className="w-5 h-5 text-indigo-400" />
             <div>
-              <h4>Automação Integral do Diagnóstico de 8 Áreas</h4>
-              <p>Como os logs do FiscalStudy substituem os questionários manuais da planilha estática</p>
+              <h4>Diagnóstico Inteligente de Hábitos de Estudo</h4>
+              <p>Como o FiscalStudy acompanha sua evolução prática sem formulários manuais cansativos</p>
             </div>
           </div>
           <span className="badge-calm-tech">Tecnologia Calma</span>
@@ -516,9 +516,9 @@ export const AuditoriaAnomaliasEstudo: React.FC<AuditoriaAnomaliasEstudoProps> =
           <table className="comparison-table">
             <thead>
               <tr>
-                <th>Dimensão da Planilha de Diagnóstico</th>
-                <th>Como o Aluno Fazia (Manual)</th>
-                <th>Como o FiscalStudy Executa (Automático via Logs)</th>
+                <th>Dimensão Avaliada</th>
+                <th>Método Tradicional (Planilhas Estáticas)</th>
+                <th>Como o FiscalStudy Executa (Automático e Silencioso)</th>
                 <th>Status no Sistema</th>
               </tr>
             </thead>
@@ -526,49 +526,49 @@ export const AuditoriaAnomaliasEstudo: React.FC<AuditoriaAnomaliasEstudoProps> =
               <tr>
                 <td><strong>1. Equilíbrio Teoria x Prática</strong></td>
                 <td>Preencher percentual estimado de PDF vs Questões</td>
-                <td>Calcula % real a partir dos segundos logados em <code>STUDY_SESSION_RECORDED</code></td>
+                <td>Calcula o tempo real e exato entre leitura e resolução prática</td>
                 <td><span className="badge-ok-small">Automatizado</span></td>
               </tr>
               <tr>
-                <td><strong>2. Rotação vs Monomania Vertical</strong></td>
-                <td>Responder se ficou muito tempo na mesma matéria</td>
-                <td>Alerta de estagnação disparado se &gt; 21 dias na mesma matéria</td>
+                <td><strong>2. Rotação de Disciplinas</strong></td>
+                <td>Tentar lembrar se ficou muito tempo na mesma matéria</td>
+                <td>Alerta pedagógico caso uma matéria fique mais de 21 dias sem contato</td>
                 <td><span className="badge-ok-small">Automatizado</span></td>
               </tr>
               <tr>
-                <td><strong>3. Ergonomia e Fadiga de Estudo</strong></td>
-                <td>Autoavaliação subjetiva de cansaço</td>
-                <td>Detector de queda brusca de pág/h ou acertos pós-90min sem pausa</td>
+                <td><strong>3. Cansaço e Rendimento</strong></td>
+                <td>Autoavaliação subjetiva e imprecisa</td>
+                <td>Identifica queda expressiva de rendimento após sessões longas sem pausa</td>
                 <td><span className="badge-ok-small">Automatizado</span></td>
               </tr>
               <tr>
-                <td><strong>4. Retenção & Decaimento</strong></td>
+                <td><strong>4. Curva de Retenção da Memória</strong></td>
                 <td>Estimativa manual de esquecimento</td>
-                <td>Curva de Ebbinghaus decaída (P_atual = P_base * e^(-Δt/S))</td>
+                <td>Cálculo da estabilidade da memória com base no tempo desde a última revisão</td>
                 <td><span className="badge-ok-small">Automatizado</span></td>
               </tr>
               <tr>
-                <td><strong>5. Calibração Metacognitiva</strong></td>
-                <td>Tentar adivinhar se está errando com excesso de certeza</td>
-                <td>Matriz 2x2 Canônica (Confiança Declarada vs Gabarito Real)</td>
+                <td><strong>5. Certeza e Calibração Metacognitiva</strong></td>
+                <td>Tentar adivinhar se errou por excesso de confiança</td>
+                <td>Cruza o nível de confiança declarado com o acerto real da questão</td>
                 <td><span className="badge-ok-small">Automatizado</span></td>
               </tr>
               <tr>
-                <td><strong>6. Calibração de Pesos do Ciclo</strong></td>
-                <td>Editar horas manualmente no domingo após o simulado</td>
-                <td>Feedback Loop Robin Hood SWOT (rouba 15-20% das forças para fraquezas)</td>
+                <td><strong>6. Ajuste de Carga Horária Semanal</strong></td>
+                <td>Calcular horas manualmente na planilha todo fim de semana</td>
+                <td>Reequilibra as horas da semana fortalecendo conteúdos com menor taxa de acerto</td>
                 <td><span className="badge-ok-small">Automatizado</span></td>
               </tr>
               <tr>
-                <td><strong>7. Rendimento de Leitura (Velocidade)</strong></td>
-                <td>Anotar páginas lidas e calcular em calculadora</td>
-                <td>Log contínuo de páginas/hora por disciplina e tópico</td>
+                <td><strong>7. Velocidade de Leitura</strong></td>
+                <td>Cronometrar e anotar páginas lidas em bloco de notas</td>
+                <td>Acompanhamento natural do ritmo de páginas por hora por disciplina</td>
                 <td><span className="badge-ok-small">Automatizado</span></td>
               </tr>
               <tr>
-                <td><strong>8. Consistência & Histórico Real</strong></td>
+                <td><strong>8. Histórico Real de Evolução</strong></td>
                 <td>Marcar 'X' em células do Excel</td>
-                <td>Log de auditoria imutável (Append-Only Event Store)</td>
+                <td>Histórico seguro e contínuo de todas as resoluções e sessões</td>
                 <td><span className="badge-ok-small">Automatizado</span></td>
               </tr>
             </tbody>
