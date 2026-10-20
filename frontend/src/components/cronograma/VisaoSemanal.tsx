@@ -13,6 +13,7 @@ import {
   ListOrdered
 } from 'lucide-react';
 import type { ConcursoItem } from '../concursos/MeusConcursos';
+import type { AdaptiveTask } from './PlanejamentoAdaptativo';
 import './VisaoSemanal.css';
 
 // ============================================================================
@@ -32,6 +33,9 @@ export interface WeeklyActivity {
   type: 'NOVO_CONTEUDO' | 'REVISAO' | 'PRATICA';
   duration: number;
   state: ActivityState;
+  discipline?: string;
+  topic?: string;
+  reason?: string;
   note?: string;
 }
 
@@ -50,6 +54,7 @@ export interface DaySchedule {
 
 interface VisaoSemanalProps {
   activeConcurso?: ConcursoItem | null;
+  queueTasks?: AdaptiveTask[];
   onNavigateToStudy?: (disciplina: string, assunto?: string) => void;
   onNavigateToTab?: (tab: string) => void;
   onSwitchToQueue?: () => void;
@@ -57,6 +62,8 @@ interface VisaoSemanalProps {
 
 export default function VisaoSemanal({
   activeConcurso,
+  queueTasks = [],
+  onNavigateToStudy,
   onNavigateToTab,
   onSwitchToQueue
 }: VisaoSemanalProps) {
@@ -90,6 +97,7 @@ export default function VisaoSemanal({
   });
 
   const [studiedMinutesToday, setStudiedMinutesToday] = useState<number>(0);
+  const [fetchedTasks, setFetchedTasks] = useState<AdaptiveTask[]>([]);
 
   useEffect(() => {
     if (!activeConcurso?.id) return;
@@ -116,9 +124,43 @@ export default function VisaoSemanal({
         }
       })
       .catch(() => {});
-  }, [activeConcurso?.id]);
 
-  // Construir dias da semana corrente dinamicamente
+    // Fallback: se queueTasks não foi injetado pelo pai, busca diretamente do plano do Maestro
+    if (queueTasks.length === 0) {
+      fetch(`/api/v1/maestro/plan?concursoId=${encodeURIComponent(activeConcurso.id)}`)
+        .then(res => res.ok ? res.json() : null)
+        .then(data => {
+          if (data && Array.isArray(data.passos) && data.passos.length > 0) {
+            const mapped: AdaptiveTask[] = data.passos.map((p: any, idx: number) => {
+              const rawType = (p.tipo || '').toUpperCase();
+              let mappedType: any = 'PRATICA';
+              if (rawType.includes('REVISAO') || rawType.includes('SRS') || rawType.includes('ANKI')) {
+                mappedType = 'REVISAO';
+              } else if (rawType.includes('TEORIA') || rawType.includes('NOVO') || rawType.includes('VIDEO')) {
+                mappedType = 'NOVO_CONTEUDO';
+              }
+              return {
+                id: `dyn_task_${idx}`,
+                type: mappedType,
+                discipline: p.disciplina || 'Conhecimentos Fiscais',
+                topic: p.assunto || p.titulo || 'Tópico Estratégico',
+                reason: p.objetivoPedagogico || p.instrucaoMastigada || 'Prioridade algorítmica',
+                duration: p.duracaoMinutos || 25,
+                isCritical: idx < 2 || mappedType === 'REVISAO',
+                status: 'pending'
+              };
+            });
+            setFetchedTasks(mapped);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [activeConcurso?.id, queueTasks.length]);
+
+  // Lista unificada de tarefas ativas para hoje
+  const effectiveQueueTasks = queueTasks.length > 0 ? queueTasks : fetchedTasks;
+
+  // Construir dias da semana corrente dinamicamente e vincular com as tarefas da fila
   const weekDaysData = useMemo<DaySchedule[]>(() => {
     const now = new Date();
     const currentDayOfWeek = now.getDay(); // 0 = Domingo
@@ -136,6 +178,19 @@ export default function VisaoSemanal({
       { id: 'SAB', label: 'Sábado', offset: 5 },
       { id: 'DOM', label: 'Domingo', offset: 6 }
     ];
+
+    // Converter as tarefas da fila em WeeklyActivity para HOJE
+    const todayActivities: WeeklyActivity[] = effectiveQueueTasks.map((t, idx) => ({
+      id: t.id || `act-${idx}`,
+      title: `${t.discipline}: ${t.topic}`,
+      type: t.type,
+      duration: t.duration,
+      state: idx === 0 ? 'EM_EXECUCAO' : 'PLANEJADO',
+      discipline: t.discipline,
+      topic: t.topic,
+      reason: t.reason,
+      note: t.reason
+    }));
 
     return dayMeta.map(dm => {
       const d = new Date(mondayDate);
@@ -158,6 +213,25 @@ export default function VisaoSemanal({
         status = usedMinutes > 0 ? 'completed' : 'mixed';
       }
 
+      // Se for hoje, vincula as tarefas da fila do Planejamento Adaptativo
+      // Se for dia futuro com disponibilidade, gera projeção indicativa dos turnos
+      let dayActivities: WeeklyActivity[] = [];
+      if (isToday) {
+        dayActivities = todayActivities;
+      } else if (!isPast && !isRest && availableMinutes > 0) {
+        // Projeção estimada para turnos configurados na rotina
+        const turnsCount = Math.max(1, shiftsForDay);
+        const estMinutesPerBlock = Math.round(availableMinutes / turnsCount);
+        dayActivities = Array.from({ length: turnsCount }).map((_, i) => ({
+          id: `proj-${dm.id}-${i}`,
+          title: `Bloco ${i + 1}: Conteúdo Programático Adaptativo`,
+          type: i === 0 ? 'REVISAO' : 'PRATICA',
+          duration: estMinutesPerBlock,
+          state: 'PLANEJADO',
+          note: 'Projeção anti-frágil calibrada pela disponibilidade da rotina.'
+        }));
+      }
+
       return {
         id: dm.id,
         date: dateStr,
@@ -168,10 +242,10 @@ export default function VisaoSemanal({
         usedMinutes,
         status,
         exceptionReason: isRest ? 'Dia de Descanso Definido na Rotina' : undefined,
-        activities: []
+        activities: dayActivities
       };
     });
-  }, [routineSchedule, hoursPerShift, restDays, studiedMinutesToday]);
+  }, [routineSchedule, hoursPerShift, restDays, studiedMinutesToday, effectiveQueueTasks]);
 
   const selectedDay = weekDaysData.find((d) => d.id === selectedDayId) || weekDaysData[0];
 
@@ -436,6 +510,35 @@ export default function VisaoSemanal({
                           <span className="weekly-activity-note">
                             <Info className="w-3 h-3" /> {act.note}
                           </span>
+                        )}
+
+                        {selectedDay.isToday && act.discipline && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              sessionStorage.setItem('fiscalstudy_session_discipline', act.discipline || '');
+                              sessionStorage.setItem('fiscalstudy_session_topic', act.topic || '');
+                              sessionStorage.setItem('fiscalstudy_session_objective', act.reason || act.title);
+                              if (act.type === 'REVISAO') {
+                                sessionStorage.setItem('fiscalstudy_session_type', 'REVISAO');
+                              } else if (act.type === 'PRATICA') {
+                                sessionStorage.setItem('fiscalstudy_session_type', 'QUESTOES');
+                              } else {
+                                sessionStorage.setItem('fiscalstudy_session_type', 'ESTUDO_ORIENTADO');
+                              }
+                              if (onNavigateToTab) {
+                                onNavigateToTab('session');
+                              } else if (onNavigateToStudy && act.discipline) {
+                                onNavigateToStudy(act.discipline, act.topic || '');
+                              }
+                            }}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold rounded-md bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 hover:opacity-85 cursor-pointer ml-auto"
+                            title="Iniciar esta atividade no player focado"
+                          >
+                            <Play className="w-3 h-3 fill-current" />
+                            Iniciar
+                          </button>
                         )}
                       </div>
                     </div>

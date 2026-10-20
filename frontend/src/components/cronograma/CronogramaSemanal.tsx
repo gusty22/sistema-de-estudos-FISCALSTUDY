@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { ConcursoItem } from '../concursos/MeusConcursos';
-import { MaestroBattleView } from './MaestroBattleView';
+
 import './CronogramaSemanal.css';
 
 interface CronogramaProps {
@@ -86,9 +86,10 @@ Minhas Atividades da Semana:
 - Fins de semana livres para estudar mais
 - Durmo cerca de 7h30 por noite]`;
 
-export const CronogramaSemanal: React.FC<CronogramaProps> = ({ activeConcurso, onNavigateToStudy, onNavigateToTab }) => {
-  const [mode, setMode] = useState<'MAESTRO' | 'SEMANAL' | 'CICLO'>(() => {
-    return (sessionStorage.getItem('fiscalstudy_crono_mode') as any) || 'MAESTRO';
+export const CronogramaSemanal: React.FC<CronogramaProps> = ({ activeConcurso, onNavigateToStudy, onNavigateToTab: _onNavigateToTab }) => {
+  const [mode, setMode] = useState<'SEMANAL' | 'CICLO'>(() => {
+    const saved = sessionStorage.getItem('fiscalstudy_crono_mode');
+    return (saved === 'CICLO' || saved === 'SEMANAL') ? saved : 'SEMANAL';
   });
   const [selectedDia, setSelectedDia] = useState<string>('Segunda');
   const [isRoutineOpen, setIsRoutineOpen] = useState(false);
@@ -168,9 +169,11 @@ export const CronogramaSemanal: React.FC<CronogramaProps> = ({ activeConcurso, o
   };
 
   const loadRoutineData = () => {
-    if (!activeConcurso?.id) return;
+    const url = activeConcurso?.id
+      ? `/api/v1/routine?concursoId=${encodeURIComponent(activeConcurso.id)}`
+      : '/api/v1/routine';
 
-    fetch(`/api/v1/routine?concursoId=${encodeURIComponent(activeConcurso.id)}`)
+    fetch(url)
       .then(res => res.json())
       .then(data => {
         if (data) {
@@ -352,16 +355,6 @@ export const CronogramaSemanal: React.FC<CronogramaProps> = ({ activeConcurso, o
       <div className="crono-mode-bar">
         <div className="crono-mode-pills">
           <button
-            className={`crono-mode-pill ${mode === 'MAESTRO' ? 'active' : ''}`}
-            onClick={() => {
-              setMode('MAESTRO');
-              sessionStorage.setItem('fiscalstudy_crono_mode', 'MAESTRO');
-            }}
-            style={mode === 'MAESTRO' ? { background: 'linear-gradient(135deg, #f59e0b, #ef4444)', color: '#fff', boxShadow: '0 0 15px rgba(245, 158, 11, 0.4)' } : {}}
-          >
-            ⚡ Maestro (Modo Batalha)
-          </button>
-          <button
             className={`crono-mode-pill ${mode === 'SEMANAL' ? 'active' : ''}`}
             onClick={() => {
               setMode('SEMANAL');
@@ -385,20 +378,6 @@ export const CronogramaSemanal: React.FC<CronogramaProps> = ({ activeConcurso, o
           ⚙️ Configurar Rotina ({totalHorasPlanejadas}h/sem)
         </button>
       </div>
-
-      {/* MODE 0: MAESTRO (INTERFACE DE BATALHA IMEDIATA) */}
-      {mode === 'MAESTRO' && (
-        <MaestroBattleView
-          concursoId={activeConcurso?.id || ''}
-          concursoNome={activeConcurso?.nome || 'Concurso Ativo'}
-          onNavigateToStudy={(disciplina, assunto) => onNavigateToStudy(disciplina || '', assunto)}
-          onNavigateToTab={onNavigateToTab}
-          onSwitchToWeekly={() => {
-            setMode('SEMANAL');
-            sessionStorage.setItem('fiscalstudy_crono_mode', 'SEMANAL');
-          }}
-        />
-      )}
 
       {/* MODE 1: CRONOGRAMA SEMANAL */}
       {mode === 'SEMANAL' && (

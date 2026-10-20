@@ -1,12 +1,36 @@
-/* CronogramaSemanal.css - Adaptive Cycle and Routine Support */
+/* =========================================================================
+   CRONOGRAMA SEMANAL (Ciclo e Rotina Adaptativos)
+   Padrão Visual Limpo — Tecnologia Calma (Paper & Night nativos)
+   ========================================================================= */
 
 .cronograma-container {
+  --crono-card-bg: var(--calm-card-bg, #ffffff);
+  --crono-card-border: var(--calm-card-border, #e2e8f0);
+  --crono-text: var(--calm-text, #0f172a);
+  --crono-text-muted: var(--calm-text-muted, #64748b);
+  --crono-bg-subtle: var(--calm-bg-subtle, #f8fafc);
+  --crono-border-subtle: var(--calm-border-subtle, #e2e8f0);
+  --crono-shadow: 0 4px 18px rgba(0, 0, 0, 0.04);
+
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  padding: 32px;
+  padding: 1.5rem 1rem 3rem;
   max-width: 1400px;
   margin: 0 auto;
+  color: var(--crono-text);
+  font-family: inherit;
+}
+
+[data-theme='night'] .cronograma-container,
+[data-theme='dark'] .cronograma-container {
+  --crono-card-bg: #151d2c;
+  --crono-card-border: rgba(255, 255, 255, 0.08);
+  --crono-text: #f8fafc;
+  --crono-text-muted: #94a3b8;
+  --crono-bg-subtle: #0d131f;
+  --crono-border-subtle: rgba(255, 255, 255, 0.08);
+  --crono-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
 }
 
 .cronograma-header {
@@ -14,22 +38,23 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-left: 4px solid #4f8ef7;
-  border-radius: 12px;
-  background: rgba(19, 22, 30, 0.95);
-  border: 1px solid #252836;
+  border-left: 5px solid #4f46e5;
+  border-radius: 14px;
+  background: var(--crono-card-bg);
+  border: 1px solid var(--crono-card-border);
+  box-shadow: var(--crono-shadow);
 }
 
 .cronograma-header h2 {
-  font-size: 1.4rem;
+  font-size: 1.45rem;
   font-weight: 800;
-  color: #f8fafc;
+  color: var(--crono-text);
   margin: 0;
 }
 
 .cronograma-subtitle {
   font-size: 0.85rem;
-  color: #94a3b8;
+  color: var(--crono-text-muted);
   margin: 0.3rem 0 0;
 }
 
@@ -39,10 +64,11 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  background: #13161e;
-  border: 1px solid #252836;
+  background: var(--crono-card-bg);
+  border: 1px solid var(--crono-card-border);
   border-radius: 12px;
   padding: 6px 10px;
+  box-shadow: var(--crono-shadow);
 }
 
 .crono-mode-pills {
@@ -54,29 +80,30 @@
   padding: 8px 18px;
   border-radius: 8px;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 700;
   border: 1px solid transparent;
   background: transparent;
-  color: #a1a6c2;
+  color: var(--crono-text-muted);
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .crono-mode-pill:hover {
-  color: #e8eaf2;
+  color: var(--crono-text);
+  background: var(--crono-bg-subtle);
 }
 
 .crono-mode-pill.active {
-  background: #1a1e2a;
-  border-color: #4f8ef7;
-  color: #4f8ef7;
-  box-shadow: 0 4px 12px rgba(79, 142, 247, 0.2);
+  background: rgba(79, 70, 229, 0.1);
+  border-color: #4f46e5;
+  color: #4f46e5;
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.15);
 }
 
 .btn-routine-config {
-  background: #1a1e2a;
-  border: 1px solid #2e3347;
-  color: #e8eaf2;
+  background: var(--crono-bg-subtle);
+  border: 1px solid var(--crono-card-border);
+  color: var(--crono-text);
   font-size: 12px;
   font-weight: 700;
   padding: 8px 14px;
@@ -89,8 +116,8 @@
 }
 
 .btn-routine-config:hover {
-  border-color: #4f8ef7;
-  color: #4f8ef7;
+  border-color: #4f46e5;
+  color: #4f46e5;
 }
 
 /* Day tabs */
@@ -107,41 +134,42 @@
 }
 
 .dia-tab {
-  background: #111520;
-  border: 1px solid #1f2738;
+  background: var(--crono-card-bg);
+  border: 1px solid var(--crono-card-border);
   padding: 0.75rem 0.5rem;
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.2rem;
   transition: all 0.15s;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.02);
 }
 
 .dia-tab:hover {
-  background: #182030;
-  border-color: #4f8ef7;
+  background: var(--crono-bg-subtle);
+  border-color: #4f46e5;
 }
 
 .dia-tab.active {
-  background: rgba(79, 142, 247, 0.15);
-  border-color: #4f8ef7;
+  background: rgba(79, 70, 229, 0.1);
+  border-color: #4f46e5;
 }
 
 .dia-tab-nome {
   font-size: 0.8rem;
   font-weight: 700;
-  color: #e2e8f0;
+  color: var(--crono-text);
 }
 
 .dia-tab-horas {
   font-size: 0.72rem;
-  color: #64748b;
+  color: var(--crono-text-muted);
 }
 
 .dia-tab-done {
-  color: #3ecf8e;
+  color: #059669;
   font-size: 0.75rem;
   font-weight: 800;
 }
@@ -149,9 +177,10 @@
 /* Day Content Card */
 .dia-content-card {
   padding: 1.5rem;
-  background: rgba(19, 22, 30, 0.95);
-  border: 1px solid #252836;
-  border-radius: 12px;
+  background: var(--crono-card-bg);
+  border: 1px solid var(--crono-card-border);
+  border-radius: 14px;
+  box-shadow: var(--crono-shadow);
 }
 
 .dia-header-row {
@@ -160,22 +189,22 @@
   align-items: center;
   margin-bottom: 1.25rem;
   padding-bottom: 0.75rem;
-  border-bottom: 1px solid #1f2738;
+  border-bottom: 1px solid var(--crono-border-subtle);
 }
 
 .dia-header-row h3 {
   font-size: 1.1rem;
-  color: #f1f5f9;
+  color: var(--crono-text);
   margin: 0;
 }
 
 .dia-total-badge {
   font-size: 0.75rem;
-  color: #94a3b8;
-  background: #0f121a;
+  color: var(--crono-text-muted);
+  background: var(--crono-bg-subtle);
   padding: 4px 10px;
   border-radius: 6px;
-  border: 1px solid #1f2738;
+  border: 1px solid var(--crono-card-border);
 }
 
 .blocks-list {
@@ -188,33 +217,33 @@
   display: flex;
   align-items: center;
   gap: 1.25rem;
-  background: #0f121a;
-  border: 1px solid #1f2738;
+  background: var(--crono-bg-subtle);
+  border: 1px solid var(--crono-card-border);
   padding: 1rem 1.25rem;
   border-radius: 10px;
   transition: all 0.15s;
 }
 
 .study-block-card:hover {
-  border-color: #2e3b52;
+  border-color: #cbd5e1;
 }
 
 .study-block-card.is-completed {
   opacity: 0.65;
-  background: rgba(62, 207, 142, 0.04);
-  border-color: rgba(62, 207, 142, 0.2);
+  background: rgba(16, 185, 129, 0.05);
+  border-color: rgba(16, 185, 129, 0.25);
 }
 
 .study-block-card.is-completed .block-discipline {
   text-decoration: line-through;
-  color: #94a3b8;
+  color: var(--crono-text-muted);
 }
 
 .block-status-col input[type='checkbox'] {
   width: 18px;
   height: 18px;
   cursor: pointer;
-  accent-color: #3ecf8e;
+  accent-color: #059669;
 }
 
 .block-info-col {
@@ -237,45 +266,45 @@
 }
 
 .type-teoria {
-  background: rgba(79, 142, 247, 0.15);
-  color: #4f8ef7;
-  border: 1px solid rgba(79, 142, 247, 0.3);
+  background: rgba(79, 70, 229, 0.1);
+  color: #4f46e5;
+  border: 1px solid rgba(79, 70, 229, 0.25);
 }
 
 .type-questoes {
-  background: rgba(62, 207, 142, 0.15);
-  color: #3ecf8e;
-  border: 1px solid rgba(62, 207, 142, 0.3);
+  background: rgba(16, 185, 129, 0.1);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.25);
 }
 
 .type-revisao {
-  background: rgba(245, 135, 74, 0.15);
-  color: #f5874a;
-  border: 1px solid rgba(245, 135, 74, 0.3);
+  background: rgba(245, 158, 11, 0.1);
+  color: #b45309;
+  border: 1px solid rgba(245, 158, 11, 0.25);
 }
 
 .block-duration {
   font-size: 0.72rem;
-  color: #64748b;
+  color: var(--crono-text-muted);
 }
 
 .block-discipline {
   font-size: 0.95rem;
   font-weight: 700;
-  color: #f1f5f9;
+  color: var(--crono-text);
   margin: 0;
 }
 
 .block-subject {
   font-size: 0.8rem;
-  color: #94a3b8;
+  color: var(--crono-text-muted);
   margin: 0.15rem 0 0;
 }
 
 .btn-block-study {
-  background: #1e293b;
-  border: 1px solid #334155;
-  color: #cbd5e1;
+  background: var(--crono-card-bg);
+  border: 1px solid var(--crono-card-border);
+  color: var(--crono-text);
   font-size: 0.8rem;
   font-weight: 600;
   padding: 6px 14px;
@@ -286,8 +315,8 @@
 }
 
 .btn-block-study:hover {
-  background: #4f8ef7;
-  border-color: #4f8ef7;
+  background: #4f46e5;
+  border-color: #4f46e5;
   color: white;
 }
 
@@ -301,32 +330,33 @@
 }
 
 .ciclo-hero-card {
-  background: linear-gradient(135deg, rgba(79, 142, 247, 0.12), rgba(124, 92, 252, 0.08));
-  border: 1px solid rgba(79, 142, 247, 0.3);
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.08), rgba(124, 92, 252, 0.05));
+  border: 1px solid rgba(79, 70, 229, 0.25);
   border-radius: 14px;
   padding: 22px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 20px;
+  box-shadow: var(--crono-shadow);
 }
 
 .ciclo-hero-info h3 {
   font-size: 18px;
   font-weight: 800;
-  color: #e8eaf2;
+  color: var(--crono-text);
   margin-bottom: 4px;
 }
 
 .ciclo-hero-info p {
   font-size: 13px;
-  color: #a1a6c2;
+  color: var(--crono-text-muted);
   line-height: 1.5;
 }
 
 .ciclo-status-pill {
-  background: #1a1e2a;
-  border: 1px solid #2e3347;
+  background: var(--crono-card-bg);
+  border: 1px solid var(--crono-card-border);
   border-radius: 10px;
   padding: 10px 16px;
   text-align: right;
@@ -338,14 +368,14 @@
   font-weight: 700;
   letter-spacing: 0.8px;
   text-transform: uppercase;
-  color: #a1a6c2;
+  color: var(--crono-text-muted);
   margin-bottom: 2px;
 }
 
 .ciclo-status-pill .val {
   font-size: 16px;
   font-weight: 900;
-  color: #3ecf8e;
+  color: #059669;
 }
 
 .ciclo-grid {
@@ -355,8 +385,8 @@
 }
 
 .ciclo-card {
-  background: #13161e;
-  border: 1px solid #252836;
+  background: var(--crono-card-bg);
+  border: 1px solid var(--crono-card-border);
   border-radius: 12px;
   padding: 18px;
   display: flex;
@@ -365,6 +395,7 @@
   gap: 14px;
   position: relative;
   overflow: hidden;
+  box-shadow: var(--crono-shadow);
   transition: all 0.2s;
 }
 
@@ -375,13 +406,13 @@
   left: 0;
   right: 0;
   height: 3px;
-  background: var(--ciclo-color, #4f8ef7);
+  background: var(--ciclo-color, #4f46e5);
 }
 
 .ciclo-card:hover {
-  border-color: var(--ciclo-color, #4f8ef7);
+  border-color: var(--ciclo-color, #4f46e5);
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
 }
 
 .ciclo-card-top {
@@ -394,9 +425,9 @@
   font-size: 10px;
   font-weight: 800;
   font-family: 'JetBrains Mono', monospace;
-  background: #1a1e2a;
-  border: 1px solid #2e3347;
-  color: #a1a6c2;
+  background: var(--crono-bg-subtle);
+  border: 1px solid var(--crono-card-border);
+  color: var(--crono-text-muted);
   padding: 2px 7px;
   border-radius: 4px;
 }
@@ -404,26 +435,26 @@
 .ciclo-peso-badge {
   font-size: 11px;
   font-weight: 700;
-  color: #a1a6c2;
+  color: var(--crono-text-muted);
 }
 
 .ciclo-materia-nome {
   font-size: 15px;
   font-weight: 800;
-  color: #e8eaf2;
+  color: var(--crono-text);
   margin-top: 8px;
   line-height: 1.3;
 }
 
 .ciclo-materia-meta {
   font-size: 12px;
-  color: #a1a6c2;
+  color: var(--crono-text-muted);
   margin-top: 4px;
 }
 
 .ciclo-hours-box {
-  background: #0f121a;
-  border: 1px solid #1f2738;
+  background: var(--crono-bg-subtle);
+  border: 1px solid var(--crono-card-border);
   border-radius: 8px;
   padding: 8px 12px;
   display: flex;
@@ -433,21 +464,21 @@
 
 .ciclo-hours-label {
   font-size: 11px;
-  color: #a1a6c2;
+  color: var(--crono-text-muted);
 }
 
 .ciclo-hours-val {
   font-family: 'JetBrains Mono', monospace;
   font-size: 14px;
   font-weight: 800;
-  color: #4f8ef7;
+  color: #4f46e5;
 }
 
 .ciclo-btn-study {
   width: 100%;
-  background: #1a1e2a;
-  border: 1px solid #2e3347;
-  color: #e8eaf2;
+  background: var(--crono-bg-subtle);
+  border: 1px solid var(--crono-card-border);
+  color: var(--crono-text);
   padding: 8px;
   border-radius: 8px;
   font-size: 12px;
@@ -457,8 +488,8 @@
 }
 
 .ciclo-btn-study:hover {
-  background: #4f8ef7;
-  border-color: #4f8ef7;
+  background: #4f46e5;
+  border-color: #4f46e5;
   color: #ffffff;
 }
 
@@ -468,7 +499,7 @@
 .routine-drawer-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(15, 23, 42, 0.65);
   backdrop-filter: blur(6px);
   z-index: 1200;
   display: flex;
@@ -480,19 +511,20 @@
 .routine-drawer-card {
   width: min(680px, 100%);
   max-height: 90vh;
-  background: #13161e;
-  border: 1px solid #2e3347;
+  background: var(--crono-card-bg);
+  border: 1px solid var(--crono-card-border);
   border-radius: 16px;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.8);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.2);
   overflow-y: auto;
   display: flex;
   flex-direction: column;
+  color: var(--crono-text);
 }
 
 .routine-drawer-header {
   padding: 16px 22px;
-  background: #1a1e2a;
-  border-bottom: 1px solid #252836;
+  background: var(--crono-card-bg);
+  border-bottom: 1px solid var(--crono-border-subtle);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -501,7 +533,7 @@
 .routine-drawer-header h3 {
   font-size: 16px;
   font-weight: 800;
-  color: #e8eaf2;
+  color: var(--crono-text);
 }
 
 .routine-drawer-body {
@@ -516,7 +548,7 @@
   font-weight: 800;
   letter-spacing: 1px;
   text-transform: uppercase;
-  color: #4f8ef7;
+  color: #4f46e5;
   margin-bottom: 10px;
 }
 
@@ -527,8 +559,8 @@
 }
 
 .routine-day-input-box {
-  background: #0f121a;
-  border: 1px solid #252836;
+  background: var(--crono-bg-subtle);
+  border: 1px solid var(--crono-card-border);
   border-radius: 8px;
   padding: 8px;
   text-align: center;
@@ -538,16 +570,16 @@
   display: block;
   font-size: 11px;
   font-weight: 700;
-  color: #a1a6c2;
+  color: var(--crono-text-muted);
   margin-bottom: 4px;
 }
 
 .routine-day-input-box input {
   width: 100%;
-  background: #1a1e2a;
-  border: 1px solid #2e3347;
+  background: var(--crono-card-bg);
+  border: 1px solid var(--crono-card-border);
   border-radius: 6px;
-  color: #fff;
+  color: var(--crono-text);
   font-size: 13px;
   font-family: monospace;
   padding: 4px;
@@ -561,8 +593,8 @@
 }
 
 .commitment-item {
-  background: #1a1e2a;
-  border: 1px solid #252836;
+  background: var(--crono-bg-subtle);
+  border: 1px solid var(--crono-card-border);
   border-radius: 8px;
   padding: 10px 14px;
   display: flex;
@@ -572,11 +604,11 @@
 
 .commitment-info strong {
   font-size: 13px;
-  color: #e8eaf2;
+  color: var(--crono-text);
   display: block;
 }
 
 .commitment-info small {
   font-size: 11px;
-  color: #a1a6c2;
+  color: var(--crono-text-muted);
 }
