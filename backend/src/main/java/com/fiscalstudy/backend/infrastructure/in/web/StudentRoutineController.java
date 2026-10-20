@@ -22,7 +22,7 @@ public class StudentRoutineController {
     }
 
     @GetMapping
-    public ResponseEntity<StudentRoutine> getRoutine(@RequestParam String concursoId) {
+    public ResponseEntity<StudentRoutine> getRoutine(@RequestParam(required = false) String concursoId) {
         return ResponseEntity.ok(routineService.getRoutineForConcurso(concursoId));
     }
 
@@ -32,7 +32,7 @@ public class StudentRoutineController {
     }
 
     @GetMapping("/effective-hours")
-    public ResponseEntity<Map<String, Object>> getEffectiveHours(@RequestParam String concursoId,
+    public ResponseEntity<Map<String, Object>> getEffectiveHours(@RequestParam(required = false) String concursoId,
                                                                  @RequestParam(required = false) String date) {
         LocalDate localDate = (date != null && !date.isBlank()) ? LocalDate.parse(date) : LocalDate.now();
         double hours = routineService.getEffectiveHoursForDate(concursoId, localDate);

@@ -26,15 +26,30 @@ public class StudentRoutineService {
     }
 
     public StudentRoutine getRoutineForConcurso(String concursoId) {
-        Optional<StudentRoutine> existing = routineRepository.findByConcursoId(concursoId);
+        String effectiveConcursoId = (concursoId != null && !concursoId.isBlank() && !"undefined".equalsIgnoreCase(concursoId) && !"null".equalsIgnoreCase(concursoId))
+                ? concursoId.trim()
+                : null;
+        Optional<StudentRoutine> existing = routineRepository.findByConcursoId(effectiveConcursoId);
+
         if (existing.isPresent()) {
-            return existing.get();
+            StudentRoutine routine = existing.get();
+            if (routine.getCicloDisciplinasJson() == null || routine.getCicloDisciplinasJson().isBlank() || routine.getCicloDisciplinasJson().trim().equals("[]")) {
+                List<Map<String, Object>> ciclo = generateCycleFromEdital(routine.getConcursoId(), routine.getTotalHorasSemanais());
+                if (!ciclo.isEmpty()) {
+                    try {
+                        routine.setCicloDisciplinasJson(objectMapper.writeValueAsString(ciclo));
+                        routine = routineRepository.save(routine);
+                    } catch (Exception ignored) {}
+                }
+            }
+            return routine;
         }
 
         // Gera rotina padrão com 24h semanais distribuídas
+        String routineConcursoId = effectiveConcursoId != null ? effectiveConcursoId : "default";
         StudentRoutine defaultRoutine = new StudentRoutine(
                 UUID.randomUUID().toString(),
-                concursoId,
+                routineConcursoId,
                 "SEMANAL",
                 3.0, 3.0, 3.0, 3.0, 3.0, 5.0, 4.0,
                 null,
@@ -42,7 +57,7 @@ public class StudentRoutineService {
         );
 
         // Gera ciclo inicial proporcional baseado nas matérias do edital
-        List<Map<String, Object>> ciclo = generateCycleFromEdital(concursoId, defaultRoutine.getTotalHorasSemanais());
+        List<Map<String, Object>> ciclo = generateCycleFromEdital(effectiveConcursoId, defaultRoutine.getTotalHorasSemanais());
         try {
             defaultRoutine.setCicloDisciplinasJson(objectMapper.writeValueAsString(ciclo));
         } catch (Exception ignored) {}
@@ -51,7 +66,7 @@ public class StudentRoutineService {
     }
 
     public StudentRoutine saveRoutine(StudentRoutine routine) {
-        if (routine.getCicloDisciplinasJson() == null || routine.getCicloDisciplinasJson().isBlank()) {
+        if (routine.getCicloDisciplinasJson() == null || routine.getCicloDisciplinasJson().isBlank() || routine.getCicloDisciplinasJson().trim().equals("[]")) {
             List<Map<String, Object>> ciclo = generateCycleFromEdital(routine.getConcursoId(), routine.getTotalHorasSemanais());
             try {
                 routine.setCicloDisciplinasJson(objectMapper.writeValueAsString(ciclo));
@@ -129,6 +144,11 @@ public class StudentRoutineService {
             }
         }
         return Math.round(baseHours * 10.0) / 10.0;
+    }
+
+    public int getEffectiveMinutesForToday(String concursoId) {
+        double hours = getEffectiveHoursForDate(concursoId, LocalDate.now());
+        return (int) Math.round(hours * 60);
     }
 
     public List<RoutineCommitment> getAllCommitments() {
