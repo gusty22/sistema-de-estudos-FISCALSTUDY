@@ -296,6 +296,58 @@
   gap: 0.5rem;
 }
 
+.sidebar-mode-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.5rem 0.65rem;
+  background: var(--sidebar-bg, #ffffff);
+  border: 1px solid var(--sidebar-border, #e2e8f0);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--sidebar-text, #0f172a);
+  margin-bottom: 0.25rem;
+}
+
+.sidebar-mode-toggle-btn:hover {
+  background: var(--sidebar-hover-bg, #f1f5f9);
+  border-color: #10b981;
+}
+
+.sidebar-mode-toggle-btn.mode-aluno {
+  border-color: rgba(16, 185, 129, 0.4);
+  background: rgba(16, 185, 129, 0.05);
+}
+
+.mode-toggle-content {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-align: left;
+}
+
+.mode-toggle-icon {
+  font-size: 1.1rem;
+}
+
+.mode-toggle-texts {
+  display: flex;
+  flex-direction: column;
+}
+
+.mode-toggle-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--sidebar-text, #0f172a);
+}
+
+.mode-toggle-sub {
+  font-size: 0.65rem;
+  color: var(--sidebar-muted, #64748b);
+}
+
 .sidebar-theme-toggle-btn {
   display: flex;
   align-items: center;

@@ -1,5 +1,6 @@
 import React from 'react';
 import type { ConcursoItem } from '../concursos/MeusConcursos';
+import { useSimplifiedMode } from '../../context/SimplifiedModeContext';
 import './Sidebar.css';
 
 export type NavTab = 
@@ -50,6 +51,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   theme = 'paper',
   onToggleTheme,
 }) => {
+  const { isSimplifiedMode, toggleSimplifiedMode } = useSimplifiedMode();
+
   return (
     <aside className="sidebar">
       {/* Brand & Logo */}
@@ -272,7 +275,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           onClick={() => onSelectTab('import')}
         >
           <span className="nav-icon">📥</span>
-          <span className="nav-text">Ingestão & Provas</span>
+          <span className="nav-text">{isSimplifiedMode ? 'Importar Provas/PDFs' : 'Ingestão & Provas'}</span>
         </button>
 
         <button
@@ -280,7 +283,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           onClick={() => onSelectTab('analytics')}
         >
           <span className="nav-icon">📈</span>
-          <span className="nav-text">Desempenho & Diagnósticos</span>
+          <span className="nav-text">{isSimplifiedMode ? 'Desempenho & Mentoria' : 'Desempenho & Diagnósticos'}</span>
         </button>
 
         <div className="nav-section-title">SISTEMA & ADMINISTRAÇÃO</div>
@@ -289,12 +292,37 @@ export const Sidebar: React.FC<SidebarProps> = ({
           onClick={() => onSelectTab('configuracoes')}
         >
           <span className="nav-icon">⚙️</span>
-          <span className="nav-text">Configurações & Dados</span>
+          <span className="nav-text">{isSimplifiedMode ? 'Configurações' : 'Configurações & Dados'}</span>
         </button>
       </nav>
 
       {/* Sidebar Footer */}
       <div className="sidebar-footer">
+        {/* Chave de Alternância Global: Modo Aluno (Simplificado) vs Modo Avançado (Engenharia) */}
+        <button
+          type="button"
+          className={`sidebar-mode-toggle-btn ${isSimplifiedMode ? 'mode-aluno' : 'mode-avancado'}`}
+          onClick={toggleSimplifiedMode}
+          title={isSimplifiedMode ? 'Modo Aluno ativo: Metadados técnicos e fórmulas puras ocultados. Clique para alternar para Modo Avançado.' : 'Modo Avançado ativo: Exibindo fórmulas, telemetria profunda e metadados. Clique para alternar para Modo Aluno.'}
+        >
+          <div className="mode-toggle-content">
+            <span className="mode-toggle-icon">
+              {isSimplifiedMode ? '🎓' : '⚙️'}
+            </span>
+            <div className="mode-toggle-texts">
+              <span className="mode-toggle-title">
+                {isSimplifiedMode ? 'Modo Aluno' : 'Modo Avançado'}
+              </span>
+              <span className="mode-toggle-sub">
+                {isSimplifiedMode ? 'Prática & Mentoria' : 'Engenharia & Dados'}
+              </span>
+            </div>
+          </div>
+          <div className={`theme-toggle-pill ${isSimplifiedMode ? 'active-night' : 'active-paper'}`}>
+            <div className="theme-toggle-thumb" />
+          </div>
+        </button>
+
         {onToggleTheme && (
           <button
             type="button"
@@ -318,9 +346,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         <div className="footer-status">
           <span className="status-dot"></span>
-          <span>Local-First • SQLite</span>
+          <span>{isSimplifiedMode ? '✨ Modo Aluno Ativo' : 'Local-First • SQLite'}</span>
         </div>
-        <div className="footer-version">v2.1 Adaptive MVT</div>
+        <div className="footer-version">{isSimplifiedMode ? 'Mentoria & Ações Práticas' : 'v2.1 Adaptive MVT'}</div>
       </div>
     </aside>
   );

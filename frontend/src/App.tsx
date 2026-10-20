@@ -3,7 +3,7 @@ import Sidebar, { type NavTab } from './components/navigation/Sidebar';
 import Dashboard from './components/dashboard/Dashboard';
 import PlanejamentoAdaptativo from './components/cronograma/PlanejamentoAdaptativo';
 import { RotinaDisponibilidade } from './components/cronograma/RotinaDisponibilidade';
-import { MaestroBattleView } from './components/cronograma/MaestroBattleView';
+
 import CadernosSimulados, { type SimuladoConfig } from './components/simulados/CadernosSimulados';
 import CicloRevisoes from './components/revisoes/CicloRevisoes';
 import AnalyticsView from './components/analytics/AnalyticsView';
@@ -207,12 +207,12 @@ function App() {
         )}
 
         {activeTab === 'maestro' && (
-          <MaestroBattleView
-            concursoId={activeConcurso?.id || ''}
-            concursoNome={activeConcurso?.nome || 'Concurso Ativo'}
-            onNavigateToStudy={handleNavigateToStudy}
-            onNavigateToTab={(tab) => setActiveTab(tab as NavTab)}
-            onSwitchToWeekly={() => setActiveTab('cronograma')}
+          <SessaoEstudoAtiva
+            activeConcurso={activeConcurso}
+            onBack={() => setActiveTab('dashboard')}
+            onFinishSession={() => setActiveTab('cronograma')}
+            onOpenQuestions={(disc, ass) => handleNavigateToStudy(disc, ass)}
+            onOpenMaterial={() => setActiveTab('materiais')}
           />
         )}
 
@@ -221,7 +221,7 @@ function App() {
             activeConcurso={activeConcurso}
             onNavigateToStudy={handleNavigateToStudy}
             onNavigateToTab={(tab: string) => setActiveTab(tab as NavTab)}
-            onSwitchToBattle={() => setActiveTab('maestro')}
+            onSwitchToBattle={() => setActiveTab('session')}
           />
         )}
 
@@ -236,6 +236,7 @@ function App() {
           <BibliotecaMateriais
             activeConcurso={activeConcurso}
             onNavigateToStudy={handleNavigateToStudy}
+            onNavigateToEdital={() => setActiveTab('edital')}
           />
         )}
 
