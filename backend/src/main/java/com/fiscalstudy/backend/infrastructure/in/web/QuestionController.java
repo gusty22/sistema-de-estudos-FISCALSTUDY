@@ -147,7 +147,8 @@ public class QuestionController {
                     result.getBloqueioCognitivo(),
                     result.getErrosConsecutivos(),
                     result.getMediaPrescriptionTexto(),
-                    result.getMediaVeiculo()
+                    result.getMediaVeiculo(),
+                    result.getCorrectOption()
             ));
         } catch (IllegalStateException e) {
             return ResponseEntity.badRequest().build();
@@ -278,13 +279,22 @@ public class QuestionController {
         @com.fasterxml.jackson.annotation.JsonProperty("veiculo")
         public String veiculo;
 
+        @com.fasterxml.jackson.annotation.JsonProperty("correctOption")
+        public String correctOption;
+
         public AttemptResultDTO(Boolean isCorrect, String gabaritoStatus, Integer concursoPoint) {
-            this(isCorrect, gabaritoStatus, concursoPoint, null, null, null, null);
+            this(isCorrect, gabaritoStatus, concursoPoint, null, null, null, null, null);
         }
 
         public AttemptResultDTO(Boolean isCorrect, String gabaritoStatus, Integer concursoPoint,
                                 Boolean bloqueioCognitivo, Integer errosConsecutivos,
                                 String prescricaoTexto, String veiculo) {
+            this(isCorrect, gabaritoStatus, concursoPoint, bloqueioCognitivo, errosConsecutivos, prescricaoTexto, veiculo, null);
+        }
+
+        public AttemptResultDTO(Boolean isCorrect, String gabaritoStatus, Integer concursoPoint,
+                                Boolean bloqueioCognitivo, Integer errosConsecutivos,
+                                String prescricaoTexto, String veiculo, String correctOption) {
             this.isCorrect = isCorrect;
             this.gabaritoStatus = gabaritoStatus;
             this.concursoPoint = concursoPoint;
@@ -292,6 +302,7 @@ public class QuestionController {
             this.errosConsecutivos = errosConsecutivos;
             this.prescricaoTexto = prescricaoTexto;
             this.veiculo = veiculo;
+            this.correctOption = correctOption;
         }
 
         public AttemptResultDTO(Boolean isCorrect, String gabaritoStatus) {
@@ -309,5 +320,6 @@ public class QuestionController {
         public Integer getErrosConsecutivos() { return errosConsecutivos; }
         public String getPrescricaoTexto() { return prescricaoTexto; }
         public String getVeiculo() { return veiculo; }
+        public String getCorrectOption() { return correctOption; }
     }
 }

@@ -102,195 +102,7 @@ export const STATUS_CONFIG: Record<
 // ============================================================================
 // MOCK DATA: Curadoria Padrão FiscalStudy (Tecnologia Calma)
 // ============================================================================
-const DEFAULT_MAP: DisciplineItem[] = [
-  {
-    id: 'd1',
-    type: 'DISCIPLINE',
-    title: 'Direito Tributário',
-    children: [
-      {
-        id: 't1',
-        type: 'TOPIC',
-        title: 'Sistema Tributário Nacional',
-        disciplina: 'Direito Tributário',
-        children: [
-          {
-            id: 'st1',
-            type: 'SUBTOPIC',
-            title: 'Competência Tributária',
-            status: 'FAVORABLE',
-            importance: 'Alta (Peso 3)',
-            material: 'PDF 01 - Competência e Princípios',
-            questions: 45,
-            evidence: 'Consolidado (88% retenção)',
-            lastActivity: 'Há 5 dias',
-            prerequisites: [],
-            disciplina: 'Direito Tributário',
-            topico: 'Sistema Tributário Nacional'
-          },
-          {
-            id: 'st2',
-            type: 'SUBTOPIC',
-            title: 'Limitações ao Poder de Tributar',
-            status: 'VERIFY_RETENTION',
-            importance: 'Crítica (Peso 3)',
-            material: 'PDF 01 - Competência e Princípios',
-            questions: 120,
-            evidence: 'Estudado, porém com queda estimada de memória',
-            lastActivity: 'Há 14 dias',
-            prerequisites: ['st1'],
-            disciplina: 'Direito Tributário',
-            topico: 'Sistema Tributário Nacional'
-          }
-        ]
-      },
-      {
-        id: 't2',
-        type: 'TOPIC',
-        title: 'Obrigação Tributária',
-        disciplina: 'Direito Tributário',
-        children: [
-          {
-            id: 'st3',
-            type: 'SUBTOPIC',
-            title: 'Obrigação Principal e Acessória',
-            status: 'IN_STUDY',
-            importance: 'Média (Peso 2)',
-            material: 'Videoaulas Módulo 2',
-            questions: 30,
-            evidence: 'Evidência em construção (60% acertos recentes)',
-            lastActivity: 'Ontem',
-            prerequisites: [],
-            disciplina: 'Direito Tributário',
-            topico: 'Obrigação Tributária'
-          }
-        ]
-      },
-      {
-        id: 't3',
-        type: 'TOPIC',
-        title: 'Crédito Tributário',
-        disciplina: 'Direito Tributário',
-        children: [
-          {
-            id: 'st4',
-            type: 'SUBTOPIC',
-            title: 'Constituição (Lançamento)',
-            status: 'REINFORCEMENT_NEEDED',
-            importance: 'Alta (Peso 3)',
-            material: 'PDF 03 - Lançamento e Suspensão',
-            questions: 85,
-            evidence: 'Baixo domínio prático (Erros procedimentais E4)',
-            lastActivity: 'Há 2 dias',
-            prerequisites: ['st3'],
-            disciplina: 'Direito Tributário',
-            topico: 'Crédito Tributário'
-          },
-          {
-            id: 'st5',
-            type: 'SUBTOPIC',
-            title: 'Suspensão da Exigibilidade',
-            status: 'INSUFFICIENT_EVIDENCE',
-            importance: 'Alta (Peso 3)',
-            material: 'PDF 03 - Lançamento e Suspensão',
-            questions: 60,
-            evidence: 'Apenas 2 questões resolvidas. Falta volume.',
-            lastActivity: 'Há 1 mês',
-            prerequisites: ['st4'],
-            disciplina: 'Direito Tributário',
-            topico: 'Crédito Tributário'
-          },
-          {
-            id: 'st6',
-            type: 'SUBTOPIC',
-            title: 'Extinção e Exclusão',
-            status: 'NOT_STARTED',
-            importance: 'Média (Peso 2)',
-            material: 'Pendente de vínculo',
-            questions: 40,
-            evidence: 'Nenhuma interação registrada',
-            lastActivity: '-',
-            prerequisites: ['st4'],
-            disciplina: 'Direito Tributário',
-            topico: 'Crédito Tributário'
-          }
-        ]
-      }
-    ]
-  },
-  {
-    id: 'd2',
-    type: 'DISCIPLINE',
-    title: 'Auditoria Fiscal',
-    children: [
-      {
-        id: 't4',
-        type: 'TOPIC',
-        title: 'Planejamento de Auditoria',
-        disciplina: 'Auditoria Fiscal',
-        children: [
-          {
-            id: 'st7',
-            type: 'SUBTOPIC',
-            title: 'Risco de Auditoria e Materialidade',
-            status: 'NOT_STARTED',
-            importance: 'Alta (Peso 3)',
-            material: 'NBC TA 315 e 320',
-            questions: 55,
-            evidence: 'Nenhuma interação registrada',
-            lastActivity: '-',
-            prerequisites: [],
-            disciplina: 'Auditoria Fiscal',
-            topico: 'Planejamento de Auditoria'
-          }
-        ]
-      }
-    ]
-  },
-  {
-    id: 'd3',
-    type: 'DISCIPLINE',
-    title: 'Contabilidade Geral e Avançada',
-    children: [
-      {
-        id: 't5',
-        type: 'TOPIC',
-        title: 'Demonstrações Contábeis',
-        disciplina: 'Contabilidade Geral e Avançada',
-        children: [
-          {
-            id: 'st8',
-            type: 'SUBTOPIC',
-            title: 'Demonstração dos Fluxos de Caixa (DFC)',
-            status: 'REINFORCEMENT_NEEDED',
-            importance: 'Crítica (Peso 3)',
-            material: 'Apostila CPC 03 - DFC',
-            questions: 95,
-            evidence: 'Confusão recorrente entre método direto e indireto',
-            lastActivity: 'Há 3 dias',
-            prerequisites: [],
-            disciplina: 'Contabilidade Geral e Avançada',
-            topico: 'Demonstrações Contábeis'
-          },
-          {
-            id: 'st9',
-            type: 'SUBTOPIC',
-            title: 'Balanço Patrimonial e DRE',
-            status: 'FAVORABLE',
-            importance: 'Alta (Peso 3)',
-            material: 'Curso Completo Contabilidade - Módulo 1',
-            questions: 150,
-            evidence: 'Consolidado com 92% de precisão',
-            lastActivity: 'Há 1 semana',
-            prerequisites: [],
-            disciplina: 'Contabilidade Geral e Avançada',
-            topico: 'Demonstrações Contábeis'
-          }
-        ]
-      }
-    ]
-  }
-];
+const DEFAULT_MAP: DisciplineItem[] = [];
 
 // ============================================================================
 // PROPS DO COMPONENTE
@@ -339,36 +151,16 @@ export default function MapaConteudos({
             topicMap.set(top, []);
           }
 
-          const statuses: ContentStatus[] = [
-            'FAVORABLE',
-            'VERIFY_RETENTION',
-            'IN_STUDY',
-            'REINFORCEMENT_NEEDED',
-            'INSUFFICIENT_EVIDENCE',
-            'NOT_STARTED'
-          ];
-          const calculatedStatus = statuses[idx % statuses.length];
-
           topicMap.get(top)!.push({
             id: t.id || `st_dyn_${idx}`,
             type: 'SUBTOPIC',
             title: subTitle,
-            status: calculatedStatus,
-            importance: `Peso ${t.peso || 2}`,
-            material: 'Material do Edital',
-            questions: 35 + ((idx * 17) % 80),
-            evidence:
-              calculatedStatus === 'FAVORABLE'
-                ? 'Consolidado (85% retenção)'
-                : calculatedStatus === 'REINFORCEMENT_NEEDED'
-                ? 'Requer reforço prático'
-                : 'Em acompanhamento',
-            lastActivity:
-              idx % 3 === 0
-                ? 'Há 2 dias'
-                : idx % 3 === 1
-                ? 'Ontem'
-                : 'Sem registro recente',
+            status: 'NOT_STARTED',
+            importance: t.peso ? `Peso ${t.peso}` : 'Normal',
+            material: 'Pendente de vínculo',
+            questions: 0,
+            evidence: 'Nenhuma interação registrada',
+            lastActivity: '-',
             prerequisites: [],
             disciplina: disc,
             topico: top
@@ -412,15 +204,10 @@ export default function MapaConteudos({
   }, [concursoId]);
 
   // 3. Controle de Nós Expandidos
-  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(
-    () => new Set(['d1', 't1', 't3', 'd2', 't4', 'd3', 't5'])
-  );
+  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
 
   // 4. Seleção de Nó Ativo
-  const [selectedNode, setSelectedNode] = useState<SubtopicItem | null>(() => {
-    // Inicializa com o subtópico de exemplo mais expressivo
-    return DEFAULT_MAP[0]?.children[0]?.children[0] || null;
-  });
+  const [selectedNode, setSelectedNode] = useState<SubtopicItem | null>(null);
 
   // 5. Filtro de Texto e Filtro por Status
   const [searchQuery, setSearchQuery] = useState('');

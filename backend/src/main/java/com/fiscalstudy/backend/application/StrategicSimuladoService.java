@@ -25,9 +25,17 @@ public class StrategicSimuladoService {
 
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
+    private final SwotCycleCalibratorService swotCycleCalibratorService;
 
     public StrategicSimuladoService(JdbcTemplate jdbcTemplate) {
+        this(jdbcTemplate, null);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public StrategicSimuladoService(JdbcTemplate jdbcTemplate,
+                                    @org.springframework.beans.factory.annotation.Autowired(required = false) SwotCycleCalibratorService swotCycleCalibratorService) {
         this.jdbcTemplate = jdbcTemplate;
+        this.swotCycleCalibratorService = swotCycleCalibratorService;
         this.objectMapper = new ObjectMapper();
         ensureTables();
     }
@@ -255,6 +263,18 @@ public class StrategicSimuladoService {
         resp.put("finalizadoEm", now);
         resp.put("notaLiquida", notaLiquida);
         resp.put("aproveitamentoPct", totalQuestoes > 0 ? Math.round((acertos * 100.0 / totalQuestoes) * 10.0) / 10.0 : 0.0);
+
+        // Calibrador Automático de Pesos do Ciclo (Feedback Loop Pós-Simulado)
+        if (swotCycleCalibratorService != null) {
+            try {
+                payload.put("executionId", id);
+                var calibResult = swotCycleCalibratorService.recalibrateFromSimulado(concursoId, payload);
+                resp.put("recalculoCiclo", calibResult);
+            } catch (Exception ex) {
+                logger.warn("Falha ao executar feedback loop pós-simulado: {}", ex.getMessage());
+            }
+        }
+
         return resp;
     }
 

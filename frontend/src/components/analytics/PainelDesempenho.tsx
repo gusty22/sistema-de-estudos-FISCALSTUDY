@@ -11,21 +11,26 @@ import {
 } from 'lucide-react';
 import { AnaliseConteudoModal } from './AnaliseConteudoModal';
 import { CalibracaoRetencaoAbas } from './CalibracaoRetencaoAbas';
+import { AuditoriaAnomaliasEstudo } from './AuditoriaAnomaliasEstudo';
 import './PainelDesempenho.css';
 
 export interface PainelDesempenhoProps {
   activeConcurso: ConcursoItem | null;
   onNavigateToStudy?: (disciplina?: string, assunto?: string) => void;
   onNavigateToRevision?: () => void;
+  onNavigateToCycle?: () => void;
+  onNavigateToQuestions?: () => void;
 }
 
 export const PainelDesempenho: React.FC<PainelDesempenhoProps> = ({
   activeConcurso,
   onNavigateToStudy,
-  onNavigateToRevision
+  onNavigateToRevision,
+  onNavigateToCycle,
+  onNavigateToQuestions
 }) => {
-  // Aba principal: Painel T26 vs Calibração/Retenção T28
-  const [activeMainTab, setActiveMainTab] = useState<'T26_PAINEL' | 'T28_CALIBRACAO'>('T26_PAINEL');
+  // Aba principal: Painel T26 vs Calibração/Retenção T28 vs Auditoria Anomalias T29
+  const [activeMainTab, setActiveMainTab] = useState<'T26_PAINEL' | 'T28_CALIBRACAO' | 'T29_ANOMALIAS'>('T26_PAINEL');
 
   // Filtro de período para o gráfico temporal
   const [periodFilter, setPeriodFilter] = useState<'ALL' | 'MONTH' | 'WEEK' | 'TODAY'>('ALL');
@@ -76,67 +81,21 @@ export const PainelDesempenho: React.FC<PainelDesempenhoProps> = ({
   };
 
   const summary = dashboardData?.resumo || {
-    questoesRespondidas: 45,
-    questoesAvaliadas: 42,
-    acertos: 34,
-    erros: 8,
-    precisaoPercentual: 81.0,
-    precisaoDenominador: '81% — 34 acertos em 42 questões',
-    tempoEfetivoFormatado: '56 min',
-    conteudosTrabalhados: 5,
-    revisoesExecutadas: 14,
-    isPreliminar: false
+    questoesRespondidas: 0,
+    questoesAvaliadas: 0,
+    acertos: 0,
+    erros: 0,
+    precisaoPercentual: 0.0,
+    precisaoDenominador: '0% — 0 acertos em 0 questões',
+    tempoEfetivoFormatado: '0 min',
+    conteudosTrabalhados: 0,
+    revisoesExecutadas: 0,
+    isPreliminar: true
   };
 
-  const evolucao = dashboardData?.evolucao || [
-    { data: '12/10', total: 8, acertos: 6, precisaoPercentual: 75.0, denominador: '6/8 (75%)', isPreliminar: true },
-    { data: '13/10', total: 10, acertos: 8, precisaoPercentual: 80.0, denominador: '8/10 (80%)', isPreliminar: true },
-    { data: '14/10', total: 7, acertos: 6, precisaoPercentual: 85.7, denominador: '6/7 (86%)', isPreliminar: true },
-    { data: '15/10', total: 9, acertos: 7, precisaoPercentual: 77.8, denominador: '7/9 (78%)', isPreliminar: true },
-    { data: '16/10', total: 8, acertos: 7, precisaoPercentual: 87.5, denominador: '7/8 (88%)', isPreliminar: true }
-  ];
-
-  const distribuicao = dashboardData?.distribuicao || [
-    { disciplina: 'Direito Tributário', topico: 'Suspensão do crédito', total: 14, acertos: 11, erros: 3, precisaoPercentual: 78.6, precisaoDenominador: '79% — 11 acertos em 14 questões', tempoMedioSegundos: 65, isPreliminar: true, relevanciaEdital: 'ALTA' },
-    { disciplina: 'Língua Portuguesa', topico: 'Concordância verbal', total: 12, acertos: 10, erros: 2, precisaoPercentual: 83.3, precisaoDenominador: '83% — 10 acertos em 12 questões', tempoMedioSegundos: 50, isPreliminar: true, relevanciaEdital: 'ALTA' },
-    { disciplina: 'Contabilidade Geral', topico: 'Balanço patrimonial', total: 9, acertos: 7, erros: 2, precisaoPercentual: 77.8, precisaoDenominador: '78% — 7 acertos em 9 questões', tempoMedioSegundos: 90, isPreliminar: true, relevanciaEdital: 'MÉDIA' },
-    { disciplina: 'Administração Pública', topico: 'Planejamento estratégico', total: 7, acertos: 6, erros: 1, precisaoPercentual: 85.7, precisaoDenominador: '86% — 6 acertos em 7 questões', tempoMedioSegundos: 60, isPreliminar: true, relevanciaEdital: 'MÉDIA' }
-  ];
-
-  const alertas = dashboardData?.alertas || [
-    {
-      tipo: 'ERROS_RECORRENTES',
-      titulo: 'Erros Recorrentes em Suspensão do Crédito',
-      descricao: '3 erros registrados nas últimas tentativas de aplicação do art. 151 do CTN (recorrência em parcelamento e moratória).',
-      badge: '⚠️ Ponto de Atenção',
-      disciplina: 'Direito Tributário',
-      topico: 'Suspensão do crédito'
-    },
-    {
-      tipo: 'EXCESSO_CONFIANCA',
-      titulo: 'Excesso de Confiança (Ponto Cego Cognitivo)',
-      descricao: '2 erros assinalados com confiança máxima (5/5) em Pegadinhas da banca sobre Concordância Verbal atrativa.',
-      badge: '⚡ Falsa Fluência',
-      disciplina: 'Língua Portuguesa',
-      topico: 'Concordância verbal'
-    },
-    {
-      tipo: 'RETENCAO_PENDENTE',
-      titulo: 'Retenção Ainda Não Verificada',
-      descricao: 'Balanço Patrimonial foi estudado há 6 dias com acerto inicial, mas sem nenhuma verificação ativa posterior.',
-      badge: '⏳ Verificação Pendente',
-      disciplina: 'Contabilidade Geral',
-      topico: 'Balanço patrimonial'
-    },
-    {
-      tipo: 'POUCA_EVIDENCIA',
-      titulo: 'Conteúdo de Alto Peso com Pouca Evidência',
-      descricao: 'Planejamento Estratégico e BSC possui apenas 7 questões respondidas no banco. A amostragem ainda é preliminar.',
-      badge: '🔍 Pouca Evidência',
-      disciplina: 'Administração Pública',
-      topico: 'Planejamento estratégico'
-    }
-  ];
+  const evolucao: any[] = dashboardData?.evolucao || [];
+  const distribuicao: any[] = dashboardData?.distribuicao || [];
+  const alertas: any[] = dashboardData?.alertas || [];
 
   return (
     <div className="painel-desempenho-view">
@@ -188,6 +147,14 @@ export const PainelDesempenho: React.FC<PainelDesempenhoProps> = ({
         >
           <Brain className="w-4 h-4 inline mr-2" />
           Calibração, Retenção & Modelo do Estudante
+        </button>
+
+        <button
+          className={`nav-tab-btn ${activeMainTab === 'T29_ANOMALIAS' ? 'active' : ''}`}
+          onClick={() => setActiveMainTab('T29_ANOMALIAS')}
+        >
+          <ShieldAlert className="w-4 h-4 inline mr-2 text-rose-500" />
+          Auditoria de Anomalias (Diagnóstico Automático)
         </button>
       </div>
 
@@ -289,26 +256,32 @@ export const PainelDesempenho: React.FC<PainelDesempenhoProps> = ({
             </div>
 
             {/* Gráfico / Barras de Evolução */}
-            <div className="evolucao-bars-grid">
-              {evolucao.map((pt: any, idx: number) => (
-                <div key={idx} className="evolucao-col">
-                  <div className="evolucao-bar-container">
-                    <div
-                      className="evolucao-bar-fill"
-                      style={{ height: `${Math.max(15, pt.precisaoPercentual)}%` }}
-                    />
-                    <span className="evolucao-percent-label">{pt.precisaoPercentual}%</span>
+            {evolucao.length === 0 ? (
+              <div style={{ padding: '2rem 1rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.82rem' }}>
+                Nenhum dado temporal registrado neste período. Resolva questões para visualizar sua curva de progresso.
+              </div>
+            ) : (
+              <div className="evolucao-bars-grid">
+                {evolucao.map((pt: any, idx: number) => (
+                  <div key={idx} className="evolucao-col">
+                    <div className="evolucao-bar-container">
+                      <div
+                        className="evolucao-bar-fill"
+                        style={{ height: `${Math.max(15, pt.precisaoPercentual)}%` }}
+                      />
+                      <span className="evolucao-percent-label">{pt.precisaoPercentual}%</span>
+                    </div>
+                    <span className="evolucao-date-label">{pt.data}</span>
+                    <span className="evolucao-denominador-label">{pt.denominador}</span>
+                    {pt.isPreliminar && (
+                      <span className="preliminar-mini-badge" title="Amostra pequena (< 15 questões)">
+                        *preliminar
+                      </span>
+                    )}
                   </div>
-                  <span className="evolucao-date-label">{pt.data}</span>
-                  <span className="evolucao-denominador-label">{pt.denominador}</span>
-                  {pt.isPreliminar && (
-                    <span className="preliminar-mini-badge" title="Amostra pequena (< 15 questões)">
-                      *preliminar
-                    </span>
-                  )}
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </section>
 
           {/* 3. ALERTAS CANÔNICOS */}
@@ -319,29 +292,35 @@ export const PainelDesempenho: React.FC<PainelDesempenhoProps> = ({
               <span className="section-subtext">Detecção de riscos e pontos de atenção pelo Gêmeo Digital</span>
             </div>
 
-            <div className="alertas-grid">
-              {alertas.map((al: any, idx: number) => (
-                <div
-                  key={idx}
-                  className={`alerta-card ${al.tipo.toLowerCase()}`}
-                  onClick={() => setSelectedContent({ disciplina: al.disciplina, topico: al.topico })}
-                  title="Clique para abrir a Análise Detalhada deste Conteúdo"
-                >
-                  <div className="alerta-card-header">
-                    <span className="alerta-badge">{al.badge}</span>
-                    <span className="alerta-disc">{al.disciplina}</span>
+            {alertas.length === 0 ? (
+              <div style={{ padding: '1.5rem 1rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.82rem', background: 'rgba(255,255,255,0.02)', borderRadius: '0.75rem', border: '1px dashed rgba(255,255,255,0.08)' }}>
+                Nenhum ponto cego crítico ou alerta de retenção pendente diagnosticado no momento.
+              </div>
+            ) : (
+              <div className="alertas-grid">
+                {alertas.map((al: any, idx: number) => (
+                  <div
+                    key={idx}
+                    className={`alerta-card ${al.tipo.toLowerCase()}`}
+                    onClick={() => setSelectedContent({ disciplina: al.disciplina, topico: al.topico })}
+                    title="Clique para abrir a Análise Detalhada deste Conteúdo"
+                  >
+                    <div className="alerta-card-header">
+                      <span className="alerta-badge">{al.badge}</span>
+                      <span className="alerta-disc">{al.disciplina}</span>
+                    </div>
+                    <h3 className="alerta-titulo">{al.titulo}</h3>
+                    <p className="alerta-desc">{al.descricao}</p>
+                    <div className="alerta-footer">
+                      <span>{al.topico}</span>
+                      <span className="alerta-cta">
+                        Analisar conteúdo <ChevronRight className="w-3.5 h-3.5 inline" />
+                      </span>
+                    </div>
                   </div>
-                  <h3 className="alerta-titulo">{al.titulo}</h3>
-                  <p className="alerta-desc">{al.descricao}</p>
-                  <div className="alerta-footer">
-                    <span>{al.topico}</span>
-                    <span className="alerta-cta">
-                      Analisar conteúdo <ChevronRight className="w-3.5 h-3.5 inline" />
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </section>
 
           {/* 4. DISTRIBUIÇÃO POR CONTEÚDO */}
@@ -353,50 +332,80 @@ export const PainelDesempenho: React.FC<PainelDesempenhoProps> = ({
             </div>
 
             <div className="tabela-conteudos-container">
-              <table className="tabela-conteudos">
-                <thead>
-                  <tr>
-                    <th>Disciplina</th>
-                    <th>Tópico Curricular</th>
-                    <th>Respondidas</th>
-                    <th>Precisão Observada</th>
-                    <th>Tempo Médio</th>
-                    <th>Amostra</th>
-                    <th>Ação</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {distribuicao.map((item: any, idx: number) => (
-                    <tr key={idx}>
-                      <td className="font-semibold">{item.disciplina}</td>
-                      <td>{item.topico}</td>
-                      <td>
-                        <span className="font-bold">{item.total}</span> itens ({item.acertos}A / {item.erros}E)
-                      </td>
-                      <td>
-                        <span className="font-semibold text-emerald-400">{item.precisaoDenominador}</span>
-                      </td>
-                      <td>{item.tempoMedioSegundos}s / questão</td>
-                      <td>
-                        {item.isPreliminar ? (
-                          <span className="sample-badge preliminar">Amostra Preliminar (&lt;15)</span>
-                        ) : (
-                          <span className="sample-badge confiavel">Amostra Robusta</span>
-                        )}
-                      </td>
-                      <td>
-                        <button
-                          className="btn-analisar-conteudo"
-                          onClick={() => setSelectedContent({ disciplina: item.disciplina, topico: item.topico })}
-                          title="Abrir Análise Longitudinal do Conteúdo"
-                        >
-                          Analisar <ChevronRight className="w-3.5 h-3.5 inline" />
-                        </button>
-                      </td>
+              {distribuicao.length === 0 ? (
+                <div style={{ padding: '2.5rem 1rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.82rem' }}>
+                  Nenhum conteúdo com resoluções registradas ainda. Inicie sua primeira sessão de estudo no edital.
+                </div>
+              ) : (
+                <table className="tabela-conteudos">
+                  <thead>
+                    <tr>
+                      <th>Disciplina</th>
+                      <th>Tópico Curricular</th>
+                      <th>Respondidas</th>
+                      <th>Precisão Observada</th>
+                      <th>Domínio Real (P<sub>atual</sub>)</th>
+                      <th>Tempo Médio</th>
+                      <th>Amostra</th>
+                      <th>Ação</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {distribuicao.map((item: any, idx: number) => {
+                      const pReal = item.proficienciaAtualPct !== undefined ? item.proficienciaAtualPct : item.precisaoPercentual;
+                      const realColor = pReal >= 80 ? '#34d399' : (pReal >= 65 ? '#60a5fa' : (pReal >= 45 ? '#fbbf24' : '#f87171'));
+                      return (
+                        <tr key={idx}>
+                          <td className="font-semibold">{item.disciplina}</td>
+                          <td>{item.topico}</td>
+                          <td>
+                            <span className="font-bold">{item.total}</span> itens ({item.acertos}A / {item.erros}E)
+                          </td>
+                          <td>
+                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                              <span className="font-semibold" style={{ textDecoration: item.mediaSimplesEnganosa ? 'line-through' : 'none', color: item.mediaSimplesEnganosa ? '#94a3b8' : '#34d399' }}>
+                                {item.precisaoDenominador}
+                              </span>
+                              {item.mediaSimplesEnganosa && (
+                                <span style={{ fontSize: '0.66rem', color: '#f87171', fontWeight: 700, marginTop: '0.1rem' }}>
+                                  ⚠️ Falsa Fluência ({item.deltaTDias}d sem contato)
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td>
+                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                              <span className="font-bold" style={{ color: realColor }}>
+                                {pReal}%
+                              </span>
+                              <span style={{ fontSize: '0.68rem', color: '#94a3b8' }}>
+                                {item.ultimoContato ? `${item.ultimoContato}` : 'Recente'} {item.forcaMemoriaDias !== undefined ? `(S: ${item.forcaMemoriaDias}d)` : ''}
+                              </span>
+                            </div>
+                          </td>
+                          <td>{item.tempoMedioSegundos}s / questão</td>
+                          <td>
+                            {item.isPreliminar ? (
+                              <span className="sample-badge preliminar">Amostra Preliminar (&lt;15)</span>
+                            ) : (
+                              <span className="sample-badge confiavel">Amostra Robusta</span>
+                            )}
+                          </td>
+                          <td>
+                            <button
+                              className="btn-analisar-conteudo"
+                              onClick={() => setSelectedContent({ disciplina: item.disciplina, topico: item.topico })}
+                              title="Abrir Análise Longitudinal do Conteúdo"
+                            >
+                              Analisar <ChevronRight className="w-3.5 h-3.5 inline" />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
             </div>
           </section>
         </div>
@@ -409,6 +418,18 @@ export const PainelDesempenho: React.FC<PainelDesempenhoProps> = ({
         <CalibracaoRetencaoAbas
           concursoId={activeConcurso?.id}
           onNavigateToContentAnalysis={(disc, top) => setSelectedContent({ disciplina: disc, topico: top })}
+        />
+      )}
+
+      {/* =========================================================================
+          ABA PRINCIPAL: T29 — AUDITORIA DE ANOMALIAS DE ESTUDO (LOGS)
+          ========================================================================= */}
+      {activeMainTab === 'T29_ANOMALIAS' && (
+        <AuditoriaAnomaliasEstudo
+          concursoId={activeConcurso?.id}
+          onNavigateToStudy={onNavigateToStudy}
+          onNavigateToCycle={onNavigateToCycle}
+          onNavigateToQuestions={onNavigateToQuestions}
         />
       )}
 

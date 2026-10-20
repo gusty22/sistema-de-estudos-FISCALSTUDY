@@ -15,19 +15,41 @@ import {
 } from 'lucide-react';
 import type { ConcursoItem } from '../concursos/MeusConcursos';
 import { MontagemCadernoModal } from './MontagemCadernoModal';
+import { ResolucaoQuestaoModal } from './ResolucaoQuestaoModal';
 import './BancoQuestoes.css';
+
+export interface QuestionItem {
+  questionId: string;
+  statement: string;
+  discipline: string;
+  topic: string;
+  board: string;
+  year: number;
+  orgao?: string;
+  cargo?: string;
+  gabaritoStatus: string;
+  numeroOriginal?: any;
+  arquivoOrigem?: string;
+  isFavorite: boolean;
+  tentativasTotal: number;
+  acertosTotal: number;
+  taxaAcertoPessoal: number | null;
+  options: string[];
+  tipoQuestao?: 'CERTO_ERRADO' | 'MULTIPLA_ESCOLHA';
+  supportMaterial?: any;
+}
 
 interface BancoQuestoesProps {
   activeConcurso: ConcursoItem | null;
-  onResolveQuestion: (questionId: string) => void;
-  onStartCaderno: (cadernoConfig: any) => void;
+  onResolveQuestion?: (questionId: string) => void;
+  onStartCaderno?: (cadernoConfig: any) => void;
 }
 
 export const BancoQuestoes: React.FC<BancoQuestoesProps> = ({
-  activeConcurso,
-  onResolveQuestion,
-  onStartCaderno
+  activeConcurso
 }) => {
+  // Estado de resolução ativa focada (abre a questão diretamente sem redirecionar de tela)
+  const [resolvendoIndex, setResolvendoIndex] = useState<number | null>(null);
   // Modo de escopo: apenas disciplinas do edital ou acervo geral
   const [editalOnly, setEditalOnly] = useState<boolean>(true);
 
@@ -583,7 +605,7 @@ export const BancoQuestoes: React.FC<BancoQuestoesProps> = ({
               Nenhuma questão encontrada com os filtros selecionados. Tente expandir sua busca.
             </div>
           ) : (
-            questions.map(q => {
+            questions.map((q, qIndex) => {
               const isAnulada = q.gabaritoStatus === 'ANULADA';
               return (
                 <div key={q.questionId} className="question-card-item">
@@ -619,9 +641,14 @@ export const BancoQuestoes: React.FC<BancoQuestoesProps> = ({
                     {q.statement}
                   </div>
 
-                  {/* Prévia de Alternativas (GABARITO OCULTO) */}
+                  {/* Prévia de Alternativas (GABARITO OCULTO) - Clicável para abrir resolução */}
                   {Array.isArray(q.options) && q.options.length > 0 && (
-                    <div className="question-options-preview">
+                    <div
+                      className="question-options-preview"
+                      onClick={() => setResolvendoIndex(qIndex)}
+                      style={{ cursor: 'pointer' }}
+                      title="Clique para abrir e resolver esta questão"
+                    >
                       {q.options.map((opt: string, i: number) => (
                         <div key={i} style={{ display: 'flex', gap: '0.4rem' }}>
                           <span style={{ fontWeight: 600 }}>{String.fromCharCode(65 + i)})</span>
@@ -680,7 +707,8 @@ export const BancoQuestoes: React.FC<BancoQuestoesProps> = ({
 
                       <button
                         className="btn-q-action primary"
-                        onClick={() => onResolveQuestion(q.questionId)}
+                        onClick={() => setResolvendoIndex(qIndex)}
+                        title="Abrir questão para resolução focada"
                       >
                         <Play className="w-3.5 h-3.5" /> Resolver
                       </button>
@@ -722,8 +750,41 @@ export const BancoQuestoes: React.FC<BancoQuestoesProps> = ({
           }}
           onStartInstantResolucao={(caderno) => {
             setIsCadernoModalOpen(false);
-            onStartCaderno(caderno);
+            if (caderno.filtros?.disciplina) setSelectedDisciplina(caderno.filtros.disciplina);
+            if (caderno.filtros?.banca) setSelectedBanca(caderno.filtros.banca);
+            if (caderno.filtros?.ano) setSelectedAno(caderno.filtros.ano.toString());
+            showFeedback(`✓ Caderno "${caderno.nome}" ativado. Abrindo primeira questão para resolução...`);
+            setResolvendoIndex(0);
           }}
+        />
+      )}
+
+      {/* Modal Focado de Resolução de Questão do Banco */}
+      {resolvendoIndex !== null && questions[resolvendoIndex] && (
+        <ResolucaoQuestaoModal
+          question={questions[resolvendoIndex]}
+          currentIndex={resolvendoIndex}
+          totalInBatch={questions.length}
+          onClose={() => setResolvendoIndex(null)}
+          onNext={resolvendoIndex < questions.length - 1 ? () => setResolvendoIndex(resolvendoIndex + 1) : undefined}
+          onPrev={resolvendoIndex > 0 ? () => setResolvendoIndex(resolvendoIndex - 1) : undefined}
+          onQuestionAnswered={(qId, isCorrect) => {
+            setQuestions(prev => prev.map(item => {
+              if (item.questionId === qId) {
+                const novasTentativas = (item.tentativasTotal || 0) + 1;
+                const novosAcertos = (item.acertosTotal || 0) + (isCorrect ? 1 : 0);
+                return {
+                  ...item,
+                  tentativasTotal: novasTentativas,
+                  acertosTotal: novosAcertos,
+                  taxaAcertoPessoal: Math.round((novosAcertos / novasTentativas) * 100)
+                };
+              }
+              return item;
+            }));
+          }}
+          onToggleFavorite={handleToggleFavorite}
+          onReportQuestion={(qId) => setReportQuestionId(qId)}
         />
       )}
 

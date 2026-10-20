@@ -35,50 +35,7 @@ export interface AdaptiveTask {
   status: 'pending' | 'done' | 'postponed';
 }
 
-const INITIAL_QUEUE: AdaptiveTask[] = [
-  {
-    id: 'act_1',
-    type: 'REVISAO',
-    discipline: 'Direito Tributário',
-    topic: 'Crédito Tributário — Lançamento',
-    reason: 'Erro recente em questão de homologação',
-    duration: 20,
-    isCritical: true,
-    status: 'pending'
-  },
-  {
-    id: 'act_2',
-    type: 'PRATICA',
-    discipline: 'Língua Portuguesa',
-    topic: 'Morfologia — Adjetivo vs Advérbio',
-    reason: 'Verificação de retenção (Último contato há 14 dias)',
-    duration: 25,
-    isCritical: true,
-    status: 'pending'
-  },
-  {
-    id: 'act_3',
-    type: 'NOVO_CONTEUDO',
-    discipline: 'Contabilidade Geral',
-    topic: 'Ativo Imobilizado (CPC 27) — Reconhecimento',
-    reason: 'Conteúdo prioritário do edital ainda não iniciado',
-    duration: 40,
-    isCritical: false,
-    status: 'pending'
-  },
-  {
-    id: 'act_4',
-    type: 'REVISAO',
-    discipline: 'Direito Administrativo',
-    topic: 'Atos Administrativos — Extinção',
-    reason: 'Manutenção de memória (Estabilidade atual alta)',
-    duration: 15,
-    isCritical: false,
-    status: 'pending'
-  }
-];
-
-interface PlanejamentoAdaptativoProps {
+export interface PlanejamentoAdaptativoProps {
   activeConcurso?: ConcursoItem | null;
   onNavigateToStudy?: (disciplina: string, assunto?: string) => void;
   onNavigateToTab?: (tab: string) => void;
@@ -92,7 +49,7 @@ export default function PlanejamentoAdaptativo({
   onSwitchToBattle
 }: PlanejamentoAdaptativoProps) {
   // 2. Fila Dinâmica e Estado do Planejador
-  const [queue, setQueue] = useState<AdaptiveTask[]>(INITIAL_QUEUE);
+  const [queue, setQueue] = useState<AdaptiveTask[]>([]);
   const [showStrategy, setShowStrategy] = useState(true);
   const [isRecalculating, setIsRecalculating] = useState(false);
   const [postponeWarning, setPostponeWarning] = useState<AdaptiveTask | null>(null);
@@ -100,7 +57,10 @@ export default function PlanejamentoAdaptativo({
 
   // 3. Integração com API do Maestro / Robin Hood se concurso ativo existir
   useEffect(() => {
-    if (!activeConcurso?.id) return;
+    if (!activeConcurso?.id) {
+      setQueue([]);
+      return;
+    }
 
     fetch(`/api/v1/maestro/plan?concursoId=${encodeURIComponent(activeConcurso.id)}`)
       .then((res) => (res.ok ? res.json() : null))
@@ -123,13 +83,13 @@ export default function PlanejamentoAdaptativo({
               status: 'pending'
             };
           });
-          if (mapped.length > 0) {
-            setQueue(mapped);
-          }
+          setQueue(mapped);
+        } else {
+          setQueue([]);
         }
       })
       .catch(() => {
-        // Fallback silencioso para INITIAL_QUEUE
+        setQueue([]);
       });
   }, [activeConcurso?.id]);
 

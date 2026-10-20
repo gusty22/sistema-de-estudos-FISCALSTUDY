@@ -8,6 +8,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 
+import org.springframework.http.MediaType;
 import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -154,5 +155,42 @@ public class AnalyticsControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.analytics_questions_v1").exists())
                 .andExpect(jsonPath("$.analytics_events_v1").exists());
+    }
+
+    @Test
+    void getStudentKnowledgeState_ReturnsCanonicalModelFormulaAndTopics() throws Exception {
+        mockMvc.perform(get("/api/v1/analytics/student-knowledge-state"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.formula.expressaoLatex").value("P_{atual}(t) = P_{base} \\cdot e^{-\\frac{\\Delta t}{S}}"))
+                .andExpect(jsonPath("$.resumoGlobal").exists())
+                .andExpect(jsonPath("$.topicos").isArray());
+    }
+
+    @Test
+    void getCalibrationAndStudentModel_ReturnsEnrichedRetentionFormula() throws Exception {
+        mockMvc.perform(get("/api/v1/analytics/calibration-model"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.abaB_retencao.formula.expressao").value("P_{atual}(t) = P_{base} \\cdot e^{-\\frac{\\Delta t}{S}}"))
+                .andExpect(jsonPath("$.abaB_retencao.itens").isArray())
+                .andExpect(jsonPath("$.abaC_modeloEstudante").isArray());
+    }
+
+    @Test
+    void getStudyAnomalies_ReturnsAutomatedAuditReport() throws Exception {
+        mockMvc.perform(get("/api/v1/analytics/study-anomalies"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.dataAuditoria").exists())
+                .andExpect(jsonPath("$.metricas").exists())
+                .andExpect(jsonPath("$.anomalias").isArray());
+    }
+
+    @Test
+    void checkFatigue_DetectsExcessSessionTime() throws Exception {
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/v1/analytics/study-anomalies/check-fatigue")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"durationSeconds\": 6000, \"velocidadeInicial\": 20.0, \"velocidadeAtual\": 8.0, \"acertoPrimeiraMetade\": 80.0, \"acertoSegundaMetade\": 40.0}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.fatigue").value(true))
+                .andExpect(jsonPath("$.anomalia.tipo").value("FADIGA_QUEDA_RENDIMENTO"));
     }
 }

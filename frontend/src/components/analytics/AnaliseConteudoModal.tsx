@@ -50,37 +50,22 @@ export const AnaliseConteudoModal: React.FC<AnaliseConteudoModalProps> = ({
   if (!isOpen) return null;
 
   const historico = data?.historico || {
-    totalRespostas: 15,
-    primeirasTentativas: 10,
-    repeticoes: 5,
-    questoesIneditas: 10,
-    acertos: 12,
-    erros: 3,
-    precisaoDenominador: '80% — 12 acertos em 15 questões',
-    confiancaMedia: 4.1,
-    confiancaLabel: '4.1 / 5.0 (Alta Confiança)',
-    retencaoObservada: '83% — 5 retenções bem-sucedidas em 6 verificações',
-    revisoesExecutadas: 4
+    totalRespostas: 0,
+    primeirasTentativas: 0,
+    repeticoes: 0,
+    questoesIneditas: 0,
+    acertos: 0,
+    erros: 0,
+    precisaoDenominador: '0% — 0 acertos em 0 questões',
+    confiancaMedia: 0,
+    confiancaLabel: 'Sem avaliações registradas',
+    retencaoObservada: '0% — Sem verificações espaçadas',
+    revisoesExecutadas: 0
   };
 
-  const diferenciacao = data?.diferenciacaoDificuldade || {
-    faceis: '100% — 4 acertos em 4 questões',
-    medias: '83% — 5 acertos em 6 questões',
-    dificeis: '60% — 3 acertos em 5 questões',
-    conclusao: 'Evolução real demonstrada: o avanço no percentual de acertos sustentou-se em itens médios e difíceis da banca examinadora, descartando viés de facilitação de questões.'
-  };
-
-  const timeline = data?.linhaDoTempo || [
-    { data: '05/10', tipo: 'ESTUDO_INICIAL', titulo: 'Estudo Inicial Teórico', descricao: 'Leitura da base conceitual e artigos da lei seca vinculada.', badge: '📖 Teoria Base' },
-    { data: '06/10', tipo: 'PRATICA', titulo: 'Primeira Bateria de Questões', descricao: '3/5 questões corretas (60% de precisão observada).', badge: '🎯 Prática' },
-    { data: '08/10', tipo: 'CORRECAO', titulo: 'Intervenção de Correção de Erro', descricao: 'Tratamento de confusão conceitual entre Moratória e Parcelamento.', badge: '⚡ Correção' },
-    { data: '10/10', tipo: 'QUESTOES_INEDITAS', titulo: 'Bateria de Questões Inéditas', descricao: '4/5 questões inéditas corretas (80% de precisão observada).', badge: '🔄 Transferência' },
-    { data: '15/10', tipo: 'RECUPERACAO', titulo: 'Recuperação Posterior em Intervalo', descricao: 'Recuperação ativa bem-sucedida: retenção confirmada sem consulta.', badge: '🛡️ Manutenção' }
-  ];
-
-  const materiais = data?.materiaisUtilizados || [
-    { titulo: 'Apostila Completa — ' + disciplina, tipo: 'PDF', paginas: 'Páginas 42 a 58', instrucoes: 'Leitura do capítulo com foco em hipóteses taxativas e exceções da jurisprudência.' }
-  ];
+  const diferenciacao = data?.diferenciacaoDificuldade || null;
+  const timeline: any[] = data?.linhaDoTempo || [];
+  const materiais: any[] = data?.materiaisUtilizados || [];
 
   return (
     <div className="content-analysis-overlay" onClick={onClose}>
@@ -160,22 +145,28 @@ export const AnaliseConteudoModal: React.FC<AnaliseConteudoModalProps> = ({
                 <h3 className="section-title">Linha do Tempo da Habilidade</h3>
               </div>
               <div className="analysis-timeline">
-                {timeline.map((item: any, idx: number) => (
-                  <div key={idx} className="timeline-item">
-                    <div className="timeline-marker">
-                      <div className="timeline-dot" />
-                      {idx < timeline.length - 1 && <div className="timeline-line" />}
-                    </div>
-                    <div className="timeline-content">
-                      <div className="timeline-header-row">
-                        <span className="timeline-date">{item.data}</span>
-                        <span className="timeline-badge">{item.badge}</span>
-                      </div>
-                      <div className="timeline-title">{item.titulo}</div>
-                      <div className="timeline-desc">{item.descricao}</div>
-                    </div>
+                {timeline.length === 0 ? (
+                  <div style={{ padding: '1.5rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.82rem' }}>
+                    Nenhuma intervenção ou resolução registrada na linha do tempo deste conteúdo.
                   </div>
-                ))}
+                ) : (
+                  timeline.map((item: any, idx: number) => (
+                    <div key={idx} className="timeline-item">
+                      <div className="timeline-marker">
+                        <div className="timeline-dot" />
+                        {idx < timeline.length - 1 && <div className="timeline-line" />}
+                      </div>
+                      <div className="timeline-content">
+                        <div className="timeline-header-row">
+                          <span className="timeline-date">{item.data}</span>
+                          <span className="timeline-badge">{item.badge}</span>
+                        </div>
+                        <div className="timeline-title">{item.titulo}</div>
+                        <div className="timeline-desc">{item.descricao}</div>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
 
@@ -186,20 +177,26 @@ export const AnaliseConteudoModal: React.FC<AnaliseConteudoModalProps> = ({
                 <h3 className="section-title">Materiais Utilizados</h3>
               </div>
               <div className="materiais-list">
-                {materiais.map((m: any, idx: number) => (
-                  <div key={idx} className="material-item-card">
-                    <div className="material-icon-box">
-                      <FileText className="w-4 h-4 text-indigo-400" />
-                    </div>
-                    <div className="material-info-box">
-                      <div className="material-title-row">
-                        <span className="material-title">{m.titulo}</span>
-                        <span className="material-tipo-badge">{m.tipo}</span>
-                      </div>
-                      <div className="material-meta">{m.paginas} • {m.instrucoes}</div>
-                    </div>
+                {materiais.length === 0 ? (
+                  <div style={{ padding: '1.5rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.82rem' }}>
+                    Nenhum material vinculado diretamente a este tópico curricular.
                   </div>
-                ))}
+                ) : (
+                  materiais.map((m: any, idx: number) => (
+                    <div key={idx} className="material-item-card">
+                      <div className="material-icon-box">
+                        <FileText className="w-4 h-4 text-indigo-400" />
+                      </div>
+                      <div className="material-info-box">
+                        <div className="material-title-row">
+                          <span className="material-title">{m.titulo}</span>
+                          <span className="material-tipo-badge">{m.tipo}</span>
+                        </div>
+                        <div className="material-meta">{m.paginas} • {m.instrucoes}</div>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
 

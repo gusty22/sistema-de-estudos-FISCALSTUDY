@@ -35,88 +35,26 @@ export const CalibracaoRetencaoAbas: React.FC<CalibracaoRetencaoAbasProps> = ({
   }, [concursoId]);
 
   const abaA = data?.abaA_confianca || {
-    matriz: { altaConfiancaAcerto: 35, altaConfiancaErro: 8, baixaConfiancaAcerto: 12, baixaConfiancaErro: 15 },
-    acertosInseguros: 12,
-    errosAltaConfianca: 8,
-    brierScore: 0.142,
-    indiceCalibracao: '81.4%',
-    evolucaoCalibracao: '+6.2% de precisão metaconscienciosa no último mês',
-    curvaCalibracao: [
-      { nivel: 1, confiancaDeclarada: '20%', precisaoReal: '25%', amostra: 12 },
-      { nivel: 2, confiancaDeclarada: '40%', precisaoReal: '38%', amostra: 15 },
-      { nivel: 3, confiancaDeclarada: '60%', precisaoReal: '62%', amostra: 18 },
-      { nivel: 4, confiancaDeclarada: '80%', precisaoReal: '79%', amostra: 24 },
-      { nivel: 5, confiancaDeclarada: '100%', precisaoReal: '84%', amostra: 19 }
-    ],
-    confiancaPorDisciplina: [
-      { disciplina: 'Direito Tributário', confiancaMedia: '4.3 / 5', precisao: '82% — 28/34', status: 'CALIBRADO' },
-      { disciplina: 'Língua Portuguesa', confiancaMedia: '4.5 / 5', precisao: '72% — 18/25', status: 'OVERCONFIDENT' },
-      { disciplina: 'Contabilidade Geral', confiancaMedia: '3.2 / 5', precisao: '78% — 14/18', status: 'UNDERCONFIDENT' },
-      { disciplina: 'Administração Pública', confiancaMedia: '4.0 / 5', precisao: '85% — 17/20', status: 'CALIBRADO' }
-    ]
+    matriz: { altaConfiancaAcerto: 0, altaConfiancaErro: 0, baixaConfiancaAcerto: 0, baixaConfiancaErro: 0 },
+    acertosInseguros: 0,
+    errosAltaConfianca: 0,
+    brierScore: 0.0,
+    indiceCalibracao: '0.0%',
+    evolucaoCalibracao: 'Aguardando resoluções com avaliação de confiança',
+    curvaCalibracao: [],
+    confiancaPorDisciplina: []
   };
 
   const abaB = data?.abaB_retencao || {
-    conteudosTestadosAposIntervalo: 18,
-    resultadosRecuperacaoTexto: '81% — 13 recuperações confirmadas em 16 verificações espaçadas',
-    conteudosAindaNaoTestados: 6,
-    revisoesRealizadas: 24,
+    conteudosTestadosAposIntervalo: 0,
+    resultadosRecuperacaoTexto: '0% — Sem verificações espaçadas registradas',
+    conteudosAindaNaoTestados: 0,
+    revisoesRealizadas: 0,
     regraAvisoEstimativa: 'Aviso metodológico: Taxas de retenção e curvas de esquecimento são projeções matemáticas baseadas em intervalos e tentativas prévias, e não certezas biológicas individuais.',
-    itens: [
-      { disciplina: 'Direito Tributário', topico: 'Suspensão do crédito', ultimoTeste: 'Há 2 dias', retencaoEstimada: '88%', status: 'ESTABILIZADO' },
-      { disciplina: 'Língua Portuguesa', topico: 'Concordância verbal', ultimoTeste: 'Há 5 dias', retencaoEstimada: '74%', status: 'ALERTA_ESQUECIMENTO' },
-      { disciplina: 'Contabilidade Geral', topico: 'Balanço patrimonial', ultimoTeste: 'Há 7 dias', retencaoEstimada: '68%', status: 'VERIFICACAO_URGENTE' },
-      { disciplina: 'Administração Pública', topico: 'Planejamento estratégico', ultimoTeste: 'Há 3 dias', retencaoEstimada: '85%', status: 'ESTABILIZADO' }
-    ]
+    itens: []
   };
 
-  const modelos = data?.abaC_modeloEstudante || [
-    {
-      disciplina: 'Direito Tributário',
-      desempenhoObservado: 'Favorável (82% de acertos observados)',
-      retencao: 'Ainda não confirmada em prazos superiores a 15 dias',
-      confianca: 'Tendência a superestimar conhecimento em exceções e imunidades',
-      evidencia: 'Moderada (34 questões resolvidas)',
-      proximaVerificacao: 'Questão inédita após intervalo de 3 dias',
-      porQue: {
-        dadosUtilizados: '34 resoluções no event_store (26 inéditas e 8 repetições), 4 sessões de foco registradas.',
-        periodo: 'Últimos 30 dias de atividade',
-        quantidadeObservacoes: 34,
-        versaoAnalise: 'Gêmeo Digital v2.4 (Psicometria e Half-Life)',
-        limitacoes: 'Amostra concentrada em Suspensão e Extinção; tópicos de ITCMD e Legislação Estadual ainda possuem baixa evidência (< 5 itens).'
-      }
-    },
-    {
-      disciplina: 'Língua Portuguesa',
-      desempenhoObservado: 'Em consolidação (72% de acertos observados)',
-      retencao: 'Sensível a distratores atrativos de banca',
-      confianca: 'Superestimação moderada em sintaxe de orações',
-      evidencia: 'Alta (48 questões resolvidas)',
-      proximaVerificacao: 'Teste de transferência com pegadinha sutil',
-      porQue: {
-        dadosUtilizados: '48 resoluções de provas recentes FGV e Cebraspe.',
-        periodo: 'Últimos 45 dias',
-        quantidadeObservacoes: 48,
-        versaoAnalise: 'Gêmeo Digital v2.4 (Classificação E1-E5)',
-        limitacoes: 'Necessidade de maior amostragem em regência verbal e crase.'
-      }
-    },
-    {
-      disciplina: 'Contabilidade Geral',
-      desempenhoObservado: 'Atenção (65% de acertos observados)',
-      retencao: 'Necessita consolidação e prática espaçada',
-      confianca: 'Subestimação (acerta com dúvida ou insegurança declarada)',
-      evidencia: 'Moderada (22 questões resolvidas)',
-      proximaVerificacao: 'Revisão guiada com exemplo resolvido',
-      porQue: {
-        dadosUtilizados: '22 resoluções de questões de escrituração e balanço.',
-        periodo: 'Últimos 20 dias',
-        quantidadeObservacoes: 22,
-        versaoAnalise: 'Gêmeo Digital v2.4',
-        limitacoes: 'Amostra recente sem resolução de prova completa de contabilidade sob restrição de tempo.'
-      }
-    }
-  ];
+  const modelos: any[] = data?.abaC_modeloEstudante || [];
 
   return (
     <div className="t28-container">
@@ -251,20 +189,26 @@ export const CalibracaoRetencaoAbas: React.FC<CalibracaoRetencaoAbasProps> = ({
 
               <div className="disc-calib-section">
                 <h5 className="sub-title">Confiança por Disciplina</h5>
-                <div className="disc-calib-grid">
-                  {abaA.confiancaPorDisciplina.map((d: any, idx: number) => (
-                    <div key={idx} className="disc-calib-card">
-                      <div className="disc-calib-top">
-                        <span className="disc-name">{d.disciplina}</span>
-                        <span className={`status-pill ${d.status.toLowerCase()}`}>{d.status}</span>
+                {abaA.confiancaPorDisciplina.length === 0 ? (
+                  <div style={{ padding: '1.5rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.82rem' }}>
+                    Nenhuma resolução avaliada com metaconsciência ainda. Resolva questões informando seu nível de certeza para calibrar este gráfico.
+                  </div>
+                ) : (
+                  <div className="disc-calib-grid">
+                    {abaA.confiancaPorDisciplina.map((d: any, idx: number) => (
+                      <div key={idx} className="disc-calib-card">
+                        <div className="disc-calib-top">
+                          <span className="disc-name">{d.disciplina}</span>
+                          <span className={`status-pill ${d.status.toLowerCase()}`}>{d.status}</span>
+                        </div>
+                        <div className="disc-calib-meta">
+                          <span>Confiança: <strong>{d.confiancaMedia}</strong></span>
+                          <span>Precisão: <strong>{d.precisao}</strong></span>
+                        </div>
                       </div>
-                      <div className="disc-calib-meta">
-                        <span>Confiança: <strong>{d.confiancaMedia}</strong></span>
-                        <span>Precisão: <strong>{d.precisao}</strong></span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -276,6 +220,53 @@ export const CalibracaoRetencaoAbas: React.FC<CalibracaoRetencaoAbasProps> = ({
           ========================================================================= */}
       {activeSubTab === 'B_RETENCAO' && (
         <div className="t28-subview animate-fade-in">
+          {/* Hero do Modelo Matemático do Estado Real de Conhecimento */}
+          <div className="modelo-matematico-hero">
+            <div className="modelo-matematico-top">
+              <span className="modelo-matematico-badge">Modelo Matemático do Estado Real de Conhecimento (Student Knowledge State)</span>
+            </div>
+            <div className="modelo-matematico-equacao">
+              P<sub>atual</sub>(t) = P<sub>base</sub> · e<sup>-Δt / S</sup>
+            </div>
+            <p className="modelo-matematico-desc">
+              <strong>Por que a média simples é enganosa?</strong> Medir o domínio de um tópico apenas por acertos/total oculta que uma nota de 90% obtida há 45 dias decaiu severamente pela Curva do Esquecimento de Ebbinghaus. Além disso, resolver 10 questões no mesmo dia da leitura do PDF infla a nota com memória de trabalho imediata.
+            </p>
+
+            <div className="modelo-vars-grid">
+              <div className="modelo-var-card">
+                <div className="var-header">
+                  <span className="var-simbolo">P<sub>base</sub></span>
+                  <span className="var-nome">Taxa Ponderada</span>
+                </div>
+                <span className="var-expl">Simulados (1.5x) e retestes frios (1.2x) têm maior peso que resoluções imediatas pós-PDF (0.5x).</span>
+              </div>
+
+              <div className="modelo-var-card">
+                <div className="var-header">
+                  <span className="var-simbolo">Δt</span>
+                  <span className="var-nome">Intervalo sem Contato</span>
+                </div>
+                <span className="var-expl">Número de dias decorridos desde a última exposição ou resolução ativa no conteúdo.</span>
+              </div>
+
+              <div className="modelo-var-card">
+                <div className="var-header">
+                  <span className="var-simbolo">S</span>
+                  <span className="var-nome">Força da Memória</span>
+                </div>
+                <span className="var-expl">Estabilidade sináptica que se expande a cada revisão espaçada e reteste frio bem-sucedido.</span>
+              </div>
+
+              <div className="modelo-var-card destaque">
+                <div className="var-header">
+                  <span className="var-simbolo">P<sub>atual</sub>(t)</span>
+                  <span className="var-nome">Proficiência Real Hoje</span>
+                </div>
+                <span className="var-expl">Estimativa autêntica decaída no tempo presente, prevenindo a falsa fluência.</span>
+              </div>
+            </div>
+          </div>
+
           {/* Regra Canônica: Aviso de certeza metodológica */}
           <div className="banner-regra-estimativa">
             <Info className="w-5 h-5 text-indigo-400 shrink-0" />
@@ -306,49 +297,97 @@ export const CalibracaoRetencaoAbas: React.FC<CalibracaoRetencaoAbasProps> = ({
 
           <div className="t28-card" style={{ marginTop: '1.25rem' }}>
             <div className="t28-card-header">
-              <h4>Monitoramento de Estabilidade e Prontidão de Recuperação</h4>
+              <h4>Estado Real de Conhecimento por Tópico (Decaimento Sináptico de Ebbinghaus)</h4>
             </div>
             <div className="retencao-table-container">
-              <table className="retencao-table">
-                <thead>
-                  <tr>
-                    <th>Disciplina</th>
-                    <th>Tópico Curricular</th>
-                    <th>Última Verificação</th>
-                    <th>Estabilidade Projetada</th>
-                    <th>Situação da Retenção</th>
-                    <th>Ação</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {abaB.itens.map((it: any, idx: number) => (
-                    <tr key={idx}>
-                      <td className="font-semibold">{it.disciplina}</td>
-                      <td>{it.topico}</td>
-                      <td>{it.ultimoTeste}</td>
-                      <td>
-                        <div className="ret-proj-cell">
-                          <span className="font-bold">{it.retencaoEstimada}</span>
-                          <span className="proj-tag">Estimada</span>
-                        </div>
-                      </td>
-                      <td>
-                        <span className={`status-ret-badge ${it.status.toLowerCase()}`}>
-                          {it.status.replace('_', ' ')}
-                        </span>
-                      </td>
-                      <td>
-                        <button
-                          className="btn-link-action"
-                          onClick={() => onNavigateToContentAnalysis && onNavigateToContentAnalysis(it.disciplina, it.topico)}
-                        >
-                          Ver evolução <ChevronRight className="w-3.5 h-3.5 inline" />
-                        </button>
-                      </td>
+              {abaB.itens.length === 0 ? (
+                <div style={{ padding: '2rem 1rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.82rem' }}>
+                  Nenhum tópico com histórico de retenção avaliado após intervalos espaçados.
+                </div>
+              ) : (
+                <table className="retencao-table">
+                  <thead>
+                    <tr>
+                      <th>Disciplina</th>
+                      <th>Tópico Curricular</th>
+                      <th>Média Bruta</th>
+                      <th>P<sub>base</sub> (Ponderada)</th>
+                      <th>Δt (Último Contato)</th>
+                      <th>S (Força Memória)</th>
+                      <th>P<sub>atual</sub> (Real Hoje)</th>
+                      <th>Situação</th>
+                      <th>Ação</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {abaB.itens.map((it: any, idx: number) => {
+                      const pAtualNum = parseFloat(it.pAtual || it.retencaoEstimada || '0');
+                      const barColor = pAtualNum >= 80 ? '#34d399' : (pAtualNum >= 65 ? '#60a5fa' : (pAtualNum >= 45 ? '#fbbf24' : '#f87171'));
+                      return (
+                        <tr key={idx}>
+                          <td className="font-semibold">{it.disciplina}</td>
+                          <td>
+                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                              <span>{it.topico}</span>
+                              {it.diagnostico && (
+                                <span style={{ fontSize: '0.7rem', color: '#94a3b8', marginTop: '0.15rem' }}>
+                                  {it.diagnostico}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td>
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                              <span style={{ textDecoration: it.isMediaSimplesEnganosa ? 'line-through' : 'none', color: it.isMediaSimplesEnganosa ? '#94a3b8' : 'inherit' }}>
+                                {it.mediaSimples || it.retencaoEstimada}
+                              </span>
+                              {it.isMediaSimplesEnganosa && (
+                                <span className="badge-falsa-fluencia">
+                                  ⚠️ Falsa Fluência
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td>
+                            <span className="font-semibold text-indigo-300">{it.pBase || it.mediaSimples || it.retencaoEstimada}</span>
+                          </td>
+                          <td>
+                            <span style={{ fontSize: '0.8rem', color: it.deltaTDias >= 15 ? '#fbbf24' : 'inherit' }}>
+                              {it.ultimoTeste || (it.deltaTDias !== undefined ? `${it.deltaTDias} dias` : 'Recente')}
+                            </span>
+                          </td>
+                          <td>
+                            <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>
+                              {it.forcaMemoriaDias !== undefined ? `${it.forcaMemoriaDias} dias` : '—'}
+                            </span>
+                          </td>
+                          <td>
+                            <div className="ret-proj-cell" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '0.15rem' }}>
+                              <span className="font-bold" style={{ color: barColor }}>{it.pAtual || it.retencaoEstimada}</span>
+                              <div className="retencao-barra-mini">
+                                <div className="retencao-barra-fill" style={{ width: `${Math.min(100, Math.max(5, pAtualNum))}%`, background: barColor }} />
+                              </div>
+                            </div>
+                          </td>
+                          <td>
+                            <span className={`status-ret-badge ${(it.status || '').toLowerCase()}`}>
+                              {(it.status || 'ESTABILIZADO').replace(/_/g, ' ')}
+                            </span>
+                          </td>
+                          <td>
+                            <button
+                              className="btn-link-action"
+                              onClick={() => onNavigateToContentAnalysis && onNavigateToContentAnalysis(it.disciplina, it.topico)}
+                            >
+                              Ver evolução <ChevronRight className="w-3.5 h-3.5 inline" />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
             </div>
           </div>
         </div>
@@ -370,7 +409,12 @@ export const CalibracaoRetencaoAbas: React.FC<CalibracaoRetencaoAbasProps> = ({
           </div>
 
           <div className="modelos-grid">
-            {modelos.map((m: any, idx: number) => (
+            {modelos.length === 0 ? (
+              <div style={{ gridColumn: '1 / -1', padding: '3rem 1.5rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.85rem' }}>
+                Ainda não há dados suficientes no event_store para traçar perfis psicométricos comparativos. Conforme você resolver questões, este diagnóstico interpretativo será calculado.
+              </div>
+            ) : (
+              modelos.map((m: any, idx: number) => (
               <div key={idx} className="modelo-card">
                 <div className="modelo-card-header">
                   <h3 className="modelo-disciplina">{m.disciplina}</h3>
@@ -405,7 +449,7 @@ export const CalibracaoRetencaoAbas: React.FC<CalibracaoRetencaoAbasProps> = ({
                   </div>
                 </div>
               </div>
-            ))}
+            )))}
           </div>
         </div>
       )}

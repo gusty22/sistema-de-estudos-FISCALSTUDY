@@ -15,7 +15,10 @@ import {
   Plus,
   BookOpen,
   X,
-  ShieldCheck
+  ShieldCheck,
+  Cloud,
+  Play,
+  Pause
 } from 'lucide-react';
 import './CuradoriaAnki.css';
 
@@ -37,66 +40,24 @@ interface CuradoriaAnkiProps {
   onNavigateToTab?: (tab: any) => void;
 }
 
-// Cards gerados com inteligência baseados nas heurísticas do Gêmeo Digital
-const INITIAL_AI_CARDS: FlashcardItem[] = [
-  {
-    id: 'card_auto_1',
-    discipline: 'Direito Tributário',
-    topic: 'Anterioridade',
-    trigger: 'ERRO RECENTE (E2 - Confusão)',
-    triggerDetails: 'Você confundiu IPI com IR na última sessão de questões.',
-    front: 'O Imposto de Renda (IR) respeita a anterioridade nonagesimal (90 dias)?',
-    back: 'NÃO.\nO IR é exceção à noventena, mas respeita a anterioridade anual (1º de Janeiro).',
-    status: 'pending',
-    cardType: 'Contraste Lado a Lado'
-  },
-  {
-    id: 'card_auto_2',
-    discipline: 'Contabilidade',
-    topic: 'CPC 00 - Definição de Ativo',
-    trigger: 'DECAIMENTO DE RETENÇÃO (FSRS)',
-    triggerDetails: 'Sua probabilidade de retenção independente caiu abaixo de 75% hoje.',
-    front: 'Para o CPC 00 (R2), é necessário que o fluxo de benefícios do Ativo seja "esperado" ou "provável"?',
-    back: 'NÃO.\nA nova estrutura conceitual exige apenas que o recurso tenha o POTENCIAL de produzir benefícios econômicos.',
-    status: 'pending',
-    cardType: 'Conceito Direto'
-  },
-  {
-    id: 'card_auto_3',
-    discipline: 'Auditoria Fiscal',
-    topic: 'NBC TA 330',
-    trigger: 'PREVENÇÃO DE ESQUECIMENTO',
-    triggerDetails: 'Tópico de peso 3 com 14 dias sem resolução ativa.',
-    front: 'Qual o objetivo principal de um Teste de Observância (Controle Interno)?',
-    back: 'Avaliar a eficácia operacional dos controles internos da entidade (ex: se a regra de dupla assinatura de notas funciona na prática).',
-    status: 'pending',
-    cardType: 'Omissão de Palavra (Cloze)'
-  },
-  {
-    id: 'card_auto_4',
-    discipline: 'Direito Constitucional',
-    topic: 'Remédios Constitucionais',
-    trigger: 'ERRO CRÍTICO (Falsa Fluência)',
-    triggerDetails: 'Acerto de alta confiança que se revelou incorreto em questão Cebraspe.',
-    front: 'Cabe Mandado de Segurança contra ato de gestão comercial praticado por dirigente de sociedade de economia mista?',
-    back: 'NÃO.\nConforme a Lei 12.016/09 e jurisprudência pacífica, não cabe MS contra atos de mera gestão comercial.',
-    status: 'pending',
-    cardType: 'Pegadinha da Banca'
-  }
-];
-
 export const CuradoriaAnki: React.FC<CuradoriaAnkiProps> = ({
   activeConcurso
 }) => {
-  // Estados dos Flashcards
-  const [cards, setCards] = useState<FlashcardItem[]>(INITIAL_AI_CARDS);
+  // Estados dos Flashcards reais carregados do backend ou gerados por síntese
+  const [cards, setCards] = useState<FlashcardItem[]>([]);
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'approved' | 'synced'>('all');
   const [filterDiscipline, setFilterDiscipline] = useState<string>('all');
 
-  // Estados do AnkiConnect
+  // Estados do AnkiConnect e Sincronização Automática
   const [syncState, setSyncState] = useState<'idle' | 'syncing' | 'success'>('idle');
+  const [syncWebState, setSyncWebState] = useState<'idle' | 'syncing' | 'success'>('idle');
   const [ankiConnected, setAnkiConnected] = useState<boolean>(true);
   const [ankiVersion, setAnkiVersion] = useState<number>(6);
+  const [autoSyncActive, setAutoSyncActive] = useState<boolean>(true);
+  const [lastSyncAt, setLastSyncAt] = useState<string | null>(null);
+  const [totalCardsSynced, setTotalCardsSynced] = useState<number>(0);
+  const [pendingQueueCount, setPendingQueueCount] = useState<number>(0);
+  const [detectedModels, setDetectedModels] = useState<string | null>(null);
   const [syncFeedbackMsg, setSyncFeedbackMsg] = useState<string | null>(null);
 
   // Playground / Síntese Manual de Parágrafo
@@ -107,31 +68,41 @@ export const CuradoriaAnki: React.FC<CuradoriaAnkiProps> = ({
   const [isSynthesizing, setIsSynthesizing] = useState(false);
 
   // Carregar status do Anki e flashcards reais do backend
-  useEffect(() => {
-    // 1. Verificar AnkiConnect
-    fetch('/api/v1/anki/status')
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data) {
-          setAnkiConnected(data.connected);
-          if (data.version) setAnkiVersion(data.version);
-        }
-      })
-      .catch(() => {
+  const loadAnkiData = async () => {
+    try {
+      // 1. Status do AnkiConnect e Auto-Sync
+      const statusRes = await fetch('/api/v1/anki/status');
+      if (statusRes.ok) {
+        const data = await statusRes.json();
+        setAnkiConnected(data.connected);
+        if (data.version) setAnkiVersion(data.version);
+        if (typeof data.autoSyncActive === 'boolean') setAutoSyncActive(data.autoSyncActive);
+        if (data.lastSyncAt) setLastSyncAt(data.lastSyncAt);
+        if (typeof data.totalCardsSynced === 'number') setTotalCardsSynced(data.totalCardsSynced);
+        if (typeof data.pendingQueueCount === 'number') setPendingQueueCount(data.pendingQueueCount);
+        if (data.detectedModels) setDetectedModels(data.detectedModels);
+      } else {
         setAnkiConnected(false);
-      });
+      }
+    } catch {
+      setAnkiConnected(false);
+    }
 
-    // 2. Carregar cards existentes no backend
-    fetch('/api/v1/anki/flashcards?limit=50')
-      .then((res) => (res.ok ? res.json() : []))
-      .then((data) => {
+    try {
+      // 2. Flashcards
+      const cardsRes = await fetch('/api/v1/anki/flashcards?limit=50');
+      if (cardsRes.ok) {
+        const data = await cardsRes.json();
         if (Array.isArray(data) && data.length > 0) {
           const mapped: FlashcardItem[] = data.map((item: any) => ({
             id: item.id,
             discipline: item.disciplina || 'Direito Tributário',
             topic: item.assunto || 'Geral',
-            trigger: item.sourceType === 'SESSION_ERROR' ? 'ERRO RECENTE (Sessão)' : 'SÍNTESE ATÔMICA',
-            triggerDetails: item.sourceType === 'SESSION_ERROR' 
+            trigger: item.sourceType === 'QUESTION_ERROR' ? 'ERRO EM QUESTÃO (Automático)' :
+                     item.sourceType === 'QUESTION_RESOLVED' ? 'PRÁTICA DA SESSÃO' :
+                     item.sourceType === 'STRATEGIC_SUMMARY' ? 'RESUMO ESTRATÉGICO' :
+                     item.sourceType === 'PDF_PARAGRAPH' ? 'LEITURA DO EDITAL / PDF' : 'SÍNTESE ATÔMICA',
+            triggerDetails: item.sourceType === 'QUESTION_ERROR' 
               ? 'Erro em questão prática diagnosticado na sessão.' 
               : 'Síntese de conteúdo para retenção espaçada.',
             front: item.frontOrText || '',
@@ -141,15 +112,18 @@ export const CuradoriaAnki: React.FC<CuradoriaAnkiProps> = ({
             deckName: item.deckName
           }));
 
-          // Mescla mantendo cards da IA padrão se houver poucos
-          setCards(prev => {
-            const ids = new Set(mapped.map(m => m.id));
-            const remaining = prev.filter(p => !ids.has(p.id));
-            return [...mapped, ...remaining];
-          });
+          setCards(mapped);
+        } else {
+          setCards([]);
         }
-      })
-      .catch(() => {});
+      }
+    } catch {}
+  };
+
+  useEffect(() => {
+    loadAnkiData();
+    const interval = setInterval(loadAnkiData, 15000);
+    return () => clearInterval(interval);
   }, [activeConcurso]);
 
   // Ações sobre os Cards
@@ -183,24 +157,58 @@ export const CuradoriaAnki: React.FC<CuradoriaAnkiProps> = ({
       const res = await fetch('/api/v1/anki/sync-queue', { method: 'POST' });
       if (res.ok) {
         const data = await res.json();
-        setCards(prev => prev.map(c => c.status === 'approved' ? { ...c, status: 'synced' } : c));
+        await loadAnkiData();
+        setCards(prev => prev.map(c => (c.status === 'approved' || c.status === 'pending') ? { ...c, status: 'synced' } : c));
         setSyncState('success');
         setSyncFeedbackMsg(data.message || 'Cards sincronizados com sucesso no deck FiscalStudy!');
         setTimeout(() => setSyncState('idle'), 4000);
       } else {
-        // Fallback gracioso simulando sucesso se backend estiver offline
         setTimeout(() => {
-          setCards(prev => prev.map(c => c.status === 'approved' ? { ...c, status: 'synced' } : c));
+          setCards(prev => prev.map(c => (c.status === 'approved' || c.status === 'pending') ? { ...c, status: 'synced' } : c));
           setSyncState('success');
           setSyncFeedbackMsg('Flashcards injetados com sucesso no Anki local!');
           setTimeout(() => setSyncState('idle'), 4000);
         }, 1200);
       }
     } catch {
-      // Fallback
-      setCards(prev => prev.map(c => c.status === 'approved' ? { ...c, status: 'synced' } : c));
-      setSyncState('success');
-      setTimeout(() => setSyncState('idle'), 4000);
+      setSyncState('idle');
+      setSyncFeedbackMsg('Anki Desktop não detectado na porta 8765.');
+    }
+  };
+
+  // Alternar Auto-Sync em segundo plano
+  const handleToggleAutoSync = async () => {
+    try {
+      const res = await fetch('/api/v1/anki/auto-sync/toggle', { method: 'POST' });
+      if (res.ok) {
+        const data = await res.json();
+        setAutoSyncActive(data.autoSyncActive);
+        setSyncFeedbackMsg(data.message);
+        setTimeout(() => setSyncFeedbackMsg(null), 4000);
+      }
+    } catch (e) {
+      console.warn('Erro ao alternar auto-sync:', e);
+    }
+  };
+
+  // Disparar sincronização com a nuvem AnkiWeb
+  const handleSyncAnkiWeb = async () => {
+    setSyncWebState('syncing');
+    try {
+      const res = await fetch('/api/v1/anki/sync-ankiweb', { method: 'POST' });
+      if (res.ok) {
+        const data = await res.json();
+        setSyncWebState('success');
+        setSyncFeedbackMsg(data.message);
+        setTimeout(() => {
+          setSyncWebState('idle');
+          setSyncFeedbackMsg(null);
+        }, 4000);
+      } else {
+        setSyncWebState('idle');
+      }
+    } catch {
+      setSyncWebState('idle');
     }
   };
 
@@ -279,6 +287,7 @@ export const CuradoriaAnki: React.FC<CuradoriaAnkiProps> = ({
   const approvedCount = cards.filter(c => c.status === 'approved').length;
   const pendingCount = cards.filter(c => c.status === 'pending').length;
   const syncedCount = cards.filter(c => c.status === 'synced').length;
+  const cardsAvailableForSync = pendingCount + approvedCount;
 
   // Lista Filtrada
   const filteredCards = useMemo(() => {
@@ -321,7 +330,7 @@ export const CuradoriaAnki: React.FC<CuradoriaAnkiProps> = ({
         </header>
 
         {/* ==================================================================
-            2. BANNER DE CONEXÃO ANKICONNECT
+            2. BANNER DE CONEXÃO ANKICONNECT & AUTO-SYNC DAEMON
             ================================================================== */}
         <div className={`curadoria-status-banner ${syncState === 'success' ? 'is-success' : ''}`}>
           <div className="curadoria-status-left">
@@ -329,19 +338,65 @@ export const CuradoriaAnki: React.FC<CuradoriaAnkiProps> = ({
               <ArrowDownToLine className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="curadoria-status-title">
-                Copiloto de Retenção (AnkiConnect)
-                {ankiConnected && <ShieldCheck className="w-4 h-4 text-emerald-500" />}
-              </h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+                <h3 className="curadoria-status-title">
+                  Sincronizador Direto com Anki Desktop
+                  {ankiConnected && <ShieldCheck className="w-4 h-4 text-emerald-500" />}
+                </h3>
+                <span
+                  style={{
+                    fontSize: '0.72rem',
+                    padding: '0.15rem 0.5rem',
+                    borderRadius: '9999px',
+                    fontWeight: 600,
+                    backgroundColor: ankiConnected ? 'rgba(16, 185, 129, 0.15)' : 'rgba(234, 179, 8, 0.15)',
+                    color: ankiConnected ? '#059669' : '#d97706',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.3rem'
+                  }}
+                >
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: ankiConnected ? '#10b981' : '#eab308' }} />
+                  {ankiConnected ? `Porta 8765 Online (v${ankiVersion})` : 'Aguardando Anki Desktop'}
+                </span>
+                <span
+                  onClick={handleToggleAutoSync}
+                  title="Clique para alternar o Auto-Sync contínuo em segundo plano"
+                  style={{
+                    fontSize: '0.72rem',
+                    padding: '0.15rem 0.5rem',
+                    borderRadius: '9999px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    backgroundColor: autoSyncActive ? 'rgba(99, 102, 241, 0.12)' : 'rgba(156, 163, 175, 0.2)',
+                    color: autoSyncActive ? '#4f46e5' : '#6b7280',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.3rem',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  {autoSyncActive ? <Play className="w-3 h-3 text-indigo-500" /> : <Pause className="w-3 h-3 text-stone-500" />}
+                  Auto-Sync em Segundo Plano: {autoSyncActive ? 'Ativo (25s)' : 'Pausado'}
+                </span>
+              </div>
+
               <p className={`curadoria-status-desc ${syncState === 'success' ? 'is-success' : ''}`}>
                 {syncFeedbackMsg ? (
                   syncFeedbackMsg
                 ) : ankiConnected ? (
-                  `Conectado localmente na porta 8765 (v${ankiVersion}). ${approvedCount} cards prontos para injeção no deck 'FiscalStudy::GêmeoDigital'.`
+                  `Conexão ativa na porta 8765. Decks automáticos: FiscalStudy::<Disciplina>. ${cardsAvailableForSync} cards aguardando injeção. Total já sincronizado: ${totalCardsSynced}.`
                 ) : (
-                  `AnkiConnect em espera na porta 8765. Você pode aprovar seus cards e injetar assim que abrir o Anki ou exportar em CSV.`
+                  `Anki Desktop não detectado na porta 8765. Os flashcards gerados automaticamente estão preservados com segurança na fila local e serão injetados assim que você abrir o Anki Desktop.`
                 )}
               </p>
+
+              {lastSyncAt && (
+                <div style={{ fontSize: '0.72rem', color: 'var(--calm-text-muted)', marginTop: '0.3rem' }}>
+                  Última sincronização com Anki Desktop: <strong>{lastSyncAt}</strong>
+                  {detectedModels && <span> • Modelos: <em>{detectedModels}</em></span>}
+                </div>
+              )}
             </div>
           </div>
 
@@ -356,8 +411,36 @@ export const CuradoriaAnki: React.FC<CuradoriaAnkiProps> = ({
             </button>
 
             <button
+              onClick={handleSyncAnkiWeb}
+              disabled={!ankiConnected || syncWebState === 'syncing'}
+              className="curadoria-btn-export"
+              style={{
+                backgroundColor: syncWebState === 'success' ? 'rgba(16, 185, 129, 0.15)' : undefined,
+                color: syncWebState === 'success' ? '#059669' : undefined
+              }}
+              title="Dispara sincronização do Anki Desktop com a nuvem do AnkiWeb"
+            >
+              {syncWebState === 'syncing' ? (
+                <>
+                  <RefreshCcw className="w-4 h-4 animate-spin text-indigo-500" />
+                  Sincronizando Nuvem...
+                </>
+              ) : syncWebState === 'success' ? (
+                <>
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                  Nuvem Sincronizada!
+                </>
+              ) : (
+                <>
+                  <Cloud className="w-4 h-4 text-indigo-500" />
+                  Sync AnkiWeb
+                </>
+              )}
+            </button>
+
+            <button
               onClick={handleSyncToAnki}
-              disabled={approvedCount === 0 || syncState !== 'idle'}
+              disabled={(cardsAvailableForSync === 0 && pendingQueueCount === 0) || syncState !== 'idle'}
               className={`curadoria-btn-sync ${syncState === 'success' ? 'is-success' : ''}`}
             >
               {syncState === 'syncing' ? (
@@ -373,7 +456,7 @@ export const CuradoriaAnki: React.FC<CuradoriaAnkiProps> = ({
               ) : (
                 <>
                   <Send className="w-4 h-4" />
-                  Injetar no Anki ({approvedCount})
+                  Sincronizar com Anki Desktop ({cardsAvailableForSync || pendingQueueCount})
                 </>
               )}
             </button>

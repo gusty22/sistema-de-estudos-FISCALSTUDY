@@ -154,6 +154,7 @@ export default function SessaoEstudoAtiva({
   const [showInterruption, setShowInterruption] = useState(false);
   const [showDifficulty, setShowDifficulty] = useState(false);
   const [difficultyText, setDifficultyText] = useState('');
+  const [fatigueDismissed, setFatigueDismissed] = useState(false);
 
   useEffect(() => {
     let interval: any;
@@ -547,6 +548,71 @@ export default function SessaoEstudoAtiva({
             </button>
           ))}
         </div>
+
+        {/* Alerta de Fadiga Cognitiva em Tempo Real (> 90 min) */}
+        {secondsElapsed >= 5400 && !fatigueDismissed && (
+          <div
+            className="animate-fadeIn"
+            style={{
+              padding: '0.9rem 1.15rem',
+              borderRadius: '0.85rem',
+              background: 'rgba(244, 63, 94, 0.08)',
+              border: '1px solid rgba(244, 63, 94, 0.25)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '0.75rem',
+              marginBottom: '0.85rem'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+              <Coffee className="w-5 h-5 text-rose-500 shrink-0" />
+              <div>
+                <strong style={{ fontSize: '0.8rem', color: '#f43f5e', display: 'block' }}>
+                  Alerta de Fadiga: 90 minutos contínuos sem pausa
+                </strong>
+                <span style={{ fontSize: '0.75rem', color: 'var(--calm-text-muted, #64748b)' }}>
+                  A velocidade de leitura e a taxa de acerto caem vertiginosamente após 90min. Faça uma pausa de 10-15 min.
+                </span>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setTimerStatus('paused');
+                  setShowInterruption(true);
+                }}
+                style={{
+                  padding: '0.35rem 0.75rem',
+                  borderRadius: '0.5rem',
+                  background: '#f43f5e',
+                  color: '#ffffff',
+                  border: 'none',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                Pausar Agora
+              </button>
+              <button
+                type="button"
+                onClick={() => setFatigueDismissed(true)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--calm-text-muted, #94a3b8)',
+                  fontSize: '0.72rem',
+                  cursor: 'pointer'
+                }}
+              >
+                Dispensar
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Cartão de Objetivo (Norte Pedagógico) */}
         <div className="session-objective-card">

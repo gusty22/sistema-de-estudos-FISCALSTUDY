@@ -149,4 +149,35 @@ class AnkiIntegrationServiceTest {
         assertTrue(csv.contains("imunidade recíproca"));
         assertTrue(csv.contains("direito_tributario"));
     }
+
+    @Test
+    @DisplayName("toggleAutoSync e isAutoSyncEnabled devem controlar o estado do daemon de sincronização")
+    void testAutoSyncControls() {
+        assertTrue(ankiService.isAutoSyncEnabled(), "Auto-sync deve iniciar ativo por padrão");
+
+        boolean toggled = ankiService.toggleAutoSync();
+        assertFalse(toggled);
+        assertFalse(ankiService.isAutoSyncEnabled());
+
+        ankiService.setAutoSyncEnabled(true);
+        assertTrue(ankiService.isAutoSyncEnabled());
+    }
+
+    @Test
+    @DisplayName("checkConnection deve retornar status enriquecido com informações de auto-sync e modelos")
+    void testCheckConnectionEnrichedFields() {
+        AnkiConnectStatusDTO status = ankiService.checkConnection();
+        assertNotNull(status);
+        assertNotNull(status.getEndpoint());
+        assertTrue(status.isAutoSyncActive());
+        assertEquals(0, status.getPendingQueueCount());
+    }
+
+    @Test
+    @DisplayName("triggerAnkiWebSync deve responder graciosamente quando offline")
+    void testTriggerAnkiWebSyncOffline() {
+        boolean result = ankiService.triggerAnkiWebSync();
+        assertFalse(result, "Offline não deve lançar exceção, deve retornar false");
+    }
 }
+

@@ -13,6 +13,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
+import org.springframework.scheduling.annotation.Scheduled;
+
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -21,6 +23,9 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -37,6 +42,21 @@ public class AnkiIntegrationService {
     @Value("${fiscalstudy.anki.endpoint:http://127.0.0.1:8765}")
     private String ankiEndpoint = "http://127.0.0.1:8765";
 
+    private final AtomicBoolean autoSyncEnabled = new AtomicBoolean(true);
+    private final AtomicReference<String> lastSyncAt = new AtomicReference<>(null);
+    private final AtomicInteger lastSyncCount = new AtomicInteger(0);
+
+    // Cache dinâmico de modelos e campos do Anki Desktop (compatibilidade total PT-BR e EN)
+    private volatile String detectedBasicModel = "Basic";
+    private volatile String detectedBasicFrontField = "Front";
+    private volatile String detectedBasicBackField = "Back";
+
+    private volatile String detectedClozeModel = "Cloze";
+    private volatile String detectedClozeTextField = "Text";
+    private volatile String detectedClozeExtraField = "Back Extra";
+
+    private volatile long lastModelCheckTime = 0;
+
     public void setAnkiEndpoint(String ankiEndpoint) {
         this.ankiEndpoint = ankiEndpoint;
     }
@@ -50,6 +70,123 @@ public class AnkiIntegrationService {
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofMillis(1500))
                 .build();
+    }
+
+    /**
+     * Atualiza metadados de modelos e campos do Anki Desktop (compatibilidade pt-BR e en-US)
+     */
+    public synchronized void refreshAnkiModelMetadata() {
+        long now = System.currentTimeMillis();
+        if (now - lastModelCheckTime < 60_000 && lastModelCheckTime > 0) {
+            return;
+        }
+
+        try {
+            Map<String, Object> req = Map.of("action", "modelNames", "version", 6);
+            String jsonBody = objectMapper.writeValueAsString(req);
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(ankiEndpoint))
+                    .header("Content-Type", "application/json")
+                    .timeout(Duration.ofMillis(2000))
+                    .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() == 200) {
+                JsonNode root = objectMapper.readTree(response.body());
+                if (root.path("result").isArray()) {
+                    List<String> models = new ArrayList<>();
+                    for (JsonNode m : root.path("result")) {
+                        models.add(m.asText());
+                    }
+
+                    // 1. Resolução do modelo Básico / Basic
+                    String basicModelCandidate = null;
+                    if (models.contains("Básico")) {
+                        basicModelCandidate = "Básico";
+                    } else if (models.contains("Basic")) {
+                        basicModelCandidate = "Basic";
+                    } else {
+                        for (String m : models) {
+                            if (m.toLowerCase().contains("básic") || m.toLowerCase().contains("basic")) {
+                                basicModelCandidate = m;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (basicModelCandidate != null) {
+                        detectedBasicModel = basicModelCandidate;
+                        List<String> fields = fetchModelFields(basicModelCandidate);
+                        if (fields.size() >= 2) {
+                            detectedBasicFrontField = fields.get(0);
+                            detectedBasicBackField = fields.get(1);
+                        }
+                    }
+
+                    // 2. Resolução do modelo Cloze / Omissão de Palavras
+                    String clozeModelCandidate = null;
+                    if (models.contains("Cloze")) {
+                        clozeModelCandidate = "Cloze";
+                    } else if (models.contains("Omissão de Palavras") || models.contains("Omissão de palavras")) {
+                        clozeModelCandidate = models.contains("Omissão de Palavras") ? "Omissão de Palavras" : "Omissão de palavras";
+                    } else {
+                        for (String m : models) {
+                            if (m.toLowerCase().contains("cloze") || m.toLowerCase().contains("omissão")) {
+                                clozeModelCandidate = m;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (clozeModelCandidate != null) {
+                        detectedClozeModel = clozeModelCandidate;
+                        List<String> fields = fetchModelFields(clozeModelCandidate);
+                        if (fields.size() >= 1) {
+                            detectedClozeTextField = fields.get(0);
+                            detectedClozeExtraField = fields.size() >= 2 ? fields.get(1) : "Extra";
+                        }
+                    }
+
+                    lastModelCheckTime = now;
+                    log.info("Modelos Anki detectados: Basic=[{} (Front='{}', Back='{}')], Cloze=[{} (Text='{}', Extra='{}')]",
+                            detectedBasicModel, detectedBasicFrontField, detectedBasicBackField,
+                            detectedClozeModel, detectedClozeTextField, detectedClozeExtraField);
+                }
+            }
+        } catch (Exception e) {
+            log.debug("AnkiConnect offline ou indisponível ao consultar modelos: {}", e.getMessage());
+        }
+    }
+
+    private List<String> fetchModelFields(String modelName) {
+        try {
+            Map<String, Object> req = Map.of(
+                    "action", "modelFieldNames",
+                    "version", 6,
+                    "params", Map.of("modelName", modelName)
+            );
+            String jsonBody = objectMapper.writeValueAsString(req);
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(ankiEndpoint))
+                    .header("Content-Type", "application/json")
+                    .timeout(Duration.ofMillis(2000))
+                    .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() == 200) {
+                JsonNode root = objectMapper.readTree(response.body());
+                if (root.path("result").isArray()) {
+                    List<String> list = new ArrayList<>();
+                    for (JsonNode f : root.path("result")) {
+                        list.add(f.asText());
+                    }
+                    return list;
+                }
+            }
+        } catch (Exception ignored) {}
+        return Collections.emptyList();
     }
 
     /**
@@ -75,13 +212,23 @@ public class AnkiIntegrationService {
                 int pending = getPendingCardsCount();
                 int synced = getSyncedCardsCount();
 
+                // Atualiza metadados dos modelos em segundo plano se necessário
+                refreshAnkiModelMetadata();
+
+                String modelInfo = String.format("Basic: %s (%s/%s), Cloze: %s (%s/%s)",
+                        detectedBasicModel, detectedBasicFrontField, detectedBasicBackField,
+                        detectedClozeModel, detectedClozeTextField, detectedClozeExtraField);
+
                 return new AnkiConnectStatusDTO(
                         true,
                         version,
                         ankiEndpoint,
                         synced,
                         pending,
-                        "🟢 AnkiConnect Conectado (Porta 8765). Integração silenciosa ativa."
+                        "🟢 Anki Desktop Conectado (Porta 8765). Sincronização automática ativa.",
+                        autoSyncEnabled.get(),
+                        lastSyncAt.get(),
+                        modelInfo
                 );
             }
         } catch (Exception e) {
@@ -96,8 +243,36 @@ public class AnkiIntegrationService {
                 ankiEndpoint,
                 synced,
                 pending,
-                "🟡 Anki não detectado na porta 8765. Os cards gerados serão mantidos na fila local e enviados assim que você abrir o Anki."
+                "🟡 Anki não detectado na porta 8765. Os flashcards gerados automaticamente serão mantidos na fila local e enviados assim que você abrir o Anki Desktop.",
+                autoSyncEnabled.get(),
+                lastSyncAt.get(),
+                null
         );
+    }
+
+    /**
+     * Dispara sincronização imediata do Anki Desktop com a nuvem AnkiWeb
+     */
+    public boolean triggerAnkiWebSync() {
+        try {
+            Map<String, Object> req = Map.of(
+                    "action", "sync",
+                    "version", 6
+            );
+            String jsonBody = objectMapper.writeValueAsString(req);
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(ankiEndpoint))
+                    .header("Content-Type", "application/json")
+                    .timeout(Duration.ofMillis(5000))
+                    .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            return response.statusCode() == 200;
+        } catch (Exception e) {
+            log.debug("Não foi possível acionar sync no AnkiWeb: {}", e.getMessage());
+            return false;
+        }
     }
 
     /**
@@ -128,11 +303,12 @@ public class AnkiIntegrationService {
     }
 
     /**
-     * Envia um Flashcard direto para o Anki via AnkiConnect
+     * Envia um Flashcard direto para o Anki via AnkiConnect com tolerância a múltiplos idiomas
      */
     public Long sendNoteToAnkiConnect(String deckName, String cardType, String frontOrText, String backOrExtra, List<String> tags) {
         try {
             ensureDeckExists(deckName);
+            refreshAnkiModelMetadata();
 
             Map<String, Object> noteMap = new HashMap<>();
             noteMap.put("deckName", deckName);
@@ -145,16 +321,16 @@ public class AnkiIntegrationService {
             noteMap.put("options", options);
 
             if ("CLOZE".equalsIgnoreCase(cardType)) {
-                noteMap.put("modelName", "Cloze");
+                noteMap.put("modelName", detectedClozeModel);
                 noteMap.put("fields", Map.of(
-                        "Text", frontOrText,
-                        "Back Extra", backOrExtra != null ? backOrExtra : ""
+                        detectedClozeTextField, frontOrText,
+                        detectedClozeExtraField, backOrExtra != null ? backOrExtra : ""
                 ));
             } else {
-                noteMap.put("modelName", "Basic");
+                noteMap.put("modelName", detectedBasicModel);
                 noteMap.put("fields", Map.of(
-                        "Front", frontOrText,
-                        "Back", backOrExtra != null ? backOrExtra : ""
+                        detectedBasicFrontField, frontOrText,
+                        detectedBasicBackField, backOrExtra != null ? backOrExtra : ""
                 ));
             }
 
@@ -169,7 +345,7 @@ public class AnkiIntegrationService {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(ankiEndpoint))
                     .header("Content-Type", "application/json")
-                    .timeout(Duration.ofMillis(2500))
+                    .timeout(Duration.ofMillis(3000))
                     .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
                     .build();
 
@@ -178,7 +354,11 @@ public class AnkiIntegrationService {
             if (response.statusCode() == 200) {
                 JsonNode root = objectMapper.readTree(response.body());
                 if (!root.path("error").isNull()) {
-                    log.warn("Erro retornado pelo AnkiConnect: {}", root.path("error").asText());
+                    String err = root.path("error").asText();
+                    log.warn("Erro retornado pelo AnkiConnect: {}", err);
+                    if (err.toLowerCase().contains("model was not found") || err.toLowerCase().contains("cannot create note because it is empty")) {
+                        return tryFallbackModel(deckName, cardType, frontOrText, backOrExtra, tags);
+                    }
                     return null;
                 }
                 return root.path("result").asLong();
@@ -186,6 +366,59 @@ public class AnkiIntegrationService {
         } catch (Exception e) {
             log.debug("AnkiConnect indisponível ao enviar card: {}", e.getMessage());
         }
+        return null;
+    }
+
+    private Long tryFallbackModel(String deckName, String cardType, String frontOrText, String backOrExtra, List<String> tags) {
+        try {
+            Map<String, Object> noteMap = new HashMap<>();
+            noteMap.put("deckName", deckName);
+            noteMap.put("tags", tags != null ? tags : List.of("fiscalstudy"));
+            noteMap.put("options", Map.of("allowDuplicate", false, "duplicateScope", "deck"));
+
+            if ("CLOZE".equalsIgnoreCase(cardType)) {
+                // Alterna entre Cloze padrão e Omissão de palavras com nomes comuns
+                boolean isEnglish = "Cloze".equalsIgnoreCase(detectedClozeModel);
+                String altModel = isEnglish ? "Omissão de Palavras" : "Cloze";
+                Map<String, String> altFields = isEnglish
+                        ? Map.of("Texto", frontOrText, "Extra", backOrExtra != null ? backOrExtra : "")
+                        : Map.of("Text", frontOrText, "Back Extra", backOrExtra != null ? backOrExtra : "");
+
+                noteMap.put("modelName", altModel);
+                noteMap.put("fields", altFields);
+            } else {
+                // Alterna entre Basic e Básico
+                boolean isEnglish = "Basic".equalsIgnoreCase(detectedBasicModel);
+                String altModel = isEnglish ? "Básico" : "Basic";
+                Map<String, String> altFields = isEnglish
+                        ? Map.of("Frente", frontOrText, "Verso", backOrExtra != null ? backOrExtra : "")
+                        : Map.of("Front", frontOrText, "Back", backOrExtra != null ? backOrExtra : "");
+
+                noteMap.put("modelName", altModel);
+                noteMap.put("fields", altFields);
+            }
+
+            Map<String, Object> req = Map.of(
+                    "action", "addNote",
+                    "version", 6,
+                    "params", Map.of("note", noteMap)
+            );
+            String jsonBody = objectMapper.writeValueAsString(req);
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(ankiEndpoint))
+                    .header("Content-Type", "application/json")
+                    .timeout(Duration.ofMillis(3000))
+                    .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() == 200) {
+                JsonNode root = objectMapper.readTree(response.body());
+                if (root.path("error").isNull()) {
+                    return root.path("result").asLong();
+                }
+            }
+        } catch (Exception ignored) {}
         return null;
     }
 
@@ -449,11 +682,85 @@ public class AnkiIntegrationService {
                         "UPDATE anki_flashcards SET sync_status = 'SYNCED', anki_note_id = ?, synced_at = ? WHERE id = ?",
                         noteId, nowStr, id
                 );
+
+                try {
+                    eventStoreRepository.appendEvent(
+                            "FLASHCARD_SENT_TO_ANKI",
+                            "FLASHCARD",
+                            id,
+                            "sync-engine",
+                            1,
+                            "v1",
+                            String.format(Locale.US, "{\"cardId\":\"%s\",\"ankiNoteId\":%d,\"deckName\":\"%s\"}", id, noteId, deckName)
+                    );
+                } catch (Exception ignored) {}
+
                 count++;
             }
         }
 
+        if (count > 0) {
+            String formattedNow = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss"));
+            lastSyncAt.set(formattedNow);
+            lastSyncCount.set(count);
+            // Sincroniza imediatamente com a nuvem do AnkiWeb
+            triggerAnkiWebSync();
+            log.info("Sincronização concluída: {} flashcards enviados para o Anki Desktop e AnkiWeb acionado.", count);
+        }
+
         return count;
+    }
+
+    /**
+     * DAEMON DE AUTO-SYNC: Executa periodicamente em segundo plano.
+     * Se houver flashcards gerados automaticamente na fila e o Anki Desktop estiver aberto,
+     * sincroniza silenciosamente sem intervenção manual.
+     */
+    @Scheduled(fixedDelayString = "${fiscalstudy.anki.auto-sync.interval-ms:25000}")
+    public void runAutoSyncScheduled() {
+        if (!autoSyncEnabled.get()) {
+            return;
+        }
+
+        int pending = getPendingCardsCount();
+        if (pending == 0) {
+            return;
+        }
+
+        try {
+            AnkiConnectStatusDTO status = checkConnection();
+            if (status.isConnected()) {
+                log.info("Auto-sync Anki em background detectou {} flashcards pendentes. Iniciando injeção...", pending);
+                int synced = syncPendingQueue();
+                if (synced > 0) {
+                    log.info("Auto-sync concluído com sucesso: {} cards injetados no Anki Desktop.", synced);
+                }
+            }
+        } catch (Exception e) {
+            log.debug("Aviso no auto-sync do Anki: {}", e.getMessage());
+        }
+    }
+
+    public boolean isAutoSyncEnabled() {
+        return autoSyncEnabled.get();
+    }
+
+    public void setAutoSyncEnabled(boolean enabled) {
+        this.autoSyncEnabled.set(enabled);
+    }
+
+    public boolean toggleAutoSync() {
+        boolean next = !this.autoSyncEnabled.get();
+        this.autoSyncEnabled.set(next);
+        return next;
+    }
+
+    public String getLastSyncAt() {
+        return lastSyncAt.get();
+    }
+
+    public int getLastSyncCount() {
+        return lastSyncCount.get();
     }
 
     /**
@@ -509,7 +816,7 @@ public class AnkiIntegrationService {
         ), limit);
     }
 
-    private int getPendingCardsCount() {
+    public int getPendingCardsCount() {
         try {
             Integer count = jdbcTemplate.queryForObject(
                     "SELECT COUNT(*) FROM anki_flashcards WHERE sync_status = 'PENDING_ANKI'", Integer.class
@@ -520,7 +827,7 @@ public class AnkiIntegrationService {
         }
     }
 
-    private int getSyncedCardsCount() {
+    public int getSyncedCardsCount() {
         try {
             Integer count = jdbcTemplate.queryForObject(
                     "SELECT COUNT(*) FROM anki_flashcards WHERE sync_status = 'SYNCED'", Integer.class

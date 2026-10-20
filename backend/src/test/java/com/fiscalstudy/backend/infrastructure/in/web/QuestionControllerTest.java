@@ -263,7 +263,7 @@ class QuestionControllerTest {
     }
 
     @Test
-    void submitAttempt_OnEndedSession_ReturnsBadRequest() throws Exception {
+    void submitAttempt_OnEndedSession_AllowsTelemetryWithCognitiveTolerance() throws Exception {
         // Record session ended
         jdbcTemplate.update("INSERT INTO event_store (event_id, event_type, aggregate_type, aggregate_id, session_id, occurred_at, recorded_at, event_version, schema_version, payload_json) " +
                 "VALUES ('e_end', 'STUDY_SESSION_ENDED', 'SESSION', 'sess_done', 'sess_done', '2026-10-12T00:00:00Z', '2026-10-12T00:00:00Z', 1, 'v1', '{}')");
@@ -273,7 +273,7 @@ class QuestionControllerTest {
         mockMvc.perform(post("/api/v1/questions/q123/attempts")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(payload))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isOk());
     }
 
     @Test

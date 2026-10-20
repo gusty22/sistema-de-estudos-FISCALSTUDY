@@ -168,8 +168,38 @@ public class RobinHoodCycleService {
     }
 
     private int estimateMasteryStars(String concursoId, String disciplina) {
-        // Consulta simplificada para estimar domínio de 0 a 5 estrelas
-        // Se ainda não resolveu questões dessa disciplina, inicia com 1 estrela
+        // 1. Se pesos ativos (SWOT / Robin Hood) estiverem injetados, usa a acurácia calibrada
+        if (this.activeWeights != null && this.activeWeights.weights() != null && this.activeWeights.weights().containsKey(disciplina)) {
+            var dw = this.activeWeights.weights().get(disciplina);
+            if (dw.accuracy() != null) {
+                double acc = dw.accuracy();
+                if (acc >= 0.85) return 5;
+                if (acc >= 0.75) return 4;
+                if (acc >= 0.60) return 3;
+                if (acc >= 0.45) return 2;
+                return 1;
+            }
+        }
+
+        // 2. Consulta histórica real de respostas para esta disciplina
+        try {
+            Double avg = jdbcTemplate.queryForObject(
+                "SELECT AVG(CASE WHEN payload_json LIKE '%\"isCorrect\":true%' THEN 1.0 ELSE 0.0 END) " +
+                "FROM event_store WHERE event_type = 'ANSWER_SUBMITTED' AND payload_json LIKE ?",
+                Double.class,
+                "%" + disciplina + "%"
+            );
+            if (avg != null) {
+                if (avg >= 0.85) return 5;
+                if (avg >= 0.75) return 4;
+                if (avg >= 0.60) return 3;
+                if (avg >= 0.45) return 2;
+                return 1;
+            }
+        } catch (Exception ignored) {}
+
+        // 3. Fallback neutro
         return 2;
     }
 }
+

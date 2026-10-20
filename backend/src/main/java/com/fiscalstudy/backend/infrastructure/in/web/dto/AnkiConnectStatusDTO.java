@@ -7,6 +7,9 @@ public class AnkiConnectStatusDTO {
     private int totalCardsSynced;
     private int pendingQueueCount;
     private String message;
+    private boolean autoSyncActive = true;
+    private String lastSyncAt;
+    private String detectedModels;
 
     public AnkiConnectStatusDTO() {}
 
@@ -17,6 +20,20 @@ public class AnkiConnectStatusDTO {
         this.totalCardsSynced = totalCardsSynced;
         this.pendingQueueCount = pendingQueueCount;
         this.message = message;
+    }
+
+    public AnkiConnectStatusDTO(boolean connected, int version, String endpoint, int totalCardsSynced,
+                                int pendingQueueCount, String message, boolean autoSyncActive,
+                                String lastSyncAt, String detectedModels) {
+        this.connected = connected;
+        this.version = version;
+        this.endpoint = endpoint;
+        this.totalCardsSynced = totalCardsSynced;
+        this.pendingQueueCount = pendingQueueCount;
+        this.message = message;
+        this.autoSyncActive = autoSyncActive;
+        this.lastSyncAt = lastSyncAt;
+        this.detectedModels = detectedModels;
     }
 
     public boolean isConnected() { return connected; }
@@ -36,4 +53,14 @@ public class AnkiConnectStatusDTO {
 
     public String getMessage() { return message; }
     public void setMessage(String message) { this.message = message; }
+
+    public boolean isAutoSyncActive() { return autoSyncActive; }
+    public void setAutoSyncActive(boolean autoSyncActive) { this.autoSyncActive = autoSyncActive; }
+
+    public String getLastSyncAt() { return lastSyncAt; }
+    public void setLastSyncAt(String lastSyncAt) { this.lastSyncAt = lastSyncAt; }
+
+    public String getDetectedModels() { return detectedModels; }
+    public void setDetectedModels(String detectedModels) { this.detectedModels = detectedModels; }
 }
+

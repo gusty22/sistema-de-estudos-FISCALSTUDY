@@ -85,10 +85,35 @@ public class AnkiController {
         return ResponseEntity.ok(Map.of(
                 "syncedNow", synced,
                 "pendingRemaining", status.getPendingQueueCount(),
+                "totalCardsSynced", status.getTotalCardsSynced(),
                 "connected", status.isConnected(),
+                "autoSyncActive", status.isAutoSyncActive(),
+                "lastSyncAt", status.getLastSyncAt() != null ? status.getLastSyncAt() : "",
                 "message", synced > 0
-                        ? String.format("✓ %d flashcards foram enviados com sucesso para o Anki!", synced)
-                        : (status.isConnected() ? "Nenhum card pendente na fila." : "Anki não detectado. Os cards permanecem seguros na fila local.")
+                        ? String.format("✓ %d flashcards foram injetados com sucesso no Anki Desktop!", synced)
+                        : (status.isConnected() ? "Nenhum flashcard pendente na fila." : "Anki Desktop não detectado na porta 8765. Os flashcards permanecem seguros na fila local.")
+        ));
+    }
+
+    @PostMapping("/sync-ankiweb")
+    public ResponseEntity<Map<String, Object>> syncAnkiWeb() {
+        boolean success = ankiIntegrationService.triggerAnkiWebSync();
+        return ResponseEntity.ok(Map.of(
+                "success", success,
+                "message", success
+                        ? "✓ Sincronização do Anki Desktop com a nuvem AnkiWeb acionada com sucesso!"
+                        : "Não foi possível acionar a sincronização AnkiWeb. Verifique se o Anki Desktop está aberto na porta 8765."
+        ));
+    }
+
+    @PostMapping("/auto-sync/toggle")
+    public ResponseEntity<Map<String, Object>> toggleAutoSync() {
+        boolean newState = ankiIntegrationService.toggleAutoSync();
+        return ResponseEntity.ok(Map.of(
+                "autoSyncActive", newState,
+                "message", newState
+                        ? "🟢 Sincronização automática em segundo plano ativada. Novos flashcards serão sincronizados automaticamente assim que o Anki for aberto."
+                        : "⏸️ Sincronização automática em segundo plano pausada."
         ));
     }
 

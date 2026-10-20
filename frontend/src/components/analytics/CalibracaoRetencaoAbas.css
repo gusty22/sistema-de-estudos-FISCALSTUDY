@@ -608,3 +608,134 @@ body.theme-dark,
   font-weight: 600;
   cursor: pointer;
 }
+
+/* =========================================================================
+   MODELO MATEMÁTICO: ESTADO REAL DE CONHECIMENTO (STUDENT KNOWLEDGE STATE)
+   ========================================================================= */
+.modelo-matematico-hero {
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.08) 0%, rgba(14, 165, 233, 0.04) 100%);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  border-radius: 0.85rem;
+  padding: 1.35rem;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+}
+
+.modelo-matematico-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.modelo-matematico-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.25rem 0.65rem;
+  border-radius: 9999px;
+  background: rgba(99, 102, 241, 0.2);
+  color: #a5b4fc;
+  border: 1px solid rgba(99, 102, 241, 0.35);
+}
+
+.modelo-matematico-equacao {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #38bdf8;
+  margin: 0.35rem 0;
+  letter-spacing: 0.02em;
+}
+
+.modelo-matematico-desc {
+  font-size: 0.82rem;
+  color: var(--calm-text-muted, #94a3b8);
+  line-height: 1.5;
+  margin-bottom: 1rem;
+}
+
+.modelo-vars-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 0.85rem;
+}
+
+.modelo-var-card {
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 0.65rem;
+  padding: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.modelo-var-card.destaque {
+  border-color: rgba(56, 189, 248, 0.4);
+  background: rgba(14, 165, 233, 0.08);
+}
+
+.var-header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.var-simbolo {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #38bdf8;
+}
+
+.var-nome {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--calm-text-main, #f8fafc);
+}
+
+.var-expl {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  line-height: 1.4;
+}
+
+.badge-falsa-fluencia {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.66rem;
+  font-weight: 700;
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  padding: 0.15rem 0.45rem;
+  border-radius: 0.3rem;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  margin-top: 0.25rem;
+}
+
+.retencao-barra-mini {
+  width: 60px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 0.2rem;
+}
+
+.retencao-barra-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.status-ret-badge.consolidado { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+.status-ret-badge.em_equilibrio { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+.status-ret-badge.risco_amnesia { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+.status-ret-badge.critico_esquecido { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+.status-ret-badge.virgem_nao_explorado { background: rgba(148, 163, 184, 0.15); color: #94a3b8; }
+

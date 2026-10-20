@@ -111,7 +111,7 @@ function App() {
   const handleNavigateFromSearch = (targetTab: string, payload?: any) => {
     setIsBuscaGlobalOpen(false);
     if (payload?.tipo === 'QUESTAO') {
-      setActiveTab('study');
+      setActiveTab('banco');
     } else if (payload?.tipo === 'CONTEUDO') {
       if (payload.disciplina) {
         handleNavigateToStudy(payload.disciplina, payload.assunto || payload.titulo);
@@ -220,7 +220,7 @@ function App() {
           <PlanejamentoAdaptativo
             activeConcurso={activeConcurso}
             onNavigateToStudy={handleNavigateToStudy}
-            onNavigateToTab={(tab) => setActiveTab(tab as NavTab)}
+            onNavigateToTab={(tab: string) => setActiveTab(tab as NavTab)}
             onSwitchToBattle={() => setActiveTab('maestro')}
           />
         )}
@@ -334,14 +334,6 @@ function App() {
         {activeTab === 'banco' && (
           <BancoQuestoes
             activeConcurso={activeConcurso}
-            onResolveQuestion={(qId) => {
-              sessionStorage.setItem('fiscalstudy_target_question_id', qId);
-              setActiveTab('study');
-            }}
-            onStartCaderno={(cadernoConfig) => {
-              sessionStorage.setItem('fiscalstudy_active_caderno', JSON.stringify(cadernoConfig));
-              setActiveTab('study');
-            }}
           />
         )}
 
@@ -390,6 +382,8 @@ function App() {
             activeConcurso={activeConcurso}
             onNavigateToStudy={handleNavigateToStudy}
             onNavigateToRevision={() => setActiveTab('revisoes')}
+            onNavigateToCycle={() => setActiveTab('cronograma')}
+            onNavigateToQuestions={() => setActiveTab('banco')}
           />
         )}
 

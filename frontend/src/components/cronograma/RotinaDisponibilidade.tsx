@@ -102,9 +102,7 @@ export const RotinaDisponibilidade: React.FC<RotinaDisponibilidadeProps> = ({
   });
 
   // Exceções Temporárias
-  const [exceptions, setExceptions] = useState<RoutineExceptionItem[]>([
-    { id: 'exc-1', date: '12/Nov', reason: 'Viagem a trabalho', type: 'indisponivel', hours: 4 }
-  ]);
+  const [exceptions, setExceptions] = useState<RoutineExceptionItem[]>([]);
 
   // Modal para nova exceção
   const [isAddExceptionOpen, setIsAddExceptionOpen] = useState(false);

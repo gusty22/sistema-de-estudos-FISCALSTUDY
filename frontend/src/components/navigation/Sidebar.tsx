@@ -176,13 +176,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <span className="nav-text">Banco de Questões</span>
         </button>
 
-        <button
-          className={`nav-btn ${activeTab === 'study' ? 'active' : ''}`}
-          onClick={() => onSelectTab('study')}
-        >
-          <span className="nav-icon">⚡</span>
-          <span className="nav-text" style={{ fontWeight: 700 }}>Estudo Ativo & Questões</span>
-        </button>
 
         <button
           className={`nav-btn ${activeTab === 'session' ? 'active' : ''}`}

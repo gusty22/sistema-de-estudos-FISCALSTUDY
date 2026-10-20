@@ -63,6 +63,51 @@ export const CadernosSimulados: React.FC<CadernosSimuladosProps> = ({
   const [chaosModeEnabled, setChaosModeEnabled] = useState(false);
   const [stressFatigueSimulation, setStressFatigueSimulation] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [swotCalibration, setSwotCalibration] = useState<any>(null);
+  const [isRecalibratingSwot, setIsRecalibratingSwot] = useState(false);
+  const [swotFeedbackToast, setSwotFeedbackToast] = useState<string | null>(null);
+
+  // Carregar última calibração SWOT
+  const fetchSwotCalibration = async () => {
+    try {
+      const url = activeConcurso?.id
+        ? `/api/v1/cycle/latest-swot-calibration?concursoId=${encodeURIComponent(activeConcurso.id)}`
+        : '/api/v1/cycle/latest-swot-calibration';
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.detalhes) {
+          setSwotCalibration(data);
+        }
+      }
+    } catch {
+      // silencioso
+    }
+  };
+
+  const handleTriggerSwotRecalibration = async () => {
+    setIsRecalibratingSwot(true);
+    try {
+      const url = activeConcurso?.id
+        ? `/api/v1/cycle/recalibrate-swot?concursoId=${encodeURIComponent(activeConcurso.id)}`
+        : '/api/v1/cycle/recalibrate-swot';
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ taxaRouboPct: 18.0, weeklyHours: 24.0 })
+      });
+      if (res.ok) {
+        const result = await res.json();
+        setSwotFeedbackToast(`✓ Feedback Loop Executado! ${result.totalHorasTransferidas || 0}h transferidas das Forças para Ameaças/Fraquezas.`);
+        await fetchSwotCalibration();
+        setTimeout(() => setSwotFeedbackToast(null), 6000);
+      }
+    } catch (e) {
+      console.warn('Erro ao disparar recalibração SWOT:', e);
+    } finally {
+      setIsRecalibratingSwot(false);
+    }
+  };
 
   // Carregar dados estratégicos do backend
   const fetchDashboard = async () => {
@@ -146,6 +191,7 @@ export const CadernosSimulados: React.FC<CadernosSimuladosProps> = ({
 
   useEffect(() => {
     fetchDashboard();
+    fetchSwotCalibration();
   }, [activeConcurso?.id]);
 
   // Ação de Lançar Simulado com Estratégia Pronta
@@ -409,12 +455,119 @@ export const CadernosSimulados: React.FC<CadernosSimuladosProps> = ({
             </div>
           </div>
 
+          {/* Calibrador Automático de Pesos do Ciclo (Feedback Loop Pós-Simulado) */}
+          <div className="swot-feedback-loop-card animate-fade-in">
+            <div className="swot-loop-header">
+              <div className="swot-loop-title-group">
+                <span className="swot-tag-badge">🏆 Feedback Loop Pós-Simulado (Domingo)</span>
+                <h3>Calibrador Automático de Pesos do Ciclo Robin Hood</h3>
+                <p>
+                  Ao salvar o Simulado SWOT no domingo, o sistema recalcula automaticamente a semana seguinte:
+                  <strong> rouba 18% do tempo das matérias em zona de Força (&gt;80%)</strong> e injeta diretamente nas
+                  <strong> Fraquezas e Ameaças de alto peso</strong> com geração de blocos emergenciais.
+                </p>
+              </div>
+              <div className="swot-loop-actions">
+                <button
+                  className="btn-swot-launch"
+                  onClick={() => handleLaunchEstrategia('SWOT_DOMINGO', 'Simulado SWOT Semanal — Calibrador Automático de Ciclo', 40, 100)}
+                >
+                  <Play className="w-4 h-4 fill-current" /> Iniciar Simulado SWOT (40q)
+                </button>
+                <button
+                  className="btn-swot-recalib"
+                  onClick={handleTriggerSwotRecalibration}
+                  disabled={isRecalibratingSwot}
+                  title="Recalcular a distribuição de horas da semana agora com base no último simulado"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isRecalibratingSwot ? 'animate-spin' : ''}`} />
+                  {isRecalibratingSwot ? 'Recalculando...' : 'Recalcular Ciclo Agora'}
+                </button>
+              </div>
+            </div>
+
+            {swotFeedbackToast && (
+              <div style={{ marginTop: '0.85rem', padding: '0.6rem 1rem', background: '#ecfdf5', border: '1px solid #10b981', color: '#065f46', borderRadius: '8px', fontSize: '0.85rem', fontWeight: 600 }}>
+                {swotFeedbackToast}
+              </div>
+            )}
+
+            {/* Status da Calibração Ativa */}
+            {swotCalibration && swotCalibration.detalhes && (
+              <div className="swot-calibration-details">
+                <div className="swot-metrics-summary">
+                  <div className="swot-metric-pill">
+                    <span className="lbl">Alíquota de Roubo:</span>
+                    <strong>{swotCalibration.detalhes.taxaRouboPct || 18}%</strong>
+                  </div>
+                  <div className="swot-metric-pill">
+                    <span className="lbl">Tempo Transferido:</span>
+                    <strong>{swotCalibration.detalhes.totalRoubado || 0}h semanais</strong>
+                  </div>
+                  <div className="swot-metric-pill">
+                    <span className="lbl">Status do Ciclo:</span>
+                    <strong style={{ color: '#10b981' }}>✓ Ciclo Adaptado Ativo na Semana</strong>
+                  </div>
+                </div>
+
+                <div className="swot-flow-grid">
+                  <div className="swot-flow-col donor">
+                    <h4>🛡️ Doadoras (Zona de Força &gt;80%)</h4>
+                    {swotCalibration.detalhes.doadoras && swotCalibration.detalhes.doadoras.length > 0 ? (
+                      swotCalibration.detalhes.doadoras.map((d: string) => (
+                        <div key={d} className="swot-chip donor">
+                          <span>{d}</span>
+                          <span className="swot-chip-val">-18% de tempo</span>
+                        </div>
+                      ))
+                    ) : (
+                      <span className="swot-empty-note">Nenhuma matéria hiper-consolidada no momento.</span>
+                    )}
+                  </div>
+
+                  <div className="swot-flow-col recipient">
+                    <h4>🚨 Receptoras (Fraquezas &amp; Ameaças de Alto Peso)</h4>
+                    {swotCalibration.detalhes.receptoras && swotCalibration.detalhes.receptoras.length > 0 ? (
+                      swotCalibration.detalhes.receptoras.map((d: string) => (
+                        <div key={d} className="swot-chip recipient">
+                          <span>{d}</span>
+                          <span className="swot-chip-val">+Horas injetadas</span>
+                        </div>
+                      ))
+                    ) : (
+                      <span className="swot-empty-note">Todas as disciplinas em equilíbrio relativo.</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Grid de Modalidades Estratégicas de Simulado */}
           <div>
             <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--calm-text-main, #0f172a)', margin: '0 0 0.85rem 0' }}>
               Modalidades Estratégicas de Treino
             </h2>
             <div className="modalidades-grid">
+              {/* Card 0: Simulado SWOT de Domingo */}
+              <div className="modalidade-card" style={{ borderColor: 'rgba(79, 70, 229, 0.4)', background: 'rgba(79, 70, 229, 0.02)' }}>
+                <div className="modalidade-header">
+                  <div className="modalidade-icon" style={{ background: 'rgba(79, 70, 229, 0.12)', color: '#4f46e5' }}>🏆</div>
+                  <div className="modalidade-title-group">
+                    <h3>Simulado SWOT Semanal</h3>
+                    <p>Diagnóstico dominical completo com feedback loop automático e redistribuição inteligente das horas da semana.</p>
+                  </div>
+                </div>
+                <div className="modalidade-footer">
+                  <span className="modalidade-tag" style={{ background: 'rgba(79, 70, 229, 0.1)', color: '#4f46e5' }}>Feedback Loop Robin Hood</span>
+                  <button
+                    className="btn-card-action"
+                    onClick={() => handleLaunchEstrategia('SWOT_DOMINGO', 'Simulado SWOT Geral — Calibrador de Ciclo', 40, 100)}
+                  >
+                    Gerar <ArrowUpRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
               {/* Card 1: Pareto 80/20 */}
               <div className="modalidade-card pareto">
                 <div className="modalidade-header">

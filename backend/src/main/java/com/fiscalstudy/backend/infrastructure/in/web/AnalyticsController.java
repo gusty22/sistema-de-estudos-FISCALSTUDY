@@ -16,13 +16,73 @@ public class AnalyticsController {
     private final AnalyticsProjectionService analyticsProjectionService;
     private final com.fiscalstudy.backend.application.QuestionHistoryService questionHistoryService;
     private final com.fiscalstudy.backend.application.PerformanceIntelligenceService performanceIntelligenceService;
+    private final com.fiscalstudy.backend.application.StudentKnowledgeStateService studentKnowledgeStateService;
+    private final com.fiscalstudy.backend.application.StudyAnomalyDetectionService studyAnomalyDetectionService;
 
     public AnalyticsController(AnalyticsProjectionService analyticsProjectionService,
                                com.fiscalstudy.backend.application.QuestionHistoryService questionHistoryService,
                                com.fiscalstudy.backend.application.PerformanceIntelligenceService performanceIntelligenceService) {
+        this(analyticsProjectionService, questionHistoryService, performanceIntelligenceService, null, null);
+    }
+
+    public AnalyticsController(AnalyticsProjectionService analyticsProjectionService,
+                               com.fiscalstudy.backend.application.QuestionHistoryService questionHistoryService,
+                               com.fiscalstudy.backend.application.PerformanceIntelligenceService performanceIntelligenceService,
+                               com.fiscalstudy.backend.application.StudentKnowledgeStateService studentKnowledgeStateService) {
+        this(analyticsProjectionService, questionHistoryService, performanceIntelligenceService, studentKnowledgeStateService, null);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public AnalyticsController(AnalyticsProjectionService analyticsProjectionService,
+                               com.fiscalstudy.backend.application.QuestionHistoryService questionHistoryService,
+                               com.fiscalstudy.backend.application.PerformanceIntelligenceService performanceIntelligenceService,
+                               @org.springframework.beans.factory.annotation.Autowired(required = false) com.fiscalstudy.backend.application.StudentKnowledgeStateService studentKnowledgeStateService,
+                               @org.springframework.beans.factory.annotation.Autowired(required = false) com.fiscalstudy.backend.application.StudyAnomalyDetectionService studyAnomalyDetectionService) {
         this.analyticsProjectionService = analyticsProjectionService;
         this.questionHistoryService = questionHistoryService;
         this.performanceIntelligenceService = performanceIntelligenceService;
+        this.studentKnowledgeStateService = studentKnowledgeStateService;
+        this.studyAnomalyDetectionService = studyAnomalyDetectionService;
+    }
+
+    @GetMapping("/study-anomalies")
+    public ResponseEntity<Object> getStudyAnomalies(
+            @RequestParam(required = false) String concursoId
+    ) {
+        if (studyAnomalyDetectionService == null) {
+            return ResponseEntity.ok(java.util.Map.of("erro", "Serviço StudyAnomalyDetectionService não inicializado."));
+        }
+        return ResponseEntity.ok(studyAnomalyDetectionService.auditStudyAnomalies(concursoId));
+    }
+
+    @PostMapping("/study-anomalies/check-fatigue")
+    public ResponseEntity<Object> checkFatigue(
+            @RequestBody java.util.Map<String, Object> body
+    ) {
+        if (studyAnomalyDetectionService == null) {
+            return ResponseEntity.ok(java.util.Map.of("fatigue", false));
+        }
+        long durationSec = body.get("durationSeconds") instanceof Number n ? n.longValue() : 0L;
+        double vInit = body.get("velocidadeInicial") instanceof Number n ? n.doubleValue() : 0.0;
+        double vAtual = body.get("velocidadeAtual") instanceof Number n ? n.doubleValue() : 0.0;
+        double a1 = body.get("acertoPrimeiraMetade") instanceof Number n ? n.doubleValue() : 0.0;
+        double a2 = body.get("acertoSegundaMetade") instanceof Number n ? n.doubleValue() : 0.0;
+
+        var opt = studyAnomalyDetectionService.evaluateActiveSessionFatigue(durationSec, vInit, vAtual, a1, a2);
+        if (opt.isPresent()) {
+            return ResponseEntity.ok(java.util.Map.of("fatigue", true, "anomalia", opt.get()));
+        }
+        return ResponseEntity.ok(java.util.Map.of("fatigue", false));
+    }
+
+    @GetMapping("/student-knowledge-state")
+    public ResponseEntity<java.util.Map<String, Object>> getStudentKnowledgeState(
+            @RequestParam(required = false) String concursoId
+    ) {
+        if (studentKnowledgeStateService == null) {
+            return ResponseEntity.ok(java.util.Map.of("erro", "Serviço não inicializado"));
+        }
+        return ResponseEntity.ok(studentKnowledgeStateService.getKnowledgeStateDashboard(concursoId));
     }
 
     @GetMapping("/dashboard")

@@ -279,10 +279,12 @@ public class AttemptSubmissionService {
             } catch (Exception ignored) {}
         }
 
-        return new com.fiscalstudy.backend.domain.AttemptResult(
+        com.fiscalstudy.backend.domain.AttemptResult result = new com.fiscalstudy.backend.domain.AttemptResult(
                 isCorrect, status, concursoPoint,
                 bloqueioCognitivo, errosConsecutivos, prescricaoTexto, veiculo
         );
+        result.setCorrectOption(question.getCorrectOption());
+        return result;
     }
 
     private boolean isCertoErrado(Question question) {
@@ -329,6 +331,8 @@ public class AttemptSubmissionService {
         String normalizedUser = normalizeOption(optionLetter, isCE);
         String normalizedCorrect = normalizeOption(correctOpt, isCE);
         boolean matched = normalizedUser.equalsIgnoreCase(normalizedCorrect);
-        return new com.fiscalstudy.backend.domain.AttemptResult(matched, status, matched ? 1 : 0);
+        com.fiscalstudy.backend.domain.AttemptResult result = new com.fiscalstudy.backend.domain.AttemptResult(matched, status, matched ? 1 : 0);
+        result.setCorrectOption(question.getCorrectOption());
+        return result;
     }
 }

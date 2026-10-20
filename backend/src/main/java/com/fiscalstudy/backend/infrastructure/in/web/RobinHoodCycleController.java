@@ -10,9 +10,17 @@ import org.springframework.web.bind.annotation.*;
 public class RobinHoodCycleController {
 
     private final RobinHoodCycleService robinHoodCycleService;
+    private final com.fiscalstudy.backend.application.SwotCycleCalibratorService swotCycleCalibratorService;
 
     public RobinHoodCycleController(RobinHoodCycleService robinHoodCycleService) {
+        this(robinHoodCycleService, null);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public RobinHoodCycleController(RobinHoodCycleService robinHoodCycleService,
+                                    @org.springframework.beans.factory.annotation.Autowired(required = false) com.fiscalstudy.backend.application.SwotCycleCalibratorService swotCycleCalibratorService) {
         this.robinHoodCycleService = robinHoodCycleService;
+        this.swotCycleCalibratorService = swotCycleCalibratorService;
     }
 
     @GetMapping("/robin-hood")
@@ -44,5 +52,27 @@ public class RobinHoodCycleController {
     @GetMapping("/robin-hood/active-weights")
     public ResponseEntity<com.fiscalstudy.backend.infrastructure.in.web.dto.RobinHoodWeightsDTO> getActiveWeights() {
         return ResponseEntity.ok(robinHoodCycleService.getActiveWeights());
+    }
+
+    @PostMapping("/recalibrate-swot")
+    public ResponseEntity<Object> recalibrateFromSwotSimulado(
+            @RequestParam(required = false) String concursoId,
+            @RequestBody java.util.Map<String, Object> payload
+    ) {
+        if (swotCycleCalibratorService == null) {
+            return ResponseEntity.ok(java.util.Map.of("erro", "Serviço SwotCycleCalibrator não inicializado."));
+        }
+        var result = swotCycleCalibratorService.recalibrateFromSimulado(concursoId, payload);
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/latest-swot-calibration")
+    public ResponseEntity<Object> getLatestSwotCalibration(
+            @RequestParam(required = false) String concursoId
+    ) {
+        if (swotCycleCalibratorService == null) {
+            return ResponseEntity.ok(java.util.Map.of("status", "Serviço não inicializado."));
+        }
+        return ResponseEntity.ok(swotCycleCalibratorService.getLatestSwotCalibration(concursoId));
     }
 }

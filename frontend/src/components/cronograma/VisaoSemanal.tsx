@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   CalendarDays,
   Clock,
@@ -48,106 +48,6 @@ export interface DaySchedule {
   activities: WeeklyActivity[];
 }
 
-const WEEK_DATA: DaySchedule[] = [
-  {
-    id: 'SEG',
-    date: '14/Out',
-    label: 'Segunda',
-    isToday: false,
-    isPast: true,
-    availableMinutes: 120,
-    usedMinutes: 110,
-    status: 'completed',
-    activities: [
-      { id: 'a1', title: 'Morfologia — Verbos', type: 'NOVO_CONTEUDO', duration: 60, state: 'CONCLUIDO' },
-      { id: 'a2', title: 'Revisões Espaçadas (4 tópicos)', type: 'REVISAO', duration: 25, state: 'CONCLUIDO' },
-      { id: 'a3', title: 'Direito Administrativo — Princípios', type: 'PRATICA', duration: 25, state: 'CONCLUIDO' }
-    ]
-  },
-  {
-    id: 'TER',
-    date: '15/Out',
-    label: 'Terça',
-    isToday: false,
-    isPast: true,
-    availableMinutes: 120,
-    usedMinutes: 50,
-    status: 'mixed',
-    activities: [
-      { id: 'a4', title: 'Atos Administrativos', type: 'NOVO_CONTEUDO', duration: 50, state: 'CONCLUIDO' },
-      { id: 'a5', title: 'Revisões Espaçadas (2 tópicos)', type: 'REVISAO', duration: 15, state: 'ADIADO', note: 'Voltou para a fila de prioridades' },
-      { id: 'a6', title: 'Contabilidade — Pronunciamentos', type: 'NOVO_CONTEUDO', duration: 40, state: 'SUBSTITUIDO', note: 'Substituído por reforço de base' }
-    ]
-  },
-  {
-    id: 'QUA',
-    date: '16/Out',
-    label: 'Quarta',
-    isToday: true,
-    isPast: false,
-    availableMinutes: 120,
-    usedMinutes: 35,
-    status: 'active',
-    activities: [
-      { id: 'a7', title: 'Auditoria — NBC TA 330', type: 'REVISAO', duration: 35, state: 'CONCLUIDO' },
-      { id: 'a8', title: 'Direito Tributário — Lançamento', type: 'PRATICA', duration: 45, state: 'EM_EXECUCAO' },
-      { id: 'a9', title: 'Legislação — ICMS', type: 'NOVO_CONTEUDO', duration: 40, state: 'PLANEJADO' }
-    ]
-  },
-  {
-    id: 'QUI',
-    date: '17/Out',
-    label: 'Quinta',
-    isToday: false,
-    isPast: false,
-    availableMinutes: 90,
-    usedMinutes: 0,
-    status: 'planned',
-    activities: [
-      { id: 'a10', title: 'Revisões Espaçadas (Projeção)', type: 'REVISAO', duration: 20, state: 'PLANEJADO' },
-      { id: 'a11', title: 'Matemática Financeira', type: 'NOVO_CONTEUDO', duration: 70, state: 'PLANEJADO' }
-    ]
-  },
-  {
-    id: 'SEX',
-    date: '18/Out',
-    label: 'Sexta',
-    isToday: false,
-    isPast: false,
-    availableMinutes: 0,
-    usedMinutes: 0,
-    status: 'exception',
-    exceptionReason: 'Viagem a trabalho (Exceção Temporária)',
-    activities: []
-  },
-  {
-    id: 'SAB',
-    date: '19/Out',
-    label: 'Sábado',
-    isToday: false,
-    isPast: false,
-    availableMinutes: 180,
-    usedMinutes: 0,
-    status: 'planned',
-    activities: [
-      { id: 'a12', title: 'Simulado Parcial', type: 'PRATICA', duration: 120, state: 'PLANEJADO' },
-      { id: 'a13', title: 'Correção Ativa', type: 'REVISAO', duration: 60, state: 'PLANEJADO' }
-    ]
-  },
-  {
-    id: 'DOM',
-    date: '20/Out',
-    label: 'Domingo',
-    isToday: false,
-    isPast: false,
-    availableMinutes: 0,
-    usedMinutes: 0,
-    status: 'exception',
-    exceptionReason: 'Dia de Descanso (Configuração Padrão)',
-    activities: []
-  }
-];
-
 interface VisaoSemanalProps {
   activeConcurso?: ConcursoItem | null;
   onNavigateToStudy?: (disciplina: string, assunto?: string) => void;
@@ -160,10 +60,120 @@ export default function VisaoSemanal({
   onNavigateToTab,
   onSwitchToQueue
 }: VisaoSemanalProps) {
-  // 2. Dia Selecionado na Semana (padrão: Quarta / Hoje)
-  const [selectedDayId, setSelectedDayId] = useState<string>('QUA');
+  const [selectedDayId, setSelectedDayId] = useState<string>(() => {
+    const days = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB'];
+    return days[new Date().getDay()];
+  });
 
-  const selectedDay = WEEK_DATA.find((d) => d.id === selectedDayId) || WEEK_DATA[2];
+  const [routineSchedule, setRoutineSchedule] = useState<string[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('fiscalstudy_routine_schedule') || '[]');
+    } catch {
+      return [];
+    }
+  });
+
+  const [hoursPerShift, setHoursPerShift] = useState<number>(() => {
+    try {
+      return parseFloat(localStorage.getItem('fiscalstudy_routine_hours_shift') || '2');
+    } catch {
+      return 2;
+    }
+  });
+
+  const [restDays, setRestDays] = useState<string[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('fiscalstudy_routine_rest_days') || '["DOM"]');
+    } catch {
+      return ['DOM'];
+    }
+  });
+
+  const [studiedMinutesToday, setStudiedMinutesToday] = useState<number>(0);
+
+  useEffect(() => {
+    if (!activeConcurso?.id) return;
+
+    fetch(`/api/v1/routine?concursoId=${encodeURIComponent(activeConcurso.id)}`)
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data?.cicloDisciplinasJson) {
+          try {
+            const parsed = JSON.parse(data.cicloDisciplinasJson);
+            if (Array.isArray(parsed.schedule)) setRoutineSchedule(parsed.schedule);
+            if (parsed.hoursPerShift) setHoursPerShift(parsed.hoursPerShift);
+            if (Array.isArray(parsed.restDays)) setRestDays(parsed.restDays);
+          } catch {}
+        }
+      })
+      .catch(() => {});
+
+    fetch(`/api/v1/study-sessions/summary?concursoId=${encodeURIComponent(activeConcurso.id)}`)
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data?.totalHours !== undefined) {
+          setStudiedMinutesToday(Math.round(data.totalHours * 60));
+        }
+      })
+      .catch(() => {});
+  }, [activeConcurso?.id]);
+
+  // Construir dias da semana corrente dinamicamente
+  const weekDaysData = useMemo<DaySchedule[]>(() => {
+    const now = new Date();
+    const currentDayOfWeek = now.getDay(); // 0 = Domingo
+    // Calcular segunda-feira desta semana
+    const mondayOffset = currentDayOfWeek === 0 ? -6 : 1 - currentDayOfWeek;
+    const mondayDate = new Date(now);
+    mondayDate.setDate(now.getDate() + mondayOffset);
+
+    const dayMeta = [
+      { id: 'SEG', label: 'Segunda', offset: 0 },
+      { id: 'TER', label: 'Terça', offset: 1 },
+      { id: 'QUA', label: 'Quarta', offset: 2 },
+      { id: 'QUI', label: 'Quinta', offset: 3 },
+      { id: 'SEX', label: 'Sexta', offset: 4 },
+      { id: 'SAB', label: 'Sábado', offset: 5 },
+      { id: 'DOM', label: 'Domingo', offset: 6 }
+    ];
+
+    return dayMeta.map(dm => {
+      const d = new Date(mondayDate);
+      d.setDate(mondayDate.getDate() + dm.offset);
+      const isToday = d.toDateString() === now.toDateString();
+      const isPast = d < now && !isToday;
+      const dateStr = `${d.getDate()}/${d.getMonth() + 1}`;
+
+      const isRest = restDays.includes(dm.id);
+      const shiftsForDay = routineSchedule.filter(s => s.startsWith(dm.id)).length;
+      const availableMinutes = isRest ? 0 : Math.round(shiftsForDay * hoursPerShift * 60);
+      const usedMinutes = isToday ? studiedMinutesToday : 0;
+
+      let status: 'completed' | 'mixed' | 'active' | 'planned' | 'exception' = 'planned';
+      if (isRest) {
+        status = 'exception';
+      } else if (isToday) {
+        status = 'active';
+      } else if (isPast) {
+        status = usedMinutes > 0 ? 'completed' : 'mixed';
+      }
+
+      return {
+        id: dm.id,
+        date: dateStr,
+        label: dm.label,
+        isToday,
+        isPast,
+        availableMinutes,
+        usedMinutes,
+        status,
+        exceptionReason: isRest ? 'Dia de Descanso Definido na Rotina' : undefined,
+        activities: []
+      };
+    });
+  }, [routineSchedule, hoursPerShift, restDays, studiedMinutesToday]);
+
+  const selectedDay = weekDaysData.find((d) => d.id === selectedDayId) || weekDaysData[0];
 
   // Helper de Ícone de Estado
   const getStatusIcon = (state: ActivityState) => {
@@ -252,7 +262,7 @@ export default function VisaoSemanal({
 
         {/* SELETOR DE DIAS HORIZONTAL (SEG A DOM) */}
         <div className="weekly-days-row">
-          {WEEK_DATA.map((day) => {
+          {weekDaysData.map((day) => {
             const isSelected = selectedDayId === day.id;
 
             return (
@@ -344,81 +354,94 @@ export default function VisaoSemanal({
               </p>
             </div>
           ) : (
-            /* LINHA DO TEMPO VERTICAL ALTERNADA */
             <div className="weekly-timeline">
-              {selectedDay.activities.map((act) => (
-                <div key={act.id} className="weekly-timeline-item">
-                  {/* Marcador Central */}
-                  <div className="weekly-timeline-marker">
-                    {getStatusIcon(act.state)}
-                  </div>
-
-                  {/* Cartão de Atividade */}
-                  <div
-                    className={`weekly-activity-card ${
-                      act.state === 'CONCLUIDO'
-                        ? 'is-concluido'
-                        : act.state === 'EM_EXECUCAO'
-                        ? 'is-em-execucao'
-                        : act.state === 'ADIADO'
-                        ? 'is-adiado'
-                        : act.state === 'SUBSTITUIDO'
-                        ? 'is-substituido'
-                        : ''
-                    }`}
-                  >
-                    <div className="weekly-activity-top">
-                      <span
-                        className={`weekly-activity-badge ${
-                          act.type === 'REVISAO'
-                            ? 'type-revisao'
-                            : act.type === 'PRATICA'
-                            ? 'type-pratica'
-                            : 'type-conteudo'
-                        }`}
-                      >
-                        {act.type.replace('_', ' ')}
-                      </span>
-
-                      <span className="weekly-activity-duration">
-                        <Clock className="w-3 h-3 text-stone-400" /> {act.duration}m
-                      </span>
+              {selectedDay.activities.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '3rem 1.5rem', color: 'var(--calm-text-muted)' }}>
+                  <CalendarClock className="w-8 h-8 mx-auto mb-3 opacity-40 text-stone-400" />
+                  <h4 style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--calm-text)', margin: '0 0 0.4rem 0' }}>
+                    Nenhuma atividade alocada para este dia
+                  </h4>
+                  <p style={{ fontSize: '0.8rem', maxWidth: '420px', margin: '0 auto', lineHeight: 1.5 }}>
+                    {selectedDay.availableMinutes > 0
+                      ? 'Você possui disponibilidade configurada. Conforme seu ciclo Robin Hood e revisões forem disparados, as atividades serão organizadas aqui.'
+                      : 'Nenhum turno de estudo configurado para este dia da semana. Ajuste sua rotina para liberar janelas.'}
+                  </p>
+                </div>
+              ) : (
+                selectedDay.activities.map((act) => (
+                  <div key={act.id} className="weekly-timeline-item">
+                    {/* Marcador Central */}
+                    <div className="weekly-timeline-marker">
+                      {getStatusIcon(act.state)}
                     </div>
 
-                    <h4
-                      className={`weekly-activity-title ${
-                        act.state === 'ADIADO' || act.state === 'SUBSTITUIDO'
-                          ? 'strike'
+                    {/* Cartão de Atividade */}
+                    <div
+                      className={`weekly-activity-card ${
+                        act.state === 'CONCLUIDO'
+                          ? 'is-concluido'
+                          : act.state === 'EM_EXECUCAO'
+                          ? 'is-em-execucao'
+                          : act.state === 'ADIADO'
+                          ? 'is-adiado'
+                          : act.state === 'SUBSTITUIDO'
+                          ? 'is-substituido'
                           : ''
                       }`}
                     >
-                      {act.title}
-                    </h4>
+                      <div className="weekly-activity-top">
+                        <span
+                          className={`weekly-activity-badge ${
+                            act.type === 'REVISAO'
+                              ? 'type-revisao'
+                              : act.type === 'PRATICA'
+                              ? 'type-pratica'
+                              : 'type-conteudo'
+                          }`}
+                        >
+                          {act.type.replace('_', ' ')}
+                        </span>
 
-                    <div className="weekly-activity-footer">
-                      <span
-                        className={`weekly-state-text ${
-                          act.state === 'CONCLUIDO'
-                            ? 'concluido'
-                            : act.state === 'EM_EXECUCAO'
-                            ? 'em-execucao'
-                            : act.state === 'PLANEJADO'
-                            ? 'planejado'
-                            : 'adiado'
+                        <span className="weekly-activity-duration">
+                          <Clock className="w-3 h-3 text-stone-400" /> {act.duration}m
+                        </span>
+                      </div>
+
+                      <h4
+                        className={`weekly-activity-title ${
+                          act.state === 'ADIADO' || act.state === 'SUBSTITUIDO'
+                            ? 'strike'
+                            : ''
                         }`}
                       >
-                        {act.state.replace('_', ' ')}
-                      </span>
+                        {act.title}
+                      </h4>
 
-                      {act.note && (
-                        <span className="weekly-activity-note">
-                          <Info className="w-3 h-3" /> {act.note}
+                      <div className="weekly-activity-footer">
+                        <span
+                          className={`weekly-state-text ${
+                            act.state === 'CONCLUIDO'
+                              ? 'concluido'
+                              : act.state === 'EM_EXECUCAO'
+                              ? 'em-execucao'
+                              : act.state === 'PLANEJADO'
+                              ? 'planejado'
+                              : 'adiado'
+                          }`}
+                        >
+                          {act.state.replace('_', ' ')}
                         </span>
-                      )}
+
+                        {act.note && (
+                          <span className="weekly-activity-note">
+                            <Info className="w-3 h-3" /> {act.note}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           )}
         </div>

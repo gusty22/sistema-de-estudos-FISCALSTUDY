@@ -14,10 +14,17 @@ public class PerformanceIntelligenceService {
 
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
+    private final StudentKnowledgeStateService studentKnowledgeStateService;
 
     public PerformanceIntelligenceService(JdbcTemplate jdbcTemplate) {
+        this(jdbcTemplate, new StudentKnowledgeStateService(jdbcTemplate));
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public PerformanceIntelligenceService(JdbcTemplate jdbcTemplate, StudentKnowledgeStateService studentKnowledgeStateService) {
         this.jdbcTemplate = jdbcTemplate;
         this.objectMapper = new ObjectMapper();
+        this.studentKnowledgeStateService = studentKnowledgeStateService != null ? studentKnowledgeStateService : new StudentKnowledgeStateService(jdbcTemplate);
     }
 
     // =========================================================================
@@ -131,46 +138,7 @@ public class PerformanceIntelligenceService {
             }
         } catch (Exception ignored) {}
 
-        // Se o banco tiver poucas respostas reais em mock, enriquecer com fallback calibrado
-        if (totalAnswered == 0) {
-            totalAnswered = 45;
-            evaluated = 42;
-            correct = 34;
-            errors = 8;
-            totalActiveTimeMs = 45 * 75 * 1000L; // ~56 min
-            workedContents.addAll(List.of(
-                "Direito Tributário — Suspensão do crédito",
-                "Direito Tributário — Lançamento tributário",
-                "Língua Portuguesa — Concordância verbal",
-                "Contabilidade Geral — Balanço patrimonial",
-                "Administração Pública — Planejamento estratégico"
-            ));
-            revisoesExecutadas = 14;
-
-            // Fallback para evolução diária
-            dailyMap.put("2026-10-12", new int[]{8, 6});
-            dailyMap.put("2026-10-13", new int[]{10, 8});
-            dailyMap.put("2026-10-14", new int[]{7, 6});
-            dailyMap.put("2026-10-15", new int[]{9, 7});
-            dailyMap.put("2026-10-16", new int[]{8, 7});
-
-            // Fallback tópicos
-            TopicStatsAcc t1 = new TopicStatsAcc("Direito Tributário", "Suspensão do crédito");
-            t1.total = 14; t1.correct = 11; t1.errors = 3; t1.totalTimeMs = 14 * 65 * 1000L;
-            topicMap.put("Direito Tributário||Suspensão do crédito", t1);
-
-            TopicStatsAcc t2 = new TopicStatsAcc("Língua Portuguesa", "Concordância verbal");
-            t2.total = 12; t2.correct = 10; t2.errors = 2; t2.totalTimeMs = 12 * 50 * 1000L;
-            topicMap.put("Língua Portuguesa||Concordância verbal", t2);
-
-            TopicStatsAcc t3 = new TopicStatsAcc("Contabilidade Geral", "Balanço patrimonial");
-            t3.total = 9; t3.correct = 7; t3.errors = 2; t3.totalTimeMs = 9 * 90 * 1000L;
-            topicMap.put("Contabilidade Geral||Balanço patrimonial", t3);
-
-            TopicStatsAcc t4 = new TopicStatsAcc("Administração Pública", "Planejamento estratégico");
-            t4.total = 7; t4.correct = 6; t4.errors = 1; t4.totalTimeMs = 7 * 60 * 1000L;
-            topicMap.put("Administração Pública||Planejamento estratégico", t4);
-        }
+        // Não injetar dados falsos: se não há respostas, manter valores zerados e amostra real
 
         // Regra canônica: Todo percentual deve apresentar seu denominador
         double precisaoPercentual = evaluated > 0 ? ((double) correct / evaluated * 100.0) : 0.0;
@@ -214,11 +182,41 @@ public class PerformanceIntelligenceService {
             evolucao.add(point);
         }
 
+        // Carregar estados reais de conhecimento (Student Knowledge State)
+        Map<String, StudentKnowledgeStateService.TopicKnowledgeState> stateMap = new HashMap<>();
+        try {
+            List<StudentKnowledgeStateService.TopicKnowledgeState> states =
+                    studentKnowledgeStateService.computeKnowledgeStates(concursoId);
+            for (StudentKnowledgeStateService.TopicKnowledgeState s : states) {
+                String k = (s.getDisciplina() != null ? s.getDisciplina().trim().toLowerCase() : "") + "||" +
+                           (s.getAssunto() != null ? s.getAssunto().trim().toLowerCase() : "");
+                stateMap.put(k, s);
+            }
+        } catch (Exception ignored) {}
+
         // Montar Distribuição por Conteúdo
         List<Map<String, Object>> distribuicao = new ArrayList<>();
+        double sumWeightedPAtual = 0.0;
+        double sumWeightsPAtual = 0.0;
+
         for (TopicStatsAcc t : topicMap.values()) {
             double taxa = t.total > 0 ? ((double) t.correct / t.total * 100.0) : 0.0;
             long avgMs = t.total > 0 ? t.totalTimeMs / t.total : 0L;
+            String key = (t.disciplina != null ? t.disciplina.trim().toLowerCase() : "") + "||" +
+                         (t.topic != null ? t.topic.trim().toLowerCase() : "");
+            StudentKnowledgeStateService.TopicKnowledgeState ks = stateMap.get(key);
+
+            double pAtual = ks != null ? ks.getPAtualPct() : Math.round(taxa * 10.0) / 10.0;
+            double pBase = ks != null ? ks.getPBasePct() : Math.round(taxa * 10.0) / 10.0;
+            double deltaT = ks != null ? ks.getDeltaTDias() : 0.0;
+            double forcaS = ks != null ? ks.getForcaMemoriaDias() : 1.0;
+            boolean enganosa = ks != null && ks.isMediaSimplesEnganosa();
+            String statusDom = ks != null ? ks.getStatusDominio() : (pAtual >= 80.0 ? "CONSOLIDADO" : (pAtual >= 65.0 ? "EM_EQUILIBRIO" : "RISCO_AMNESIA"));
+            String diag = ks != null ? ks.getDiagnosticoPedagogico() : "";
+
+            sumWeightedPAtual += pAtual * t.total;
+            sumWeightsPAtual += t.total;
+
             Map<String, Object> item = new LinkedHashMap<>();
             item.put("disciplina", t.disciplina);
             item.put("topico", t.topic);
@@ -226,6 +224,15 @@ public class PerformanceIntelligenceService {
             item.put("acertos", t.correct);
             item.put("erros", t.errors);
             item.put("precisaoPercentual", Math.round(taxa * 10.0) / 10.0);
+            item.put("mediaSimplesPct", Math.round(taxa * 10.0) / 10.0);
+            item.put("proficienciaAtualPct", pAtual);
+            item.put("proficienciaBasePct", pBase);
+            item.put("deltaTDias", deltaT);
+            item.put("forcaMemoriaDias", forcaS);
+            item.put("statusDominio", statusDom);
+            item.put("mediaSimplesEnganosa", enganosa);
+            item.put("diagnosticoPedagogico", diag);
+            item.put("ultimoContato", ks != null ? ks.getUltimoContatoFormatado() : "Recente");
             item.put("precisaoDenominador", String.format(Locale.ROOT, "%.0f%% — %d acertos em %d questões", taxa, t.correct, t.total));
             item.put("tempoMedioSegundos", avgMs / 1000);
             item.put("isPreliminar", t.total < 15);
@@ -234,52 +241,54 @@ public class PerformanceIntelligenceService {
         }
         distribuicao.sort((a, b) -> Integer.compare((int) b.get("total"), (int) a.get("total")));
 
-        // Montar Alertas Canônicos (T26)
+        double pAtualGlobal = sumWeightsPAtual > 0 ? Math.round((sumWeightedPAtual / sumWeightsPAtual) * 10.0) / 10.0 : Math.round(precisaoPercentual * 10.0) / 10.0;
+        summary.put("proficienciaAtualGlobal", pAtualGlobal);
+        summary.put("gapDecaimentoGlobal", Math.round((precisaoPercentual - pAtualGlobal) * 10.0) / 10.0);
+        summary.put("formulaConhecimento", "P_{atual}(t) = P_{base} \\cdot e^{-\\frac{\\Delta t}{S}}");
+
+        // Montar Alertas Canônicos (T26) a partir dos dados observados reais
         List<Map<String, Object>> alertas = new ArrayList<>();
 
-        // 1. Erros recorrentes
-        alertas.add(Map.of(
-            "tipo", "ERROS_RECORRENTES",
-            "titulo", "Erros Recorrentes em Suspensão do Crédito",
-            "descricao", "3 erros registrados nas últimas tentativas de aplicação do art. 151 do CTN (recorrência em parcelamento e moratória).",
-            "nivel", "CRITICO",
-            "badge", "⚠️ Ponto de Atenção",
-            "disciplina", "Direito Tributário",
-            "topico", "Suspensão do crédito"
-        ));
+        for (Map<String, Object> it : distribuicao) {
+            Boolean enganosa = (Boolean) it.get("mediaSimplesEnganosa");
+            if (Boolean.TRUE.equals(enganosa)) {
+                alertas.add(Map.of(
+                    "tipo", "DECAIMENTO_EBBINGHAUS",
+                    "titulo", "Amnésia Sináptica em " + it.get("topico"),
+                    "descricao", String.format(Locale.ROOT,
+                        "Média simples de %.1f%% é enganosa: após %.1f dias sem contato, seu domínio real decaiu para %.1f%% (Ebbinghaus). Força S = %.1f dias.",
+                        (Double) it.get("mediaSimplesPct"), (Double) it.get("deltaTDias"), (Double) it.get("proficienciaAtualPct"), (Double) it.get("forcaMemoriaDias")),
+                    "nivel", "CRITICO",
+                    "badge", "⚠️ Amnésia por Intervalo",
+                    "disciplina", (String) it.get("disciplina"),
+                    "topico", (String) it.get("topico")
+                ));
+            }
+        }
 
-        // 2. Excesso de confiança
-        alertas.add(Map.of(
-            "tipo", "EXCESSO_CONFIANCA",
-            "titulo", "Excesso de Confiança (Ponto Cego Cognitivo)",
-            "descricao", "2 erros assinalados com confiança máxima (5/5) em Pegadinhas da banca sobre Concordância Verbal atrativa.",
-            "nivel", "ALERTA",
-            "badge", "⚡ Falsa Fluência",
-            "disciplina", "Língua Portuguesa",
-            "topico", "Concordância verbal"
-        ));
-
-        // 3. Retenção ainda não verificada
-        alertas.add(Map.of(
-            "tipo", "RETENCAO_PENDENTE",
-            "titulo", "Retenção Ainda Não Verificada",
-            "descricao", "Balanço Patrimonial foi estudado há 6 dias com acerto inicial, mas sem nenhuma verificação ativa posterior.",
-            "nivel", "MODERADO",
-            "badge", "⏳ Verificação Pendente",
-            "disciplina", "Contabilidade Geral",
-            "topico", "Balanço patrimonial"
-        ));
-
-        // 4. Conteúdos importantes com pouca evidência
-        alertas.add(Map.of(
-            "tipo", "POUCA_EVIDENCIA",
-            "titulo", "Conteúdo de Alto Peso com Pouca Evidência",
-            "descricao", "Planejamento Estratégico e BSC possui apenas 7 questões respondidas no banco. A amostragem ainda é preliminar.",
-            "nivel", "INFO",
-            "badge", "🔍 Pouca Evidência",
-            "disciplina", "Administração Pública",
-            "topico", "Planejamento estratégico"
-        ));
+        for (TopicStatsAcc t : topicMap.values()) {
+            if (t.errors >= 2) {
+                alertas.add(Map.of(
+                    "tipo", "ERROS_RECORRENTES",
+                    "titulo", "Erros Recorrentes em " + t.topic,
+                    "descricao", t.errors + " erros observados em " + t.disciplina + " nas suas sessões recentes.",
+                    "nivel", "CRITICO",
+                    "badge", "⚠️ Ponto de Atenção",
+                    "disciplina", t.disciplina,
+                    "topico", t.topic
+                ));
+            } else if (t.total > 0 && t.total < 5) {
+                alertas.add(Map.of(
+                    "tipo", "POUCA_EVIDENCIA",
+                    "titulo", "Conteúdo com Pouca Evidência",
+                    "descricao", t.topic + " possui apenas " + t.total + " resoluções registradas. Amostragem preliminar.",
+                    "nivel", "INFO",
+                    "badge", "🔍 Pouca Evidência",
+                    "disciplina", t.disciplina,
+                    "topico", t.topic
+                ));
+            }
+        }
 
         result.put("resumo", summary);
         result.put("evolucao", evolucao);
@@ -438,72 +447,127 @@ public class PerformanceIntelligenceService {
         );
         abaConfianca.put("confiancaPorDisciplina", confDisc);
 
-        // ABA B — RETENÇÃO
+        // ABA B — RETENÇÃO (Modelo Matemático do Estado Real de Conhecimento)
         Map<String, Object> abaRetencao = new LinkedHashMap<>();
-        abaRetencao.put("conteudosTestadosAposIntervalo", 18);
-        abaRetencao.put("resultadosRecuperacaoTexto", "81% — 13 recuperações confirmadas em 16 verificações espaçadas");
-        abaRetencao.put("conteudosAindaNaoTestados", 6);
-        abaRetencao.put("revisoesRealizadas", 24);
+
+        List<StudentKnowledgeStateService.TopicKnowledgeState> states =
+                studentKnowledgeStateService.computeKnowledgeStates(concursoId);
+
+        List<Map<String, Object>> itensRetencao = new ArrayList<>();
+        int testadosAposIntervalo = 0;
+        int naoTestados = 0;
+        int recuperacoesConfirmadas = 0;
+        int totalVerificacoesEspacadas = 0;
+        int revisoesRealizadas = 0;
+
+        for (StudentKnowledgeStateService.TopicKnowledgeState s : states) {
+            if (s.getTotalQuestoes() == 0) {
+                naoTestados++;
+            } else if (s.getDeltaTDias() >= 1.0) {
+                testadosAposIntervalo++;
+            }
+
+            revisoesRealizadas += s.getRevisoesEspacadasSucesso();
+            if (s.getRetestesFriosAcertos() > 0) {
+                recuperacoesConfirmadas += s.getRetestesFriosAcertos();
+                totalVerificacoesEspacadas += (s.getRetestesFriosAcertos() + s.getTotalErros());
+            }
+
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("disciplina", s.getDisciplina());
+            item.put("topico", s.getAssunto());
+            item.put("ultimoTeste", s.getUltimoContatoFormatado());
+            item.put("mediaSimples", String.format(Locale.ROOT, "%.1f%%", s.getMediaSimplesPct()));
+            item.put("pBase", String.format(Locale.ROOT, "%.1f%%", s.getPBasePct()));
+            item.put("deltaTDias", s.getDeltaTDias());
+            item.put("forcaMemoriaDias", s.getForcaMemoriaDias());
+            item.put("retencaoEstimada", String.format(Locale.ROOT, "%.1f%%", s.getPAtualPct()));
+            item.put("pAtual", String.format(Locale.ROOT, "%.1f%%", s.getPAtualPct()));
+            item.put("status", s.getStatusDominio());
+            item.put("isMediaSimplesEnganosa", s.isMediaSimplesEnganosa());
+            item.put("diagnostico", s.getDiagnosticoPedagogico());
+            itensRetencao.add(item);
+        }
+
+        double taxaRecup = (totalVerificacoesEspacadas > 0) ?
+                ((double) recuperacoesConfirmadas / totalVerificacoesEspacadas * 100.0) : 0.0;
+
+        abaRetencao.put("conteudosTestadosAposIntervalo", testadosAposIntervalo);
+        abaRetencao.put("resultadosRecuperacaoTexto", totalVerificacoesEspacadas > 0 ?
+                String.format(Locale.ROOT, "%.0f%% — %d recuperações confirmadas em %d verificações espaçadas",
+                        taxaRecup, recuperacoesConfirmadas, totalVerificacoesEspacadas) :
+                "Aguardando primeiras verificações espaçadas");
+        abaRetencao.put("conteudosAindaNaoTestados", naoTestados);
+        abaRetencao.put("revisoesRealizadas", revisoesRealizadas);
         abaRetencao.put("regraAvisoEstimativa",
-            "Aviso metodológico: Taxas de retenção e curvas de esquecimento são projeções matemáticas baseadas em intervalos e tentativas prévias, e não certezas biológicas individuais."
-        );
-
-        List<Map<String, Object>> itensRetencao = List.of(
-            Map.of("disciplina", "Direito Tributário", "topico", "Suspensão do crédito", "ultimoTeste", "Há 2 dias", "retencaoEstimada", "88%", "status", "ESTABILIZADO"),
-            Map.of("disciplina", "Língua Portuguesa", "topico", "Concordância verbal", "ultimoTeste", "Há 5 dias", "retencaoEstimada", "74%", "status", "ALERTA_ESQUECIMENTO"),
-            Map.of("disciplina", "Contabilidade Geral", "topico", "Balanço patrimonial", "ultimoTeste", "Há 7 dias", "retencaoEstimada", "68%", "status", "VERIFICACAO_URGENTE"),
-            Map.of("disciplina", "Administração Pública", "topico", "Planejamento estratégico", "ultimoTeste", "Há 3 dias", "retencaoEstimada", "85%", "status", "ESTABILIZADO")
-        );
+            "Aviso metodológico: Taxas de proficiência atual (P_atual) utilizam a equação de Ebbinghaus P_atual = P_base * e^(-Δt/S), diferenciando simulados e retestes frios de questões imediatas pós-PDF.");
         abaRetencao.put("itens", itensRetencao);
+        abaRetencao.put("formula", Map.of(
+            "expressao", "P_{atual}(t) = P_{base} \\cdot e^{-\\frac{\\Delta t}{S}}",
+            "titulo", "Modelo Matemático do Estado Real de Conhecimento (Student Knowledge State)",
+            "pBase", "Taxa ponderada de acertos (Simulados 1.5x, Retestes Frios 1.2x, Imediato pós-PDF 0.5x)",
+            "deltaT", "Dias decorridos desde o último contato",
+            "forcaS", "Força da memória consolidada por revisões espaçadas bem-sucedidas"
+        ));
 
-        // ABA C — MODELO DO ESTUDANTE
-        List<Map<String, Object>> modelos = List.of(
-            Map.of(
-                "disciplina", "Direito Tributário",
-                "desempenhoObservado", "Favorável (82% de acertos observados)",
-                "retencao", "Ainda não confirmada em prazos superiores a 15 dias",
-                "confianca", "Tendência a superestimar conhecimento em exceções e imunidades",
-                "evidencia", "Moderada (34 questões resolvidas)",
-                "proximaVerificacao", "Questão inédita após intervalo de 3 dias",
-                "porQue", Map.of(
-                    "dadosUtilizados", "34 resoluções no event_store (26 inéditas e 8 repetições), 4 sessões de foco registradas.",
-                    "periodo", "Últimos 30 dias de atividade",
-                    "quantidadeObservacoes", 34,
-                    "versaoAnalise", "Gêmeo Digital v2.4 (Psicometria e Half-Life)",
-                    "limitacoes", "Amostra concentrada em Suspensão e Extinção; tópicos de ITCMD e Legislação Estadual ainda possuem baixa evidência (< 5 itens)."
-                )
-            ),
-            Map.of(
-                "disciplina", "Língua Portuguesa",
-                "desempenhoObservado", "Em consolidação (72% de acertos observados)",
-                "retencao", "Sensível a distratores atrativos de banca",
-                "confianca", "Superestimação moderada em sintaxe de orações",
-                "evidencia", "Alta (48 questões resolvidas)",
-                "proximaVerificacao", "Teste de transferência com pegadinha sutil",
-                "porQue", Map.of(
-                    "dadosUtilizados", "48 resoluções de provas recentes FGV e Cebraspe.",
-                    "periodo", "Últimos 45 dias",
-                    "quantidadeObservacoes", 48,
-                    "versaoAnalise", "Gêmeo Digital v2.4 (Classificação E1-E5)",
-                    "limitacoes", "Necessidade de maior amostragem em regência verbal e crase."
-                )
-            ),
-            Map.of(
-                "disciplina", "Contabilidade Geral",
-                "desempenhoObservado", "Atenção (65% de acertos observados)",
-                "retencao", "Necessita consolidação e prática espaçada",
-                "confianca", "Subestimação (acerta com dúvida ou insegurança declarada)",
-                "evidencia", "Moderada (22 questões resolvidas)",
-                "proximaVerificacao", "Revisão guiada com exemplo resolvido",
-                "porQue", Map.of(
-                    "dadosUtilizados", "22 resoluções de questões de escrituração e balanço.",
-                    "periodo", "Últimos 20 dias",
-                    "quantidadeObservacoes", 22,
-                    "versaoAnalise", "Gêmeo Digital v2.4",
-                    "limitacoes", "Amostra recente sem resolução de prova completa de contabilidade sob restrição de tempo."
-                )
-            )
-        );
+        // ABA C — MODELO DO ESTUDANTE (Agrupamento Dinâmico por Disciplina)
+        Map<String, List<StudentKnowledgeStateService.TopicKnowledgeState>> byDisc = new LinkedHashMap<>();
+        for (StudentKnowledgeStateService.TopicKnowledgeState s : states) {
+            byDisc.computeIfAbsent(s.getDisciplina(), k -> new ArrayList<>()).add(s);
+        }
+
+        List<Map<String, Object>> modelos = new ArrayList<>();
+        for (Map.Entry<String, List<StudentKnowledgeStateService.TopicKnowledgeState>> entry : byDisc.entrySet()) {
+            String disc = entry.getKey();
+            List<StudentKnowledgeStateService.TopicKnowledgeState> dTopics = entry.getValue();
+
+            int totQ = 0;
+            double sumPAtual = 0.0;
+            double sumPBase = 0.0;
+            double sumS = 0.0;
+            int topicsCount = dTopics.size();
+
+            for (StudentKnowledgeStateService.TopicKnowledgeState t : dTopics) {
+                totQ += t.getTotalQuestoes();
+                sumPAtual += t.getPAtualPct();
+                sumPBase += t.getPBasePct();
+                sumS += t.getForcaMemoriaDias();
+            }
+
+            double avgPAtual = topicsCount > 0 ? sumPAtual / topicsCount : 0.0;
+            double avgPBase = topicsCount > 0 ? sumPBase / topicsCount : 0.0;
+            double avgS = topicsCount > 0 ? sumS / topicsCount : 1.0;
+
+            String desempenhoTxt;
+            if (totQ == 0) desempenhoTxt = "Ainda não explorado no edital";
+            else if (avgPAtual >= 75.0) desempenhoTxt = String.format(Locale.ROOT, "Favorável (P_atual: %.1f%% | P_base: %.1f%%)", avgPAtual, avgPBase);
+            else if (avgPAtual >= 60.0) desempenhoTxt = String.format(Locale.ROOT, "Em consolidação (P_atual: %.1f%% | P_base: %.1f%%)", avgPAtual, avgPBase);
+            else desempenhoTxt = String.format(Locale.ROOT, "Atenção (P_atual: %.1f%% — Amnésia temporal observada)", avgPAtual);
+
+            String retencaoTxt = (totQ == 0) ? "Sem histórico de retenção" :
+                    String.format(Locale.ROOT, "Força média S = %.1f dias (Decaimento Ebbinghaus ativo)", avgS);
+
+            String proxVerif;
+            if (totQ == 0) proxVerif = "Estudo inicial teórico + primeira bateria";
+            else if (avgPAtual < 65.0) proxVerif = "Reteste a frio de resgate imediato";
+            else proxVerif = "Questão inédita em simulado espaçado";
+
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("disciplina", disc);
+            m.put("desempenhoObservado", desempenhoTxt);
+            m.put("retencao", retencaoTxt);
+            m.put("confianca", "Calibrada via Brier Score e telemetria longitudinal");
+            m.put("evidencia", totQ >= 30 ? "Alta (" + totQ + " questões)" : (totQ >= 10 ? "Moderada (" + totQ + " questões)" : "Preliminar (" + totQ + " questões)"));
+            m.put("proximaVerificacao", proxVerif);
+            m.put("porQue", Map.of(
+                "dadosUtilizados", String.format(Locale.ROOT, "%d resoluções reais registradas no event_store, distribuídas em %d tópicos do edital.", totQ, topicsCount),
+                "periodo", "Histórico auditado no event_store",
+                "quantidadeObservacoes", totQ,
+                "versaoAnalise", "Modelo Matemático Student Knowledge State v3 (P_atual = P_base * e^(-Δt/S))",
+                "limitacoes", totQ < 15 ? "Amostra preliminar (<15 itens). Requer maior amostragem para estabilidade psicométrica." : "Consistência estatística observada em baterias recentes."
+            ));
+            modelos.add(m);
+        }
 
         result.put("abaA_confianca", abaConfianca);
         result.put("abaB_retencao", abaRetencao);

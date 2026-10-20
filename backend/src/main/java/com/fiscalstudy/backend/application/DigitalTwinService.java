@@ -199,6 +199,9 @@ public class DigitalTwinService {
             int countFriccao = 0;
             int chuteEducadoCount = 0;
 
+            double sumWeightedScores = 0.0;
+            double sumWeights = 0.0;
+
             for (Map<String, Object> att : topicAttempts) {
                 Boolean isCorr = (Boolean) att.get("isCorrect");
                 if (Boolean.TRUE.equals(isCorr)) correct++;
@@ -209,16 +212,41 @@ public class DigitalTwinService {
                 }
                 Boolean chute = (Boolean) att.get("chuteEducadoDetectado");
                 if (Boolean.TRUE.equals(chute)) chuteEducadoCount++;
+
+                // Ponderação P_base (Simulados e Retestes frios com maior peso que leitura imediata)
+                if (isCorr != null) {
+                    String intervention = (String) att.getOrDefault("interventionType", "REGULAR");
+                    Boolean usedHelp = (Boolean) att.getOrDefault("usedHelp", false);
+                    Double diasExp = null;
+                    Object dExpObj = att.get("diasDesdeUltimaExposicao");
+                    if (dExpObj instanceof Number) diasExp = ((Number) dExpObj).doubleValue();
+
+                    double w = 1.0;
+                    if ("SIMULADO".equalsIgnoreCase(intervention)) {
+                        w = 1.5;
+                    } else if ((intervention != null && intervention.toUpperCase().contains("REVISAO")) || (diasExp != null && diasExp >= 1.0)) {
+                        w = 1.2;
+                    } else if (Boolean.TRUE.equals(usedHelp)) {
+                        w = 0.5;
+                    }
+                    if (Boolean.TRUE.equals(chute)) {
+                        w *= 0.75;
+                    }
+
+                    sumWeights += w;
+                    sumWeightedScores += (isCorr ? 100.0 : 0.0) * w;
+                }
             }
 
             Instant lastContact = lastContactByTopicName.getOrDefault(topicKey, lastContactByDiscipline.get(discKey));
             double diasSemContato = lastContact != null ? Math.max(0.1, ChronoUnit.HOURS.between(lastContact, now) / 24.0) : 30.0;
 
             double accuracy = attempts > 0 ? (correct * 100.0) / attempts : 0.0;
+            double pBase = sumWeights > 0 ? (sumWeightedScores / sumWeights) : accuracy;
 
             // Algoritmo do Gêmeo Digital: Estabilidade Sináptica S (dias)
             // S cresce com acertos consolidados e decai se acurácia for baixa
-            double rawStability = Math.max(0.5, (1.0 + Math.log(1.0 + correct)) * (1.0 + (accuracy / 100.0)));
+            double rawStability = Math.max(0.5, (1.0 + Math.log(1.0 + correct)) * (1.0 + (pBase / 100.0)));
 
             // Modulação Biométrica da Decisão (Anti-Cheat Cognitivo):
             // Penaliza estabilidade se a acurácia foi obtida com alta fricção, hesitação ou chute educado
@@ -260,7 +288,8 @@ public class DigitalTwinService {
                 minutosAteQuebra = Math.round(diasAte70 * 24.0 * 60.0);
             }
 
-            double pAcertoHoje = attempts == 0 ? 20.0 : Math.round((accuracy * (retentionPct / 100.0)) * 10.0) / 10.0;
+            // Equação Canônica: P_atual(t) = P_base * e^(- \Delta t / S)
+            double pAcertoHoje = attempts == 0 ? 20.0 : Math.round((pBase * (retentionPct / 100.0)) * 10.0) / 10.0;
             double nodeWeight = t.getPeso() > 0 ? t.getPeso() : 1.0;
 
             weightedRetentionSum += retentionPct * nodeWeight;
@@ -275,6 +304,8 @@ public class DigitalTwinService {
             node.put("diasSemContato", Math.round(diasSemContato * 10.0) / 10.0);
             node.put("retencaoAtualPct", retentionPct);
             node.put("probabilidadeAcertoHojePct", pAcertoHoje);
+            node.put("pBasePct", Math.round(pBase * 10.0) / 10.0);
+            node.put("proficienciaAtualPct", pAcertoHoje);
             node.put("estadoNeural", estadoNeural);
             node.put("minutosAteQuebraSinaptica", minutosAteQuebra);
             node.put("totalTentativas", attempts);

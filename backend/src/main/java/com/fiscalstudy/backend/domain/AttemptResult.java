@@ -58,4 +58,14 @@ public class AttemptResult {
     public String getMediaVeiculo() {
         return mediaVeiculo;
     }
+
+    private String correctOption;
+
+    public String getCorrectOption() {
+        return correctOption;
+    }
+
+    public void setCorrectOption(String correctOption) {
+        this.correctOption = correctOption;
+    }
 }
