@@ -478,13 +478,66 @@ public class AnkiIntegrationService {
     /**
      * MOTOR DE GERAÇÃO: Gera Flashcard Silencioso a partir de Questão Errada
      */
+    /**
+     * TRAVA 1: Bloqueio de Tópicos Não-Memorizáveis (Blacklist)
+     * Impede categoricamente a poluição do Anki com interpretação de texto, reescrita de crônica,
+     * redação e resolução de cálculos extensos.
+     */
+    public boolean isEligibleForAnki(String disciplina, String assunto, String statement) {
+        String combined = ((disciplina != null ? disciplina : "") + " " +
+                (assunto != null ? assunto : "") + " " +
+                (statement != null ? statement : "")).toLowerCase();
+
+        // 1. Blacklist Estrita de Tópicos de Habilidade Pura / Interpretação
+        List<String> blacklist = List.of(
+                "interpretação de texto", "interpretacao de texto", "compreensão de texto", "compreensao de texto",
+                "interpretação", "interpretacao", "tipologia textual", "gêneros textuais", "generos textuais",
+                "crônica", "cronica", "charge", "poema", "poesia", "sentidos do texto", "coesão e coerência",
+                "coesao e coerencia", "reescrita de frases", "reordenação de frases", "redação oficial",
+                "redacao oficial", "texto narrativo", "texto dissertativo", "figuras de linguagem",
+                "compreensão e interpretação"
+        );
+
+        for (String b : blacklist) {
+            if (combined.contains(b)) {
+                return false;
+            }
+        }
+
+        // 2. Se o enunciado for puramente uma pergunta de interpretação sobre um texto específico
+        if (statement != null) {
+            String stmtLow = statement.toLowerCase();
+            if ((stmtLow.contains("segundo o texto") || stmtLow.contains("de acordo com o texto") ||
+                    stmtLow.contains("o autor defende") || stmtLow.contains("infere-se do texto") ||
+                    stmtLow.contains("no segundo parágrafo") || stmtLow.contains("no 2º parágrafo") ||
+                    stmtLow.contains("no primeiro parágrafo") || stmtLow.contains("o sentido original do texto") ||
+                    stmtLow.contains("mantidos os sentidos do") || stmtLow.contains("a expressão destacada no texto")) &&
+                    (disciplina == null || disciplina.toLowerCase().contains("portugu") || disciplina.toLowerCase().contains("língua"))) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * MOTOR DE GERAÇÃO: Gera Flashcard Silencioso a partir de Questão Errada
+     * Aplica Trava 1 (Blacklist), Trava 2 (Gatilho real) e Trava 3 (Regra de Ouro em vez de cópia literal).
+     */
     public AnkiFlashcardDTO generateFromQuestionError(Question question, String chosenOption, String causaErro, String sessionId) {
         String disciplina = question.getDiscipline() != null ? question.getDiscipline() : "Direito";
         String assunto = question.getTopic() != null ? question.getTopic() : "Geral";
         String statement = question.getStatement() != null ? question.getStatement().trim() : "";
         String correctOpt = question.getCorrectOption() != null ? question.getCorrectOption().trim() : "A";
 
-        // Localiza texto da alternativa correta
+        // Trava 1: Se o assunto pertencer à blacklist de habilidades/interpretação, descarta do Anki
+        if (!isEligibleForAnki(disciplina, assunto, statement)) {
+            log.info("Questão {} ignorada para o Anki: tópico não-memorizável ou interpretação de texto [{}] - [{}]",
+                    question.getId(), disciplina, assunto);
+            return null;
+        }
+
+        // Localiza texto da alternativa correta e da escolhida
         String correctText = "";
         String chosenText = "";
         if (question.getOptions() != null) {
@@ -498,38 +551,50 @@ public class AnkiIntegrationService {
             }
         }
 
-        // Sintetiza regra jurídica em formato Cloze ou Frente e Verso
-        boolean useCloze = (statement.length() <= 220 || correctText.length() <= 120);
-
+        // Trava 3: Síntese da Regra de Ouro (Princípio e distinção cobrada)
         String frontOrText;
         String backOrExtra;
         String cardType;
 
-        if (useCloze) {
+        // Se for CPC / Contabilidade
+        if (disciplina.toLowerCase().contains("contab") || assunto.toLowerCase().contains("cpc")) {
+            cardType = "BASIC";
+            frontOrText = String.format("<b>[%s • %s]</b><br>Em relação à regra contábil testada na questão:<br><i>\"%s\"</i><br><br><b>Qual é a regra e o tratamento técnico correto?</b>",
+                    disciplina, assunto, truncate(cleanStatementContext(statement), 160));
+            backOrExtra = String.format("<b>Regra Técnica (Gabarito: Alt. %s):</b><br>%s<br><br><small style='color: #ef4444;'>Pegadinha evitada: Você marcou a Alt. %s ('%s').</small>",
+                    correctOpt, correctText.isBlank() ? "Consulte a norma contábil aplicável." : correctText,
+                    chosenOption, truncate(chosenText, 70));
+        } else if (statement.length() <= 200 && correctText.length() <= 100 && !correctText.isBlank()) {
+            // Regra concisa para omissão focada na regra de ouro
             cardType = "CLOZE";
-            // Extrai palavra-chave da alternativa correta para omissão cloze
             String keyword = extractCoreKeyword(correctText);
             String sentence = formatClozeSentence(statement, correctText, keyword);
             frontOrText = String.format("[%s — %s] %s", disciplina, assunto, sentence);
             backOrExtra = String.format(
-                    "<b>Gabarito:</b> Alternativa %s.<br><b>Pegadinha evitada:</b> A alternativa %s ('%s') induzia ao erro.",
+                    "<b>Gabarito Oficial:</b> Alternativa %s.<br><b>Atenção:</b> A alternativa %s ('%s') era incorreta.",
                     correctOpt, chosenOption, truncate(chosenText, 60)
             );
         } else {
             cardType = "BASIC";
             frontOrText = String.format(
-                    "<b>[%s — %s]</b><br>Em relação à regra testada na questão:<br><i>\"%s\"</i><br><br><b>Qual é a regra e o entendimento correto?</b>",
-                    disciplina, assunto, truncate(statement, 180)
+                    "<b>[%s — %s]</b><br>Regra normativa / distinção cobrada:<br><i>\"%s\"</i><br><br><b>Qual é a regra de ouro aplicável segundo a banca?</b>",
+                    disciplina, assunto, truncate(cleanStatementContext(statement), 180)
             );
             backOrExtra = String.format(
-                    "<b>Regra Correta (Alt. %s):</b><br>%s<br><br><small style='color: #ef4444;'>Atenção: Você marcou a alternativa %s ('%s'), que estava incorreta.</small>",
-                    correctOpt, correctText.isBlank() ? "Consulte a fundamentação legal do tópico." : correctText,
-                    chosenOption, truncate(chosenText, 60)
+                    "<b>Regra de Ouro (Alt. %s):</b><br>%s<br><br><small style='color: #ef4444;'>Você marcou a Alt. %s ('%s'), que estava incorreta.</small>",
+                    correctOpt, correctText.isBlank() ? "Consulte os dispositivos normativos deste tópico." : correctText,
+                    chosenOption, truncate(chosenText, 70)
             );
         }
 
-        log.info("Flashcard silencioso gerado para o Anki a partir do erro na questão {}: [{}]", question.getId(), cardType);
+        log.info("Flashcard de ouro gerado para o Anki a partir do erro na questão {}: [{}]", question.getId(), cardType);
         return saveAndPushCard(sessionId, null, disciplina, assunto, cardType, frontOrText, backOrExtra, "QUESTION_ERROR", question.getId());
+    }
+
+    private String cleanStatementContext(String stmt) {
+        if (stmt == null) return "";
+        // Remove trechos introdutórios longos de enunciados
+        return stmt.replaceAll("(?i)^(Considere que|Acerca de|No que concerne a|A respeito de|Julgue o item a seguir|Com base no texto)\\s*", "").trim();
     }
 
     /**

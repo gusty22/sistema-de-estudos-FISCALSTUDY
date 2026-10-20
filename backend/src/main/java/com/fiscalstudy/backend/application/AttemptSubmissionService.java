@@ -243,8 +243,9 @@ public class AttemptSubmissionService {
                 payload
         );
 
-        // Automação Extrema: Integração Silenciosa com Anki quando o estudante erra a questão
-        if (Boolean.FALSE.equals(isCorrect) && ankiIntegrationService != null) {
+        // Trava 2: Gatilho por Erro Real ou Baixa Confiança/Dúvida (Nível <= 3)
+        boolean shouldTriggerAnki = Boolean.FALSE.equals(isCorrect) || confidenceLevel <= 3 || chuteVal;
+        if (shouldTriggerAnki && ankiIntegrationService != null) {
             try {
                 ankiIntegrationService.generateFromQuestionError(question, optionLetter, causaErroStr, sessionId);
             } catch (Exception ignored) {}
