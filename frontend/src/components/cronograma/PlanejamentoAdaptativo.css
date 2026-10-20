@@ -219,6 +219,11 @@ body.theme-dark .planning-calm-wrapper,
   border-color: var(--type-pratica-border);
 }
 
+.planning-metric-card.is-warning {
+  background-color: var(--critical-bg);
+  border-color: var(--critical-border);
+}
+
 .planning-metric-top {
   display: flex;
   align-items: center;

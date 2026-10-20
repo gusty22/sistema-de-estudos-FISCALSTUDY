@@ -50,40 +50,56 @@ export default function PlanejamentoAdaptativo({
 }: PlanejamentoAdaptativoProps) {
   // 2. Fila Dinâmica e Estado do Planejador
   const [queue, setQueue] = useState<AdaptiveTask[]>([]);
+  const [planData, setPlanData] = useState<any>(null);
+  const [disponibilidadeMinutos, setDisponibilidadeMinutos] = useState<number>(120);
   const [showStrategy, setShowStrategy] = useState(true);
   const [isRecalculating, setIsRecalculating] = useState(false);
   const [postponeWarning, setPostponeWarning] = useState<AdaptiveTask | null>(null);
   const [viewMode, setViewMode] = useState<'QUEUE' | 'WEEKLY'>('QUEUE');
 
-  // 3. Integração com API do Maestro / Robin Hood se concurso ativo existir
-  useEffect(() => {
-    if (!activeConcurso?.id) {
-      setQueue([]);
-      return;
-    }
+  // 3. Integração com API do Maestro / Robin Hood
+  const fetchPlan = () => {
+    const url = activeConcurso?.id
+      ? `/api/v1/maestro/plan?concursoId=${encodeURIComponent(activeConcurso.id)}`
+      : '/api/v1/maestro/plan';
 
-    fetch(`/api/v1/maestro/plan?concursoId=${encodeURIComponent(activeConcurso.id)}`)
+    fetch(url)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (data && Array.isArray(data.passos) && data.passos.length > 0) {
-          const mapped: AdaptiveTask[] = data.passos.map((p: any, idx: number) => {
-            const rawType = (p.tipo || '').toUpperCase();
-            let mappedType: TaskType = 'PRATICA';
-            if (rawType.includes('REVISAO')) mappedType = 'REVISAO';
-            else if (rawType.includes('TEORIA') || rawType.includes('NOVO')) mappedType = 'NOVO_CONTEUDO';
+        if (data) {
+          setPlanData(data);
+          const disp =
+            data.tempoDisponivelMinutos ||
+            (data.telemetriaCognitiva && data.telemetriaCognitiva.tempoDisponivelMinutos) ||
+            data.tempoTotalMinutos ||
+            120;
+          setDisponibilidadeMinutos(disp);
 
-            return {
-              id: `dyn_task_${idx}`,
-              type: mappedType,
-              discipline: p.disciplina || 'Conhecimentos Fiscais',
-              topic: p.assunto || p.titulo || 'Tópico Estratégico',
-              reason: p.objetivoPedagogico || p.instrucaoMastigada || 'Prioridade algorítmica',
-              duration: p.duracaoMinutos || 25,
-              isCritical: idx < 2 || mappedType === 'REVISAO',
-              status: 'pending'
-            };
-          });
-          setQueue(mapped);
+          if (Array.isArray(data.passos) && data.passos.length > 0) {
+            const mapped: AdaptiveTask[] = data.passos.map((p: any, idx: number) => {
+              const rawType = (p.tipo || '').toUpperCase();
+              let mappedType: TaskType = 'PRATICA';
+              if (rawType.includes('REVISAO') || rawType.includes('SRS') || rawType.includes('ANKI')) {
+                mappedType = 'REVISAO';
+              } else if (rawType.includes('TEORIA') || rawType.includes('NOVO') || rawType.includes('VIDEO')) {
+                mappedType = 'NOVO_CONTEUDO';
+              }
+
+              return {
+                id: `dyn_task_${idx}`,
+                type: mappedType,
+                discipline: p.disciplina || 'Conhecimentos Fiscais',
+                topic: p.assunto || p.titulo || 'Tópico Estratégico',
+                reason: p.objetivoPedagogico || p.instrucaoMastigada || 'Prioridade algorítmica',
+                duration: p.duracaoMinutos || 25,
+                isCritical: idx < 2 || mappedType === 'REVISAO',
+                status: 'pending'
+              };
+            });
+            setQueue(mapped);
+          } else {
+            setQueue([]);
+          }
         } else {
           setQueue([]);
         }
@@ -91,6 +107,10 @@ export default function PlanejamentoAdaptativo({
       .catch(() => {
         setQueue([]);
       });
+  };
+
+  useEffect(() => {
+    fetchPlan();
   }, [activeConcurso?.id]);
 
   // Reordenação na fila (Up / Down)
@@ -122,17 +142,29 @@ export default function PlanejamentoAdaptativo({
   // Recálculo suave
   const triggerRecalculation = () => {
     setIsRecalculating(true);
+    fetchPlan();
     setTimeout(() => {
       setIsRecalculating(false);
     }, 700);
   };
 
-  // Iniciar estudo
+  // Iniciar estudo diretamente no player calmo unificado
   const handleStartTask = (task: AdaptiveTask) => {
-    if (onNavigateToStudy) {
+    sessionStorage.setItem('fiscalstudy_session_discipline', task.discipline);
+    sessionStorage.setItem('fiscalstudy_session_topic', task.topic);
+    sessionStorage.setItem('fiscalstudy_session_objective', task.reason || `Estudar e dominar ${task.topic}`);
+    if (task.type === 'REVISAO') {
+      sessionStorage.setItem('fiscalstudy_session_type', 'REVISAO');
+    } else if (task.type === 'PRATICA') {
+      sessionStorage.setItem('fiscalstudy_session_type', 'QUESTOES');
+    } else {
+      sessionStorage.setItem('fiscalstudy_session_type', 'ESTUDO_ORIENTADO');
+    }
+
+    if (onNavigateToTab) {
+      onNavigateToTab('session');
+    } else if (onNavigateToStudy) {
       onNavigateToStudy(task.discipline, task.topic);
-    } else if (onNavigateToTab) {
-      onNavigateToTab('study');
     }
   };
 
@@ -140,6 +172,16 @@ export default function PlanejamentoAdaptativo({
   const totalTime = queue.reduce((acc, task) => acc + task.duration, 0);
   const criticalCount = queue.filter((q) => q.isCritical).length;
   const reviewCount = queue.filter((q) => q.type === 'REVISAO').length;
+  const distinctDisciplines = Array.from(
+    new Set(
+      queue
+        .map((t) => t.discipline)
+        .filter((d) => d && !d.toLowerCase().includes('descanso') && !d.toLowerCase().includes('pausa'))
+    )
+  );
+
+  const isOverloaded = totalTime > disponibilidadeMinutos;
+  const isComplete = queue.length === 0;
 
   // Render do Modal de Consequência Cognitiva
   const renderPostponeModal = () => {
@@ -188,6 +230,7 @@ export default function PlanejamentoAdaptativo({
     return (
       <VisaoSemanal
         activeConcurso={activeConcurso}
+        queueTasks={queue}
         onNavigateToStudy={onNavigateToStudy}
         onNavigateToTab={onNavigateToTab}
         onSwitchToQueue={() => setViewMode('QUEUE')}
@@ -235,10 +278,10 @@ export default function PlanejamentoAdaptativo({
                 type="button"
                 onClick={onSwitchToBattle}
                 className="planning-action-btn"
-                title="Alternar para visão de batalha passo a passo"
+                title="Iniciar Sessão Focada com o player calmo"
               >
                 <Zap className="w-4 h-4 text-indigo-500" />
-                Modo Batalha Maestro
+                Iniciar Sessão Focada
               </button>
             )}
 
@@ -267,7 +310,9 @@ export default function PlanejamentoAdaptativo({
             </div>
             <div>
               <div className="planning-metric-value">{totalTime} min</div>
-              <div className="planning-metric-subtext">Disponibilidade: 120 min</div>
+              <div className="planning-metric-subtext">
+                Disponibilidade: {disponibilidadeMinutos} min
+              </div>
             </div>
           </div>
 
@@ -289,22 +334,45 @@ export default function PlanejamentoAdaptativo({
             </div>
             <div>
               <div className="planning-metric-value">{reviewCount}</div>
-              <div className="planning-metric-subtext">Para estabilizar memória</div>
+              <div className="planning-metric-subtext">
+                {reviewCount === 0 ? 'Retenção dentro da margem' : 'Para estabilizar memória'}
+              </div>
             </div>
           </div>
 
-          <div className="planning-metric-card is-highlight">
+          <div className={`planning-metric-card ${isOverloaded ? 'is-warning' : 'is-highlight'}`}>
             <div className="planning-metric-top">
-              <span className="planning-metric-label" style={{ color: 'var(--calm-primary)' }}>
+              <span
+                className="planning-metric-label"
+                style={{ color: isOverloaded ? '#d97706' : 'var(--calm-primary)' }}
+              >
                 Status do Planejador
               </span>
-              <CheckCircle2 className="w-4 h-4" style={{ color: 'var(--calm-primary)' }} />
+              {isOverloaded ? (
+                <AlertTriangle className="w-4 h-4 text-amber-500" />
+              ) : (
+                <CheckCircle2 className="w-4 h-4" style={{ color: 'var(--calm-primary)' }} />
+              )}
             </div>
             <div>
               <div className="planning-metric-value" style={{ fontSize: '1.15rem' }}>
-                {isRecalculating ? 'Otimizando rota...' : 'Adequado e balanceado'}
+                {isRecalculating
+                  ? 'Otimizando rota...'
+                  : isOverloaded
+                  ? 'Sobrecarga de tempo'
+                  : isComplete
+                  ? 'Fila do dia concluída'
+                  : 'Adequado e balanceado'}
               </div>
-              <div className="planning-metric-subtext">Baseado no limite de hoje</div>
+              <div className="planning-metric-subtext">
+                {isRecalculating
+                  ? 'Recalculando prioridades...'
+                  : isOverloaded
+                  ? `Excede em ${totalTime - disponibilidadeMinutos} min o limite de hoje (${disponibilidadeMinutos} min)`
+                  : isComplete
+                  ? 'Todas as atividades concluídas'
+                  : `${totalTime} min alocados de ${disponibilidadeMinutos} min de hoje`}
+              </div>
             </div>
           </div>
         </div>
@@ -489,9 +557,12 @@ export default function PlanejamentoAdaptativo({
                           style={{ backgroundColor: '#6366f1' }}
                         />
                         <span>
-                          <strong>Priorização por Decaimento:</strong> Duas revisões
-                          foram injetadas no topo porque a probabilidade de retenção
-                          caiu abaixo do limiar de segurança (75%).
+                          <strong>Priorização por Decaimento:</strong>{' '}
+                          {reviewCount > 0
+                            ? `${reviewCount} ${
+                                reviewCount === 1 ? 'revisão foi injetada' : 'revisões foram injetadas'
+                              } no topo porque o algoritmo detectou pendência real de repetição espaçada ou risco de esquecimento.`
+                            : 'Nenhuma revisão emergencial injetada hoje. A retenção estimada das disciplinas está dentro da margem de segurança (≥ 75%) e a repetição espaçada está em dia.'}
                         </span>
                       </li>
                       <li className="planning-criterion-item">
@@ -500,20 +571,28 @@ export default function PlanejamentoAdaptativo({
                           style={{ backgroundColor: '#f59e0b' }}
                         />
                         <span>
-                          <strong>Ajuste de Foco:</strong> A atividade de Português foi
-                          alterada de leitura teórica para prática ativa devido ao
-                          histórico de hesitação nos últimos testes.
+                          <strong>Alternância Cognitiva (Interleaving):</strong>{' '}
+                          {distinctDisciplines.length > 1
+                            ? `Sessões intercaladas entre ${distinctDisciplines.length} matérias (${distinctDisciplines.join(
+                                ' ➔ '
+                              )}). Cada bloco é calibrado para até 50–60 min para manter alta performance cognitiva e evitar a fadiga mental.`
+                            : `Foco direcionado em ${
+                                distinctDisciplines[0] || 'disciplina prioritária'
+                              }, equilibrando teoria, questões práticas e consolidação.`}
                         </span>
                       </li>
                       <li className="planning-criterion-item">
                         <div
                           className="planning-criterion-dot"
-                          style={{ backgroundColor: '#10b981' }}
+                          style={{ backgroundColor: isOverloaded ? '#d97706' : '#10b981' }}
                         />
                         <span>
-                          <strong>Restrição de Tempo:</strong> A fila foi calibrada para
-                          caber em 120 minutos, preservando intervalos de descanso
-                          mental.
+                          <strong>Restrição de Tempo:</strong>{' '}
+                          {!isOverloaded
+                            ? `A fila foi calibrada para ${totalTime} min, perfeitamente adequada à sua disponibilidade de hoje (${disponibilidadeMinutos} min), preservando intervalos de descanso mental entre blocos.`
+                            : `Alerta de Restrição: a fila soma ${totalTime} min, excedendo sua disponibilidade de hoje (${disponibilidadeMinutos} min) em ${
+                                totalTime - disponibilidadeMinutos
+                              } min. Considere adiar tarefas secundárias.`}
                         </span>
                       </li>
                     </ul>
@@ -528,8 +607,12 @@ export default function PlanejamentoAdaptativo({
                     <div className="planning-event-box">
                       <Info className="w-4 h-4 shrink-0 mt-0.5 text-stone-400" />
                       <p className="margin-0 leading-relaxed text-[11px]">
-                        Uma atividade de Exatas foi mantida fora do bloco de hoje para
-                        aguardar o diagnóstico de nivelamento programado para amanhã.
+                        {planData?.telemetriaCognitiva?.ocorrenciaRecente ||
+                          (distinctDisciplines.length > 1
+                            ? `Alternância ativa aplicada com sucesso entre ${distinctDisciplines.join(
+                                ' e '
+                              )} para garantir alta absorção cognitiva sem monotonia.`
+                            : 'Roteiro de estudo equilibrado entre absorção de novos conceitos e fixação prática por questões.')}
                       </p>
                     </div>
                   </div>
