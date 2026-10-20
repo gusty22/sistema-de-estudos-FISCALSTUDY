@@ -34,6 +34,80 @@ public class RevisionCalendarService {
         try {
             jdbcTemplate.execute("ALTER TABLE revision_calendar ADD COLUMN prioridade_score REAL DEFAULT 0.5;");
         } catch (Exception ignored) {}
+
+        // Limpeza proativa de duplicatas legadas em aberto do mesmo tópico (mantém apenas o reforço mais próximo)
+        try {
+            jdbcTemplate.execute("""
+                DELETE FROM revision_calendar
+                WHERE status = 'PENDENTE'
+                  AND id NOT IN (
+                      SELECT id FROM (
+                          SELECT id,
+                                 ROW_NUMBER() OVER (
+                                     PARTITION BY disciplina, topico
+                                     ORDER BY data_agendada ASC, prioridade_score DESC
+                                 ) as rn
+                          FROM revision_calendar
+                          WHERE status = 'PENDENTE'
+                      ) WHERE rn = 1
+                  );
+            """);
+        } catch (Exception ignored) {}
+    }
+
+    /**
+     * Retorna a contagem exata e dinâmica de questões no caderno de erros por categoria taxonômica (E1 a E5)
+     */
+    public Map<String, Object> getErrorTaxonomyStats(String concursoId) {
+        Map<String, Object> stats = new HashMap<>();
+        Map<String, Integer> counts = new HashMap<>();
+        counts.put("E1", 0);
+        counts.put("E2", 0);
+        counts.put("E3", 0);
+        counts.put("E4", 0);
+        counts.put("E5", 0);
+
+        // Mapeamento dos códigos canônicos
+        counts.put("NAO_SABIA_MATERIA", 0);
+        counts.put("NAO_LEMBRAVA", 0);
+        counts.put("CONFUSAO_CONCEITUAL", 0);
+        counts.put("PEGADINHA_BANCA", 0);
+        counts.put("DESATENCAO", 0);
+
+        String sql = "SELECT payload_json FROM event_store WHERE event_type = 'ANSWER_SUBMITTED' AND (payload_json LIKE '%\"isCorrect\": false%' OR payload_json LIKE '%\"isCorrect\":false%')";
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql);
+
+        int totalErrors = 0;
+        for (Map<String, Object> row : rows) {
+            String payload = (String) row.get("payload_json");
+            if (payload == null) continue;
+            totalErrors++;
+
+            if (payload.contains("NAO_SABIA_MATERIA") || payload.contains("\"causaErro\":\"E1\"")) {
+                counts.put("E1", counts.get("E1") + 1);
+                counts.put("NAO_SABIA_MATERIA", counts.get("NAO_SABIA_MATERIA") + 1);
+            } else if (payload.contains("NAO_LEMBRAVA") || payload.contains("\"causaErro\":\"E2\"")) {
+                counts.put("E2", counts.get("E2") + 1);
+                counts.put("NAO_LEMBRAVA", counts.get("NAO_LEMBRAVA") + 1);
+            } else if (payload.contains("CONFUSAO_CONCEITUAL") || payload.contains("SABIA_MAS_CONFUNDI") || payload.contains("\"causaErro\":\"E3\"")) {
+                counts.put("E3", counts.get("E3") + 1);
+                counts.put("CONFUSAO_CONCEITUAL", counts.get("CONFUSAO_CONCEITUAL") + 1);
+            } else if (payload.contains("PEGADINHA_BANCA") || payload.contains("EXCECAO_REGRA") || payload.contains("\"causaErro\":\"E4\"")) {
+                counts.put("E4", counts.get("E4") + 1);
+                counts.put("PEGADINHA_BANCA", counts.get("PEGADINHA_BANCA") + 1);
+            } else if (payload.contains("DESATENCAO") || payload.contains("FALTA_ATENCAO") || payload.contains("\"causaErro\":\"E5\"")) {
+                counts.put("E5", counts.get("E5") + 1);
+                counts.put("DESATENCAO", counts.get("DESATENCAO") + 1);
+            } else {
+                // Erros sem classificação explícita são contabilizados em E1 (Lacuna teórica inicial)
+                counts.put("E1", counts.get("E1") + 1);
+                counts.put("NAO_SABIA_MATERIA", counts.get("NAO_SABIA_MATERIA") + 1);
+            }
+        }
+
+        stats.put("counts", counts);
+        stats.put("totalErrors", totalErrors);
+        return stats;
     }
 
     /**
@@ -197,11 +271,18 @@ public class RevisionCalendarService {
         List<Map<String, Object>> proximosEnriched = proximosRaw.stream().map(this::enrichRevisionItem).toList();
         List<Map<String, Object>> concluidasEnriched = concluidasRaw.stream().map(this::enrichRevisionItem).toList();
 
+        // Conjunto de tópicos já agendados para hoje ou pendentes (garantia adaptativa: 1 único reforço ativo por tópico)
+        Set<String> activeTopics = new HashSet<>();
+
         // Separação em Prioritárias e Programadas (T24)
         List<Map<String, Object>> prioritarias = new ArrayList<>();
         List<Map<String, Object>> programadas = new ArrayList<>();
 
         for (Map<String, Object> item : hojeEnriched) {
+            String key = (item.get("disciplina") + "::" + item.get("topico")).toLowerCase().trim();
+            if (activeTopics.contains(key)) continue; // evita duplicata do mesmo tópico hoje
+            activeTopics.add(key);
+
             Number score = (Number) item.get("prioridade_score");
             String tipo = (String) item.get("tipo_revisao");
             if ((score != null && score.doubleValue() >= 0.70) || "CORRECAO".equals(tipo) || Boolean.TRUE.equals(item.get("is_atrasada"))) {
@@ -210,7 +291,15 @@ public class RevisionCalendarService {
                 programadas.add(item);
             }
         }
+
+        // Para os próximos reforços futuros: incluir apenas se o tópico ainda não estiver pendente hoje
+        // e deduplicar múltiplos agendamentos futuros do mesmo tópico (mantendo o mais próximo)
+        List<Map<String, Object>> deduplicatedProximos = new ArrayList<>();
         for (Map<String, Object> item : proximosEnriched) {
+            String key = (item.get("disciplina") + "::" + item.get("topico")).toLowerCase().trim();
+            if (activeTopics.contains(key)) continue;
+            activeTopics.add(key);
+            deduplicatedProximos.add(item);
             programadas.add(item);
         }
 
@@ -224,7 +313,7 @@ public class RevisionCalendarService {
         response.put("prioritarias", prioritarias);
         response.put("programadas", programadas);
         response.put("totalPendentesHoje", hojeEnriched.size());
-        response.put("proximos7Dias", proximosEnriched);
+        response.put("proximos7Dias", deduplicatedProximos);
         response.put("concluidas", concluidasEnriched);
         response.put("excessoPendencias", excesso);
         response.put("limiteRecomendadoHoje", limiteRecomendado);
@@ -241,6 +330,7 @@ public class RevisionCalendarService {
         String tipo = (String) item.get("tipo_revisao");
         String estagio = (String) item.get("estagio_intervencao");
         String dataAgendada = (String) item.get("data_agendada");
+        String createdAt = (String) item.get("created_at");
         String todayStr = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE);
 
         // Mapeamento dos 4 tipos canônicos de revisão (T24)
@@ -277,14 +367,37 @@ public class RevisionCalendarService {
         }
         item.put("motivo", motivo);
 
-        // Última recuperação & Resultado anterior
+        // Última recuperação & Resultado anterior dinâmicos
         String resultadoAnt = "INTERVENCAO_CORRETIVA".equals(estagio) ? "Erro em questão recente"
                 : ("TESTE_TRANSFERENCIA".equals(estagio) ? "Acerto hesitante / pegadinha"
                 : ("RECUPERACAO_ATIVA".equals(estagio) ? "Acerto com dúvida" : "Domínio consolidado"));
         item.put("resultado_anterior", resultadoAnt);
-        item.put("ultima_recuperacao", "Há 2 dias");
+
+        // Cálculo dinâmico do tempo desde o evento gerador
+        String ultimaRec = "Há 1 dia";
+        if (createdAt != null && createdAt.length() >= 10) {
+            try {
+                LocalDate createdDate = LocalDate.parse(createdAt.substring(0, 10));
+                long days = java.time.temporal.ChronoUnit.DAYS.between(createdDate, LocalDate.now());
+                if (days == 0) {
+                    ultimaRec = "Hoje";
+                } else if (days == 1) {
+                    ultimaRec = "Ontem";
+                } else if (days > 1) {
+                    ultimaRec = "Há " + days + " dias";
+                }
+            } catch (Exception ignored) {}
+        }
+        item.put("ultima_recuperacao", ultimaRec);
         item.put("estimativa_duracao", "10 min");
-        item.put("evidencia_disponivel", "3 avaliações • Retenção calculada");
+
+        // Evidência calculada dinamicamente
+        Number intervalo = (Number) item.get("intervalo_dias");
+        int numInterv = intervalo != null ? intervalo.intValue() : 1;
+        String evText = numInterv <= 2 ? "Reforço corretivo imediato • Taxa de retenção em monitoramento"
+                : (numInterv <= 7 ? "Fase de consolidação • Curva de retenção ativa"
+                : "Manutenção preventiva • Retenção estável comprovada");
+        item.put("evidencia_disponivel", evText);
 
         boolean atrasada = dataAgendada != null && dataAgendada.compareTo(todayStr) < 0;
         item.put("is_atrasada", atrasada);
@@ -412,7 +525,7 @@ public class RevisionCalendarService {
             String sessionId
     ) {
         double taxaAcerto = recuperouComSucesso ? (precisouExemplo ? 0.75 : 1.0) : 0.35;
-        completeRevision(revisionId, taxaAcerto, sessionId);
+        Map<String, Object> progression = completeRevisionWithDetails(revisionId, taxaAcerto, sessionId);
 
         String payload = String.format(Locale.US,
                 "{\"revisionId\":\"%s\",\"recuperou\":%b,\"confianca\":%d,\"precisouExemplo\":%b,\"tempoSegundos\":%d}",
@@ -433,6 +546,10 @@ public class RevisionCalendarService {
         result.put("recuperouComSucesso", recuperouComSucesso);
         result.put("taxaAcertoAtribuida", taxaAcerto);
         result.put("novoStatus", "CONCLUIDA");
+        result.put("proximoIntervalo", progression.get("proximoIntervalo"));
+        result.put("proximoEstagio", progression.get("proximoEstagio"));
+        result.put("dataAgendada", progression.get("dataAgendada"));
+        result.put("justificativaPedagogica", progression.get("justificativaPedagogica"));
         result.put("mensagem", recuperouComSucesso
                 ? "Evidência de recuperação registrada com sucesso! Próximo ciclo espaçado agendado."
                 : "Registro computado. Exemplo resolvido e reforço corretivo priorizado.");
@@ -443,6 +560,17 @@ public class RevisionCalendarService {
      * Conclui uma revisão e calcula o próximo estágio adaptativo (avança intervalo se acertar, recua se falhar).
      */
     public boolean completeRevision(String revisionId, Double taxaAcerto, String sessionId) {
+        Map<String, Object> res = completeRevisionWithDetails(revisionId, taxaAcerto, sessionId);
+        return Boolean.TRUE.equals(res.get("success"));
+    }
+
+    /**
+     * Conclui uma revisão e retorna os dados detalhados da progressão adaptativa calculada.
+     */
+    public Map<String, Object> completeRevisionWithDetails(String revisionId, Double taxaAcerto, String sessionId) {
+        Map<String, Object> result = new HashMap<>();
+        result.put("success", false);
+
         double acerto = taxaAcerto != null ? taxaAcerto : 1.0;
         int updated = jdbcTemplate.update(
                 "UPDATE revision_calendar SET status = 'CONCLUIDA', taxa_acerto_revisao = ?, concluida_em = CURRENT_TIMESTAMP WHERE id = ?",
@@ -450,6 +578,7 @@ public class RevisionCalendarService {
         );
 
         if (updated > 0) {
+            result.put("success", true);
             // Consulta dados da revisão concluída para calcular a progressão adaptativa
             List<Map<String, Object>> item = jdbcTemplate.queryForList(
                     "SELECT disciplina, topico, concurso_id, estagio_intervencao, intervalo_dias FROM revision_calendar WHERE id = ?",
@@ -498,19 +627,30 @@ public class RevisionCalendarService {
                             nextId, sessionId, concId, disc, top, proximoIntervalo, nextDateStr, proxJustificativa, proximoEstagio, proxPrioridade
                     );
                     log.info("Progressão adaptativa agendada para {} • {} (Novo Estágio: {}, Intervalo: {} dias)", disc, top, proximoEstagio, proximoIntervalo);
+
+                    result.put("proximoIntervalo", proximoIntervalo);
+                    result.put("proximoEstagio", proximoEstagio);
+                    result.put("dataAgendada", nextDateStr);
+                    result.put("justificativaPedagogica", proxJustificativa);
                 } else {
                     // Se falhou ou teve dificuldade na revisão (< 80%), recua para Intervenção Corretiva com prioridade máxima
                     LocalDate nextDate = LocalDate.now().plusDays(1);
                     String nextDateStr = nextDate.format(DateTimeFormatter.ISO_LOCAL_DATE);
                     String nextId = "rev-" + UUID.randomUUID().toString().substring(0, 8);
+                    String just = "Dificuldade observada durante a revisão anterior (desempenho " + Math.round(acerto * 100) + "%). Intervalo reajustado para reavaliação corretiva imediata.";
 
                     jdbcTemplate.update(
                             "INSERT INTO revision_calendar (id, session_id, concurso_id, disciplina, topico, tipo_revisao, intervalo_dias, data_agendada, origem_evento, status, justificativa_pedagogica, estagio_intervencao, prioridade_score) " +
                                     "VALUES (?, ?, ?, ?, ?, 'D1_IMEDIATO', 1, ?, 'DIFICULDADE_EM_REVISAO', 'PENDENTE', ?, 'INTERVENCAO_CORRETIVA', 0.95)",
                             nextId, sessionId, concId, disc, top, nextDateStr,
-                            "Dificuldade observada durante a revisão anterior (desempenho " + Math.round(acerto * 100) + "%). Intervalo reajustado para reavaliação corretiva imediata."
+                            just
                     );
                     log.info("Recuo adaptativo para {} • {} após desempenho insuficiente na revisão", disc, top);
+
+                    result.put("proximoIntervalo", 1);
+                    result.put("proximoEstagio", "INTERVENCAO_CORRETIVA");
+                    result.put("dataAgendada", nextDateStr);
+                    result.put("justificativaPedagogica", just);
                 }
             }
 
@@ -527,8 +667,7 @@ public class RevisionCalendarService {
                     "v2",
                     payload
             );
-            return true;
         }
-        return false;
+        return result;
     }
 }

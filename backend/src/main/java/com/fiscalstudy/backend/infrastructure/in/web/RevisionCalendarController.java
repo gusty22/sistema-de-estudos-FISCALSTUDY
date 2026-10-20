@@ -39,6 +39,11 @@ public class RevisionCalendarController {
         return ResponseEntity.ok(agenda);
     }
 
+    @GetMapping("/error-taxonomy-counts")
+    public ResponseEntity<Map<String, Object>> getErrorTaxonomyCounts(@RequestParam(required = false) String concursoId) {
+        return ResponseEntity.ok(revisionCalendarService.getErrorTaxonomyStats(concursoId));
+    }
+
     @PostMapping("/{id}/concluir")
     public ResponseEntity<Map<String, Object>> completeRevision(
             @PathVariable String id,
