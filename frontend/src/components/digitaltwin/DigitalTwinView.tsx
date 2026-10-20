@@ -347,7 +347,7 @@ export const DigitalTwinView: React.FC<DigitalTwinViewProps> = ({
           {/* Pontos Críticos de Falha Neural */}
           {data.simulacaoRecente.pontosCriticosFalha && data.simulacaoRecente.pontosCriticosFalha.length > 0 && (
             <div>
-              <h4 style={{ color: '#f8fafc', fontSize: '0.92rem', marginBottom: '0.6rem' }}>
+              <h4 style={{ color: 'var(--dt-text, #0f172a)', fontSize: '0.92rem', marginBottom: '0.6rem' }}>
                 🚨 Pontos Críticos de Falha Neural Identificados na Simulação:
               </h4>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '0.75rem' }}>
@@ -355,25 +355,25 @@ export const DigitalTwinView: React.FC<DigitalTwinViewProps> = ({
                   <div
                     key={crit.topicoId || idx}
                     style={{
-                      background: '#0a0f1d',
+                      background: 'var(--dt-bg-subtle, #f8fafc)',
                       border: '1px solid rgba(239, 68, 68, 0.3)',
                       borderRadius: '8px',
                       padding: '0.85rem',
                     }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
-                      <span style={{ fontSize: '0.72rem', color: '#38bdf8', fontWeight: 700, textTransform: 'uppercase' }}>
+                      <span style={{ fontSize: '0.72rem', color: '#0284c7', fontWeight: 700, textTransform: 'uppercase' }}>
                         {crit.disciplina}
                       </span>
-                      <span style={{ fontSize: '0.72rem', background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', padding: '1px 6px', borderRadius: '4px', fontWeight: 700 }}>
+                      <span style={{ fontSize: '0.72rem', background: 'rgba(239, 68, 68, 0.15)', color: '#dc2626', padding: '1px 6px', borderRadius: '4px', fontWeight: 700 }}>
                         {crit.retencaoAtualPct}% retenção
                       </span>
                     </div>
-                    <strong style={{ color: '#f8fafc', fontSize: '0.85rem', display: 'block', marginBottom: '0.4rem' }}>
+                    <strong style={{ color: 'var(--dt-text, #0f172a)', fontSize: '0.85rem', display: 'block', marginBottom: '0.4rem' }}>
                       {crit.assunto}
                     </strong>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--dt-text-muted, #64748b)' }}>
                         Peso: {crit.peso}x • Prob. Acerto: {crit.probabilidadeAcertoHojePct}%
                       </span>
                       <button
@@ -398,13 +398,13 @@ export const DigitalTwinView: React.FC<DigitalTwinViewProps> = ({
         <div className="flight-plan-card glass">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.5rem' }}>
             <div>
-              <span style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#38bdf8' }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#0284c7' }}>
                 🚀 Plano de Voo do Dia — Zero Fadiga Decisória
               </span>
-              <h3 style={{ color: '#f8fafc', fontSize: '1.25rem', margin: '0.2rem 0' }}>
+              <h3 style={{ color: 'var(--dt-text, #0f172a)', fontSize: '1.25rem', margin: '0.2rem 0' }}>
                 {data.roteiroDoDia.titulo}
               </h3>
-              <p style={{ color: '#94a3b8', fontSize: '0.85rem', margin: 0 }}>
+              <p style={{ color: 'var(--dt-text-muted, #64748b)', fontSize: '0.85rem', margin: 0 }}>
                 {data.roteiroDoDia.mensagemIA}
               </p>
             </div>
@@ -418,19 +418,19 @@ export const DigitalTwinView: React.FC<DigitalTwinViewProps> = ({
                     <span style={{ background: '#0284c7', color: '#fff', fontSize: '0.72rem', fontWeight: 800, padding: '2px 8px', borderRadius: '4px' }}>
                       BLOCO #{block.ordem} • {block.tipoIntervencao}
                     </span>
-                    <span style={{ color: '#38bdf8', fontSize: '0.85rem', fontWeight: 700 }}>
+                    <span style={{ color: '#0284c7', fontSize: '0.85rem', fontWeight: 700 }}>
                       ⏱️ {block.duracaoMinutos} min
                     </span>
                   </div>
 
-                  <span style={{ fontSize: '0.75rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 600 }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--dt-text-muted, #64748b)', textTransform: 'uppercase', fontWeight: 600 }}>
                     {block.disciplina}
                   </span>
-                  <h4 style={{ color: '#f8fafc', fontSize: '1.05rem', margin: '0.2rem 0 0.5rem 0' }}>
+                  <h4 style={{ color: 'var(--dt-text, #0f172a)', fontSize: '1.05rem', margin: '0.2rem 0 0.5rem 0' }}>
                     {block.assunto}
                   </h4>
 
-                  <p style={{ color: '#cbd5e1', fontSize: '0.8rem', background: 'rgba(56, 189, 248, 0.05)', padding: '6px 8px', borderRadius: '6px', borderLeft: '3px solid #38bdf8', margin: '0.5rem 0 0.75rem 0' }}>
+                  <p style={{ color: 'var(--dt-text, #334155)', fontSize: '0.8rem', background: 'rgba(2, 132, 199, 0.08)', padding: '6px 8px', borderRadius: '6px', borderLeft: '3px solid #0284c7', margin: '0.5rem 0 0.75rem 0' }}>
                     💡 {block.justificativaSinaptica}
                   </p>
 
@@ -546,13 +546,13 @@ export const DigitalTwinView: React.FC<DigitalTwinViewProps> = ({
       )}
 
       {/* 4. Grafo Sináptico de Conhecimento (Todos os Nós do Edital) */}
-      <div className="neural-graph-card glass">
+      <div className="neural-graph-card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
           <div>
-            <h3 style={{ color: '#f8fafc', fontSize: '1.2rem', margin: 0 }}>
+            <h3 style={{ color: 'var(--dt-text, #0f172a)', fontSize: '1.2rem', margin: 0 }}>
               🌐 Grafo de Conhecimento Neural ({filteredNodes.length} nós)
             </h3>
-            <p style={{ color: '#94a3b8', fontSize: '0.82rem', margin: '0.2rem 0 0 0' }}>
+            <p style={{ color: 'var(--dt-text-muted, #64748b)', fontSize: '0.82rem', margin: '0.2rem 0 0 0' }}>
               Estado sináptico em tempo real de cada nó do edital calculado pela Curva de Ebbinghaus e histórico real.
             </p>
           </div>
@@ -570,9 +570,9 @@ export const DigitalTwinView: React.FC<DigitalTwinViewProps> = ({
                 key={f.id}
                 type="button"
                 style={{
-                  background: nodeFilter === f.id ? '#0284c7' : '#0a0f1d',
-                  color: nodeFilter === f.id ? '#fff' : '#94a3b8',
-                  border: '1px solid #1e293b',
+                  background: nodeFilter === f.id ? '#0284c7' : 'var(--dt-bg-subtle, #f8fafc)',
+                  color: nodeFilter === f.id ? '#fff' : 'var(--dt-text-muted, #64748b)',
+                  border: '1px solid var(--dt-card-border, #e2e8f0)',
                   padding: '4px 8px',
                   borderRadius: '6px',
                   fontSize: '0.75rem',
@@ -606,13 +606,13 @@ export const DigitalTwinView: React.FC<DigitalTwinViewProps> = ({
                 <div key={node.topicoId} className="neural-node-row">
                   <div style={{ flex: 1, minWidth: '220px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.15rem' }}>
-                      <span style={{ fontSize: '0.72rem', color: '#38bdf8', fontWeight: 700, textTransform: 'uppercase' }}>
+                      <span style={{ fontSize: '0.72rem', color: '#0284c7', fontWeight: 700, textTransform: 'uppercase' }}>
                         {node.disciplina}
                       </span>
-                      <span style={{ fontSize: '0.7rem', color: '#64748b' }}>• Peso: {node.peso}x</span>
+                      <span style={{ fontSize: '0.7rem', color: 'var(--dt-text-muted, #64748b)' }}>• Peso: {node.peso}x</span>
                     </div>
-                    <strong style={{ color: '#f8fafc', fontSize: '0.88rem' }}>{node.assunto}</strong>
-                    <div style={{ color: '#94a3b8', fontSize: '0.72rem', marginTop: '2px' }}>
+                    <strong style={{ color: 'var(--dt-text, #0f172a)', fontSize: '0.88rem' }}>{node.assunto}</strong>
+                    <div style={{ color: 'var(--dt-text-muted, #64748b)', fontSize: '0.72rem', marginTop: '2px' }}>
                       {node.totalTentativas > 0
                         ? `${node.totalTentativas} resoluções (${node.totalAcertos} acertos • ${node.acuraciaHistoricaPct}%) • Último contato: ${node.diasSemContato} dias atrás`
                         : 'Nenhuma questão ou sessão registrada ainda neste nó.'}
@@ -622,7 +622,7 @@ export const DigitalTwinView: React.FC<DigitalTwinViewProps> = ({
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
                     {/* Retenção Ebbinghaus */}
                     <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#cbd5e1' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--dt-text-muted, #64748b)' }}>
                         <span>Retenção:</span>
                         <strong style={{ color: retentionColor }}>{node.retencaoAtualPct}%</strong>
                       </div>
@@ -636,10 +636,10 @@ export const DigitalTwinView: React.FC<DigitalTwinViewProps> = ({
 
                     {/* Estabilidade Sináptica */}
                     <div style={{ textAlign: 'right', minWidth: '85px' }}>
-                      <span style={{ display: 'block', fontSize: '0.85rem', color: '#f8fafc', fontWeight: 700 }}>
+                      <span style={{ display: 'block', fontSize: '0.85rem', color: 'var(--dt-text, #0f172a)', fontWeight: 700 }}>
                         {node.estabilidadeDias} dias
                       </span>
-                      <span style={{ fontSize: '0.68rem', color: '#64748b' }}>Estabilidade (S)</span>
+                      <span style={{ fontSize: '0.68rem', color: 'var(--dt-text-muted, #64748b)' }}>Estabilidade (S)</span>
                     </div>
 
                     {/* Previsão de Quebra */}

@@ -1,8 +1,38 @@
+/* =========================================================================
+   DIGITAL TWIN VIEW (Gêmeo Digital do Aluno)
+   Padrão Visual Limpo — Tecnologia Calma (Paper & Night nativos)
+   ========================================================================= */
+
 .digital-twin-container {
+  --dt-card-bg: var(--calm-card-bg, #ffffff);
+  --dt-card-border: var(--calm-card-border, #e2e8f0);
+  --dt-text: var(--calm-text, #0f172a);
+  --dt-text-muted: var(--calm-text-muted, #64748b);
+  --dt-bg-subtle: var(--calm-bg-subtle, #f8fafc);
+  --dt-border-subtle: var(--calm-border-subtle, #e2e8f0);
+  --dt-primary: #8b5cf6;
+  --dt-primary-hover: #7c3aed;
+  --dt-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
   padding-bottom: 2rem;
+  color: var(--dt-text);
+  font-family: inherit;
+}
+
+[data-theme='night'] .digital-twin-container,
+[data-theme='dark'] .digital-twin-container {
+  --dt-card-bg: #151d2c;
+  --dt-card-border: rgba(255, 255, 255, 0.08);
+  --dt-text: #f8fafc;
+  --dt-text-muted: #94a3b8;
+  --dt-bg-subtle: #0d131f;
+  --dt-border-subtle: rgba(255, 255, 255, 0.08);
+  --dt-primary: #a78bfa;
+  --dt-primary-hover: #8b5cf6;
+  --dt-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
 }
 
 .dt-header {
@@ -10,17 +40,18 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-left: 4px solid #8b5cf6;
-  border-radius: 12px;
-  background: radial-gradient(circle at top right, rgba(139, 92, 246, 0.12) 0%, rgba(15, 23, 42, 0.85) 100%);
-  border: 1px solid rgba(139, 92, 246, 0.25);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  border-left: 5px solid var(--dt-primary);
+  border-radius: 14px;
+  background: var(--dt-card-bg);
+  border: 1px solid var(--dt-card-border);
+  box-shadow: var(--dt-shadow);
+  transition: background-color 0.25s ease, border-color 0.25s ease;
 }
 
 .dt-header h2 {
   font-size: 1.45rem;
   font-weight: 800;
-  color: #f8fafc;
+  color: var(--dt-text);
   margin: 0;
   display: flex;
   align-items: center;
@@ -29,19 +60,19 @@
 
 .dt-subtitle {
   font-size: 0.85rem;
-  color: #94a3b8;
+  color: var(--dt-text-muted);
   margin: 0.35rem 0 0 0;
   max-width: 820px;
   line-height: 1.45;
 }
 
-/* Micro-telemetria de Lucas */
+/* Micro-telemetria */
 .lucas-telemetry-card {
   padding: 1.5rem 1.75rem;
-  border-radius: 12px;
-  background: #0f172a;
-  border: 1px solid #1e293b;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  border-radius: 14px;
+  background: var(--dt-card-bg);
+  border: 1px solid var(--dt-card-border);
+  box-shadow: var(--dt-shadow);
 }
 
 .telemetry-progress-header {
@@ -58,28 +89,38 @@
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.08em;
+  color: #0284c7;
+}
+
+[data-theme='night'] .telemetry-badge-title,
+[data-theme='dark'] .telemetry-badge-title {
   color: #38bdf8;
 }
 
 .telemetry-hours-stat {
   font-size: 1.25rem;
   font-weight: 800;
-  color: #f8fafc;
+  color: var(--dt-text);
 }
 
 .telemetry-hours-stat strong {
-  color: #38bdf8;
+  color: #0284c7;
   font-size: 1.45rem;
+}
+
+[data-theme='night'] .telemetry-hours-stat strong,
+[data-theme='dark'] .telemetry-hours-stat strong {
+  color: #38bdf8;
 }
 
 .telemetry-bar-wrap {
   width: 100%;
   height: 10px;
-  background: #1e293b;
+  background: var(--dt-bg-subtle);
   border-radius: 6px;
   overflow: hidden;
   margin-bottom: 1.25rem;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--dt-card-border);
 }
 
 .telemetry-bar-fill {
@@ -108,9 +149,9 @@
 }
 
 .telemetry-box {
-  background: #0a0f1d;
-  border: 1px solid #1e293b;
-  border-radius: 8px;
+  background: var(--dt-bg-subtle);
+  border: 1px solid var(--dt-card-border);
+  border-radius: 10px;
   padding: 1rem;
   display: flex;
   flex-direction: column;
@@ -119,7 +160,7 @@
 .telemetry-box-num {
   font-size: 1.6rem;
   font-weight: 900;
-  color: #f8fafc;
+  color: var(--dt-text);
   line-height: 1.1;
   margin-bottom: 0.25rem;
 }
@@ -127,29 +168,31 @@
 .telemetry-box-label {
   font-size: 0.8rem;
   font-weight: 700;
-  color: #cbd5e1;
+  color: var(--dt-text);
 }
 
 .telemetry-box-sub {
   font-size: 0.72rem;
-  color: #64748b;
+  color: var(--dt-text-muted);
   margin-top: 3px;
 }
 
 /* Simulação da Noite */
 .simulation-card {
   padding: 1.5rem 1.75rem;
-  border-radius: 12px;
-  background: radial-gradient(circle at top left, rgba(16, 185, 129, 0.08) 0%, rgba(15, 23, 42, 0.9) 100%);
-  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: 14px;
+  background: var(--dt-card-bg);
+  border: 1px solid var(--dt-card-border);
+  border-left: 5px solid #10b981;
+  box-shadow: var(--dt-shadow);
 }
 
 .sim-score-banner {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #0a0f1d;
-  border: 1px solid #1e293b;
+  background: var(--dt-bg-subtle);
+  border: 1px solid var(--dt-card-border);
   padding: 1rem 1.25rem;
   border-radius: 10px;
   margin: 1rem 0;
@@ -165,12 +208,12 @@
 .sim-score-val {
   font-size: 1.75rem;
   font-weight: 900;
-  color: #f8fafc;
+  color: var(--dt-text);
 }
 
 .sim-score-label {
   font-size: 0.75rem;
-  color: #94a3b8;
+  color: var(--dt-text-muted);
   font-weight: 600;
   text-transform: uppercase;
 }
@@ -178,9 +221,10 @@
 /* Roteiro do Dia */
 .flight-plan-card {
   padding: 1.5rem 1.75rem;
-  border-radius: 12px;
-  background: #0f172a;
-  border: 1px solid #1e293b;
+  border-radius: 14px;
+  background: var(--dt-card-bg);
+  border: 1px solid var(--dt-card-border);
+  box-shadow: var(--dt-shadow);
 }
 
 .flight-plan-grid {
@@ -191,8 +235,8 @@
 }
 
 .flight-block-card {
-  background: #0a0f1d;
-  border: 1px solid #1e293b;
+  background: var(--dt-bg-subtle);
+  border: 1px solid var(--dt-card-border);
   border-radius: 10px;
   padding: 1.25rem;
   display: flex;
@@ -203,24 +247,25 @@
 }
 
 .flight-block-card:hover {
-  border-color: #38bdf8;
+  border-color: #0284c7;
   transform: translateY(-2px);
 }
 
 /* Grafo Sinaptico */
 .neural-graph-card {
   padding: 1.5rem 1.75rem;
-  border-radius: 12px;
-  background: #0f172a;
-  border: 1px solid #1e293b;
+  border-radius: 14px;
+  background: var(--dt-card-bg);
+  border: 1px solid var(--dt-card-border);
+  box-shadow: var(--dt-shadow);
 }
 
 .neural-node-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #0a0f1d;
-  border: 1px solid #1e293b;
+  background: var(--dt-bg-subtle);
+  border: 1px solid var(--dt-card-border);
   padding: 0.85rem 1rem;
   border-radius: 8px;
   gap: 1rem;
@@ -228,13 +273,13 @@
 }
 
 .neural-node-row:hover {
-  border-color: #334155;
+  border-color: #0284c7;
 }
 
 .node-retention-bar {
   width: 90px;
   height: 6px;
-  background: #1e293b;
+  background: var(--dt-border-subtle);
   border-radius: 3px;
   overflow: hidden;
   margin-top: 3px;
