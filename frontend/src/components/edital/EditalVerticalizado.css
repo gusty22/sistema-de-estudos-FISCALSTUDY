@@ -1,7 +1,33 @@
+/* =========================================================================
+   EDITAL VERTICALIZADO (MODO CLÁSSICO DE AUDITORIA & GESTÃO HIERÁRQUICA)
+   Padrão Visual Limpo — Tecnologia Calma (Paper & Night nativos)
+   ========================================================================= */
+
 .edital-container {
+  --edital-card-bg: var(--calm-card-bg, #ffffff);
+  --edital-card-border: var(--calm-card-border, #e2e8f0);
+  --edital-text: var(--calm-text, #0f172a);
+  --edital-text-muted: var(--calm-text-muted, #64748b);
+  --edital-bg-subtle: var(--calm-bg-subtle, #f8fafc);
+  --edital-border-subtle: var(--calm-border-subtle, #e2e8f0);
+  --edital-shadow: 0 4px 18px rgba(0, 0, 0, 0.04);
+
   max-width: 1200px;
   margin: 0 auto;
   padding: 1.5rem 1rem;
+  color: var(--edital-text);
+  font-family: inherit;
+}
+
+[data-theme='night'] .edital-container,
+[data-theme='dark'] .edital-container {
+  --edital-card-bg: #151d2c;
+  --edital-card-border: rgba(255, 255, 255, 0.08);
+  --edital-text: #f8fafc;
+  --edital-text-muted: #94a3b8;
+  --edital-bg-subtle: #0d131f;
+  --edital-border-subtle: rgba(255, 255, 255, 0.08);
+  --edital-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
 }
 
 .edital-header {
@@ -16,13 +42,13 @@
 .edital-title h2 {
   font-size: 1.8rem;
   font-weight: 800;
-  color: #f8fafc;
+  color: var(--edital-text);
   margin: 0;
   letter-spacing: -0.025em;
 }
 
 .edital-title p {
-  color: #94a3b8;
+  color: var(--edital-text-muted);
   margin: 0.25rem 0 0;
   font-size: 0.95rem;
 }
@@ -35,17 +61,18 @@
 }
 
 .edital-stat-card {
-  background: rgba(30, 41, 59, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
+  background: var(--edital-card-bg);
+  border: 1px solid var(--edital-card-border);
+  border-radius: 12px;
   padding: 1rem 1.25rem;
   display: flex;
   flex-direction: column;
+  box-shadow: var(--edital-shadow);
 }
 
 .edital-stat-label {
   font-size: 0.75rem;
-  color: #94a3b8;
+  color: var(--edital-text-muted);
   text-transform: uppercase;
   font-weight: 600;
   letter-spacing: 0.05em;
@@ -54,26 +81,27 @@
 .edital-stat-value {
   font-size: 1.6rem;
   font-weight: 800;
-  color: #f8fafc;
+  color: var(--edital-text);
   margin-top: 0.25rem;
 }
 
 /* Hierarchical Matérias & Tópicos Accordion */
 .materia-accordion-card {
-  background: rgba(17, 24, 39, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
+  background: var(--edital-card-bg);
+  border: 1px solid var(--edital-card-border);
+  border-radius: 14px;
   margin-bottom: 1.25rem;
   overflow: hidden;
+  box-shadow: var(--edital-shadow);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .materia-accordion-card:hover {
-  border-color: rgba(59, 130, 246, 0.3);
+  border-color: rgba(79, 70, 229, 0.35);
 }
 
 .materia-accordion-header {
-  background: rgba(15, 23, 42, 0.85);
+  background: var(--edital-card-bg);
   padding: 1.1rem 1.4rem;
   display: flex;
   justify-content: space-between;
@@ -84,11 +112,11 @@
 }
 
 .materia-accordion-header:hover {
-  background: rgba(30, 41, 59, 0.8);
+  background: var(--edital-bg-subtle);
 }
 
 .materia-accordion-header.is-open {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--edital-border-subtle);
 }
 
 .materia-info-left {
@@ -100,7 +128,7 @@
 
 .materia-chevron {
   font-size: 1.1rem;
-  color: #60a5fa;
+  color: #4f46e5;
   transition: transform 0.2s ease;
   display: inline-block;
   line-height: 1;
@@ -113,15 +141,15 @@
 .materia-title {
   font-size: 1.15rem;
   font-weight: 700;
-  color: #f8fafc;
+  color: var(--edital-text);
   margin: 0;
   letter-spacing: -0.01em;
 }
 
 .materia-badge-topics {
-  background: rgba(59, 130, 246, 0.15);
-  color: #60a5fa;
-  border: 1px solid rgba(59, 130, 246, 0.35);
+  background: rgba(79, 70, 229, 0.1);
+  color: #4f46e5;
+  border: 1px solid rgba(79, 70, 229, 0.25);
   padding: 3px 10px;
   border-radius: 6px;
   font-size: 0.78rem;
@@ -129,9 +157,9 @@
 }
 
 .materia-badge-subtopics {
-  background: rgba(148, 163, 184, 0.12);
-  color: #cbd5e1;
-  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: var(--edital-bg-subtle);
+  color: var(--edital-text-muted);
+  border: 1px solid var(--edital-card-border);
   padding: 3px 10px;
   border-radius: 6px;
   font-size: 0.78rem;
@@ -139,8 +167,8 @@
 }
 
 .materia-badge-questions {
-  background: rgba(16, 185, 129, 0.12);
-  color: #34d399;
+  background: rgba(16, 185, 129, 0.1);
+  color: #059669;
   border: 1px solid rgba(16, 185, 129, 0.25);
   padding: 3px 10px;
   border-radius: 6px;
@@ -156,17 +184,17 @@
 
 .materia-accordion-body {
   padding: 1.25rem 1.4rem;
-  background: rgba(11, 15, 23, 0.65);
+  background: var(--edital-bg-subtle);
 }
 
-/* TÓPICOS Section Header (Matching Image) */
+/* TÓPICOS Section Header */
 .topicos-section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1rem;
   padding-bottom: 0.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--edital-border-subtle);
 }
 
 .topicos-title-group {
@@ -179,14 +207,14 @@
   font-size: 0.82rem;
   font-weight: 800;
   letter-spacing: 0.08em;
-  color: #94a3b8;
+  color: var(--edital-text-muted);
   text-transform: uppercase;
 }
 
 .btn-dicas-pill {
-  background: rgba(30, 58, 138, 0.45);
-  border: 1px solid rgba(59, 130, 246, 0.4);
-  color: #93c5fd;
+  background: rgba(79, 70, 229, 0.1);
+  border: 1px solid rgba(79, 70, 229, 0.3);
+  color: #4f46e5;
   font-size: 0.75rem;
   font-weight: 700;
   padding: 3px 10px;
@@ -199,8 +227,8 @@
 }
 
 .btn-dicas-pill:hover {
-  background: rgba(37, 99, 235, 0.6);
-  border-color: #60a5fa;
+  background: #4f46e5;
+  border-color: #4f46e5;
   color: #ffffff;
   transform: translateY(-1px);
 }
@@ -208,7 +236,7 @@
 .btn-text-action {
   background: transparent;
   border: none;
-  color: #38bdf8;
+  color: #0284c7;
   font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
@@ -217,11 +245,11 @@
 }
 
 .btn-text-action:hover {
-  color: #7dd3fc;
+  color: #0369a1;
   text-decoration: underline;
 }
 
-/* Topic Item Cards (Matching Image) */
+/* Topic Item Cards */
 .topicos-list {
   display: flex;
   flex-direction: column;
@@ -229,21 +257,21 @@
 }
 
 .topic-item-card {
-  background: #111827;
-  border: 1px solid #1f293d;
-  border-radius: 8px;
+  background: var(--edital-card-bg);
+  border: 1px solid var(--edital-card-border);
+  border-radius: 10px;
   overflow: hidden;
   transition: border-color 0.2s ease, background 0.2s ease;
 }
 
 .topic-item-card:hover {
-  border-color: #334155;
-  background: #131d2e;
+  border-color: #cbd5e1;
+  background: var(--edital-bg-subtle);
 }
 
 .topic-item-card.expanded {
-  border-color: rgba(59, 130, 246, 0.4);
-  background: #0f172a;
+  border-color: #4f46e5;
+  background: var(--edital-card-bg);
 }
 
 .topic-item-header {
@@ -265,7 +293,7 @@
 
 .topic-chevron {
   font-size: 1.15rem;
-  color: #64748b;
+  color: var(--edital-text-muted);
   font-weight: 700;
   display: inline-flex;
   align-items: center;
@@ -278,7 +306,7 @@
 
 .topic-chevron.open {
   transform: rotate(90deg);
-  color: #38bdf8;
+  color: #4f46e5;
 }
 
 .topic-chevron.leaf {
@@ -288,7 +316,7 @@
 .topic-name {
   font-size: 0.95rem;
   font-weight: 600;
-  color: #f1f5f9;
+  color: var(--edital-text);
   letter-spacing: -0.01em;
 }
 
@@ -300,9 +328,9 @@
 }
 
 .topic-subtopics-count-badge {
-  background: rgba(148, 163, 184, 0.1);
-  color: #94a3b8;
-  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: var(--edital-bg-subtle);
+  color: var(--edital-text-muted);
+  border: 1px solid var(--edital-card-border);
   padding: 2px 8px;
   border-radius: 4px;
   font-size: 0.75rem;
@@ -310,8 +338,8 @@
 }
 
 .topic-leaf-badge {
-  background: rgba(59, 130, 246, 0.1);
-  color: #60a5fa;
+  background: rgba(79, 70, 229, 0.08);
+  color: #4f46e5;
   padding: 2px 8px;
   border-radius: 4px;
   font-size: 0.72rem;
@@ -319,9 +347,9 @@
 }
 
 .btn-topic-action-study {
-  background: rgba(56, 189, 248, 0.15);
-  border: 1px solid rgba(56, 189, 248, 0.35);
-  color: #38bdf8;
+  background: rgba(2, 132, 199, 0.1);
+  border: 1px solid rgba(2, 132, 199, 0.28);
+  color: #0284c7;
   font-size: 0.78rem;
   font-weight: 700;
   padding: 4px 10px;
@@ -338,8 +366,8 @@
 
 .btn-topic-icon {
   background: transparent;
-  border: 1px solid #334155;
-  color: #94a3b8;
+  border: 1px solid var(--edital-card-border);
+  color: var(--edital-text-muted);
   padding: 4px 7px;
   border-radius: 6px;
   cursor: pointer;
@@ -348,15 +376,15 @@
 }
 
 .btn-topic-icon:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: #f8fafc;
+  background: var(--edital-bg-subtle);
+  color: var(--edital-text);
 }
 
 /* Subtopics Container (Expanded View) */
 .subtopics-container {
-  padding: 0.5rem 1rem 1rem 2.5rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-  background: rgba(15, 23, 42, 0.4);
+  padding: 0.75rem 1rem 1rem 2.5rem;
+  border-top: 1px solid var(--edital-border-subtle);
+  background: var(--edital-bg-subtle);
 }
 
 .subtopics-list {
@@ -370,15 +398,15 @@
   align-items: center;
   justify-content: space-between;
   padding: 8px 12px;
-  background: rgba(30, 41, 59, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--edital-card-bg);
+  border: 1px solid var(--edital-card-border);
   border-radius: 6px;
   gap: 0.75rem;
   transition: background 0.15s ease;
 }
 
 .subtopic-row:hover {
-  background: rgba(30, 41, 59, 0.8);
+  background: var(--edital-bg-subtle);
 }
 
 .subtopic-row-main {
@@ -393,26 +421,26 @@
 }
 
 .subtopic-bullet {
-  color: #38bdf8;
+  color: #0284c7;
   font-size: 1.1rem;
   line-height: 1;
 }
 
 .subtopic-name {
-  color: #e2e8f0;
+  color: var(--edital-text);
   font-size: 0.88rem;
   font-weight: 500;
 }
 
 .subtopic-weight-tag {
-  color: #60a5fa;
+  color: #4f46e5;
   font-size: 0.75rem;
   font-weight: 600;
 }
 
 .subtopic-provenance {
   font-size: 0.75rem;
-  color: #94a3b8;
+  color: var(--edital-text-muted);
   margin-top: 0.2rem;
   margin-left: 1rem;
 }
@@ -424,9 +452,9 @@
 }
 
 .btn-subtopic-materials {
-  background: rgba(56, 189, 248, 0.12);
-  border: 1px solid rgba(56, 189, 248, 0.3);
-  color: #38bdf8;
+  background: rgba(2, 132, 199, 0.1);
+  border: 1px solid rgba(2, 132, 199, 0.28);
+  color: #0284c7;
   border-radius: 4px;
   padding: 3px 8px;
   font-size: 0.72rem;
@@ -437,7 +465,7 @@
 .btn-subtopic-confirm {
   background: transparent;
   border: 1px solid #10b981;
-  color: #34d399;
+  color: #059669;
   border-radius: 4px;
   padding: 3px 7px;
   font-size: 0.72rem;
@@ -447,8 +475,8 @@
 
 .btn-subtopic-icon {
   background: transparent;
-  border: 1px solid #334155;
-  color: #94a3b8;
+  border: 1px solid var(--edital-card-border);
+  color: var(--edital-text-muted);
   border-radius: 4px;
   padding: 3px 6px;
   font-size: 0.72rem;
@@ -466,7 +494,7 @@
 
 .subtopic-single-detail {
   padding: 0.75rem 0.5rem;
-  background: rgba(30, 41, 59, 0.3);
+  background: var(--edital-bg-subtle);
   border-radius: 6px;
 }
 
@@ -479,26 +507,26 @@
 }
 
 .badge-explicita {
-  background: rgba(59, 130, 246, 0.15);
-  color: #60a5fa;
-  border: 1px solid rgba(59, 130, 246, 0.3);
+  background: rgba(79, 70, 229, 0.1);
+  color: #4f46e5;
+  border: 1px solid rgba(79, 70, 229, 0.25);
 }
 
 .badge-inferida {
-  background: rgba(245, 158, 11, 0.15);
-  color: #fbbf24;
-  border: 1px solid rgba(245, 158, 11, 0.3);
+  background: rgba(245, 158, 11, 0.1);
+  color: #b45309;
+  border: 1px solid rgba(245, 158, 11, 0.25);
 }
 
 .badge-confirmada {
-  background: rgba(16, 185, 129, 0.15);
-  color: #34d399;
-  border: 1px solid rgba(16, 185, 129, 0.3);
+  background: rgba(16, 185, 129, 0.1);
+  color: #047857;
+  border: 1px solid rgba(16, 185, 129, 0.25);
 }
 
 .provenance-info {
   font-size: 0.75rem;
-  color: #94a3b8;
+  color: var(--edital-text-muted);
   display: flex;
   align-items: center;
   gap: 0.35rem;
@@ -507,9 +535,9 @@
 
 /* Topic Materials Drawer */
 .topic-materials-drawer {
-  background: rgba(15, 23, 42, 0.75);
-  border-top: 1px solid #1e293b;
-  border-bottom: 2px solid #3b82f6;
+  background: var(--edital-card-bg);
+  border-top: 1px solid var(--edital-card-border);
+  border-bottom: 2px solid #4f46e5;
   padding: 1.25rem 1.5rem;
   margin: 0;
 }
@@ -526,7 +554,7 @@
 .drawer-header h4 {
   margin: 0;
   font-size: 0.95rem;
-  color: #38bdf8;
+  color: #4f46e5;
   display: flex;
   align-items: center;
   gap: 0.4rem;
@@ -540,8 +568,8 @@
 }
 
 .drawer-material-card {
-  background: #11141c;
-  border: 1px solid #1f2738;
+  background: var(--edital-bg-subtle);
+  border: 1px solid var(--edital-card-border);
   border-radius: 8px;
   padding: 0.85rem 1rem;
   display: flex;
@@ -551,19 +579,19 @@
 }
 
 .drawer-material-card:hover {
-  border-color: #38bdf8;
+  border-color: #4f46e5;
 }
 
 .drawer-mat-title {
   font-size: 0.88rem;
   font-weight: 700;
-  color: #f1f5f9;
+  color: var(--edital-text);
   margin: 0;
 }
 
 .drawer-mat-meta {
   font-size: 0.78rem;
-  color: #94a3b8;
+  color: var(--edital-text-muted);
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -577,23 +605,23 @@
   font-weight: 700;
 }
 
-.conf-high { background: rgba(16, 185, 129, 0.15); color: #34d399; }
-.conf-partial { background: rgba(234, 179, 8, 0.15); color: #facc15; }
+.conf-high { background: rgba(16, 185, 129, 0.12); color: #047857; }
+.conf-partial { background: rgba(234, 179, 8, 0.12); color: #b45309; }
 
 .drawer-actions-bar {
   display: flex;
   gap: 0.75rem;
   align-items: center;
   flex-wrap: wrap;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid var(--edital-border-subtle);
   padding-top: 0.75rem;
 }
 
 /* Pre-Edital Transition Banner */
 .pre-edital-banner {
-  background: linear-gradient(135deg, rgba(234, 179, 8, 0.12) 0%, rgba(202, 138, 4, 0.06) 100%);
-  border: 1px solid rgba(234, 179, 8, 0.35);
-  border-left: 5px solid #eab308;
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-left: 5px solid #f59e0b;
   border-radius: 12px;
   padding: 1.25rem 1.5rem;
   margin-bottom: 2rem;
@@ -602,7 +630,7 @@
   justify-content: space-between;
   gap: 1.5rem;
   flex-wrap: wrap;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--edital-shadow);
 }
 
 .banner-left {
@@ -620,39 +648,44 @@
 
 .banner-content h4 {
   margin: 0 0 0.35rem 0;
-  color: #fef08a;
+  color: #b45309;
   font-size: 1.05rem;
   font-weight: 700;
 }
 
+[data-theme='night'] .banner-content h4,
+[data-theme='dark'] .banner-content h4 {
+  color: #fef08a;
+}
+
 .banner-content p {
   margin: 0;
-  color: #cbd5e1;
+  color: var(--edital-text);
   font-size: 0.88rem;
   line-height: 1.5;
 }
 
 .btn-banner-action {
-  background: linear-gradient(135deg, #eab308 0%, #ca8a04 100%);
-  color: #0f172a;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: #ffffff;
   font-weight: 800;
   font-size: 0.92rem;
   border: none;
   border-radius: 8px;
   padding: 10px 20px;
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(234, 179, 8, 0.35);
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.3);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
   white-space: nowrap;
 }
 
 .btn-banner-action:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(234, 179, 8, 0.5);
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.45);
 }
 
 .btn-pos-edital {
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);
   color: #ffffff;
   font-weight: 700;
   font-size: 0.85rem;
@@ -663,13 +696,13 @@
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.25);
   transition: all 0.2s ease;
 }
 
 .btn-pos-edital:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(59, 130, 246, 0.45);
+  box-shadow: 0 6px 18px rgba(79, 70, 229, 0.4);
 }
 
 .modal-header-actions {
@@ -682,16 +715,16 @@
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  background: rgba(16, 185, 129, 0.15);
-  color: #34d399;
-  border: 1px solid rgba(16, 185, 129, 0.35);
+  background: rgba(16, 185, 129, 0.12);
+  color: #047857;
+  border: 1px solid rgba(16, 185, 129, 0.25);
   padding: 4px 10px;
   border-radius: 6px;
   font-size: 0.82rem;
   font-weight: 600;
 }
 
-/* Modais Dedicados do Edital Verticalizado (Garante posição fixa no viewport real) */
+/* Modais Dedicados do Edital Verticalizado */
 .edital-modal-backdrop {
   position: fixed !important;
   inset: 0 !important;
@@ -701,7 +734,7 @@
   bottom: 0 !important;
   width: 100vw !important;
   height: 100vh !important;
-  background: rgba(8, 11, 18, 0.85);
+  background: rgba(15, 23, 42, 0.6) !important;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   display: flex !important;
@@ -715,8 +748,8 @@
 }
 
 .edital-modal-card {
-  background: #111827;
-  border: 1px solid #1f293d;
+  background: var(--edital-card-bg);
+  border: 1px solid var(--edital-card-border);
   border-radius: 14px;
   width: 100%;
   max-width: 600px;
@@ -724,37 +757,30 @@
   display: flex;
   flex-direction: column;
   padding: 1.75rem;
-  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.2);
   box-sizing: border-box;
   overflow-y: auto;
   position: relative;
   margin: auto;
+  color: var(--edital-text);
   animation: editalModalScaleIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-.edital-modal-card.modal-lg {
-  max-width: 820px;
-}
-
-.edital-modal-card.modal-md {
-  max-width: 680px;
-}
-
-.edital-modal-card.modal-sm {
-  max-width: 480px;
-}
+.edital-modal-card.modal-lg { max-width: 820px; }
+.edital-modal-card.modal-md { max-width: 680px; }
+.edital-modal-card.modal-sm { max-width: 480px; }
 
 .edital-modal-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 1.25rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--edital-border-subtle);
   padding-bottom: 0.85rem;
 }
 
 .edital-modal-header h3 {
-  color: #f8fafc;
+  color: var(--edital-text);
   font-size: 1.25rem;
   font-weight: 700;
   margin: 0;
@@ -762,7 +788,7 @@
 }
 
 .edital-modal-header p {
-  color: #94a3b8;
+  color: var(--edital-text-muted);
   font-size: 0.85rem;
   margin: 0.25rem 0 0 0;
 }
@@ -770,7 +796,7 @@
 .edital-modal-close-btn {
   background: transparent;
   border: none;
-  color: #94a3b8;
+  color: var(--edital-text-muted);
   font-size: 1.35rem;
   line-height: 1;
   padding: 4px 8px;
@@ -780,8 +806,8 @@
 }
 
 .edital-modal-close-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #f8fafc;
+  background: var(--edital-bg-subtle);
+  color: var(--edital-text);
 }
 
 @keyframes editalModalFadeIn {
@@ -799,5 +825,3 @@
     transform: scale(1) translateY(0);
   }
 }
-
-

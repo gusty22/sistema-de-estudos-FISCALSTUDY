@@ -122,12 +122,20 @@ export const CadernosSimulados: React.FC<CadernosSimuladosProps> = ({
         const data = await res.json();
         setDashboardData(data);
 
-        // Pré-selecionar disciplinas disponíveis no configurador
-        if (data.disciplinas && Array.isArray(data.disciplinas)) {
+        // Pré-selecionar disciplinas disponíveis no configurador de forma determinística
+        if (data.disciplinas && Array.isArray(data.disciplinas) && data.disciplinas.length > 0) {
           const discNames = data.disciplinas.map((d: any) => d.disciplina);
-          if (selectedDisciplinas.length === 0) {
-            setSelectedDisciplinas(discNames.slice(0, Math.min(4, discNames.length)));
-          }
+          setSelectedDisciplinas((prev) => (prev.length === 0 ? discNames : prev));
+        }
+
+        // Se o filtro atual não tiver tópicos ou for padrão, ajusta para o filtro que tem dados
+        if (data.topicosPriorizados && Array.isArray(data.topicosPriorizados)) {
+          const maxCount = data.resumoPrioridades?.maxima || 0;
+          const altaCount = data.resumoPrioridades?.alta || 0;
+          setPrioridadeFilter((curr) => {
+            if (curr === 'MAXIMA' && maxCount === 0 && altaCount > 0) return 'ALTA';
+            return curr;
+          });
         }
       } else {
         throw new Error('Falha ao carregar dashboard de simulados');

@@ -192,13 +192,22 @@ export function parsearEditalBruto(
     const line = lines[i];
 
     // Detecta se a linha é um cabeçalho de disciplina
-    const cleanHeader = line.replace(/^[#*\-–—0-9\.\s:]+/, '').trim().toLowerCase();
+    const cleanHeader = line
+      .replace(/^(\s*disciplina\s*[:\-–—]\s*|\s*mat[ée]ria\s*[:\-–—]\s*)/i, '')
+      .replace(/^[#*\-–—0-9\.\s:]+/, '')
+      .trim()
+      .toLowerCase();
+
     const matchedDisc = disciplinasConfig.find(d => {
       const dLower = d.nome.toLowerCase();
+      const lineLower = line.toLowerCase();
       return cleanHeader === dLower ||
              cleanHeader.startsWith(dLower + ':') ||
              cleanHeader.startsWith(dLower + ' -') ||
-             line.toLowerCase().includes(dLower + ':');
+             cleanHeader.startsWith(dLower + ' —') ||
+             lineLower.includes('disciplina: ' + dLower) ||
+             lineLower.includes('disciplina:' + dLower) ||
+             lineLower.includes(dLower + ':');
     });
 
     if (matchedDisc) {

@@ -129,77 +129,103 @@ export default function MapaConteudos({
 
   // Carrega tópicos reais do concurso se existirem no banco
   useEffect(() => {
-    if (!concursoId) return;
+    const parseAndSetTopics = (data: any): boolean => {
+      const topics: Array<{ id: string; disciplina: string; assunto: string; subassunto?: string; peso?: number }> =
+        Array.isArray(data) ? data : (data?.topicos || []);
+      if (!topics || topics.length === 0) return false;
 
-    fetch(`/api/v1/concursos/${concursoId}/edital`)
-      .then((res) => (res.ok ? res.json() : []))
-      .then((topics: Array<{ id: string; disciplina: string; assunto: string; subassunto?: string; peso?: number }>) => {
-        if (!topics || topics.length === 0) return;
+      const discMap = new Map<string, Map<string, SubtopicItem[]>>();
 
-        const discMap = new Map<string, Map<string, SubtopicItem[]>>();
+      topics.forEach((t, idx) => {
+        const disc = t.disciplina || 'Conhecimentos Gerais';
+        const top = t.assunto || 'Tópicos Gerais';
+        const subTitle = t.subassunto || t.assunto;
 
-        topics.forEach((t, idx) => {
-          const disc = t.disciplina || 'Conhecimentos Gerais';
-          const top = t.assunto || 'Tópicos Gerais';
-          const subTitle = t.subassunto || t.assunto;
+        if (!discMap.has(disc)) {
+          discMap.set(disc, new Map());
+        }
+        const topicMap = discMap.get(disc)!;
+        if (!topicMap.has(top)) {
+          topicMap.set(top, []);
+        }
 
-          if (!discMap.has(disc)) {
-            discMap.set(disc, new Map());
-          }
-          const topicMap = discMap.get(disc)!;
-          if (!topicMap.has(top)) {
-            topicMap.set(top, []);
-          }
+        topicMap.get(top)!.push({
+          id: t.id || `st_dyn_${idx}`,
+          type: 'SUBTOPIC',
+          title: subTitle,
+          status: 'NOT_STARTED',
+          importance: t.peso ? `Peso ${t.peso}` : 'Normal',
+          material: 'Pendente de vínculo',
+          questions: 0,
+          evidence: 'Nenhuma interação registrada',
+          lastActivity: '-',
+          prerequisites: [],
+          disciplina: disc,
+          topico: top
+        });
+      });
 
-          topicMap.get(top)!.push({
-            id: t.id || `st_dyn_${idx}`,
-            type: 'SUBTOPIC',
-            title: subTitle,
-            status: 'NOT_STARTED',
-            importance: t.peso ? `Peso ${t.peso}` : 'Normal',
-            material: 'Pendente de vínculo',
-            questions: 0,
-            evidence: 'Nenhuma interação registrada',
-            lastActivity: '-',
-            prerequisites: [],
-            disciplina: disc,
-            topico: top
+      const builtDisciplines: DisciplineItem[] = [];
+      let dIdx = 1;
+      discMap.forEach((topMap, discName) => {
+        const dId = `d_${dIdx++}`;
+        const builtTopics: TopicItem[] = [];
+        let tIdx = 1;
+
+        topMap.forEach((subs, topName) => {
+          builtTopics.push({
+            id: `${dId}_t_${tIdx++}`,
+            type: 'TOPIC',
+            title: topName,
+            disciplina: discName,
+            children: subs
           });
         });
 
-        const builtDisciplines: DisciplineItem[] = [];
-        let dIdx = 1;
-        discMap.forEach((topMap, discName) => {
-          const dId = `d_${dIdx++}`;
-          const builtTopics: TopicItem[] = [];
-          let tIdx = 1;
-
-          topMap.forEach((subs, topName) => {
-            builtTopics.push({
-              id: `${dId}_t_${tIdx++}`,
-              type: 'TOPIC',
-              title: topName,
-              disciplina: discName,
-              children: subs
-            });
-          });
-
-          builtDisciplines.push({
-            id: dId,
-            type: 'DISCIPLINE',
-            title: discName,
-            children: builtTopics
-          });
+        builtDisciplines.push({
+          id: dId,
+          type: 'DISCIPLINE',
+          title: discName,
+          children: builtTopics
         });
+      });
 
-        if (builtDisciplines.length > 0) {
-          setMapData(builtDisciplines);
-          const firstSub = builtDisciplines[0]?.children[0]?.children[0];
-          if (firstSub) setSelectedNode(firstSub);
+      if (builtDisciplines.length > 0) {
+        setMapData(builtDisciplines);
+        const firstSub = builtDisciplines[0]?.children[0]?.children[0];
+        if (firstSub) setSelectedNode(firstSub);
+        const initExpanded = new Set<string>();
+        initExpanded.add(builtDisciplines[0].id);
+        if (builtDisciplines[0].children[0]) {
+          initExpanded.add(builtDisciplines[0].children[0].id);
+        }
+        setExpandedNodes(initExpanded);
+        return true;
+      }
+      return false;
+    };
+
+    const targetUrl = concursoId && concursoId.trim() !== '' && concursoId !== 'undefined'
+      ? `/api/v1/concursos/${encodeURIComponent(concursoId.trim())}/edital`
+      : '/api/v1/edital/topicos';
+
+    fetch(targetUrl)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: any) => {
+        const ok = parseAndSetTopics(data);
+        if (!ok && targetUrl !== '/api/v1/edital/topicos') {
+          // Fallback para a rota global de tópicos do edital
+          fetch('/api/v1/edital/topicos')
+            .then((res2) => (res2.ok ? res2.json() : null))
+            .then((data2) => parseAndSetTopics(data2))
+            .catch(() => {});
         }
       })
       .catch(() => {
-        // Fallback silencioso para DEFAULT_MAP
+        fetch('/api/v1/edital/topicos')
+          .then((res) => (res.ok ? res.json() : null))
+          .then((data) => parseAndSetTopics(data))
+          .catch(() => {});
       });
   }, [concursoId]);
 

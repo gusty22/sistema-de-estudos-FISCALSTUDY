@@ -77,6 +77,68 @@ export const MotorParetoEditalModal: React.FC<MotorParetoEditalModalProps> = ({
     setActiveTab('TABELA');
   };
 
+  const handleCarregarDoEditalAtual = async () => {
+    try {
+      const url = concursoId && concursoId !== 'undefined'
+        ? `/api/v1/concursos/${encodeURIComponent(concursoId)}/edital`
+        : '/api/v1/edital/topicos';
+      const res = await fetch(url);
+      if (!res.ok) return;
+      const data = await res.json();
+      const topics: Array<any> = Array.isArray(data) ? data : (data?.topicos || []);
+      if (!topics || topics.length === 0) return;
+
+      const discMap = new Map<string, Array<{ assunto: string; subassunto?: string; peso?: number }>>();
+      topics.forEach((t) => {
+        const disc = t.disciplina || 'Conhecimentos Fiscais';
+        if (!discMap.has(disc)) discMap.set(disc, []);
+        discMap.get(disc)!.push({
+          assunto: t.assunto || 'Tópico Geral',
+          subassunto: t.subassunto,
+          peso: t.peso
+        });
+      });
+
+      const newDisciplinas: DisciplinaConfig[] = [];
+      let rawTextBuilt = '';
+
+      let dIdx = 1;
+      discMap.forEach((topList, discName) => {
+        const avgPeso = topList.reduce((acc, cur) => acc + (cur.peso || 1.0), 0) / topList.length;
+        newDisciplinas.push({
+          id: `disc_${dIdx++}`,
+          nome: discName,
+          questoes: Math.max(5, Math.min(25, topList.length)),
+          peso: Math.round(avgPeso * 10) / 10 || 1.0,
+          complexidade: discName.toLowerCase().includes('tribut') ? 1.4 : discName.toLowerCase().includes('contab') ? 1.5 : 1.2,
+          dominioInicial: 50
+        });
+
+        rawTextBuilt += `DISCIPLINA: ${discName}\n`;
+        topList.forEach((t, tIdx) => {
+          if (t.subassunto && t.subassunto.trim() !== '') {
+            rawTextBuilt += `${tIdx + 1}. ${t.assunto} - ${t.subassunto}\n`;
+          } else {
+            rawTextBuilt += `${tIdx + 1}. ${t.assunto}\n`;
+          }
+        });
+        rawTextBuilt += '\n';
+      });
+
+      setDisciplinas(newDisciplinas);
+      setRawText(rawTextBuilt.trim());
+      setActiveTab('TABELA');
+    } catch (e) {
+      console.warn('Erro ao carregar tópicos do edital no Pareto:', e);
+    }
+  };
+
+  React.useEffect(() => {
+    if (isOpen) {
+      handleCarregarDoEditalAtual();
+    }
+  }, [isOpen, concursoId]);
+
   // Filtragem dos Tópicos para a Tabela
   const topicosFiltrados = paretoResult.topicos.filter(t => {
     const matchBusca =
@@ -291,14 +353,26 @@ export const MotorParetoEditalModal: React.FC<MotorParetoEditalModalProps> = ({
               <div className="form-panel">
                 <div className="panel-header">
                   <h4>📄 Conteúdo Programático Bruto</h4>
-                  <button
-                    className="btn btn-secondary"
-                    onClick={handleCarregarExemploFiscal}
-                    style={{ fontSize: '0.78rem', padding: '4px 10px' }}
-                    title="Carregar modelo de alta incidência da Área Fiscal"
-                  >
-                    ⚡ Carregar Edital Fiscal Padrão
-                  </button>
+                  <div style={{ display: 'flex', gap: '0.4rem' }}>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={handleCarregarDoEditalAtual}
+                      style={{ fontSize: '0.78rem', padding: '4px 10px', backgroundColor: '#4f46e5', color: '#ffffff' }}
+                      title="Sincronizar com os tópicos do Edital Verticalizado deste concurso"
+                    >
+                      📥 Ler do Edital Verticalizado
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={handleCarregarExemploFiscal}
+                      style={{ fontSize: '0.78rem', padding: '4px 10px' }}
+                      title="Carregar modelo de alta incidência da Área Fiscal"
+                    >
+                      ⚡ Edital Padrão
+                    </button>
+                  </div>
                 </div>
                 <textarea
                   className="textarea-edital"
