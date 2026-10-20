@@ -34,6 +34,16 @@ public class StudyMaterialService {
     }
 
     public StudyMaterial saveMaterial(StudyMaterial material) {
+        if (material != null) {
+            // Se a disciplina vier vazia ou como Geral/Padrão, infere pelo título ou notas
+            String currDisc = material.getDisciplina();
+            if (currDisc == null || currDisc.isBlank() || currDisc.equalsIgnoreCase("Geral") || currDisc.equalsIgnoreCase("Outras Disciplinas")) {
+                String detected = inferDisciplinaFromText(material.getTitulo(), material.getNotas());
+                if (detected != null) {
+                    material.setDisciplina(detected);
+                }
+            }
+        }
         return materialRepository.save(material);
     }
 
@@ -127,17 +137,27 @@ public class StudyMaterialService {
             String normDisc = normalizeText(topicDisc);
             String normMatDisc = normalizeText(material.getDisciplina());
 
-            boolean discMatches = normDisc.isEmpty() || normMatDisc.isEmpty() || normDisc.contains(normMatDisc) || normMatDisc.contains(normDisc);
+            // Validação estrita de compatibilidade de disciplina:
+            // Se ambas as disciplinas estiverem informadas, uma deve coincidir ou conter a outra.
+            // Se o material tem disciplina "Português", NUNCA pode vincular com "Auditoria" ou "Direito Tributário".
+            boolean hasMatDisc = !normMatDisc.isBlank() && !normMatDisc.equals("geral");
+            boolean hasTopicDisc = !normDisc.isBlank();
+            boolean discMatches = !hasMatDisc || !hasTopicDisc || normDisc.contains(normMatDisc) || normMatDisc.contains(normDisc);
+
+            if (!discMatches) {
+                // Disciplinas incompatíveis -> descarta vínculo
+                continue;
+            }
 
             double confidence = 0.0;
             if (combinedMaterialText.contains(normAssunto) && !normAssunto.isBlank()) {
-                confidence = discMatches ? 0.95 : 0.75;
+                confidence = hasMatDisc ? 0.95 : 0.85;
             } else if (topicSubassunto != null && !topicSubassunto.isBlank()) {
                 String normSub = normalizeText(topicSubassunto);
                 if (combinedMaterialText.contains(normSub)) {
-                    confidence = discMatches ? 0.90 : 0.70;
+                    confidence = hasMatDisc ? 0.90 : 0.80;
                 }
-            } else if (discMatches) {
+            } else {
                 // Checa palavras-chave do assunto
                 String[] words = normAssunto.split("\\s+");
                 int matchCount = 0;
@@ -152,8 +172,8 @@ public class StudyMaterialService {
                 }
                 if (significantWords > 0 && matchCount >= (significantWords + 1) / 2) {
                     confidence = 0.80;
-                } else if (matchCount > 0) {
-                    confidence = 0.60;
+                } else if (significantWords > 0 && matchCount > 0 && hasMatDisc) {
+                    confidence = 0.65;
                 }
             }
 
@@ -205,5 +225,37 @@ public class StudyMaterialService {
     private boolean isStopword(String word) {
         return Set.of("para", "como", "sobre", "entre", "pelo", "pela", "pelas", "pelos",
                 "com", "sem", "sob", "tras", "desde", "apos", "geral", "especifico").contains(word);
+    }
+
+    private String inferDisciplinaFromText(String titulo, String notas) {
+        String combined = normalizeText((titulo != null ? titulo : "") + " " + (notas != null ? notas : ""));
+        if (combined.contains("gramatic") || combined.contains("adverbio") || combined.contains("substantivo") ||
+                combined.contains("adjetivo") || combined.contains("crase") || combined.contains("pontuacao") ||
+                combined.contains("concordancia") || combined.contains("regencia") || combined.contains("sintaxe") ||
+                combined.contains("morfologia") || combined.contains("ortografia") || combined.contains("portugues")) {
+            return "Língua Portuguesa";
+        }
+        if (combined.contains("tribut") || combined.contains("ctn") || combined.contains("imposto") ||
+                combined.contains("icms") || combined.contains("iss") || combined.contains("iptu") ||
+                combined.contains("itcmd") || combined.contains("ipva") || combined.contains("credito tributario")) {
+            return "Direito Tributário";
+        }
+        if (combined.contains("constituc") || combined.contains("direitos fundamentais") || combined.contains("stf") ||
+                combined.contains("reparticao de competencias") || combined.contains("poder executivo")) {
+            return "Direito Constitucional";
+        }
+        if (combined.contains("administrativ") || combined.contains("atos administrativos") || combined.contains("licitac") ||
+                combined.contains("lei 14133") || combined.contains("lei 8666") || combined.contains("servidores publicos")) {
+            return "Direito Administrativo";
+        }
+        if (combined.contains("auditoria") || combined.contains("parecer") || combined.contains("relatorio de auditoria") ||
+                combined.contains("evidencia de auditoria") || combined.contains("nbc ta")) {
+            return "Auditoria";
+        }
+        if (combined.contains("contabil") || combined.contains("balanco patrimonial") || combined.contains("dre") ||
+                combined.contains("ativo circulante") || combined.contains("debito") || combined.contains("credito")) {
+            return "Contabilidade Geral";
+        }
+        return null;
     }
 }

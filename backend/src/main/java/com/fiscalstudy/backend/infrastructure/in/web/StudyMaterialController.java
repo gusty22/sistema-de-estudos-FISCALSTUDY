@@ -96,7 +96,7 @@ public class StudyMaterialController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @GetMapping("/{id}/file")
+    @GetMapping(value = {"/{id}/file", "/{id}/stream"})
     public ResponseEntity<org.springframework.core.io.Resource> getMaterialFile(@PathVariable String id) {
         return materialService.getMaterialById(id).map(mat -> {
             String path = mat.getUrlOuCaminho();
