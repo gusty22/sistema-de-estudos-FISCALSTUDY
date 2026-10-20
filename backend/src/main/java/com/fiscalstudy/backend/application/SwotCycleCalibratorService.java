@@ -425,19 +425,25 @@ public class SwotCycleCalibratorService {
 
     private Map<String, Double> loadPesosEdital(String concursoId) {
         Map<String, Double> map = new LinkedHashMap<>();
-        if (concursoId != null && !concursoId.isBlank()) {
-            try {
-                List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+        try {
+            List<Map<String, Object>> rows = new ArrayList<>();
+            if (concursoId != null && !concursoId.isBlank() && !"undefined".equalsIgnoreCase(concursoId)) {
+                rows = jdbcTemplate.queryForList(
                         "SELECT disciplina, AVG(peso) as peso_medio FROM edital_topicos WHERE concurso_id = ? GROUP BY disciplina",
-                        concursoId
+                        concursoId.trim()
                 );
-                for (Map<String, Object> r : rows) {
-                    String disc = (String) r.get("disciplina");
-                    Number p = (Number) r.getOrDefault("peso_medio", 1.0);
-                    map.put(disc, p != null ? p.doubleValue() : 1.0);
-                }
-            } catch (Exception ignored) {}
-        }
+            }
+            if (rows.isEmpty()) {
+                rows = jdbcTemplate.queryForList(
+                        "SELECT disciplina, AVG(peso) as peso_medio FROM edital_topicos GROUP BY disciplina"
+                );
+            }
+            for (Map<String, Object> r : rows) {
+                String disc = (String) r.get("disciplina");
+                Number p = (Number) r.getOrDefault("peso_medio", 1.0);
+                map.put(disc, p != null ? p.doubleValue() : 1.0);
+            }
+        } catch (Exception ignored) {}
         return map;
     }
 

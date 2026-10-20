@@ -404,11 +404,20 @@ public class StudyAnomalyDetectionService {
         // Verificar quantas disciplinas constam no edital
         int totalDisciplinasEdital = 0;
         try {
-            Integer count = jdbcTemplate.queryForObject(
-                    "SELECT COUNT(DISTINCT disciplina) FROM edital_topicos " + (concursoId != null ? "WHERE concurso_id = ?" : ""),
-                    Integer.class,
-                    concursoId != null ? new Object[]{concursoId} : new Object[]{}
-            );
+            Integer count = null;
+            if (concursoId != null && !concursoId.isBlank() && !"undefined".equalsIgnoreCase(concursoId)) {
+                count = jdbcTemplate.queryForObject(
+                        "SELECT COUNT(DISTINCT disciplina) FROM edital_topicos WHERE concurso_id = ?",
+                        Integer.class,
+                        concursoId.trim()
+                );
+            }
+            if (count == null || count == 0) {
+                count = jdbcTemplate.queryForObject(
+                        "SELECT COUNT(DISTINCT disciplina) FROM edital_topicos",
+                        Integer.class
+                );
+            }
             totalDisciplinasEdital = count != null ? count : 0;
         } catch (Exception ignored) {}
 

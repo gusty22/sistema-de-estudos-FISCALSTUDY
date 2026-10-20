@@ -143,17 +143,22 @@ public class RobinHoodCycleService {
     }
 
     private List<DisciplineProfile> loadDisciplineProfiles(String concursoId) {
-        if (concursoId == null || concursoId.isBlank()) {
-            return Collections.emptyList();
+        List<Map<String, Object>> rows = new ArrayList<>();
+        if (concursoId != null && !concursoId.isBlank() && !"undefined".equalsIgnoreCase(concursoId) && !"null".equalsIgnoreCase(concursoId)) {
+            String sql = "SELECT disciplina, AVG(peso) as peso_medio, COUNT(*) as qtd_topicos " +
+                    "FROM edital_topicos WHERE concurso_id = ? " +
+                    "GROUP BY disciplina";
+            rows = jdbcTemplate.queryForList(sql, concursoId.trim());
         }
 
-        String sql = "SELECT disciplina, AVG(peso) as peso_medio, COUNT(*) as qtd_topicos " +
-                "FROM edital_topicos WHERE concurso_id = ? " +
-                "GROUP BY disciplina";
+        if (rows.isEmpty()) {
+            String fallbackSql = "SELECT disciplina, AVG(peso) as peso_medio, COUNT(*) as qtd_topicos " +
+                    "FROM edital_topicos " +
+                    "GROUP BY disciplina";
+            rows = jdbcTemplate.queryForList(fallbackSql);
+        }
 
-        List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql, concursoId);
         List<DisciplineProfile> list = new ArrayList<>();
-
         for (Map<String, Object> r : rows) {
             String disc = (String) r.get("disciplina");
             Number peso = (Number) r.getOrDefault("peso_medio", 1.0);
