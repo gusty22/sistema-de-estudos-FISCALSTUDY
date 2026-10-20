@@ -24,7 +24,7 @@ public class MaestroController {
     @GetMapping("/plan")
     public ResponseEntity<MaestroPlanDTO> getDailyPlan(
             @RequestParam(required = false) String concursoId,
-            @RequestParam(required = false, defaultValue = "180") Integer tempoDisponivelMinutos) {
+            @RequestParam(required = false) Integer tempoDisponivelMinutos) {
         MaestroPlanDTO plan = maestroService.generateDailyPlan(concursoId, tempoDisponivelMinutos);
         return ResponseEntity.ok(plan);
     }

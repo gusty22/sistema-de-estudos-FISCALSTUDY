@@ -10,6 +10,7 @@ public class MaestroPlanDTO {
     private String concursoId;
     private String concursoNome;
     private int tempoTotalMinutos;
+    private int tempoDisponivelMinutos;
     private int totalPassos;
     private String disciplinaPrincipal;
     private String assuntoPrincipal;
@@ -22,9 +23,16 @@ public class MaestroPlanDTO {
     public MaestroPlanDTO(String concursoId, String concursoNome, int tempoTotalMinutos, int totalPassos,
                           String disciplinaPrincipal, String assuntoPrincipal, List<MaestroStepDTO> passos,
                           Map<String, Object> telemetriaCognitiva, String statusMensagem) {
+        this(concursoId, concursoNome, tempoTotalMinutos, tempoTotalMinutos, totalPassos, disciplinaPrincipal, assuntoPrincipal, passos, telemetriaCognitiva, statusMensagem);
+    }
+
+    public MaestroPlanDTO(String concursoId, String concursoNome, int tempoTotalMinutos, int tempoDisponivelMinutos,
+                          int totalPassos, String disciplinaPrincipal, String assuntoPrincipal,
+                          List<MaestroStepDTO> passos, Map<String, Object> telemetriaCognitiva, String statusMensagem) {
         this.concursoId = concursoId;
         this.concursoNome = concursoNome;
         this.tempoTotalMinutos = tempoTotalMinutos;
+        this.tempoDisponivelMinutos = tempoDisponivelMinutos;
         this.totalPassos = totalPassos;
         this.disciplinaPrincipal = disciplinaPrincipal;
         this.assuntoPrincipal = assuntoPrincipal;
@@ -55,6 +63,14 @@ public class MaestroPlanDTO {
 
     public void setTempoTotalMinutos(int tempoTotalMinutos) {
         this.tempoTotalMinutos = tempoTotalMinutos;
+    }
+
+    public int getTempoDisponivelMinutos() {
+        return tempoDisponivelMinutos;
+    }
+
+    public void setTempoDisponivelMinutos(int tempoDisponivelMinutos) {
+        this.tempoDisponivelMinutos = tempoDisponivelMinutos;
     }
 
     public int getTotalPassos() {
