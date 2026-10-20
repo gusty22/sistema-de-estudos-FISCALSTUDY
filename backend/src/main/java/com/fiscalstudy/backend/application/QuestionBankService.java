@@ -79,9 +79,13 @@ public class QuestionBankService {
             }
         }
 
-        if (Boolean.TRUE.equals(editalOnly) && concursoId != null && !concursoId.isBlank()) {
-            whereClause.append(" AND EXISTS (SELECT 1 FROM edital_topicos et WHERE et.concurso_id = ? AND (LOWER(et.disciplina) = LOWER(q.disciplina) OR (LOWER(et.disciplina) LIKE '%portug%' AND LOWER(q.disciplina) LIKE '%portug%'))) ");
-            params.add(concursoId.trim());
+        if (Boolean.TRUE.equals(editalOnly)) {
+            if (concursoId != null && !concursoId.isBlank() && !"undefined".equalsIgnoreCase(concursoId)) {
+                whereClause.append(" AND EXISTS (SELECT 1 FROM edital_topicos et WHERE et.concurso_id = ? AND (LOWER(et.disciplina) = LOWER(q.disciplina) OR (LOWER(et.disciplina) LIKE '%portug%' AND LOWER(q.disciplina) LIKE '%portug%'))) ");
+                params.add(concursoId.trim());
+            } else {
+                whereClause.append(" AND EXISTS (SELECT 1 FROM edital_topicos et WHERE (LOWER(et.disciplina) = LOWER(q.disciplina) OR (LOWER(et.disciplina) LIKE '%portug%' AND LOWER(q.disciplina) LIKE '%portug%'))) ");
+            }
         }
 
         if (query != null && !query.isBlank()) {
@@ -98,10 +102,10 @@ public class QuestionBankService {
                     whereClause.append(" AND q.id NOT IN (SELECT aggregate_id FROM event_store WHERE event_type = 'ANSWER_SUBMITTED') ");
                 }
                 case "RESPONDIDA_INCORRETAMENTE", "ERRADAS" -> {
-                    whereClause.append(" AND q.id IN (SELECT aggregate_id FROM event_store WHERE event_type = 'ANSWER_SUBMITTED' AND payload_json LIKE '%\"isCorrect\":false%') ");
+                    whereClause.append(" AND q.id IN (SELECT aggregate_id FROM event_store WHERE event_type = 'ANSWER_SUBMITTED' AND (payload_json LIKE '%\"isCorrect\": false%' OR payload_json LIKE '%\"isCorrect\":false%')) ");
                 }
                 case "ACERTADA_BAIXA_CONFIANCA", "BAIXA_CONFIANCA" -> {
-                    whereClause.append(" AND q.id IN (SELECT aggregate_id FROM event_store WHERE event_type = 'ANSWER_SUBMITTED' AND payload_json LIKE '%\"isCorrect\":true%' AND (payload_json LIKE '%\"confidenceLevel\":1%' OR payload_json LIKE '%\"confidenceLevel\":2%')) ");
+                    whereClause.append(" AND q.id IN (SELECT aggregate_id FROM event_store WHERE event_type = 'ANSWER_SUBMITTED' AND (payload_json LIKE '%\"isCorrect\": true%' OR payload_json LIKE '%\"isCorrect\":true%') AND (payload_json LIKE '%\"confidenceLevel\": 1%' OR payload_json LIKE '%\"confidenceLevel\":1%' OR payload_json LIKE '%\"confidenceLevel\": 2%' OR payload_json LIKE '%\"confidenceLevel\":2%')) ");
                 }
                 case "FAVORITA", "FAVORITAS" -> {
                     whereClause.append(" AND q.id IN (SELECT question_id FROM favorite_questions) ");
@@ -156,9 +160,10 @@ public class QuestionBankService {
             try {
                 String optJson = rs.getString("options_json");
                 if (optJson != null && !optJson.isBlank()) {
-                    List<String> options = objectMapper.readValue(optJson, new TypeReference<List<String>>() {});
-                    map.put("options", options);
-                    boolean isCe = options.stream().anyMatch(o -> o.contains("Certo") || o.contains("Errado"));
+                    List<String> rawOptions = objectMapper.readValue(optJson, new TypeReference<List<String>>() {});
+                    List<String> sanitized = sanitizeOptionsList(rawOptions);
+                    map.put("options", sanitized);
+                    boolean isCe = sanitized.stream().anyMatch(o -> o.contains("Certo") || o.contains("Errado"));
                     map.put("tipoQuestao", isCe ? "CERTO_ERRADO" : "MULTIPLA_ESCOLHA");
                 } else {
                     map.put("options", Collections.emptyList());
@@ -202,18 +207,23 @@ public class QuestionBankService {
 
         // 1. Disciplinas previstas no Edital (com indicação real de cobertura no banco de questões)
         List<Map<String, Object>> editalDisciplinas = new ArrayList<>();
-        if (concursoId != null && !concursoId.isBlank()) {
+        List<String> rawEdital = new ArrayList<>();
+        if (concursoId != null && !concursoId.isBlank() && !"undefined".equalsIgnoreCase(concursoId)) {
             String editalSql = "SELECT DISTINCT disciplina FROM edital_topicos WHERE concurso_id = ? ORDER BY disciplina";
-            List<String> rawEdital = jdbcTemplate.queryForList(editalSql, String.class, concursoId.trim());
-            for (String ed : rawEdital) {
-                // Checa quantas questões existem no banco para esta disciplina do edital
-                String countQSql = "SELECT COUNT(*) FROM questions WHERE (status = 'VALIDADA' OR status IS NULL) AND (LOWER(disciplina) = LOWER(?) OR (LOWER(?) LIKE '%portug%' AND LOWER(disciplina) LIKE '%portug%'))";
-                Integer qCount = jdbcTemplate.queryForObject(countQSql, Integer.class, ed, ed);
-                Map<String, Object> item = new HashMap<>();
-                item.put("nome", ed);
-                item.put("questoesDisponiveis", qCount != null ? qCount : 0);
-                editalDisciplinas.add(item);
-            }
+            rawEdital = jdbcTemplate.queryForList(editalSql, String.class, concursoId.trim());
+        }
+        if (rawEdital.isEmpty()) {
+            String fallbackEditalSql = "SELECT DISTINCT disciplina FROM edital_topicos ORDER BY disciplina";
+            rawEdital = jdbcTemplate.queryForList(fallbackEditalSql, String.class);
+        }
+        for (String ed : rawEdital) {
+            // Checa quantas questões existem no banco para esta disciplina do edital
+            String countQSql = "SELECT COUNT(*) FROM questions WHERE (status = 'VALIDADA' OR status IS NULL) AND (LOWER(disciplina) = LOWER(?) OR (LOWER(?) LIKE '%portug%' AND LOWER(disciplina) LIKE '%portug%'))";
+            Integer qCount = jdbcTemplate.queryForObject(countQSql, Integer.class, ed, ed);
+            Map<String, Object> item = new HashMap<>();
+            item.put("nome", ed);
+            item.put("questoesDisponiveis", qCount != null ? qCount : 0);
+            editalDisciplinas.add(item);
         }
         metadata.put("editalDisciplinas", editalDisciplinas);
 
@@ -222,9 +232,13 @@ public class QuestionBankService {
         StringBuilder baseWhere = new StringBuilder(" WHERE (q.status = 'VALIDADA' OR q.status IS NULL) ");
         List<Object> baseParams = new ArrayList<>();
 
-        if (Boolean.TRUE.equals(editalOnly) && concursoId != null && !concursoId.isBlank()) {
-            baseWhere.append(" AND EXISTS (SELECT 1 FROM edital_topicos et WHERE et.concurso_id = ? AND (LOWER(et.disciplina) = LOWER(q.disciplina) OR (LOWER(et.disciplina) LIKE '%portug%' AND LOWER(q.disciplina) LIKE '%portug%'))) ");
-            baseParams.add(concursoId.trim());
+        if (Boolean.TRUE.equals(editalOnly)) {
+            if (concursoId != null && !concursoId.isBlank() && !"undefined".equalsIgnoreCase(concursoId)) {
+                baseWhere.append(" AND EXISTS (SELECT 1 FROM edital_topicos et WHERE et.concurso_id = ? AND (LOWER(et.disciplina) = LOWER(q.disciplina) OR (LOWER(et.disciplina) LIKE '%portug%' AND LOWER(q.disciplina) LIKE '%portug%'))) ");
+                baseParams.add(concursoId.trim());
+            } else {
+                baseWhere.append(" AND EXISTS (SELECT 1 FROM edital_topicos et WHERE (LOWER(et.disciplina) = LOWER(q.disciplina) OR (LOWER(et.disciplina) LIKE '%portug%' AND LOWER(q.disciplina) LIKE '%portug%'))) ");
+            }
         }
 
         if (query != null && !query.isBlank()) {
@@ -448,7 +462,7 @@ public class QuestionBankService {
         
         // 1. Caderno Dinâmico de Erros
         Integer countErradas = jdbcTemplate.queryForObject(
-                "SELECT COUNT(DISTINCT aggregate_id) FROM event_store WHERE event_type = 'ANSWER_SUBMITTED' AND payload_json LIKE '%\"isCorrect\":false%'",
+                "SELECT COUNT(DISTINCT aggregate_id) FROM event_store WHERE event_type = 'ANSWER_SUBMITTED' AND (payload_json LIKE '%\"isCorrect\": false%' OR payload_json LIKE '%\"isCorrect\":false%')",
                 Integer.class
         );
         Map<String, Object> cadErros = new HashMap<>();
@@ -463,7 +477,7 @@ public class QuestionBankService {
 
         // 2. Caderno Dinâmico de Acertos Inseguros
         Integer countInseguros = jdbcTemplate.queryForObject(
-                "SELECT COUNT(DISTINCT aggregate_id) FROM event_store WHERE event_type = 'ANSWER_SUBMITTED' AND payload_json LIKE '%\"isCorrect\":true%' AND (payload_json LIKE '%\"confidenceLevel\":1%' OR payload_json LIKE '%\"confidenceLevel\":2%')",
+                "SELECT COUNT(DISTINCT aggregate_id) FROM event_store WHERE event_type = 'ANSWER_SUBMITTED' AND (payload_json LIKE '%\"isCorrect\": true%' OR payload_json LIKE '%\"isCorrect\":true%') AND (payload_json LIKE '%\"confidenceLevel\": 1%' OR payload_json LIKE '%\"confidenceLevel\":1%' OR payload_json LIKE '%\"confidenceLevel\": 2%' OR payload_json LIKE '%\"confidenceLevel\":2%')",
                 Integer.class
         );
         Map<String, Object> cadInseguros = new HashMap<>();
@@ -532,5 +546,28 @@ public class QuestionBankService {
             jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS favorite_questions (question_id TEXT PRIMARY KEY, created_at TEXT DEFAULT CURRENT_TIMESTAMP)");
             jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS question_reports (id TEXT PRIMARY KEY, question_id TEXT NOT NULL, motivo TEXT NOT NULL, descricao TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP)");
         } catch (Exception ignored) {}
+    }
+
+    /**
+     * Sanitiza lista de alternativas removendo cabeçalhos/rodapés de prova vazados e letras duplicadas.
+     */
+    private List<String> sanitizeOptionsList(List<String> rawOptions) {
+        if (rawOptions == null) return Collections.emptyList();
+        List<String> cleaned = new ArrayList<>();
+        for (String opt : rawOptions) {
+            if (opt == null) continue;
+            String text = opt.trim();
+
+            // 1. Limpeza de rodapés/cabeçalhos de provas vazados no final da alternativa
+            // Padrões como: TRIBUNAL DE CONTAS..., FGV CONHECIMENTO..., AUDITOR FISCAL..., TIPO 1 – PÁGINA X, etc.
+            text = text.replaceAll("(?i)\\s*\\n+\\s*(?:TRIBUNAL DE CONTAS|FGV CONHECIMENTO|AUDITOR FISCAL|TIPO\\s+\\d+|P[ÁA]GINA\\s+\\d+|RACIOC[ÍI]NIO L[ÓO]GICO).*$", "");
+            text = text.replaceAll("(?i)\\s+(?:TRIBUNAL DE CONTAS|FGV CONHECIMENTO|AUDITOR FISCAL DE CONTROLE|TIPO\\s+\\d+\\s+[–-]\\s+P[ÁA]GINA\\s+\\d+).*$", "");
+
+            // 2. Limpeza de duplicação de letras como (A) (A) ou A) (A)
+            text = text.replaceAll("^[(\\[]?([A-Ea-e])[)\\]\\.\\s\\-:]+\\s*\\(([A-Ea-e])\\)\\s*", "($1) ");
+
+            cleaned.add(text.trim());
+        }
+        return cleaned;
     }
 }
