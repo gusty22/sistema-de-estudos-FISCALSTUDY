@@ -16,10 +16,12 @@ import {
 import type { ConcursoItem } from '../concursos/MeusConcursos';
 import { MontagemCadernoModal } from './MontagemCadernoModal';
 import { ResolucaoQuestaoModal } from './ResolucaoQuestaoModal';
+import { useSimplifiedMode } from '../../context/SimplifiedModeContext';
 import './BancoQuestoes.css';
 
 export interface QuestionItem {
   questionId: string;
+  concursoId?: string;
   statement: string;
   discipline: string;
   topic: string;
@@ -48,6 +50,7 @@ interface BancoQuestoesProps {
 export const BancoQuestoes: React.FC<BancoQuestoesProps> = ({
   activeConcurso
 }) => {
+  const { isSimplifiedMode } = useSimplifiedMode();
   // Estado de resolução ativa focada (abre a questão diretamente sem redirecionar de tela)
   const [resolvendoIndex, setResolvendoIndex] = useState<number | null>(null);
   // Modo de escopo: apenas disciplinas do edital ou acervo geral
@@ -631,9 +634,11 @@ export const BancoQuestoes: React.FC<BancoQuestoesProps> = ({
                       )}
                     </div>
 
-                    <div style={{ fontSize: '0.74rem', color: 'var(--calm-text-muted)', fontFamily: 'monospace' }}>
-                      ID: {q.questionId}
-                    </div>
+                    {!isSimplifiedMode && (
+                      <div style={{ fontSize: '0.74rem', color: 'var(--calm-text-muted)', fontFamily: 'monospace' }}>
+                        ID: {q.questionId}
+                      </div>
+                    )}
                   </div>
 
                   {/* Enunciado */}
@@ -649,12 +654,18 @@ export const BancoQuestoes: React.FC<BancoQuestoesProps> = ({
                       style={{ cursor: 'pointer' }}
                       title="Clique para abrir e resolver esta questão"
                     >
-                      {q.options.map((opt: string, i: number) => (
-                        <div key={i} style={{ display: 'flex', gap: '0.4rem' }}>
-                          <span style={{ fontWeight: 600 }}>{String.fromCharCode(65 + i)})</span>
-                          <span>{opt.replace(/^[A-E]\)\s*/, '')}</span>
-                        </div>
-                      ))}
+                      {q.options.map((opt: string, i: number) => {
+                        const cleanOpt = opt
+                          .replace(/\s*(?:TRIBUNAL DE CONTAS|FGV CONHECIMENTO|AUDITOR FISCAL|TIPO\s+\d+|PÁGINA\s+\d+|Raciocínio Lógico).*$/i, '')
+                          .replace(/^[(\[]?[A-Ea-e][)\].\s\-:]+\s*(?:\([A-Ea-e]\)\s*)?/, '')
+                          .trim();
+                        return (
+                          <div key={i} style={{ display: 'flex', gap: '0.4rem' }}>
+                            <span style={{ fontWeight: 600 }}>{String.fromCharCode(65 + i)})</span>
+                            <span>{cleanOpt || opt}</span>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
 

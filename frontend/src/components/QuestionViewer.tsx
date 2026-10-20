@@ -4,6 +4,7 @@ import { CrossDomainBridgeModal } from './cognitive/CrossDomainBridgeModal';
 import { CognitiveLockModal } from './cognitive/CognitiveLockModal';
 import { ReverseEngineeringModal } from './cognitive/ReverseEngineeringModal';
 import { RelatorioSessaoQuestoes, type SolvedQuestionItem } from './questoes/RelatorioSessaoQuestoes';
+import { useSimplifiedMode } from '../context/SimplifiedModeContext';
 
 interface Option {
   label?: string;
@@ -153,6 +154,7 @@ export interface SessionAttemptHistoryItem {
 const ERROR_TAXONOMIES = METACON_FEEDBACK_OPTIONS;
 
 const QuestionViewer: React.FC = () => {
+  const { isSimplifiedMode } = useSimplifiedMode();
   const [sessionStarted, setSessionStarted] = useState(() => sessionStorage.getItem('fiscalstudy_sessionStarted') === 'true');
   const [sessionEnded, setSessionEnded] = useState(false);
   const [summary, setSummary] = useState<SessionSummary | null>(null);
@@ -463,6 +465,12 @@ const QuestionViewer: React.FC = () => {
   const confirmEndSessionWithHandoff = async () => {
     setShowHandoffModal(false);
     try {
+      const totalSessionMs = sessionHistory.reduce((acc, i) => acc + (i.activeTimeMs || 0), 0) + (activeTimeMs || 0);
+      const totalQ = sessionHistory.length > 0 ? sessionHistory.length : 1;
+      const totalCorrect = sessionHistory.filter(i => i.isCorrect).length;
+      const confSum = sessionHistory.reduce((acc, i) => acc + (i.confidenceLevel || 3), 0);
+      const avgConf = totalQ > 0 ? Math.round((confSum / totalQ) * 10) / 10 : 3.0;
+
       await fetch('/api/v1/study-sessions/record', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -470,8 +478,12 @@ const QuestionViewer: React.FC = () => {
           sessionId,
           concursoId: selectedConcursoId,
           disciplina: question?.metadata?.discipline || selectedDiscipline || 'Geral',
-          durationSeconds: Math.round(activeTimeMs / 1000),
-          questoesFeitas: 1,
+          topicoId: question?.metadata?.topic || selectedAssunto || 'Resolução de Questões',
+          durationSeconds: Math.max(1, Math.round(totalSessionMs / 1000)),
+          questoesFeitas: totalQ,
+          questoesAcertadas: totalCorrect,
+          rendimentoPercentual: Math.round((totalCorrect / totalQ) * 100),
+          confiancaMedia: avgConf,
           activityType: sessionActivityType,
           nextSessionHandoff: nextSessionHandoff.trim()
         })
@@ -1344,14 +1356,18 @@ const QuestionViewer: React.FC = () => {
                             <span className={`biometric-badge ${item.fluenciaNeurologica}`} style={{ fontSize: '0.72rem', padding: '2px 6px' }}>
                               {item.chuteEducadoDetectado 
                                 ? '⚠️ Chute Educado Detectado' 
-                                : (item.fluenciaNeurologica === 'ALTA_FLUENCIA' ? '⚡ Alta Fluência' : '🔍 Fricção Moderada')}
+                                : (item.fluenciaNeurologica === 'ALTA_FLUENCIA' 
+                                    ? (isSimplifiedMode ? '⚡ Resposta Confiante' : '⚡ Alta Fluência') 
+                                    : (isSimplifiedMode ? '🔍 Análise Cuidadosa' : '🔍 Fricção Moderada'))}
                             </span>
                           </div>
 
                           {/* Seletor de Feedback Metacognitivo Sincero */}
                           <div>
                             <span className="metacon-selector-title">
-                              🎯 Classificação de Sinceridade Metacognitiva (Clique para ajustar):
+                              {isSimplifiedMode 
+                                ? '🎯 Como você se sentiu nesta questão? (Clique para ajustar):' 
+                                : '🎯 Classificação de Sinceridade Metacognitiva (Clique para ajustar):'}
                             </span>
                             <div className="metacon-options-grid">
                               {METACON_FEEDBACK_OPTIONS.map((opt) => {

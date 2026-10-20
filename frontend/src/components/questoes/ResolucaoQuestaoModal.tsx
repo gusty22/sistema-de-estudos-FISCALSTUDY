@@ -11,6 +11,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import type { QuestionItem } from './BancoQuestoes';
+import { useSimplifiedMode } from '../../context/SimplifiedModeContext';
 import './ResolucaoQuestaoModal.css';
 
 interface AttemptFeedback {
@@ -55,6 +56,7 @@ export const ResolucaoQuestaoModal: React.FC<ResolucaoQuestaoModalProps> = ({
   onToggleFavorite,
   onReportQuestion
 }) => {
+  const { isSimplifiedMode } = useSimplifiedMode();
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [confidence, setConfidence] = useState<number>(3);
   const [pensouContrario, setPensouContrario] = useState<boolean>(false);
@@ -99,6 +101,62 @@ export const ResolucaoQuestaoModal: React.FC<ResolucaoQuestaoModalProps> = ({
     return () => clearInterval(interval);
   }, [feedback, isSubmitting, question.questionId]);
 
+  // Acumulador de métricas da sessão de resolução de questões
+  const sessionMetricsRef = useRef({
+    questionsCount: 0,
+    correctCount: 0,
+    totalActiveTimeMs: 0,
+    confidenceSum: 0,
+    disciplina: question.discipline,
+    topic: question.topic,
+    concursoId: question.concursoId
+  });
+
+  const recordSessionSummary = async () => {
+    const m = sessionMetricsRef.current;
+    if (m.questionsCount === 0) return;
+    try {
+      const durSec = Math.max(1, Math.round(m.totalActiveTimeMs / 1000));
+      const rendPct = Math.round((m.correctCount / m.questionsCount) * 100);
+      const confMedia = Math.round((m.confidenceSum / m.questionsCount) * 10) / 10;
+      await fetch('/api/v1/study-sessions/record', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId: sessionIdRef.current,
+          concursoId: m.concursoId,
+          disciplina: m.disciplina || question.discipline || 'Geral',
+          topicoId: m.topic || question.topic || 'Resolução de Questões',
+          durationSeconds: durSec,
+          questoesFeitas: m.questionsCount,
+          questoesAcertadas: m.correctCount,
+          rendimentoPercentual: rendPct,
+          confiancaMedia: confMedia,
+          activityType: 'QUESTOES',
+          modo: 'BANCO_QUESTOES'
+        })
+      });
+      // Zerar contadores para não duplicar se o modal permanecer aberto
+      m.questionsCount = 0;
+      m.correctCount = 0;
+      m.totalActiveTimeMs = 0;
+      m.confidenceSum = 0;
+    } catch (err) {
+      console.warn('Falha ao registrar resumo da sessão de questões:', err);
+    }
+  };
+
+  const handleClose = () => {
+    recordSessionSummary();
+    onClose();
+  };
+
+  useEffect(() => {
+    return () => {
+      recordSessionSummary();
+    };
+  }, []);
+
   // Atalhos de teclado (Esc para fechar, 1-5 confiança, setas para navegar se feedback exibido)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -106,7 +164,7 @@ export const ResolucaoQuestaoModal: React.FC<ResolucaoQuestaoModalProps> = ({
         return;
       }
       if (e.key === 'Escape') {
-        onClose();
+        handleClose();
       } else if (!feedback && ['1', '2', '3', '4', '5'].includes(e.key)) {
         setConfidence(parseInt(e.key, 10));
       } else if (feedback && e.key === 'ArrowRight' && onNext) {
@@ -117,7 +175,7 @@ export const ResolucaoQuestaoModal: React.FC<ResolucaoQuestaoModalProps> = ({
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose, onNext, onPrev, feedback]);
+  }, [onNext, onPrev, feedback]);
 
   const isAnulada = question.gabaritoStatus === 'ANULADA';
   const isCertoErrado = question.tipoQuestao === 'CERTO_ERRADO' ||
@@ -138,9 +196,11 @@ export const ResolucaoQuestaoModal: React.FC<ResolucaoQuestaoModalProps> = ({
     return String.fromCharCode(65 + index);
   };
 
-  // Limpar texto da opção para não repetir a letra
   const cleanOptionText = (optText: string): string => {
-    return optText.replace(/^[(\[]?[A-Ea-e][)\].\s\-:]+\s*(?:\([A-Ea-e]\)\s*)?/, '').trim() || optText;
+    return optText
+      .replace(/\s*(?:TRIBUNAL DE CONTAS|FGV CONHECIMENTO|AUDITOR FISCAL|TIPO\s+\d+|PÁGINA\s+\d+|Raciocínio Lógico).*$/i, '')
+      .replace(/^[(\[]?[A-Ea-e][)\].\s\-:]+\s*(?:\([A-Ea-e]\)\s*)?/, '')
+      .trim() || optText;
   };
 
   // Submissão da resposta
@@ -151,11 +211,12 @@ export const ResolucaoQuestaoModal: React.FC<ResolucaoQuestaoModalProps> = ({
     try {
       const selectedIndex = rawOptions.indexOf(selectedOption);
       const letterToSend = extractLetter(selectedOption, selectedIndex >= 0 ? selectedIndex : 0);
+      const timeSpent = Math.max(1000, activeTimeMs);
 
       const payload = {
         selectedOption: letterToSend,
         confidenceLevel: Math.max(1, Math.min(5, confidence)),
-        activeTimeMs: Math.max(1000, activeTimeMs),
+        activeTimeMs: timeSpent,
         sessionId: sessionIdRef.current,
         origin: 'BANCO_QUESTOES',
         pensouContrario
@@ -171,6 +232,16 @@ export const ResolucaoQuestaoModal: React.FC<ResolucaoQuestaoModalProps> = ({
         const data: AttemptFeedback = await res.json();
         setFeedback(data);
         const acerto = data.isCorrect === true || data.gabaritoStatus === 'ANULADA';
+        
+        // Acumula métricas reais da sessão em memória
+        sessionMetricsRef.current.questionsCount += 1;
+        if (acerto) sessionMetricsRef.current.correctCount += 1;
+        sessionMetricsRef.current.totalActiveTimeMs += timeSpent;
+        sessionMetricsRef.current.confidenceSum += confidence;
+        sessionMetricsRef.current.disciplina = question.discipline || sessionMetricsRef.current.disciplina;
+        sessionMetricsRef.current.topic = question.topic || sessionMetricsRef.current.topic;
+        sessionMetricsRef.current.concursoId = question.concursoId || sessionMetricsRef.current.concursoId;
+
         onQuestionAnswered(question.questionId, acerto);
       } else {
         alert('Não foi possível submeter a resposta. Tente novamente.');
@@ -265,7 +336,7 @@ export const ResolucaoQuestaoModal: React.FC<ResolucaoQuestaoModalProps> = ({
   };
 
   return (
-    <div className="resolucao-modal-backdrop" onClick={onClose}>
+    <div className="resolucao-modal-backdrop" onClick={handleClose}>
       <div className="resolucao-modal-container" onClick={(e) => e.stopPropagation()}>
         {/* Cabeçalho do Modal */}
         <header className="resolucao-modal-header">
@@ -286,12 +357,14 @@ export const ResolucaoQuestaoModal: React.FC<ResolucaoQuestaoModalProps> = ({
                 </span>
               )}
             </div>
-            <div className="header-id-row">
-              <span>ID: {question.questionId}</span>
-              {question.arquivoOrigem && (
-                <span className="header-source-text">• Fonte: {question.arquivoOrigem}</span>
-              )}
-            </div>
+            {!isSimplifiedMode && (
+              <div className="header-id-row">
+                <span>ID: {question.questionId}</span>
+                {question.arquivoOrigem && (
+                  <span className="header-source-text">• Fonte: {question.arquivoOrigem}</span>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="header-right-col">
@@ -323,7 +396,7 @@ export const ResolucaoQuestaoModal: React.FC<ResolucaoQuestaoModalProps> = ({
             <button
               type="button"
               className="btn-close-modal"
-              onClick={onClose}
+              onClick={handleClose}
               title="Fechar resolução e voltar ao Banco (Esc)"
             >
               <X className="w-5 h-5" />
@@ -596,7 +669,7 @@ export const ResolucaoQuestaoModal: React.FC<ResolucaoQuestaoModalProps> = ({
                 <button
                   type="button"
                   className="btn-footer-close"
-                  onClick={onClose}
+                  onClick={handleClose}
                 >
                   Voltar ao Banco
                 </button>
