@@ -432,10 +432,18 @@ public class UnifiedCognitiveArchitectureService {
     private List<EditalCatalogTopic> getEditalCatalog(String concursoId) {
         List<EditalCatalogTopic> list = new ArrayList<>();
         try {
-            List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                    "SELECT id, disciplina, nome, peso FROM edital_topicos WHERE concurso_id = ? ORDER BY peso DESC",
-                    concursoId != null ? concursoId : "c-araguari-01"
-            );
+            List<Map<String, Object>> rows = new ArrayList<>();
+            if (concursoId != null && !concursoId.isBlank() && !"undefined".equalsIgnoreCase(concursoId)) {
+                rows = jdbcTemplate.queryForList(
+                        "SELECT id, disciplina, assunto AS nome, peso FROM edital_topicos WHERE concurso_id = ? ORDER BY peso DESC",
+                        concursoId.trim()
+                );
+            }
+            if (rows.isEmpty()) {
+                rows = jdbcTemplate.queryForList(
+                        "SELECT id, disciplina, assunto AS nome, peso FROM edital_topicos ORDER BY peso DESC"
+                );
+            }
             for (Map<String, Object> r : rows) {
                 String id = (String) r.get("id");
                 String disc = (String) r.get("disciplina");

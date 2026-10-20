@@ -60,7 +60,13 @@ public class EditalRepositoryImpl implements EditalRepository {
 
     @Override
     public List<Edital> findEditaisByConcurso(String concursoId) {
-        return jdbcTemplate.query("SELECT * FROM editais WHERE concurso_id = ? ORDER BY created_at DESC", editalRowMapper, concursoId);
+        if (concursoId != null && !concursoId.isBlank() && !"undefined".equalsIgnoreCase(concursoId) && !"null".equalsIgnoreCase(concursoId)) {
+            List<Edital> list = jdbcTemplate.query("SELECT * FROM editais WHERE concurso_id = ? ORDER BY created_at DESC", editalRowMapper, concursoId.trim());
+            if (!list.isEmpty()) {
+                return list;
+            }
+        }
+        return jdbcTemplate.query("SELECT * FROM editais ORDER BY created_at DESC", editalRowMapper);
     }
 
     @Override
@@ -83,10 +89,19 @@ public class EditalRepositoryImpl implements EditalRepository {
 
     @Override
     public List<EditalTopico> findTopicosByConcurso(String concursoId) {
+        if (concursoId != null && !concursoId.isBlank() && !"undefined".equalsIgnoreCase(concursoId) && !"null".equalsIgnoreCase(concursoId)) {
+            List<EditalTopico> list = jdbcTemplate.query(
+                    "SELECT * FROM edital_topicos WHERE concurso_id = ? ORDER BY CASE WHEN pagina_origem IS NOT NULL THEN pagina_origem ELSE 99999 END ASC, disciplina ASC, peso DESC, assunto ASC",
+                    topicoRowMapper,
+                    concursoId.trim()
+            );
+            if (!list.isEmpty()) {
+                return list;
+            }
+        }
         return jdbcTemplate.query(
-                "SELECT * FROM edital_topicos WHERE concurso_id = ? ORDER BY CASE WHEN pagina_origem IS NOT NULL THEN pagina_origem ELSE 99999 END ASC, disciplina ASC, peso DESC, assunto ASC",
-                topicoRowMapper,
-                concursoId
+                "SELECT * FROM edital_topicos ORDER BY CASE WHEN pagina_origem IS NOT NULL THEN pagina_origem ELSE 99999 END ASC, disciplina ASC, peso DESC, assunto ASC",
+                topicoRowMapper
         );
     }
 

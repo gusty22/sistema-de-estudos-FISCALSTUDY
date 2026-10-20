@@ -284,7 +284,7 @@ public class StrategicSimuladoService {
 
     private Map<String, Object> getConcursoInfo(String concursoId) {
         Map<String, Object> info = new LinkedHashMap<>();
-        if (concursoId != null && !concursoId.isBlank()) {
+        if (concursoId != null && !concursoId.isBlank() && !"undefined".equalsIgnoreCase(concursoId) && !"null".equalsIgnoreCase(concursoId)) {
             try {
                 List<Map<String, Object>> rows = jdbcTemplate.queryForList(
                     "SELECT id, nome, orgao, cargo, banca, ano, status FROM concursos WHERE id = ?", concursoId.trim()
@@ -294,6 +294,15 @@ public class StrategicSimuladoService {
                 }
             } catch (Exception ignored) {}
         }
+        try {
+            List<Map<String, Object>> defaultRows = jdbcTemplate.queryForList(
+                "SELECT id, nome, orgao, cargo, banca, ano, status FROM concursos ORDER BY created_at DESC LIMIT 1"
+            );
+            if (!defaultRows.isEmpty()) {
+                return defaultRows.get(0);
+            }
+        } catch (Exception ignored) {}
+
         info.put("id", concursoId);
         info.put("nome", "Concurso Ativo");
         info.put("orgao", "Órgão Fiscal");
@@ -303,16 +312,32 @@ public class StrategicSimuladoService {
     }
 
     private List<Map<String, Object>> getTopicosDoEdital(String concursoId) {
-        if (concursoId == null || concursoId.isBlank()) {
-            return Collections.emptyList();
-        }
+        String effectiveConcursoId = (concursoId != null && !concursoId.isBlank() && !"undefined".equalsIgnoreCase(concursoId) && !"null".equalsIgnoreCase(concursoId))
+                ? concursoId.trim()
+                : null;
         try {
+            if (effectiveConcursoId != null) {
+                List<Map<String, Object>> list = jdbcTemplate.queryForList("""
+                    SELECT id, edital_id, concurso_id, disciplina, assunto, subassunto,
+                           assunto AS topico, peso,
+                           COALESCE(peso, 1.0) AS relevancia_banca,
+                           COALESCE(questoes_previstas, 1) AS incidencia_recente
+                    FROM edital_topicos
+                    WHERE concurso_id = ?
+                    ORDER BY disciplina ASC, CASE WHEN pagina_origem IS NOT NULL THEN pagina_origem ELSE 99999 END ASC, assunto ASC
+                """, effectiveConcursoId);
+                if (!list.isEmpty()) {
+                    return list;
+                }
+            }
             return jdbcTemplate.queryForList("""
-                SELECT id, disciplina, topico, peso, relevancia_banca, incidencia_recente, ordem
+                SELECT id, edital_id, concurso_id, disciplina, assunto, subassunto,
+                       assunto AS topico, peso,
+                       COALESCE(peso, 1.0) AS relevancia_banca,
+                       COALESCE(questoes_previstas, 1) AS incidencia_recente
                 FROM edital_topicos
-                WHERE concurso_id = ?
-                ORDER BY disciplina ASC, ordem ASC
-            """, concursoId.trim());
+                ORDER BY disciplina ASC, CASE WHEN pagina_origem IS NOT NULL THEN pagina_origem ELSE 99999 END ASC, assunto ASC
+            """);
         } catch (Exception e) {
             logger.warn("Falha ao buscar tópicos do edital: {}", e.getMessage());
             return Collections.emptyList();
@@ -364,10 +389,18 @@ public class StrategicSimuladoService {
         List<Map<String, Object>> result = new ArrayList<>();
 
         for (Map<String, Object> topicoRow : topicosEdital) {
-            String disc = (String) topicoRow.get("disciplina");
+            String disc = (String) topicoRow.getOrDefault("disciplina", "Geral");
             String top = (String) topicoRow.get("topico");
+            if (top == null || top.isBlank()) {
+                top = (String) topicoRow.get("assunto");
+            }
+            if (top == null || top.isBlank()) {
+                top = "Tópico Geral";
+            }
             double peso = topicoRow.get("peso") instanceof Number n ? n.doubleValue() : 1.0;
-            double relevancaBanca = topicoRow.get("relevancia_banca") instanceof Number n ? n.doubleValue() : 1.0;
+            double relevancaBanca = topicoRow.get("relevancia_banca") instanceof Number n
+                    ? n.doubleValue()
+                    : (topicoRow.get("questoes_previstas") instanceof Number q ? q.doubleValue() : 1.0);
 
             String key = (disc != null ? disc.trim().toLowerCase() : "") + "||" + (top != null ? top.trim().toLowerCase() : "");
             PerformanceAcc perf = performancePorTopico.get(key);
@@ -383,9 +416,9 @@ public class StrategicSimuladoService {
             double scorePrioridade;
 
             if (totalFeitas == 0) {
-                if (peso >= 2.0 || relevancaBanca >= 2.0) {
+                if (peso >= 1.5 || relevancaBanca >= 2.0 || "Auditoria".equalsIgnoreCase(disc) || "Direito Tributário".equalsIgnoreCase(disc) || "Contabilidade Geral".equalsIgnoreCase(disc)) {
                     prioridade = "MAXIMA";
-                    justificativa = "Peso alto no edital e ainda sem questões praticadas pelo estudante.";
+                    justificativa = "Conteúdo estruturante de alto impacto no edital sem histórico de resolução recente.";
                     scorePrioridade = 90.0 + peso * 3;
                 } else {
                     prioridade = "ALTA";
@@ -414,6 +447,8 @@ public class StrategicSimuladoService {
             item.put("id", topicoRow.get("id"));
             item.put("disciplina", disc);
             item.put("topico", top);
+            item.put("assunto", top);
+            item.put("subassunto", topicoRow.get("subassunto"));
             item.put("peso", peso);
             item.put("prioridade", prioridade);
             item.put("scorePrioridade", Math.round(scorePrioridade * 10.0) / 10.0);
