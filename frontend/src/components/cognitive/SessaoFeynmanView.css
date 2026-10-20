@@ -1,3 +1,8 @@
+/* =========================================================================
+   SESSÃO FEYNMAN (Autoexplicação em Tela Limpa)
+   Padrão Visual Limpo — Tecnologia Calma (Paper & Night nativos)
+   ========================================================================= */
+
 .feynman-container {
   max-width: 1000px;
   margin: 0 auto;
@@ -5,17 +10,26 @@
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  color: var(--calm-text, #0f172a);
+  font-family: inherit;
 }
 
 .feynman-hero {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(30, 41, 59, 0.7));
-  border: 1px solid rgba(99, 102, 241, 0.35);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(238, 242, 255, 0.6) 100%);
+  border: 1px solid rgba(99, 102, 241, 0.25);
   border-radius: 14px;
   padding: 1.75rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+}
+
+[data-theme='night'] .feynman-hero,
+[data-theme='dark'] .feynman-hero {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(30, 41, 59, 0.7));
+  border-color: rgba(99, 102, 241, 0.35);
 }
 
 .feynman-hero h2 {
-  color: #a5b4fc;
+  color: #4338ca;
   margin: 0 0 0.5rem;
   font-size: 1.5rem;
   display: flex;
@@ -23,33 +37,39 @@
   gap: 0.5rem;
 }
 
+[data-theme='night'] .feynman-hero h2,
+[data-theme='dark'] .feynman-hero h2 {
+  color: #a5b4fc;
+}
+
 .feynman-hero p {
-  color: #cbd5e1;
+  color: var(--calm-text, #334155);
   font-size: 0.95rem;
   line-height: 1.6;
   margin: 0;
 }
 
 .feynman-canvas-card {
-  background: rgba(15, 23, 42, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--calm-card-bg, #ffffff);
+  border: 1px solid var(--calm-card-border, #e2e8f0);
   border-radius: 14px;
   padding: 1.75rem;
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04);
 }
 
 .feynman-monk-mode {
   border-color: #6366f1;
-  box-shadow: 0 0 25px rgba(99, 102, 241, 0.2);
+  box-shadow: 0 0 25px rgba(99, 102, 241, 0.15);
 }
 
 .feynman-clean-textarea {
   width: 100%;
-  background: #0f172a;
-  color: #f8fafc;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: var(--calm-bg-subtle, #f8fafc);
+  color: var(--calm-text, #0f172a);
+  border: 1px solid var(--calm-card-border, #cbd5e1);
   border-radius: 10px;
   padding: 1rem;
   font-family: 'JetBrains Mono', 'Fira Code', monospace;
@@ -58,29 +78,39 @@
   resize: vertical;
   min-height: 250px;
   box-sizing: border-box;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .feynman-clean-textarea:focus {
   outline: none;
   border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
 }
 
 .feynman-gap-pill {
-  background: rgba(239, 68, 68, 0.15);
-  border: 1px solid rgba(239, 68, 68, 0.4);
-  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #dc2626;
   padding: 3px 8px;
   border-radius: 6px;
   font-size: 0.78rem;
+  font-weight: 600;
   cursor: pointer;
 }
 
+[data-theme='night'] .feynman-gap-pill,
+[data-theme='dark'] .feynman-gap-pill {
+  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.15);
+}
+
 .feynman-history-card {
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--calm-card-bg, #ffffff);
+  border: 1px solid var(--calm-card-border, #e2e8f0);
   border-radius: 12px;
   padding: 1.25rem;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
 }
