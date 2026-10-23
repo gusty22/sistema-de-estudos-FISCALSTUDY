@@ -24,7 +24,9 @@ target/
 
 # Temporary / Output
 *.log
-ingestion/output/*.txt
+output/
+scratch/
+backend/analytics/
 
 # DB
 db/
@@ -38,10 +40,9 @@ ingestion/output/
 references/
 tests/golden-set/docs/
 FiscalStudy_Kit_Retomada_2026-10-11/
-scratch/
-output/
-backend/analytics/
+
+# Analytics Engine: ignora gráficos pesados gerados, mas preserva métricas canônicas
+analytics-engine/output/figures/
 
 # Graphify artefatos gerados
 graphify-out/
-
