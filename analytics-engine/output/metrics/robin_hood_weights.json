@@ -1,0 +1,98 @@
+{
+  "generated_at": "2026-10-16T16:42:02Z",
+  "algorithm": "ROBIN_HOOD_ADAPTIVE_CYCLE_V1",
+  "target_retention_threshold": 0.85,
+  "disciplines_count": 6,
+  "weights": {
+    "Conhecimentos Específicos": {
+      "discipline": "Conhecimentos Específicos",
+      "n_attempts": 3,
+      "n_correct": 2,
+      "accuracy": 0.6667,
+      "ci_lower": 0.2077,
+      "urgency_status": "INSUFFICIENT_EVIDENCE_EXPLORE",
+      "critical_day": 1,
+      "days_until_critical": -2,
+      "raw_priority_score": 3.0338,
+      "recommended_action": "EXPLORATORY_TELEMETRY_BLOCK",
+      "cycle_time_share_percent": 16.7,
+      "suggested_block_minutes": 30
+    },
+    "Conhecimentos Gerais": {
+      "discipline": "Conhecimentos Gerais",
+      "n_attempts": 2,
+      "n_correct": 1,
+      "accuracy": 0.5,
+      "ci_lower": 0.0945,
+      "urgency_status": "INSUFFICIENT_EVIDENCE_EXPLORE",
+      "critical_day": 1,
+      "days_until_critical": -2,
+      "raw_priority_score": 3.1244,
+      "recommended_action": "EXPLORATORY_TELEMETRY_BLOCK",
+      "cycle_time_share_percent": 17.2,
+      "suggested_block_minutes": 30
+    },
+    "Legislação Municipal": {
+      "discipline": "Legislação Municipal",
+      "n_attempts": 3,
+      "n_correct": 2,
+      "accuracy": 0.6667,
+      "ci_lower": 0.2077,
+      "urgency_status": "INSUFFICIENT_EVIDENCE_EXPLORE",
+      "critical_day": 1,
+      "days_until_critical": -2,
+      "raw_priority_score": 3.0338,
+      "recommended_action": "EXPLORATORY_TELEMETRY_BLOCK",
+      "cycle_time_share_percent": 16.7,
+      "suggested_block_minutes": 30
+    },
+    "Língua Portuguesa": {
+      "discipline": "Língua Portuguesa",
+      "n_attempts": 4,
+      "n_correct": 3,
+      "accuracy": 0.75,
+      "ci_lower": 0.3006,
+      "urgency_status": "INSUFFICIENT_EVIDENCE_EXPLORE",
+      "critical_day": 1,
+      "days_until_critical": -2,
+      "raw_priority_score": 2.9595,
+      "recommended_action": "EXPLORATORY_TELEMETRY_BLOCK",
+      "cycle_time_share_percent": 16.3,
+      "suggested_block_minutes": 30
+    },
+    "Noções de Informática": {
+      "discipline": "Noções de Informática",
+      "n_attempts": 4,
+      "n_correct": 3,
+      "accuracy": 0.75,
+      "ci_lower": 0.3006,
+      "urgency_status": "INSUFFICIENT_EVIDENCE_EXPLORE",
+      "critical_day": 1,
+      "days_until_critical": -2,
+      "raw_priority_score": 2.9595,
+      "recommended_action": "EXPLORATORY_TELEMETRY_BLOCK",
+      "cycle_time_share_percent": 16.3,
+      "suggested_block_minutes": 30
+    },
+    "Raciocínio Lógico": {
+      "discipline": "Raciocínio Lógico",
+      "n_attempts": 3,
+      "n_correct": 2,
+      "accuracy": 0.6667,
+      "ci_lower": 0.2077,
+      "urgency_status": "INSUFFICIENT_EVIDENCE_EXPLORE",
+      "critical_day": 1,
+      "days_until_critical": -2,
+      "raw_priority_score": 3.0338,
+      "recommended_action": "EXPLORATORY_TELEMETRY_BLOCK",
+      "cycle_time_share_percent": 16.7,
+      "suggested_block_minutes": 30
+    }
+  },
+  "recommendations": {
+    "time_theft_donors": [],
+    "priority_recipients": ["Conhecimentos Gerais", "Conhecimentos Específicos", "Legislação Municipal", "Raciocínio Lógico", "Língua Portuguesa", "Noções de Informática"],
+    "summary_instruction": "Manter ciclo adaptativo balanceado conforme pesos calculados."
+  },
+  "methodological_caution": "Pesos dinamicos computados estritamente sobre projecoes do limite inferior de Wilson e penalidade metrologica de superconfianca."
+}

@@ -1,0 +1,125 @@
+{
+  "signals_count": 7,
+  "signals": [
+    {
+      "signal_id": "SIG_OVERCONFIDENCE_ERROR",
+      "signal_type": "OVERCONFIDENCE_MISCONCEPTION",
+      "description": "Ocorrencia observavel de resposta incorreta acompanhada do nivel maximo de confianca declarada (nivel 5).",
+      "evidence_summary": "3 erro(s) em questoes respondidas com certeza absoluta declarada (nivel 5). Taxa no nivel 5: 37.5%.",
+      "n_observations": 19,
+      "period_start": null,
+      "period_end": null,
+      "applied_criterion": "is_correct == FALSE && confidence_level == 5",
+      "is_heuristic": false,
+      "limitations": [
+        "Foco estrito em metrologia educacional: desacordo observavel entre certeza subjetiva maxima e gabarito.",
+        "Nao constitui diagnostico psicologico definitivo ('ilusao de maestria'); reflete equivoco pontual em item especifico ou leitura precipitada."
+      ],
+      "method_version": "v1.0.0-overconfidence_flag"
+    },
+    {
+      "signal_id": "SIG_INSUFFICIENT_EVIDENCE_Conhecimentos_Espec_ficos_T_pico_N_o_Especificado",
+      "signal_type": "INSUFFICIENT_EVIDENCE",
+      "description": "Topico 'Tópico Não Especificado' (Conhecimentos Específicos) possui volume amostral insuficiente para avaliacao estatistica de dominio.",
+      "evidence_summary": "N = 3 tentativa(s) registradas. Classificacao: LOW_EVIDENCE.",
+      "n_observations": 3,
+      "period_start": null,
+      "period_end": null,
+      "applied_criterion": "n_attempts < 10 observacoes (provisorio/configuravel)",
+      "is_heuristic": true,
+      "limitations": [
+        "Ausencia de dados NAO deve ser interpretada como baixo desempenho ou desconhecimento do tema.",
+        "Requer exposicao a questoes do topico antes de qualquer conclusao pedagógica."
+      ],
+      "method_version": "v1.0.0-topic_evidence_filter"
+    },
+    {
+      "signal_id": "SIG_INSUFFICIENT_EVIDENCE_Conhecimentos_Gerais_T_pico_N_o_Especificado",
+      "signal_type": "INSUFFICIENT_EVIDENCE",
+      "description": "Topico 'Tópico Não Especificado' (Conhecimentos Gerais) possui volume amostral insuficiente para avaliacao estatistica de dominio.",
+      "evidence_summary": "N = 2 tentativa(s) registradas. Classificacao: LOW_EVIDENCE.",
+      "n_observations": 2,
+      "period_start": null,
+      "period_end": null,
+      "applied_criterion": "n_attempts < 10 observacoes (provisorio/configuravel)",
+      "is_heuristic": true,
+      "limitations": [
+        "Ausencia de dados NAO deve ser interpretada como baixo desempenho ou desconhecimento do tema.",
+        "Requer exposicao a questoes do topico antes de qualquer conclusao pedagógica."
+      ],
+      "method_version": "v1.0.0-topic_evidence_filter"
+    },
+    {
+      "signal_id": "SIG_INSUFFICIENT_EVIDENCE_Legisla__o_Municipal_T_pico_N_o_Especificado",
+      "signal_type": "INSUFFICIENT_EVIDENCE",
+      "description": "Topico 'Tópico Não Especificado' (Legislação Municipal) possui volume amostral insuficiente para avaliacao estatistica de dominio.",
+      "evidence_summary": "N = 3 tentativa(s) registradas. Classificacao: LOW_EVIDENCE.",
+      "n_observations": 3,
+      "period_start": null,
+      "period_end": null,
+      "applied_criterion": "n_attempts < 10 observacoes (provisorio/configuravel)",
+      "is_heuristic": true,
+      "limitations": [
+        "Ausencia de dados NAO deve ser interpretada como baixo desempenho ou desconhecimento do tema.",
+        "Requer exposicao a questoes do topico antes de qualquer conclusao pedagógica."
+      ],
+      "method_version": "v1.0.0-topic_evidence_filter"
+    },
+    {
+      "signal_id": "SIG_INSUFFICIENT_EVIDENCE_L_ngua_Portuguesa_T_pico_N_o_Especificado",
+      "signal_type": "INSUFFICIENT_EVIDENCE",
+      "description": "Topico 'Tópico Não Especificado' (Língua Portuguesa) possui volume amostral insuficiente para avaliacao estatistica de dominio.",
+      "evidence_summary": "N = 4 tentativa(s) registradas. Classificacao: LOW_EVIDENCE.",
+      "n_observations": 4,
+      "period_start": null,
+      "period_end": null,
+      "applied_criterion": "n_attempts < 10 observacoes (provisorio/configuravel)",
+      "is_heuristic": true,
+      "limitations": [
+        "Ausencia de dados NAO deve ser interpretada como baixo desempenho ou desconhecimento do tema.",
+        "Requer exposicao a questoes do topico antes de qualquer conclusao pedagógica."
+      ],
+      "method_version": "v1.0.0-topic_evidence_filter"
+    },
+    {
+      "signal_id": "SIG_INSUFFICIENT_EVIDENCE_No__es_de_Inform_tica_T_pico_N_o_Especificado",
+      "signal_type": "INSUFFICIENT_EVIDENCE",
+      "description": "Topico 'Tópico Não Especificado' (Noções de Informática) possui volume amostral insuficiente para avaliacao estatistica de dominio.",
+      "evidence_summary": "N = 4 tentativa(s) registradas. Classificacao: LOW_EVIDENCE.",
+      "n_observations": 4,
+      "period_start": null,
+      "period_end": null,
+      "applied_criterion": "n_attempts < 10 observacoes (provisorio/configuravel)",
+      "is_heuristic": true,
+      "limitations": [
+        "Ausencia de dados NAO deve ser interpretada como baixo desempenho ou desconhecimento do tema.",
+        "Requer exposicao a questoes do topico antes de qualquer conclusao pedagógica."
+      ],
+      "method_version": "v1.0.0-topic_evidence_filter"
+    },
+    {
+      "signal_id": "SIG_INSUFFICIENT_EVIDENCE_Racioc_nio_L_gico_T_pico_N_o_Especificado",
+      "signal_type": "INSUFFICIENT_EVIDENCE",
+      "description": "Topico 'Tópico Não Especificado' (Raciocínio Lógico) possui volume amostral insuficiente para avaliacao estatistica de dominio.",
+      "evidence_summary": "N = 3 tentativa(s) registradas. Classificacao: LOW_EVIDENCE.",
+      "n_observations": 3,
+      "period_start": null,
+      "period_end": null,
+      "applied_criterion": "n_attempts < 10 observacoes (provisorio/configuravel)",
+      "is_heuristic": true,
+      "limitations": [
+        "Ausencia de dados NAO deve ser interpretada como baixo desempenho ou desconhecimento do tema.",
+        "Requer exposicao a questoes do topico antes de qualquer conclusao pedagógica."
+      ],
+      "method_version": "v1.0.0-topic_evidence_filter"
+    }
+  ],
+  "config_used": {
+    "min_recurrent_errors": 2,
+    "overconfidence_level": 5,
+    "sub_second_ms": 1000,
+    "session_volatility_delta": 0.25,
+    "low_evidence_n": 10,
+    "repetition_ratio_threshold": 0.5
+  }
+}

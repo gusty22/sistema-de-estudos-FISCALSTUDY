@@ -24,7 +24,8 @@ target/
 
 # Temporary / Output
 *.log
-output/
+/output/
+!analytics-engine/output/metrics/
 scratch/
 backend/analytics/
 
@@ -34,7 +35,8 @@ analytics/*.json
 
 # Ingestion temp
 ingestion/inspection_*.json
-ingestion/output/
+ingestion//output/
+!analytics-engine/output/metrics/
 
 # Exclusão de Referências e Fixtures com Direitos Autorais
 references/
@@ -42,7 +44,8 @@ tests/golden-set/docs/
 FiscalStudy_Kit_Retomada_2026-10-11/
 
 # Analytics Engine: ignora gráficos pesados gerados, mas preserva métricas canônicas
-analytics-engine/output/figures/
+analytics-engine//output/
+!analytics-engine/output/metrics/figures/
 
 # Graphify artefatos gerados
 graphify-out/
