@@ -1,0 +1,4 @@
+intervention_id,session_id,occurred_at,observed_problem,recommended_activity,justification,method_used,consulted_material,time_spent_ms,immediate_outcome,post_assessment_event_id,post_assessment_type,post_assessment_lag_hours,post_outcome
+int-01,sess-1,2026-10-10T10:15:00Z,SIG_RECURRENT_ERROR_Q_q002,REVIEW_COMMENTED_SOLUTION,Erro reincidente em Obrigacao Tributaria Principal vs Acessoria,ELABORATIVE_FEEDBACK,item:q002,120000,CORRECT,evt-12,SAME_QUESTION,28.25,CORRECT
+int-02,sess-1,2026-10-10T10:25:00Z,SIG_OVERCONFIDENCE_ERROR,CONTRASTIVE_ANALYSIS,Superconfianca com erro em Imunidade Reciproca (CF art 150),ACTIVE_RECALL,art:cf88_art150_VI,180000,CORRECT,NA,SAME_TOPIC_NEW_QUESTION,NA,PENDING_EVALUATION
+int-03,sess-2,2026-10-11T14:40:00Z,SIG_TIME_ANOMALY_SUB_SECOND,SPACED_PRACTICE_DRILL,Resolucao impulsiva em questao complexa,DESIRABLE_DIFFICULTY,item:q007,90000,COMPLETED,NA,NONE,NA,PENDING_EVALUATION

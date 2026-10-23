@@ -1,0 +1,8 @@
+event_id,event_type,session_id,question_id,occurred_at,selected_option,is_correct,confidence_level,active_time_ms
+inv-01,ANSWER_SUBMITTED,sess-err,q001,DATA_INVALIDA_2026,A,TRUE,3,40000
+inv-02,ANSWER_SUBMITTED,sess-err,q002,2026-10-12T10:00:00Z,B,TRUE,6,50000
+inv-03,ANSWER_SUBMITTED,sess-err,q003,2026-10-12T10:01:00Z,C,FALSE,4,-4500
+inv-04,ANSWER_SUBMITTED,sess-err,,2026-10-12T10:02:00Z,A,TRUE,3,30000
+inv-02,ANSWER_SUBMITTED,sess-err,q005,2026-10-12T10:03:00Z,B,FALSE,2,45000
+inv-05,ANSWER_SUBMITTED,sess-err,q009,2026-10-12T10:04:00Z,A,TRUE,4,500
+inv-06,ANSWER_SUBMITTED,sess-err,q999_desconhecida,2026-10-12T10:05:00Z,C,TRUE,3,25000
