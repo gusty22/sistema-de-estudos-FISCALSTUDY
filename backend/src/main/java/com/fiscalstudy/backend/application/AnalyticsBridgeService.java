@@ -37,10 +37,25 @@ public class AnalyticsBridgeService {
     private final ObjectMapper objectMapper;
 
     // Caminhos relativos canônicos do Monorepo
-    private static final String RELATIVE_ENGINE_DIR = "../analytics-engine";
-    private static final String RELATIVE_EXPORT_CSV = "../analytics-engine/data/raw/operational_export_v1.csv";
-    private static final String RELATIVE_WEIGHTS_JSON = "../analytics-engine/output/metrics/robin_hood_weights.json";
-    private static final String RELATIVE_SIGNALS_JSON = "../analytics-engine/output/metrics/analytical_signals_v1.json";
+    private static Path resolveEngineDir() {
+        Path local = Paths.get("analytics-engine");
+        if (Files.exists(local) && Files.isDirectory(local)) {
+            return local;
+        }
+        return Paths.get("../analytics-engine");
+    }
+
+    private static Path resolveExportCsv() {
+        return resolveEngineDir().resolve("data/raw/operational_export_v1.csv");
+    }
+
+    private static Path resolveWeightsJson() {
+        return resolveEngineDir().resolve("output/metrics/robin_hood_weights.json");
+    }
+
+    private static Path resolveSignalsJson() {
+        return resolveEngineDir().resolve("output/metrics/analytical_signals_v1.json");
+    }
 
     public AnalyticsBridgeService(AnalyticsProjectionService analyticsProjectionService,
                                   RobinHoodCycleService robinHoodCycleService,
@@ -54,7 +69,7 @@ public class AnalyticsBridgeService {
      * Exporta os dados consolidados do banco SQLite para o CSV canônico de entrada do motor R.
      */
     public synchronized Path exportCanonicalCsv() throws Exception {
-        Path targetPath = Paths.get(RELATIVE_EXPORT_CSV).toAbsolutePath().normalize();
+        Path targetPath = resolveExportCsv().toAbsolutePath().normalize();
         if (targetPath.getParent() != null && !Files.exists(targetPath.getParent())) {
             Files.createDirectories(targetPath.getParent());
         }
@@ -92,7 +107,7 @@ public class AnalyticsBridgeService {
                 return applyFallbackWeights("Rscript não encontrado no sistema operacional. Pesos mantidos conforme prioridade do edital.");
             }
 
-            File engineDir = Paths.get(RELATIVE_ENGINE_DIR).toFile();
+            File engineDir = resolveEngineDir().toFile();
             if (!engineDir.exists() || !engineDir.isDirectory()) {
                 logger.warn("Diretório do analytics-engine não encontrado em: {}. Aplicando fallback seguro.", engineDir.getAbsolutePath());
                 return applyFallbackWeights("Diretório analytics-engine ausente. Ciclo padronizado via edital.");
@@ -155,7 +170,7 @@ public class AnalyticsBridgeService {
      * Desserializa os pesos de robin_hood_weights.json.
      */
     public RobinHoodWeightsDTO loadRobinHoodWeights() {
-        Path p = Paths.get(RELATIVE_WEIGHTS_JSON).toAbsolutePath().normalize();
+        Path p = resolveWeightsJson().toAbsolutePath().normalize();
         if (Files.exists(p)) {
             try {
                 String json = Files.readString(p, StandardCharsets.UTF_8);
@@ -173,7 +188,7 @@ public class AnalyticsBridgeService {
      * Desserializa os sinais de analytical_signals_v1.json.
      */
     public List<Map<String, Object>> loadAnalyticalSignals() {
-        Path p = Paths.get(RELATIVE_SIGNALS_JSON).toAbsolutePath().normalize();
+        Path p = resolveSignalsJson().toAbsolutePath().normalize();
         if (Files.exists(p)) {
             try {
                 String json = Files.readString(p, StandardCharsets.UTF_8);

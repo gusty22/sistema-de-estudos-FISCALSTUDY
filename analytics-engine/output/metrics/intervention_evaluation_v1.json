@@ -1,0 +1,27 @@
+{
+  "evaluation_status": "INSUFFICIENT_EVIDENCE",
+  "total_interventions": 3,
+  "completed_interventions": 3,
+  "pending_evaluation_count": 2,
+  "evaluated_count": 1,
+  "min_sample_required": 5,
+  "activity_evaluation": [],
+  "method_evaluation": [],
+  "recovery_rate_by_type": {
+    "same_question": {
+      "n": 0,
+      "k": 0,
+      "rate": "NA",
+      "ci_lower": "NA",
+      "ci_upper": "NA"
+    },
+    "novel_question": {
+      "n": 0,
+      "k": 0,
+      "rate": "NA",
+      "ci_lower": "NA",
+      "ci_upper": "NA"
+    }
+  },
+  "methodological_cautions": ["Evidencias quantitativas insuficientes para avaliar recomendacoes (N_avaliadas = 1 < 5 exigidas).", "Nao e possivel declarar superioridade ou eficacia de qualquer estrategia pedagogica com base nesta amostra.", "Aguardar acumulacao longitudinal de mais avaliacoes posteriores."]
+}

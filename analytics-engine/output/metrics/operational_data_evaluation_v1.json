@@ -1,0 +1,297 @@
+{
+  "evaluation_version": "1.1.0",
+  "generated_at": "2026-10-13T04:49:50Z",
+  "evaluation_type": "SAMPLE_CONTRACT_EVALUATION",
+  "data_provenance": "DEMONSTRATION_SAMPLE",
+  "is_real_student_data": false,
+  "student_learning_status": "PENDING_AUTHENTICATED_OPERATIONAL_DATA",
+  "provenance_audit_verdict": "AMOSTRA_DEMONSTRATIVA_DE_CONTRATO",
+  "provenance_reasons": ["Registros coincidem exatamente com a amostra ilustrativa de 20 questoes de sample_data.csv.", "Ausencia de identificador de estudante, sessao autenticada e timestamp de banco de producao.", "Valores de active_time_ms com padrao arredondado tipico de massa de teste manual."],
+  "provenance_warnings": ["BLOQUEIO EPISTEMICO: O dataset foi identificado como AMOSTRA DEMONSTRATIVA (DEMONSTRATION_SAMPLE).", "E terminantemente vedado classificar esses dados como historico real de aprendizagem do estudante.", "Resultados analiticos gerados sobre esta amostra devem ser rotulados estritamente como validacao de contrato/amostra de teste."],
+  "operational_source_file": "data/raw/operational_export_v1.csv",
+  "evidence_status": "UNVERIFIED_DATA_PROVENANCE (DEMONSTRATION_SAMPLE)",
+  "data_summary": {
+    "adapter_version": "1.0.0",
+    "data_provenance": "DEMONSTRATION_SAMPLE",
+    "is_proven_operational": false,
+    "is_real_student_data": false,
+    "can_generate_student_profile": false,
+    "provenance_verdict": "AMOSTRA_DEMONSTRATIVA_DE_CONTRATO",
+    "provenance_reasons": ["Registros coincidem exatamente com a amostra ilustrativa de 20 questoes de sample_data.csv.", "Ausencia de identificador de estudante, sessao autenticada e timestamp de banco de producao.", "Valores de active_time_ms com padrao arredondado tipico de massa de teste manual."],
+    "provenance_warnings": ["BLOQUEIO EPISTEMICO: O dataset foi identificado como AMOSTRA DEMONSTRATIVA (DEMONSTRATION_SAMPLE).", "E terminantemente vedado classificar esses dados como historico real de aprendizagem do estudante.", "Resultados analiticos gerados sobre esta amostra devem ser rotulados estritamente como validacao de contrato/amostra de teste."],
+    "total_attempts": 20,
+    "evaluable_attempts": 19,
+    "non_evaluable_attempts": 1,
+    "pedagogical_correct": 13,
+    "pedagogical_accuracy": 0.6842,
+    "annulled_count": 0,
+    "concurso_official_score": 13,
+    "temporal_data_present": false,
+    "quality_flags": ["PROVENANCE_DEMONSTRATION_SAMPLE", "OPERATIONAL_EXPORT_ADAPTED", "NO_SYNTHETIC_TIMESTAMPS_INJECTED", "NON_EVALUABLE_EXCLUDED_1"],
+    "methodological_cautions": ["1. Dados adaptados do contrato plano de tentativas do FiscalStudy (fiscalstudy_attempts.csv).", "2. Questoes com gabarito ausente/anuladas foram segregadas do denominador de acuracia pedagogica.", "3. Concurso score calculado oficialmente (acertos validos + anuladas do edital).", "4. Timestamps nao presentes no arquivo plano: analises temporais marcadas como TEMPORAL_DATA_ABSENT.", "5. [ALERTA DE PROCEDENCIA]: Classificado como 'DEMONSTRATION_SAMPLE'. VEDADO apresentar como historico real de estudante."]
+  },
+  "performance_pedagogical": {
+    "overall_accuracy": 0.6842,
+    "accuracy_ci_lower": 0.4601,
+    "accuracy_ci_upper": 0.8464,
+    "effective_denominator": "13 acertos em 19 tentativas (N = 19, taxa = 68.4% [IC 95%: 46.0% - 84.6%])",
+    "by_discipline": [
+      {
+        "disciplina": "Conhecimentos Específicos",
+        "n_attempts": 3,
+        "n_correct": 2,
+        "n_incorrect": 1,
+        "accuracy": 0.6667,
+        "ci_lower": 0.2077,
+        "ci_upper": 0.9385,
+        "denominator_text": "2/3 (66.7%)",
+        "_row": "lower"
+      },
+      {
+        "disciplina": "Conhecimentos Gerais",
+        "n_attempts": 2,
+        "n_correct": 1,
+        "n_incorrect": 1,
+        "accuracy": 0.5,
+        "ci_lower": 0.0945,
+        "ci_upper": 0.9055,
+        "denominator_text": "1/2 (50.0%)",
+        "_row": "lower1"
+      },
+      {
+        "disciplina": "Legislação Municipal",
+        "n_attempts": 3,
+        "n_correct": 2,
+        "n_incorrect": 1,
+        "accuracy": 0.6667,
+        "ci_lower": 0.2077,
+        "ci_upper": 0.9385,
+        "denominator_text": "2/3 (66.7%)",
+        "_row": "lower2"
+      },
+      {
+        "disciplina": "Língua Portuguesa",
+        "n_attempts": 4,
+        "n_correct": 3,
+        "n_incorrect": 1,
+        "accuracy": 0.75,
+        "ci_lower": 0.3006,
+        "ci_upper": 0.9544,
+        "denominator_text": "3/4 (75.0%)",
+        "_row": "lower3"
+      },
+      {
+        "disciplina": "Noções de Informática",
+        "n_attempts": 4,
+        "n_correct": 3,
+        "n_incorrect": 1,
+        "accuracy": 0.75,
+        "ci_lower": 0.3006,
+        "ci_upper": 0.9544,
+        "denominator_text": "3/4 (75.0%)",
+        "_row": "lower4"
+      },
+      {
+        "disciplina": "Raciocínio Lógico",
+        "n_attempts": 3,
+        "n_correct": 2,
+        "n_incorrect": 1,
+        "accuracy": 0.6667,
+        "ci_lower": 0.2077,
+        "ci_upper": 0.9385,
+        "denominator_text": "2/3 (66.7%)",
+        "_row": "lower5"
+      }
+    ]
+  },
+  "active_time": {
+    "n_valid_times": 19,
+    "median_sec": 28,
+    "mean_sec": 28.25,
+    "sd_sec": 11.67,
+    "iqr_sec": 18.25,
+    "min_sec": 12,
+    "max_sec": 52,
+    "outliers_detected": 0
+  },
+  "metrological_calibration": {
+    "n_observations": 19,
+    "brier_score": 0.2232,
+    "ece": 0.2737,
+    "prob_mapping_used": [0.2, 0.4, 0.6, 0.8, 1],
+    "conversion_hypothesis": {
+      "description": "A escala ordinal Likert (1 a 5) foi convertida em probabilidades pontuais de acordo com o mapeamento explicitado.",
+      "mapping": [0.2, 0.4, 0.6, 0.8, 1],
+      "nature": "HIPOTESE_PARAMETRICA_ASSUMIDA",
+      "epistemic_warning": "Esta conversao e uma hipotese metodologica do pesquisador e NAO representa medicao direta de probabilidade subjetiva continua do estudante."
+    },
+    "overconfidence_count": 3,
+    "overconfidence_rate": 0.375,
+    "underconfidence_count": 0,
+    "underconfidence_rate": 0,
+    "accuracy_by_confidence_level": [
+      {
+        "confidence_level": 1,
+        "n_attempts": 0,
+        "proportion_of_total": 0,
+        "n_correct": 0,
+        "expected_probability": 0.2,
+        "denominator_text": "0/0 (0.0%)",
+        "_row": "lower"
+      },
+      {
+        "confidence_level": 2,
+        "n_attempts": 2,
+        "proportion_of_total": 0.1053,
+        "n_correct": 0,
+        "accuracy": 0,
+        "ci_lower": 0,
+        "ci_upper": 0.6576,
+        "expected_probability": 0.4,
+        "calibration_gap": -0.4,
+        "denominator_text": "0/2 (0.0%)",
+        "_row": "lower1"
+      },
+      {
+        "confidence_level": 3,
+        "n_attempts": 3,
+        "proportion_of_total": 0.1579,
+        "n_correct": 2,
+        "accuracy": 0.6667,
+        "ci_lower": 0.2077,
+        "ci_upper": 0.9385,
+        "expected_probability": 0.6,
+        "calibration_gap": 0.0667,
+        "denominator_text": "2/3 (66.7%)",
+        "_row": "lower2"
+      },
+      {
+        "confidence_level": 4,
+        "n_attempts": 6,
+        "proportion_of_total": 0.3158,
+        "n_correct": 6,
+        "accuracy": 1,
+        "ci_lower": 0.6097,
+        "ci_upper": 1,
+        "expected_probability": 0.8,
+        "calibration_gap": 0.2,
+        "denominator_text": "6/6 (100.0%)",
+        "_row": "lower3"
+      },
+      {
+        "confidence_level": 5,
+        "n_attempts": 8,
+        "proportion_of_total": 0.4211,
+        "n_correct": 5,
+        "accuracy": 0.625,
+        "ci_lower": 0.3057,
+        "ci_upper": 0.8632,
+        "expected_probability": 1,
+        "calibration_gap": -0.375,
+        "denominator_text": "5/8 (62.5%)",
+        "_row": "lower4"
+      }
+    ],
+    "methodological_cautions": ["Mapeamento probabilistico utilizado: Nivel 1=0.20, 2=0.40, 3=0.60, 4=0.80, 5=1.00.", "HIPOTESE METODOLOGICA: Brier Score e ECE dependem da conversao assumida de Likert 1-5 em probabilidades discretas e nao refletem diretamente uma probabilidade subjetiva continua observada.", "Amostra pequena para calibracao (N = 19 < 30); intervalos amplos e alta variancia no Brier Score.", "ECE possui vies amostral positivo assintotico em amostras reduzidas devido a natureza nao-negativa das diferencas absolutas."]
+  },
+  "simple_baselines": {
+    "historical_mean": {
+      "predicted_prob": 0.6842,
+      "ci_lower": 0.4601,
+      "ci_upper": 0.8464
+    },
+    "smoothed_topic_means": [
+      {
+        "disciplina": "Língua Portuguesa",
+        "assunto": "Geral",
+        "n_attempts": 4,
+        "n_correct": 3,
+        "raw_accuracy": 0.75,
+        "smoothed_prob": 0.7281
+      },
+      {
+        "disciplina": "Raciocínio Lógico",
+        "assunto": "Geral",
+        "n_attempts": 3,
+        "n_correct": 2,
+        "raw_accuracy": 0.6667,
+        "smoothed_prob": 0.6737
+      },
+      {
+        "disciplina": "Noções de Informática",
+        "assunto": "Geral",
+        "n_attempts": 4,
+        "n_correct": 3,
+        "raw_accuracy": 0.75,
+        "smoothed_prob": 0.7281
+      },
+      {
+        "disciplina": "Conhecimentos Gerais",
+        "assunto": "Geral",
+        "n_attempts": 2,
+        "n_correct": 1,
+        "raw_accuracy": 0.5,
+        "smoothed_prob": 0.5921
+      },
+      {
+        "disciplina": "Legislação Municipal",
+        "assunto": "Geral",
+        "n_attempts": 3,
+        "n_correct": 2,
+        "raw_accuracy": 0.6667,
+        "smoothed_prob": 0.6737
+      },
+      {
+        "disciplina": "Conhecimentos Específicos",
+        "assunto": "Geral",
+        "n_attempts": 3,
+        "n_correct": 2,
+        "raw_accuracy": 0.6667,
+        "smoothed_prob": 0.6737
+      }
+    ],
+    "moving_average_recency": {
+      "window_size": 5,
+      "current_estimate": 0.6,
+      "rolling_series": [1, 1, 0.6667, 0.75, 0.8, 0.6, 0.6, 0.8, 0.8, 0.8, 0.8, 0.6, 0.6, 0.6, 0.4, 0.6, 0.6, 0.6, 0.6]
+    },
+    "calibration_vs_historical_baseline": {
+      "status": "INSUFFICIENT_SAMPLE_CAUTION",
+      "n_observations": 19,
+      "brier_model": 0.2232,
+      "brier_baseline": 0.2161,
+      "brier_skill_score": -0.0328,
+      "logloss_model": 2.4076,
+      "logloss_baseline": 0.6237,
+      "is_superior_to_baseline": false,
+      "methodological_cautions": ["1. Brier Skill Score (BSS > 0) quantifica o ganho relativo em relacao a probabilidade base historica.", "2. Qualquer modelo complexo deve provar superacao fora da amostra (out-of-sample) sobre a media historica.", "3. Amostra de avaliacao muito reduzida (N = 19 < 20); BSS altamente instavel."]
+    }
+  },
+  "advanced_models_prerequisites_audit": {
+    "bkt": {
+      "model_family": "BKT (Bayesian Knowledge Tracing)",
+      "is_viable": false,
+      "verdict": "NOT_VIABLE_USE_BASELINE",
+      "recommended_baseline": "Média Móvel Suavizada por Tópico (calculate_baseline_topic_mean)",
+      "barriers": ["Ausencia de mapeamento de micro-habilidades (Knowledge Components).", "Volume global insuficiente (N = 19 < 30 exigido por habilidade).", "Risco critico de degeneracao de parametros e nao-identificabilidade em amostras curtas."],
+      "scientific_rationale": "Sem micro-taxonomia e sequencias longas, BKT sofre de identifiability issue, gerando falsos dominios absolutos."
+    },
+    "irt": {
+      "model_family": "IRT / TRI (Teoria de Resposta ao Item)",
+      "is_viable": false,
+      "verdict": "NOT_VIABLE_USE_BASELINE",
+      "recommended_baseline": "Acurácia Wilson por Disciplina com Denominador Estrito",
+      "barriers": ["Apenas 1 estudante(s) analisado(s). Calibrar theta e parametros do item simultaneamente e matematicamente impossivel.", "Exige dados historicos externos da banca para fixar a dificuldade (b_i) a priori."],
+      "scientific_rationale": "Para uso individual inicial, estimar proficiencia e parametros de item simultaneamente gera overfitting total e estimativas espurias."
+    },
+    "spaced_retention": {
+      "model_family": "Modelos Paramétricos de Retenção (FSRS / Curvas de Ebbinghaus)",
+      "is_viable": false,
+      "verdict": "NOT_VIABLE_USE_BASELINE",
+      "recommended_baseline": "Taxas Empíricas por Faixa de Intervalo (calculate_retention_metrics)",
+      "barriers": ["Ausencia de repeticoes com espacamento temporal dilatado (> 14 dias).", "Poucas observacoes de repeticao (N = 19)."],
+      "scientific_rationale": "Ajustar curvas parametricas sobre memoria recente (< 24h) confunde familiaridade de item com retencao de longo prazo."
+    }
+  },
+  "methodological_cautions": ["1. Dados adaptados do contrato plano de tentativas do FiscalStudy (fiscalstudy_attempts.csv).", "2. Questoes com gabarito ausente/anuladas foram segregadas do denominador de acuracia pedagogica.", "3. Concurso score calculado oficialmente (acertos validos + anuladas do edital).", "4. Timestamps nao presentes no arquivo plano: analises temporais marcadas como TEMPORAL_DATA_ABSENT.", "5. [ALERTA DE PROCEDENCIA]: Classificado como 'DEMONSTRATION_SAMPLE'. VEDADO apresentar como historico real de estudante.", "BLOQUEIO EPISTEMICO: Amostra demonstrativa de contrato. PROIBIDO atribuir como perfil pessoal do estudante.", "Amostra observada N = 19 < 30: diagnosticos estritamente descritivos.", "Nao imputar causalidade pedagogica nem treinar parametros latentes sem dados suficientes."]
+}

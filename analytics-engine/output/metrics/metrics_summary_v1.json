@@ -1,0 +1,122 @@
+{
+  "contract_version": "1.0.0",
+  "generated_at": "2026-10-16T16:42:02Z",
+  "metrics_count": 6,
+  "metrics": [
+    {
+      "metric_name": "overall_accuracy",
+      "definition": "Taxa de acertos em relacao ao total de tentativas validas.",
+      "value": 0.6842,
+      "ci_lower": 0.4601,
+      "ci_upper": 0.8464,
+      "n_observations": 19,
+      "period_start": null,
+      "period_end": null,
+      "method_version": "v1.0.0-wilson_score",
+      "limitations": [
+        "Denominador observado obrigatorio",
+        "Amostra pequena (N < 30); interpretar intervalo com cautela"
+      ],
+      "quality_flags": [
+        "VALID_DATA",
+        "NO_BLOCKING_ERRORS",
+        "WARNINGS_COUNT_1"
+      ]
+    },
+    {
+      "metric_name": "median_active_time_seconds",
+      "definition": "Mediana do tempo de tela ativo gasto por questao, em segundos.",
+      "value": 28.5,
+      "ci_lower": 18.88,
+      "ci_upper": 36.5,
+      "n_observations": 20,
+      "period_start": null,
+      "period_end": null,
+      "method_version": "v1.0.0-nonparametric_median_iqr",
+      "limitations": [
+        "Tempo ativo medido em milissegundos de foco"
+      ],
+      "quality_flags": [
+        "VALID_DATA",
+        "NO_BLOCKING_ERRORS",
+        "WARNINGS_COUNT_1"
+      ]
+    },
+    {
+      "metric_name": "calibration_brier_score",
+      "definition": "Indice de Brier ponderado mapeando confianca 1-5 para probabilidade 0.20-1.00.",
+      "value": 0.2232,
+      "ci_lower": {},
+      "ci_upper": {},
+      "n_observations": 19,
+      "period_start": null,
+      "period_end": null,
+      "method_version": "v1.0.0-discrete_brier",
+      "limitations": [
+        "Assume mapeamento linear da escala discreta de 5 opcoes"
+      ],
+      "quality_flags": [
+        "VALID_DATA",
+        "NO_BLOCKING_ERRORS",
+        "WARNINGS_COUNT_1"
+      ]
+    },
+    {
+      "metric_name": "expected_calibration_error_ece",
+      "definition": "Diferenca media ponderada absoluta entre acuracia observada e confianca declarada em 5 faixas.",
+      "value": 0.2737,
+      "ci_lower": {},
+      "ci_upper": {},
+      "n_observations": 19,
+      "period_start": null,
+      "period_end": null,
+      "method_version": "v1.0.0-5bin_ece",
+      "limitations": [
+        "Discretizado em 5 bins correspondentes a cada nivel de confianca"
+      ],
+      "quality_flags": [
+        "VALID_DATA",
+        "NO_BLOCKING_ERRORS",
+        "WARNINGS_COUNT_1"
+      ]
+    },
+    {
+      "metric_name": "overconfidence_rate_level5",
+      "definition": "Proporcao de erros em tentativas respondidas com confianca maxima (nivel 5).",
+      "value": 0.375,
+      "ci_lower": {},
+      "ci_upper": {},
+      "n_observations": 19,
+      "period_start": null,
+      "period_end": null,
+      "method_version": "v1.0.0-level5_error_rate",
+      "limitations": [
+        "Foco em detectar ilusoes graves de competencia"
+      ],
+      "quality_flags": [
+        "VALID_DATA",
+        "NO_BLOCKING_ERRORS",
+        "WARNINGS_COUNT_1"
+      ]
+    },
+    {
+      "metric_name": "repeated_items_observed_count",
+      "definition": "Quantidade de tentativas repetidas da mesma questao registradas.",
+      "value": 0,
+      "ci_lower": {},
+      "ci_upper": {},
+      "n_observations": 0,
+      "period_start": null,
+      "period_end": null,
+      "method_version": "v1.0.0-exact_item_repetition",
+      "limitations": [
+        "Sem dados disponíveis."
+      ],
+      "quality_flags": [
+        "VALID_DATA",
+        "NO_BLOCKING_ERRORS",
+        "WARNINGS_COUNT_1"
+      ]
+    }
+  ]
+}

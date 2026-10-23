@@ -1,0 +1,1 @@
+attempt_id,question_id,session_id,discipline,topic,occurred_at,attempt_index_topic,delta_t_hours,delta_t_days,prev_confidence_level,confidence_level,selected_option,official_option,gabarito_status,is_correct,y_n,active_time_ms,is_noise_filtered,topic_difficulty_prior,board,origin_type,concurso_point

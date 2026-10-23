@@ -1,0 +1,11 @@
+question_id,enunciado,correct_option,disciplina,assunto,banca,ano,orgao,cargo,is_annulled
+q001,"Enunciado da questao 1 sobre lancamento tributario","A","Direito Tributario","Lancamento","IBGP",2023,"Prefeitura de Araguari","Auditor Fiscal",FALSE
+q002,"Enunciado da questao 2 sobre obrigacao acessoria","B","Direito Tributario","Obrigacao Tributaria","IBGP",2023,"Prefeitura de Araguari","Auditor Fiscal",FALSE
+q003,"Enunciado da questao 3 sobre crase","A","Lingua Portuguesa","Sintaxe","IBGP",2023,"Prefeitura de Araguari","Auditor Fiscal",FALSE
+q004,"Enunciado da questao 4 sobre concordancia verbal","D","Lingua Portuguesa","Concordancia","IBGP",2023,"Prefeitura de Araguari","Auditor Fiscal",FALSE
+q005,"Enunciado da questao 5 sobre atos administrativos","C","Direito Administrativo","Atos","IBGP",2023,"Prefeitura de Araguari","Auditor Fiscal",FALSE
+q006,"Enunciado da questao 6 sobre improbidade administrativa","A","Direito Administrativo","Improbidade","IBGP",2023,"Prefeitura de Araguari","Auditor Fiscal",FALSE
+q007,"Enunciado da questao 7 sobre auditoria de estoques","C","Auditoria","Procedimentos","IBGP",2023,"Prefeitura de Araguari","Auditor Fiscal",FALSE
+q008,"Enunciado da questao 8 sobre contabilidade geral DRE","D","Contabilidade Geral","Demonstracoes","IBGP",2023,"Prefeitura de Araguari","Auditor Fiscal",FALSE
+q009,"Enunciado da questao 9 sobre ISSQN aliquotas","ANULADA","Legislacao Municipal","ISSQN","IBGP",2023,"Prefeitura de Araguari","Auditor Fiscal",TRUE
+q010,"Enunciado da questao 10 sobre IPTU progressivo","B","Legislacao Municipal","IPTU","IBGP",2023,"Prefeitura de Araguari","Auditor Fiscal",FALSE
