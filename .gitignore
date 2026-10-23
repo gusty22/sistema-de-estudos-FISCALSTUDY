@@ -42,3 +42,6 @@ scratch/
 output/
 backend/analytics/
 
+# Graphify artefatos gerados
+graphify-out/
+

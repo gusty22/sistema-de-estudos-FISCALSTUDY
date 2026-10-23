@@ -105,7 +105,8 @@ Consulte pontualmente via `view_file` conforme o escopo da tarefa:
 - **Contrato de Dados V1**: [`docs/DATA_CONTRACT_V1.md`](file:///c:/Users/washi/OneDrive/%C3%81rea%20de%20Trabalho/fiscalstudy-platform/core-app/docs/DATA_CONTRACT_V1.md)
 
 ## 5. Ferramentas e Skills Ativas
+- **Graphify (`graphify-out/`)**: Grafo estrutural do código via AST Tree-sitter. Consultas: `graphify query "<pergunta>"`, `graphify explain "<nó>"`, `graphify path "<A>" "<B>"`. Atualização local pós-código: `graphify update .`.
 - **OpenSpec (`openspec/`)**: Gestão de propostas (`/opsx-propose`) e tarefas (`/opsx-apply`).
 - **Skills Sob Demanda (`.agents/skills/`)**: `implement` (TDD), `code-review` (diffs), `taste-skill` (UI anti-slop).
-- **Obsidian**: Central de conhecimento e pesquisa em `..\obsidian\FiscalStudy-Obsidian\00 - Painel\Dashboard.md`.
+- **Obsidian**: Central de conhecimento e pesquisa em `..\obsidian\FiscalStudy-Obsidian\00 - Painel\Dashboard.md` (Ponte de rastreabilidade: `02 - Arquitetura e Engenharia/Mapa Estrutural do Código.md`).
 

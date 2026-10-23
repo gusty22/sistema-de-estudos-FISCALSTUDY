@@ -2,7 +2,8 @@
 
 ## 1. Protocolo de Inicialização e Contexto Mínimo
 - **Passo 1 (Obrigatório ao iniciar)**: Consulte o índice executivo em `.agents/memory/CONTEXT.md` para recuperar o estado do projeto, stack, ferramentas ativas e localização das especificações.
-- **Passo 2 (Leitura seletiva)**: NÃO leia documentação extensa (`PROMPT_MESTRE.md` ou histórico completo). Acesse pontualmente apenas o módulo correspondente à tarefa em `docs/architecture/modules/MODULOS_ESPECIFICACOES.md`.
+- **Passo 2 (Localização Estrutural via Grafo)**: Para localizar onde componentes, classes e métodos estão implementados ou rastrear dependências, consulte o Graphify (`graphify query "<pergunta>"` ou `graphify explain "<nó>"`), sem varrer arquivos inteiros.
+- **Passo 3 (Leitura seletiva)**: NÃO leia documentação extensa (`PROMPT_MESTRE.md` ou histórico completo). Acesse pontualmente apenas o módulo correspondente à tarefa em `docs/architecture/modules/MODULOS_ESPECIFICACOES.md` ou a nota correspondente no Obsidian.
 
 ## 2. Postura de Engenharia Pragmática (Diretrizes Ponytail / YAGNI)
 - **O melhor código é o que não precisou ser escrito**: Reutilize sempre componentes, utilitários e serviços existentes antes de criar novos.
