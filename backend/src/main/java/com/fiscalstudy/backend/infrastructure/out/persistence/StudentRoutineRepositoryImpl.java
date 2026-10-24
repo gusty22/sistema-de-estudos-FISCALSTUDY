@@ -59,16 +59,11 @@ public class StudentRoutineRepositoryImpl implements StudentRoutineRepository {
 
     @Override
     public Optional<StudentRoutine> findByConcursoId(String concursoId) {
-        if (concursoId != null && !concursoId.isBlank() && !"undefined".equalsIgnoreCase(concursoId) && !"null".equalsIgnoreCase(concursoId)) {
-            String sql = "SELECT * FROM student_routines WHERE concurso_id = ?";
-            List<StudentRoutine> list = jdbcTemplate.query(sql, routineRowMapper, concursoId);
-            if (!list.isEmpty()) {
-                return Optional.of(list.get(0));
-            }
-        }
-        // Fallback resiliente para a rotina mais recente cadastrada
-        List<StudentRoutine> fallbackList = jdbcTemplate.query("SELECT * FROM student_routines ORDER BY updated_at DESC LIMIT 1", routineRowMapper);
-        return fallbackList.isEmpty() ? Optional.empty() : Optional.of(fallbackList.get(0));
+        String scope = concursoId == null || concursoId.isBlank() ? "default" : concursoId.trim();
+        List<StudentRoutine> list = jdbcTemplate.query(
+                "SELECT * FROM student_routines WHERE concurso_id = ? ORDER BY updated_at DESC, id DESC LIMIT 1",
+                routineRowMapper, scope);
+        return list.stream().findFirst();
     }
 
     @Override
@@ -76,21 +71,9 @@ public class StudentRoutineRepositoryImpl implements StudentRoutineRepository {
         if (routine.getId() == null || routine.getId().isBlank()) {
             routine.setId(UUID.randomUUID().toString());
         }
-        if (routine.getConcursoId() == null || routine.getConcursoId().isBlank() || "undefined".equalsIgnoreCase(routine.getConcursoId()) || "null".equalsIgnoreCase(routine.getConcursoId())) {
-            try {
-                List<Map<String, Object>> rows = jdbcTemplate.queryForList("SELECT id FROM concursos WHERE status = 'ACTIVE' LIMIT 1");
-                if (rows.isEmpty()) {
-                    rows = jdbcTemplate.queryForList("SELECT id FROM concursos LIMIT 1");
-                }
-                if (!rows.isEmpty() && rows.get(0).get("id") != null) {
-                    routine.setConcursoId((String) rows.get(0).get("id"));
-                } else {
-                    routine.setConcursoId("default");
-                }
-            } catch (Exception ignored) {
-                routine.setConcursoId("default");
-            }
-        }
+        if (routine.getConcursoId() == null || routine.getConcursoId().isBlank() || "undefined".equalsIgnoreCase(routine.getConcursoId()) || "null".equalsIgnoreCase(routine.getConcursoId())) routine.setConcursoId("default");
+        // Preserve legacy duplicate rows; new saves target the deterministic canonical record.
+        findByConcursoId(routine.getConcursoId()).ifPresent(existing -> routine.setId(existing.getId()));
         routine.setUpdatedAt(Instant.now().toString());
 
         String sql = """

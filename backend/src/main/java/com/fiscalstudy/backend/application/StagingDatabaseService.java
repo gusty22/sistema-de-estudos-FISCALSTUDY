@@ -30,18 +30,14 @@ public class StagingDatabaseService {
     private final Path acervoRoot;
     private final Path evidenceCacheDir;
 
-    public StagingDatabaseService(JdbcTemplate operationalJdbcTemplate) {
+    @org.springframework.beans.factory.annotation.Autowired
+    public StagingDatabaseService(JdbcTemplate operationalJdbcTemplate, com.fiscalstudy.backend.infrastructure.config.DatabasePaths paths) {
         this.operationalJdbcTemplate = operationalJdbcTemplate;
         this.objectMapper = new ObjectMapper();
 
-        Path dbPath = Paths.get("..", "db", "staging.db").toAbsolutePath().normalize();
-        if (!Files.exists(dbPath)) {
-            dbPath = Paths.get("db", "staging.db").toAbsolutePath().normalize();
-        }
-        this.stagingDbPath = dbPath;
-
-        this.acervoRoot = Paths.get("C:", "Users", "washi", "Downloads", "provas").toAbsolutePath().normalize();
-        this.evidenceCacheDir = Paths.get("target", "staging_pipeline", "evidence_cache").toAbsolutePath().normalize();
+        this.stagingDbPath = paths.stagingDatabase();
+        this.acervoRoot = paths.acervoRoot();
+        this.evidenceCacheDir = paths.dataDirectory().resolve("cache/evidence");
 
         try {
             Files.createDirectories(this.evidenceCacheDir);
@@ -53,7 +49,9 @@ public class StagingDatabaseService {
     }
 
     private Connection getStagingConnection() throws SQLException {
-        return DriverManager.getConnection("jdbc:sqlite:" + stagingDbPath.toString());
+        Connection conn = DriverManager.getConnection("jdbc:sqlite:" + stagingDbPath.toString());
+        try (Statement stmt = conn.createStatement()) { stmt.execute("PRAGMA foreign_keys=ON"); stmt.execute("PRAGMA busy_timeout=10000"); }
+        return conn;
     }
 
     /**
@@ -674,6 +672,7 @@ public class StagingDatabaseService {
                 "(SELECT q.id FROM staging_questions q JOIN staging_documents d ON q.document_id = d.id WHERE d.file_id = ?)";
         String deleteQuestionsSql = "DELETE FROM staging_questions WHERE document_id IN " +
                 "(SELECT id FROM staging_documents WHERE file_id = ?)";
+        String deleteSupportSql = "DELETE FROM staging_support_materials WHERE document_id IN (SELECT id FROM staging_documents WHERE file_id = ?)";
         String deleteDocsSql = "DELETE FROM staging_documents WHERE file_id = ?";
         String deleteFileSql = "DELETE FROM staging_files WHERE id = ?";
 
@@ -685,6 +684,10 @@ public class StagingDatabaseService {
                     stmt.executeUpdate();
                 }
                 try (PreparedStatement stmt = conn.prepareStatement(deleteQuestionsSql)) {
+                    stmt.setString(1, fileId);
+                    stmt.executeUpdate();
+                }
+                try (PreparedStatement stmt = conn.prepareStatement(deleteSupportSql)) {
                     stmt.setString(1, fileId);
                     stmt.executeUpdate();
                 }

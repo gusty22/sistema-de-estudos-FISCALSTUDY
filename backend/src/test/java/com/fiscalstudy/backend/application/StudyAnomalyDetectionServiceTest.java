@@ -36,6 +36,7 @@ class StudyAnomalyDetectionServiceTest {
 
         // Sessão de Teoria Passiva: 4 horas de PDF (14400 segundos)
         Map<String, Object> sessaoTeoria = Map.of(
+                "origin", "REAL_STUDY",
                 "sessionId", "sess_teoria_01",
                 "concursoId", concursoId,
                 "disciplina", "Direito Constitucional",
@@ -48,6 +49,7 @@ class StudyAnomalyDetectionServiceTest {
 
         // Sessão de Questões: apenas 30 minutos (1800 segundos)
         Map<String, Object> sessaoQuestoes = Map.of(
+                "origin", "REAL_STUDY",
                 "sessionId", "sess_quest_01",
                 "concursoId", concursoId,
                 "disciplina", "Direito Constitucional",
@@ -104,6 +106,7 @@ class StudyAnomalyDetectionServiceTest {
 
         // Usuário registrou apenas sessões de Direito Tributário nos últimos 21 dias (monomania)
         Map<String, Object> sessaoMonotematica = Map.of(
+                "origin", "REAL_STUDY",
                 "sessionId", "sess_mono_01",
                 "concursoId", concursoId,
                 "disciplina", "Direito Tributário",

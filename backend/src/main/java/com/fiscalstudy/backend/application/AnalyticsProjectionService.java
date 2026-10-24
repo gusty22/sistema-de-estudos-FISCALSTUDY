@@ -28,7 +28,7 @@ public class AnalyticsProjectionService {
     }
 
     public AnalyticsOverviewDTO computeOverview() {
-        List<String> payloads = eventStoreRepository.getAllEventPayloads("ANSWER_SUBMITTED");
+        List<String> payloads = eventStoreRepository.getAllEventPayloads("ANSWER_SUBMITTED").stream().filter(p -> { try { return "REAL_STUDY".equals(objectMapper.readTree(p).path("origin").asText()); } catch(Exception e) { return false; } }).toList();
         int totalAnswered = payloads.size();
 
         if (totalAnswered == 0) {
@@ -136,7 +136,7 @@ public class AnalyticsProjectionService {
                 : "Rendimento homogêneo entre as disciplinas observadas.";
         String diag = evaluatedCount < 30
                 ? "Volume amostral preliminar reduzido (N < 30). Diagnóstico determinístico prudente: evidências insuficientes para modelagem psicométrica definitiva."
-                : "Volume amostral satisfatório para inferência de padrões de desempenho na V1.";
+                : "Amostra observacional: volume isolado não comprova estabilidade, transferência ou eficácia pedagógica.";
         String interv = overconfidenceCount > 0
                 ? "Revisar itens onde houve confiança máxima e erro para corrigir falsas certezas antes de avançar para novos blocos."
                 : "Manter ciclo contínuo de resolução determinística por blocos de questões.";

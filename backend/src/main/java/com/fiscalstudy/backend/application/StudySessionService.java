@@ -34,6 +34,11 @@ public class StudySessionService {
 
     public Map<String, Object> recordStudySession(Map<String, Object> sessionData) {
         String sessionId = (String) sessionData.getOrDefault("sessionId", UUID.randomUUID().toString());
+        String origin=instanceOrigin.name();
+        String sessionPrefix=sessionId==null?"":sessionId.toLowerCase(java.util.Locale.ROOT);
+        String hint=String.valueOf(sessionData.get("origin"));
+        if(sessionPrefix.startsWith("test-")||sessionPrefix.startsWith("mock-")||sessionPrefix.startsWith("e2e-")||"AUTOMATED_TEST".equals(hint)) origin="AUTOMATED_TEST";
+        else if(sessionPrefix.startsWith("demo-")||sessionPrefix.startsWith("sample-")||"DEMONSTRATION".equals(hint)) origin="DEMONSTRATION";
         String concursoId = (String) sessionData.get("concursoId");
         String disciplina = (String) sessionData.get("disciplina");
         String topicoId = (String) sessionData.get("topicoId");
@@ -69,6 +74,7 @@ public class StudySessionService {
         for (String ap : answerPayloads) {
             try {
                 com.fasterxml.jackson.databind.JsonNode n = objectMapper.readTree(ap);
+                if(!origin.equals(n.path("origin").asText())) continue;
                 sumActiveTimeMs += n.path("activeTimeMs").asLong(0);
                 answersCount++;
                 if (n.path("isCorrect").asBoolean(false)) {
@@ -104,7 +110,7 @@ public class StudySessionService {
         double velQuestoesHora = hoursDuration > 0 ? Math.round((qFeitas / hoursDuration) * 10.0) / 10.0 : 0.0;
 
         // Atualiza progresso do material se materialId e páginas lidas foram fornecidos
-        if (materialId != null && !materialId.isBlank() && finalPaginasLidas > 0) {
+        if ("REAL_STUDY".equals(origin) && materialId != null && !materialId.isBlank() && finalPaginasLidas > 0) {
             Optional<StudyMaterial> matOpt = studyMaterialRepository.findById(materialId);
             if (matOpt.isPresent()) {
                 StudyMaterial mat = matOpt.get();
@@ -136,7 +142,7 @@ public class StudySessionService {
         payloadMap.put("activityType", activityType);
         payloadMap.put("nextSessionHandoff", nextSessionHandoff);
         payloadMap.put("notas", notas);
-        payloadMap.put("origin", instanceOrigin.name());
+        payloadMap.put("origin", origin);
 
         String payloadJson = "{}";
         try {
@@ -161,7 +167,7 @@ public class StudySessionService {
     }
 
     public Map<String, Object> getStudyTimeSummary(String concursoId) {
-        List<String> payloads = eventStoreRepository.getAllEventPayloads("STUDY_SESSION_RECORDED");
+        List<String> payloads = LearningEventEligibility.personalPayloads(eventStoreRepository.getAllEventPayloads("STUDY_SESSION_RECORDED"));
         long totalSeconds = 0;
         long heSeconds = 0;
         long hreSeconds = 0;
@@ -201,7 +207,7 @@ public class StudySessionService {
 
                 // Se durationSeconds ou questões vierem zeradas, checar respostas da sessão
                 if ((s <= 0 || q <= 0) && sId != null && !sId.isBlank()) {
-                    List<String> aPayloads = eventStoreRepository.getEventPayloads(sId, "ANSWER_SUBMITTED");
+                    List<String> aPayloads = LearningEventEligibility.personalPayloads(eventStoreRepository.getEventPayloads(sId, "ANSWER_SUBMITTED"));
                     long sumMs = 0;
                     int aCount = 0;
                     int aCorr = 0;
@@ -237,7 +243,7 @@ public class StudySessionService {
         }
 
         // Incorporar sessões de questões em ANSWER_SUBMITTED que não possuam STUDY_SESSION_RECORDED
-        List<com.fiscalstudy.backend.domain.EventRecord> allAnswers = eventStoreRepository.getAllEvents("ANSWER_SUBMITTED");
+        List<com.fiscalstudy.backend.domain.EventRecord> allAnswers = LearningEventEligibility.personalEvents(eventStoreRepository.getAllEvents("ANSWER_SUBMITTED"));
         Map<String, List<com.fiscalstudy.backend.domain.EventRecord>> answersBySession = new HashMap<>();
         for (com.fiscalstudy.backend.domain.EventRecord ar : allAnswers) {
             String sid = ar.getSessionId();
@@ -306,7 +312,7 @@ public class StudySessionService {
     }
 
     public List<Map<String, Object>> getAllStudySessions(String concursoId, String disciplina, String tipo) {
-        List<com.fiscalstudy.backend.domain.EventRecord> sessionEvents = eventStoreRepository.getAllEvents("STUDY_SESSION_RECORDED");
+        List<com.fiscalstudy.backend.domain.EventRecord> sessionEvents = LearningEventEligibility.personalEvents(eventStoreRepository.getAllEvents("STUDY_SESSION_RECORDED"));
         List<com.fiscalstudy.backend.domain.EventRecord> annotationEvents = eventStoreRepository.getAllEvents("STUDY_SESSION_ANNOTATION_ADDED");
 
         // Agrupa anotações por sessionId
@@ -353,7 +359,7 @@ public class StudySessionService {
 
                 // Enriquecer registros com dados de tentativas reais se estiverem com tempo zerado
                 if ((currentSec <= 0 || currentQFeitas <= 0) && sId != null && !sId.isBlank()) {
-                    List<String> aPayloads = eventStoreRepository.getEventPayloads(sId, "ANSWER_SUBMITTED");
+                    List<String> aPayloads = LearningEventEligibility.personalPayloads(eventStoreRepository.getEventPayloads(sId, "ANSWER_SUBMITTED"));
                     long sumMs = 0;
                     int aCount = 0;
                     int aCorr = 0;
@@ -396,7 +402,7 @@ public class StudySessionService {
 
         // Sintetizar sessões de questões em ANSWER_SUBMITTED não registradas em STUDY_SESSION_RECORDED
         if (tipo == null || tipo.isBlank() || "ALL".equalsIgnoreCase(tipo) || "QUESTOES".equalsIgnoreCase(tipo)) {
-            List<com.fiscalstudy.backend.domain.EventRecord> allAnswers = eventStoreRepository.getAllEvents("ANSWER_SUBMITTED");
+            List<com.fiscalstudy.backend.domain.EventRecord> allAnswers = LearningEventEligibility.personalEvents(eventStoreRepository.getAllEvents("ANSWER_SUBMITTED"));
             Map<String, List<com.fiscalstudy.backend.domain.EventRecord>> answersBySession = new LinkedHashMap<>();
 
             for (com.fiscalstudy.backend.domain.EventRecord ar : allAnswers) {

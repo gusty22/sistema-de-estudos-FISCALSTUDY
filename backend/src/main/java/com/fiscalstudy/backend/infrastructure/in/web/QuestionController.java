@@ -137,10 +137,11 @@ public class QuestionController {
                     payload.getFluenciaNeurologica(),
                     payload.getUsedHelp(),
                     payload.getHelpType(),
-                    payload.getInterventionType()
+                    payload.getInterventionType(),
+                    payload.getAttemptId()
             );
 
-            return ResponseEntity.ok(new AttemptResultDTO(
+            AttemptResultDTO dto = new AttemptResultDTO(
                     result.getIsCorrect(),
                     result.getGabaritoStatus() != null ? result.getGabaritoStatus().name() : "DEFINITIVO",
                     result.getConcursoPoint(),
@@ -149,7 +150,15 @@ public class QuestionController {
                     result.getMediaPrescriptionTexto(),
                     result.getMediaVeiculo(),
                     result.getCorrectOption()
-            ));
+            );
+            dto.attemptId=result.getAttemptId();
+            return ResponseEntity.ok(dto);
+        } catch (AttemptSubmissionService.LearningProjectionPendingException e) {
+            AttemptResultDTO pending=new AttemptResultDTO(null,"PROJECTION_PENDING",null);
+            pending.attemptId=e.getAttemptId();
+            return ResponseEntity.status(503).header("X-FiscalStudy-Attempt-Persisted","true").body(pending);
+        } catch (AttemptSubmissionService.AttemptConflictException e) {
+            return ResponseEntity.status(409).build();
         } catch (IllegalStateException e) {
             return ResponseEntity.badRequest().build();
         } catch (IllegalArgumentException e) {
@@ -158,6 +167,19 @@ public class QuestionController {
             }
             return ResponseEntity.notFound().build();
         }
+    }
+
+    @GetMapping("/{id}/attempts/{attemptId}/annotations")
+    public ResponseEntity<?> annotations(@PathVariable String id,@PathVariable String attemptId) {
+        try {return ResponseEntity.ok(attemptSubmissionService.getAttemptHistory(id,attemptId));}
+        catch(IllegalArgumentException e){return ResponseEntity.notFound().build();}
+    }
+
+    @PostMapping("/{id}/attempts/{attemptId}/annotations")
+    public ResponseEntity<Map<String,Object>> annotate(@PathVariable String id,@PathVariable String attemptId,@RequestBody Map<String,String> payload) {
+        try { return ResponseEntity.ok(attemptSubmissionService.annotateAttempt(id,attemptId,payload.get("annotationId"),payload.get("sessionId"),payload.get("causaErro"))); }
+        catch(AttemptSubmissionService.AttemptConflictException e){ return ResponseEntity.status(409).build(); }
+        catch(IllegalArgumentException e){ return ResponseEntity.badRequest().build(); }
     }
 
     public static class QuestionDTO {
@@ -199,6 +221,9 @@ public class QuestionController {
     }
 
     public static class AttemptPayloadDTO {
+        private String attemptId;
+        public String getAttemptId(){return attemptId;}
+        public void setAttemptId(String value){attemptId=value;}
         private String selectedOption;
         private int confidenceLevel;
         private long activeTimeMs;
@@ -258,6 +283,7 @@ public class QuestionController {
 
     @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
     public static class AttemptResultDTO {
+        public String attemptId;
         @com.fasterxml.jackson.annotation.JsonProperty("isCorrect")
         public Boolean isCorrect;
 

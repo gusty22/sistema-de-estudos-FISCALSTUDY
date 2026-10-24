@@ -241,8 +241,8 @@ public class StudyAnomalyDetectionService {
                     (concursoId != null ? "AND aggregate_id = ? " : "");
 
             List<Map<String, Object>> rows = concursoId != null
-                    ? jdbcTemplate.queryForList(sql, sevenDaysAgoStr, concursoId)
-                    : jdbcTemplate.queryForList(sql, sevenDaysAgoStr);
+                    ? LearningEventEligibility.query(jdbcTemplate, sql, sevenDaysAgoStr, concursoId)
+                    : LearningEventEligibility.query(jdbcTemplate, sql, sevenDaysAgoStr);
 
             for (Map<String, Object> r : rows) {
                 String payload = (String) r.get("payload_json");
@@ -272,8 +272,8 @@ public class StudyAnomalyDetectionService {
                     (concursoId != null ? "AND aggregate_id = ? " : "");
 
             List<Map<String, Object>> qRows = concursoId != null
-                    ? jdbcTemplate.queryForList(sqlQ, sevenDaysAgoStr, concursoId)
-                    : jdbcTemplate.queryForList(sqlQ, sevenDaysAgoStr);
+                    ? LearningEventEligibility.query(jdbcTemplate, sqlQ, sevenDaysAgoStr, concursoId)
+                    : LearningEventEligibility.query(jdbcTemplate, sqlQ, sevenDaysAgoStr);
 
             for (Map<String, Object> qr : qRows) {
                 String payload = (String) qr.get("payload_json");
@@ -344,8 +344,8 @@ public class StudyAnomalyDetectionService {
                     (concursoId != null ? "AND aggregate_id = ? " : "");
 
             List<Map<String, Object>> rows = concursoId != null
-                    ? jdbcTemplate.queryForList(sql, threeWeeksAgoStr, concursoId)
-                    : jdbcTemplate.queryForList(sql, threeWeeksAgoStr);
+                    ? LearningEventEligibility.query(jdbcTemplate, sql, threeWeeksAgoStr, concursoId)
+                    : LearningEventEligibility.query(jdbcTemplate, sql, threeWeeksAgoStr);
 
             for (Map<String, Object> r : rows) {
                 String payload = (String) r.get("payload_json");
@@ -361,8 +361,8 @@ public class StudyAnomalyDetectionService {
                     (concursoId != null ? "AND aggregate_id = ? " : "");
 
             List<Map<String, Object>> qRows = concursoId != null
-                    ? jdbcTemplate.queryForList(sqlQ, threeWeeksAgoStr, concursoId)
-                    : jdbcTemplate.queryForList(sqlQ, threeWeeksAgoStr);
+                    ? LearningEventEligibility.query(jdbcTemplate, sqlQ, threeWeeksAgoStr, concursoId)
+                    : LearningEventEligibility.query(jdbcTemplate, sqlQ, threeWeeksAgoStr);
 
             for (Map<String, Object> qr : qRows) {
                 String payload = (String) qr.get("payload_json");
@@ -468,8 +468,8 @@ public class StudyAnomalyDetectionService {
                     (concursoId != null ? "AND aggregate_id = ? " : "");
 
             List<Map<String, Object>> rows = concursoId != null
-                    ? jdbcTemplate.queryForList(sql, thirtyDaysAgoStr, concursoId)
-                    : jdbcTemplate.queryForList(sql, thirtyDaysAgoStr);
+                    ? LearningEventEligibility.query(jdbcTemplate, sql, thirtyDaysAgoStr, concursoId)
+                    : LearningEventEligibility.query(jdbcTemplate, sql, thirtyDaysAgoStr);
 
             for (Map<String, Object> r : rows) {
                 String payload = (String) r.get("payload_json");
