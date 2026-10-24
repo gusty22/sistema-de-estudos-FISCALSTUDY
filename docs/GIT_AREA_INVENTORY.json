@@ -1,0 +1,828 @@
+{
+  "baseCommit": "c26ee20352fc1b6ace0c58be4f24a41a1092fbf0",
+  "implementationRoot": "<implementation-checkout>",
+  "originalRoot": "<original-checkout>",
+  "trackedModified": 70,
+  "untrackedNew": 46,
+  "deleted": 0,
+  "staged": 0,
+  "entries": [
+    {
+      "file": "analytics-engine/R/export_results.R",
+      "status": "modified",
+      "area": "analytics",
+      "sha256": "b46dc0f3341e07e686ed293a5ff7964e6ad558a47c7a07abc90543a669aa393a",
+      "bytes": 9047
+    },
+    {
+      "file": "analytics-engine/run_analytics.R",
+      "status": "modified",
+      "area": "analytics",
+      "sha256": "454ebb908c2f73fec7c0ba8d9856ce18411b772326827c5d911ae21a65f51158",
+      "bytes": 19937
+    },
+    {
+      "file": "analytics-engine/tests/test_runner.R",
+      "status": "modified",
+      "area": "analytics",
+      "sha256": "dfb93035918512d1ec86088427afa409d314e283c45bab743a85fc10a0352331",
+      "bytes": 5365
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/application/AnalyticsBridgeService.java",
+      "status": "modified",
+      "area": "backend",
+      "sha256": "6b6509ca53efefeebfb26e6959ccef190c4e70bbeeedc33779a09e9a91e5adfd",
+      "bytes": 6718
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/application/AnalyticsProjectionService.java",
+      "status": "modified",
+      "area": "backend",
+      "sha256": "3730f9a0870878e3e816fe4579bada10b4a16464db9c320690b670152e79359c",
+      "bytes": 32836
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/application/AnkiIntegrationService.java",
+      "status": "modified",
+      "area": "backend",
+      "sha256": "539ed7e413e7af1d25deca397fb6d1015fd5964087073843d46d528bc5167ed0",
+      "bytes": 47351
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/application/AttemptSubmissionService.java",
+      "status": "modified",
+      "area": "backend",
+      "sha256": "55634f6384de4dc5195abe7df7ffe2d6cf659a6b3c25ee86b37a239d4b5c31ab",
+      "bytes": 28650
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/application/DigitalTwinService.java",
+      "status": "modified",
+      "area": "backend",
+      "sha256": "9b20397237a06d05058f2d3cd65d6de58b964e4e044a6f681dadc912fb61887b",
+      "bytes": 22214
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/application/PerformanceIntelligenceService.java",
+      "status": "modified",
+      "area": "backend",
+      "sha256": "9d6c82453f8269d2d56a25ef0dc81b42a424c4396633868bd7998a613a86d812",
+      "bytes": 40694
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/application/QuestionBankService.java",
+      "status": "modified",
+      "area": "backend",
+      "sha256": "fcb0bc2054e440fd3c856a560403d0960c24c684228d1c490283954b954d1181",
+      "bytes": 29728
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/application/QuestionHistoryService.java",
+      "status": "modified",
+      "area": "backend",
+      "sha256": "eda9f05b60c97d34f453551468e3f1541cedb14b3f202e49f5f4ec7bdaae7fdb",
+      "bytes": 17156
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/application/RevisionCalendarService.java",
+      "status": "modified",
+      "area": "backend",
+      "sha256": "9eef0581b2a83339c2626f726a27e61101ab19fe6bb261fe4acfacc46216d786",
+      "bytes": 33825
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/application/RobinHoodCycleService.java",
+      "status": "modified",
+      "area": "backend",
+      "sha256": "ee5f8c886c17e94bcbb9e8e2300f3c6c7f40eb857c8de3ff746dc3496b451e29",
+      "bytes": 9181
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/application/StagingDatabaseService.java",
+      "status": "modified",
+      "area": "backend",
+      "sha256": "eec18fda969372a9b97671c82fb64f16cdd2d136a2c2fc3a3a38743420492112",
+      "bytes": 50871
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/application/StrategicSimuladoService.java",
+      "status": "modified",
+      "area": "backend",
+      "sha256": "a129c542b86fc4002f1a07d0c8e5d78194b5a91ff7d8522b2ae9de4144467a5d",
+      "bytes": 29265
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/application/StrategicSummaryService.java",
+      "status": "modified",
+      "area": "backend",
+      "sha256": "282db7bcfa99745778cf74df099e337b76f60fb5e782b7be4df0351c0e80eb13",
+      "bytes": 82659
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/application/StudentKnowledgeStateService.java",
+      "status": "modified",
+      "area": "backend",
+      "sha256": "5f3553a65de0a1b3f1fb2501b280783720252697c655a23a319a6e872966dae0",
+      "bytes": 30304
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/application/StudentRoutineService.java",
+      "status": "modified",
+      "area": "backend",
+      "sha256": "22d4bbf2ec54bf6897d937b5e2868733a1b88ba4451b728f6fa2864f9c60e48e",
+      "bytes": 11733
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/application/StudyAnomalyDetectionService.java",
+      "status": "modified",
+      "area": "backend",
+      "sha256": "18d4715dcedaf1650ba0c49420de51b9eecd0d83fc708b7a520820ae87c71c13",
+      "bytes": 26336
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/application/StudyMaterialService.java",
+      "status": "modified",
+      "area": "backend",
+      "sha256": "8b9db7071559154def285df62d27e5991351ac86920f01c96f6dfed5c28ce835",
+      "bytes": 13159
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/application/StudySessionService.java",
+      "status": "modified",
+      "area": "backend",
+      "sha256": "aa38fed9ddef3eda8224a6bf72e166dfc9637c7e66a621d93689c06eaf584ce4",
+      "bytes": 26132
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/application/SystemSettingsService.java",
+      "status": "modified",
+      "area": "backend",
+      "sha256": "2d3d89306c8278f47cef1672a6d2a5bd1ec581dce97c6d783fba051416eaa598",
+      "bytes": 25690
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/application/cognitive/UnifiedCognitiveArchitectureService.java",
+      "status": "modified",
+      "area": "backend",
+      "sha256": "74310cb3af4507f8901f90bc90bc524d3e9e98188b736145a2f41b609ac108b1",
+      "bytes": 27155
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/domain/AttemptResult.java",
+      "status": "modified",
+      "area": "backend",
+      "sha256": "5a8bc4b7ec1d4c379feca748c69432f3630d30402c3732ef84550184feace9fb",
+      "bytes": 2342
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/domain/EventStoreRepository.java",
+      "status": "modified",
+      "area": "backend",
+      "sha256": "4471ec0c43c8dc1b52d2972cbba7525ece94622d09ffb6842c4ca13d3393f81b",
+      "bytes": 1634
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/domain/cognitive/FsrsEngine.java",
+      "status": "modified",
+      "area": "backend",
+      "sha256": "8046dafcbd040821a5ed76bf0c38687070bffcf727d0ebef0c15458c230acce3",
+      "bytes": 9873
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/domain/cognitive/FsrsParameters.java",
+      "status": "modified",
+      "area": "backend",
+      "sha256": "01caba80fb2fe745a8a90cac88b189f46d48d70005640dc72ee2d488fcc104f4",
+      "bytes": 3245
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/infrastructure/in/web/AnkiController.java",
+      "status": "modified",
+      "area": "backend",
+      "sha256": "d1514c5324be9a588837fb00f025c55c72c627b974a25261d537457cf050ea6b",
+      "bytes": 6517
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/infrastructure/in/web/QuestionController.java",
+      "status": "modified",
+      "area": "backend",
+      "sha256": "9e62832ad92c36b1434c25150ab59a3fbd8321d25916416d7e8e291c30533191",
+      "bytes": 17126
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/infrastructure/in/web/SessionController.java",
+      "status": "modified",
+      "area": "backend",
+      "sha256": "6c5c45f4209dd5e332192c12670b874661b1ea0a16b713c4213ac31902d712c2",
+      "bytes": 5318
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/infrastructure/in/web/WebConfig.java",
+      "status": "modified",
+      "area": "backend",
+      "sha256": "90b4e912fe1f2a542d0d44c72c83a328585c2a57841da1904ff65e15dcccab2a",
+      "bytes": 1655
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/infrastructure/out/persistence/EventStoreRepositoryImpl.java",
+      "status": "modified",
+      "area": "backend",
+      "sha256": "4d1ee905a337c34c5e0aab8e6607ceaa5f6e9048f504df9d4cf45d77aa50ba90",
+      "bytes": 8633
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/infrastructure/out/persistence/QuestionRepositoryImpl.java",
+      "status": "modified",
+      "area": "backend",
+      "sha256": "b63a5262a560f03d8aa63b0c9fd33d627429cebdab6e4ed05ce67a8cabe24c36",
+      "bytes": 17872
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/infrastructure/out/persistence/StudentRoutineRepositoryImpl.java",
+      "status": "modified",
+      "area": "backend",
+      "sha256": "9e6c6daf2fc452ef1df6625ff992e4e1bff717fb50308006333a1525a86b437c",
+      "bytes": 7698
+    },
+    {
+      "file": "backend/src/main/resources/application.yml",
+      "status": "modified",
+      "area": "database",
+      "sha256": "d951307a7f840237ff8ab9bfe90f00344e50c69625f2fb88e69f926c18ee9956",
+      "bytes": 1670
+    },
+    {
+      "file": "backend/src/main/resources/schema.sql",
+      "status": "modified",
+      "area": "database",
+      "sha256": "13477fee63fc3cf4e97e870210ae2f7f839029a2f4eb09dc580e1277e601e726",
+      "bytes": 19503
+    },
+    {
+      "file": "backend/src/test/java/com/fiscalstudy/backend/application/AnkiIntegrationServiceTest.java",
+      "status": "modified",
+      "area": "backend",
+      "sha256": "14b98dd8a14240491defe354d4b9e6fa86e3ad8f2edcd851eb6928f525b0563d",
+      "bytes": 9082
+    },
+    {
+      "file": "backend/src/test/java/com/fiscalstudy/backend/application/QuestionHistoryServiceTest.java",
+      "status": "modified",
+      "area": "backend",
+      "sha256": "45c960efd8b6ddcadd75278084b7d2bbd36d720c7ce9a01a1f7694422c15b23a",
+      "bytes": 6689
+    },
+    {
+      "file": "backend/src/test/java/com/fiscalstudy/backend/application/RevisionCalendarServiceTest.java",
+      "status": "modified",
+      "area": "backend",
+      "sha256": "a431ba2d33d496cb7ca713c9ef1b9138f1a9571ff7a1cce4822353203336562d",
+      "bytes": 6917
+    },
+    {
+      "file": "backend/src/test/java/com/fiscalstudy/backend/application/StagingDatabaseServiceTest.java",
+      "status": "modified",
+      "area": "backend",
+      "sha256": "1dedc477250146281b7c14a40b4cd81e93d47f16ad397f609a5e8d44d632fba4",
+      "bytes": 5639
+    },
+    {
+      "file": "backend/src/test/java/com/fiscalstudy/backend/application/StrategicSummaryHybridPipelineTest.java",
+      "status": "modified",
+      "area": "backend",
+      "sha256": "79dc1985e27f592ebde4dc79066de550c90f7ed26975338fd6a1d0daf9c6c532",
+      "bytes": 8017
+    },
+    {
+      "file": "backend/src/test/java/com/fiscalstudy/backend/application/StudentKnowledgeStateServiceTest.java",
+      "status": "modified",
+      "area": "backend",
+      "sha256": "484be3d316c49fce8b633a517523123a6404a79d72a84189e8172ebffdec1b6f",
+      "bytes": 3040
+    },
+    {
+      "file": "backend/src/test/java/com/fiscalstudy/backend/application/StudyAnomalyDetectionServiceTest.java",
+      "status": "modified",
+      "area": "backend",
+      "sha256": "461ceff16f5d561a33731a1840a8c81f133fd7979d1e27889692385c44974dfe",
+      "bytes": 8888
+    },
+    {
+      "file": "backend/src/test/java/com/fiscalstudy/backend/application/cognitive/UnifiedCognitiveArchitectureTest.java",
+      "status": "modified",
+      "area": "backend",
+      "sha256": "998038c252dc447046dfc7571369e6e909f6ba0d984b563e1780e47d31432bfe",
+      "bytes": 5165
+    },
+    {
+      "file": "backend/src/test/java/com/fiscalstudy/backend/infrastructure/in/web/ActiveTimeAndConfidenceIntegrationTest.java",
+      "status": "modified",
+      "area": "backend",
+      "sha256": "40e7a99867dae9d121ea85f62f5850db9a41556c0999b81ba5be9e141e15f635",
+      "bytes": 8715
+    },
+    {
+      "file": "backend/src/test/java/com/fiscalstudy/backend/infrastructure/in/web/AnalyticsControllerTest.java",
+      "status": "modified",
+      "area": "backend",
+      "sha256": "e3eb7c234740a8313de753bbadb3ef8d373e464660823d1b318e831d8098dd17",
+      "bytes": 13533
+    },
+    {
+      "file": "backend/src/test/java/com/fiscalstudy/backend/infrastructure/in/web/AnalyticsExportIntegrationTest.java",
+      "status": "modified",
+      "area": "backend",
+      "sha256": "d3dfc15180424e0233388dbbc808137c785dd8c428e1e93d8ca54e1dabc56762",
+      "bytes": 28863
+    },
+    {
+      "file": "backend/src/test/java/com/fiscalstudy/backend/infrastructure/in/web/IngestionControllerTest.java",
+      "status": "modified",
+      "area": "backend",
+      "sha256": "5974a1b08cba9a75fa1675399fb5bc406a70a90ca1177b3178ba1040568756ff",
+      "bytes": 8501
+    },
+    {
+      "file": "backend/src/test/java/com/fiscalstudy/backend/infrastructure/in/web/QuestionControllerTest.java",
+      "status": "modified",
+      "area": "backend",
+      "sha256": "f684803207ee0848c0567394da9817e8c6cdb98d8a603c6d45f0c89cf27f059e",
+      "bytes": 24910
+    },
+    {
+      "file": "backend/src/test/java/com/fiscalstudy/backend/infrastructure/in/web/RoutineAndStudyIntegrationTest.java",
+      "status": "modified",
+      "area": "backend",
+      "sha256": "ce017846bc0afc4eaca23633bfef404d7a84feaa601b56e516251b3e1935d939",
+      "bytes": 8716
+    },
+    {
+      "file": "backend/src/test/resources/application.yml",
+      "status": "modified",
+      "area": "database",
+      "sha256": "2862034543d91dca918ef7a2309dd3a4eed2531e133bf309376e5504a5a84a0c",
+      "bytes": 765
+    },
+    {
+      "file": "frontend/package.json",
+      "status": "modified",
+      "area": "frontend",
+      "sha256": "00974cf82400b48942540a6bb8a01d0fcd27500dc999967c9124b298417fbf28",
+      "bytes": 603
+    },
+    {
+      "file": "frontend/src/App.tsx",
+      "status": "modified",
+      "area": "frontend",
+      "sha256": "d9d3b0042e8383e9e1a9d95709398e263ce0881e4e8eff4da1998926ae364d49",
+      "bytes": 17049
+    },
+    {
+      "file": "frontend/src/components/QuestionViewer.tsx",
+      "status": "modified",
+      "area": "frontend",
+      "sha256": "425757e3f8294a3565793e6dbb239139fa1ff05bf63eef415937ab6913b9da30",
+      "bytes": 102643
+    },
+    {
+      "file": "frontend/src/components/anki/CuradoriaAnki.tsx",
+      "status": "modified",
+      "area": "frontend",
+      "sha256": "6a4eb14da30656e3cdbe2eda2b09d3b123e0a0d48cbf9fcabbcb64726c7470bc",
+      "bytes": 32261
+    },
+    {
+      "file": "frontend/src/components/configuracoes/ConfiguracoesAdminView.tsx",
+      "status": "modified",
+      "area": "frontend",
+      "sha256": "60afd23ee1b70914944634047bcc37b0917aa6ee3a8853ff76f87848040bf1e9",
+      "bytes": 43940
+    },
+    {
+      "file": "frontend/src/components/edital/MotorParetoEditalModal.tsx",
+      "status": "modified",
+      "area": "frontend",
+      "sha256": "f12eca57e19cfca874335a6cd7fbe33855e679a89312e62a8e1c4aca6fef1f9c",
+      "bytes": 32912
+    },
+    {
+      "file": "frontend/src/components/ingestion/AssistenteImportacaoWizard.tsx",
+      "status": "modified",
+      "area": "frontend",
+      "sha256": "2a76ededfe7ca99845f56ed2f4fddefcf373641dccf7571632bc6e89cc17956d",
+      "bytes": 24983
+    },
+    {
+      "file": "frontend/src/components/ingestion/AuditCockpit.tsx",
+      "status": "modified",
+      "area": "frontend",
+      "sha256": "418809619287c8851decbaef6685fa3afd71c319f9cc6c81f9ec3cd23a41e192",
+      "bytes": 70107
+    },
+    {
+      "file": "frontend/src/components/ingestion/ImportStudio.tsx",
+      "status": "modified",
+      "area": "frontend",
+      "sha256": "5b5e48febf7a0f8d104d0afbf5f05badeaca5069c3d7e1964f724c559879fe14",
+      "bytes": 144781
+    },
+    {
+      "file": "frontend/src/components/ingestion/QualidadeBancoQuestoes.tsx",
+      "status": "modified",
+      "area": "frontend",
+      "sha256": "05823f303cc832edb6e3751b813aa14262c15320c5bfc561bc298aea8cfb1250",
+      "bytes": 10864
+    },
+    {
+      "file": "frontend/src/components/onboarding/AssistenteObjetivoWizard.tsx",
+      "status": "modified",
+      "area": "frontend",
+      "sha256": "dc5398ba7a69469782664b5e119dd082e8d874f58ed5a6ccc9bac04ee6e2052f",
+      "bytes": 41725
+    },
+    {
+      "file": "frontend/src/components/questoes/BancoQuestoes.tsx",
+      "status": "modified",
+      "area": "frontend",
+      "sha256": "9232cfd21bb9f5dbe25742d8baab1266365970293c5e10ca9617a2cc95398235",
+      "bytes": 34951
+    },
+    {
+      "file": "frontend/src/components/questoes/ResolucaoQuestaoModal.tsx",
+      "status": "modified",
+      "area": "frontend",
+      "sha256": "485d8c8c06fcc2ab41fee08eebc424f7fd6e54f68265b97bfb9b60153799c77b",
+      "bytes": 26256
+    },
+    {
+      "file": "frontend/src/components/timer/StudyTimerFab.tsx",
+      "status": "modified",
+      "area": "frontend",
+      "sha256": "298b433a44283d81adf40658a66341acd76d43e79cc057c09e333e1a3c8f1404",
+      "bytes": 24351
+    },
+    {
+      "file": "frontend/src/index.css",
+      "status": "modified",
+      "area": "frontend",
+      "sha256": "287bf4d21009fe5f78cdf59bce8a71783e76344c9563cfc4042d70900c2b56be",
+      "bytes": 4877
+    },
+    {
+      "file": "ingestion/src/pipeline/batch_processor.py",
+      "status": "modified",
+      "area": "ingestion",
+      "sha256": "03a87d8847e9af16265bf06c348f417314cd65f01906e3fc4009273497d4ff53",
+      "bytes": 19135
+    },
+    {
+      "file": "ingestion/src/pipeline/inventory_manager.py",
+      "status": "modified",
+      "area": "ingestion",
+      "sha256": "d60237fb9a9b888c2e6635dcdb473bb567a7dcbc30cb9b5ca9e2cd5f5c8143ca",
+      "bytes": 14840
+    },
+    {
+      "file": "tests/test_golden_set_q15.py",
+      "status": "modified",
+      "area": "ingestion",
+      "sha256": "3664f83e475d899076f0b5f15acad493af8d2b9bda375117a4df3997ce57d138",
+      "bytes": 4388
+    },
+    {
+      "file": "tests/test_pipeline_resilience.py",
+      "status": "modified",
+      "area": "ingestion",
+      "sha256": "ba0f335943d1a0da5d37d3d736e5f360a602ed64848ff1325a8c787ed9df5dd8",
+      "bytes": 8484
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/application/AttemptAnnotationView.java",
+      "status": "new",
+      "area": "backend",
+      "sha256": "841b287c1dfac8780da81b6668526b3bf866ecf59f38914c00084d914b64d955",
+      "bytes": 1107
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/application/LearningEventEligibility.java",
+      "status": "new",
+      "area": "backend",
+      "sha256": "002f52ddbcd190e43233282ef2a14c37c07b872a022eb33f41da5e6cf23f32df",
+      "bytes": 1755
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/application/LearningEvidenceService.java",
+      "status": "new",
+      "area": "backend",
+      "sha256": "733de15935c2486568b69476198bdd334791e3f864f637e47d09ea4f6ead4bde",
+      "bytes": 6368
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/application/QuestionClassificationService.java",
+      "status": "new",
+      "area": "backend",
+      "sha256": "ecb2d9ca44a273d322959749cf7728b7c217d084c591eae56ece9e5e11d71b2d",
+      "bytes": 7459
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/infrastructure/config/AnalyticsPaths.java",
+      "status": "new",
+      "area": "backend",
+      "sha256": "a1ba727d5903bbf64e4aa981a3ffe4e54d84ff5c19a10f9bdda326c626beb206",
+      "bytes": 957
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/infrastructure/config/DatabasePaths.java",
+      "status": "new",
+      "area": "database",
+      "sha256": "1c5bb978b2135f1df4dcd2472f3c1a1cdc36b92a57ea9071eb48cdb8aafbc2b4",
+      "bytes": 2090
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/infrastructure/config/SchemaMigration.java",
+      "status": "new",
+      "area": "database",
+      "sha256": "f5fa3f4a7eefec6cb9650f351a3c703ccbaa7e9cb7c7984fc2a1c3f9863765d0",
+      "bytes": 5706
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/infrastructure/config/SqlitePersistenceConfiguration.java",
+      "status": "new",
+      "area": "database",
+      "sha256": "de1f488389056104ba4b25ba8c042a444f7e4e6520c8a0a513642d50eb098049",
+      "bytes": 993
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/infrastructure/config/SqliteRecovery.java",
+      "status": "new",
+      "area": "database",
+      "sha256": "3d4c5adebea984dba116130d6161322e4a0c674d0c64421d063d24194e1fbbf7",
+      "bytes": 2704
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/infrastructure/config/StagingSchemaMigration.java",
+      "status": "new",
+      "area": "database",
+      "sha256": "9f107b05897f2169af7e41af43a69c635ed2d6225a6125ea4600584ba4963cec",
+      "bytes": 3574
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/infrastructure/in/web/LocalAccessFilter.java",
+      "status": "new",
+      "area": "backend",
+      "sha256": "e9f4d65feb4f73c90ebe19fafdb590dbef467b0e60f2f74c0fea37578077bf41",
+      "bytes": 2513
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/infrastructure/in/web/QuestionClassificationController.java",
+      "status": "new",
+      "area": "backend",
+      "sha256": "ea1244ef6b014a167da8832d80776dfc9f7f594e0c887c2c82a6bd1710ec6ec6",
+      "bytes": 1536
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/infrastructure/process/BoundedProcess.java",
+      "status": "new",
+      "area": "backend",
+      "sha256": "b52a4457266f1a4c0c295b4b84e5de1fad3e2da8180db884472015f1eab1ffde",
+      "bytes": 1833
+    },
+    {
+      "file": "backend/src/main/resources/application-isolated.yml",
+      "status": "new",
+      "area": "database",
+      "sha256": "532b4f8cb2836e19b6a5d2a7f775c2845bf328af165a4c26b8f38a606ae91058",
+      "bytes": 538
+    },
+    {
+      "file": "backend/src/main/resources/staging-schema.sql",
+      "status": "new",
+      "area": "database",
+      "sha256": "3d9aa2ef11b6ff5b15fa80dc1fc6ae56b818a2fcb09897c25e661ca2ff094af9",
+      "bytes": 3430
+    },
+    {
+      "file": "backend/src/test/java/com/fiscalstudy/backend/application/AnkiPrivacyPolicyTest.java",
+      "status": "new",
+      "area": "backend",
+      "sha256": "0ac839b941020a2859e057c4a694bce095dab652b495e88766e5ef7e24380d66",
+      "bytes": 2610
+    },
+    {
+      "file": "backend/src/test/java/com/fiscalstudy/backend/application/AttemptIdentityRegressionTest.java",
+      "status": "new",
+      "area": "backend",
+      "sha256": "f2cb7ed3eb95be4a3e219709c61f5752c11f92588cd188edbf5d3eb34d4b2b8b",
+      "bytes": 6994
+    },
+    {
+      "file": "backend/src/test/java/com/fiscalstudy/backend/application/LearningEvidenceServiceTest.java",
+      "status": "new",
+      "area": "backend",
+      "sha256": "175a119e458b49ccdddc4a6771a8dd4b4c4abf95e7086670682941ed7bb71efd",
+      "bytes": 7426
+    },
+    {
+      "file": "backend/src/test/java/com/fiscalstudy/backend/application/QuestionClassificationServiceTest.java",
+      "status": "new",
+      "area": "backend",
+      "sha256": "7a734a5d609e6eebdd35abe8d5b7d470a5751a09b6ff857048887812b47d8dbc",
+      "bytes": 3922
+    },
+    {
+      "file": "backend/src/test/java/com/fiscalstudy/backend/application/RoutineBudgetRegressionTest.java",
+      "status": "new",
+      "area": "backend",
+      "sha256": "cce489e34445a2fe790a9218e491c9ad9bf73560fd9a0357ad0fbbb939bd57af",
+      "bytes": 2065
+    },
+    {
+      "file": "backend/src/test/java/com/fiscalstudy/backend/domain/cognitive/FsrsReferenceConformanceTest.java",
+      "status": "new",
+      "area": "backend",
+      "sha256": "f7e96188577dc816ce4057c72104123e674ad5ae0df2720d64df416ec86f40ce",
+      "bytes": 1693
+    },
+    {
+      "file": "backend/src/test/java/com/fiscalstudy/backend/infrastructure/config/PersistenceContractTest.java",
+      "status": "new",
+      "area": "backend",
+      "sha256": "e172b22a72de0b9b2be8875bab69641e27ddb7681b6fcf9730dde716b5af9041",
+      "bytes": 8991
+    },
+    {
+      "file": "backend/src/test/java/com/fiscalstudy/backend/infrastructure/config/SchemaBootstrapIntegrationTest.java",
+      "status": "new",
+      "area": "backend",
+      "sha256": "6ccf45a0a255c7132804133b01d5d110cb3a47070faadbc0624d24d62bc2dbcc",
+      "bytes": 2119
+    },
+    {
+      "file": "backend/src/test/java/com/fiscalstudy/backend/infrastructure/in/web/LocalAccessFilterTest.java",
+      "status": "new",
+      "area": "backend",
+      "sha256": "362208d39e0675258e356c8ce2d2cc8259290ea9ae9790e77bebf0ccac69eb90",
+      "bytes": 1800
+    },
+    {
+      "file": "backend/src/test/resources/fsrs/REFERENCE.md",
+      "status": "new",
+      "area": "backend",
+      "sha256": "38a4bde7f01fc947f819d43d89cd71d71b567ca96fc6f2415ca2baf25f4b2a59",
+      "bytes": 896
+    },
+    {
+      "file": "docs/ARCHITECTURE.md",
+      "status": "new",
+      "area": "docs-tooling",
+      "sha256": "2d589331cae22eb73e80f1a9c34da7375c3cc246da26f1c5cd50dadf72fee3da",
+      "bytes": 2491
+    },
+    {
+      "file": "docs/ARTIFACT_POLICY.md",
+      "status": "new",
+      "area": "docs-tooling",
+      "sha256": "92fe553a64ae8d5a9b342738bdb28c4da4cae65864e5f5db6b52c491ead12ded",
+      "bytes": 1204
+    },
+    {
+      "file": "docs/CONTENT_CLASSIFICATION.md",
+      "status": "new",
+      "area": "docs-tooling",
+      "sha256": "b203960e6dea1d279dd7a30ccb0109a97dcc07baef50ee219e745a38e01d726a",
+      "bytes": 3590
+    },
+    {
+      "file": "docs/DECISIONS.md",
+      "status": "new",
+      "area": "docs-tooling",
+      "sha256": "50f25c23add7c050030313efb92e3b2ffcd2b9552e715283a0251adf89d9c5ec",
+      "bytes": 3239
+    },
+    {
+      "file": "docs/IMPLEMENTATION_PLAN.md",
+      "status": "new",
+      "area": "docs-tooling",
+      "sha256": "3000709bb4c29001aa97ac99e2d993218bd1e40064e734a3fd34e1a4fe8b6a06",
+      "bytes": 41227
+    },
+    {
+      "file": "docs/IMPLEMENTATION_STATE.json",
+      "status": "new",
+      "area": "docs-tooling",
+      "sha256": "3cfdfe22658936ea395fd5f0d4c1bdd4b4aa48a4894826819660a8874b785a7d",
+      "bytes": 57598
+    },
+    {
+      "file": "docs/REFERENCE_REUSE_POLICY.md",
+      "status": "new",
+      "area": "docs-tooling",
+      "sha256": "7bf307dc114da827b24474014a49cbd53df00e2826817992a7fd00bf044d986c",
+      "bytes": 1391
+    },
+    {
+      "file": "docs/VALIDATION_REPORT.md",
+      "status": "new",
+      "area": "docs-tooling",
+      "sha256": "6a1270211a9ccd0306c9d8b5f3be37f9bc5d8e75efa0bccc4f772e6552a49985",
+      "bytes": 12334
+    },
+    {
+      "file": "docs/agent-reports/attempts.md",
+      "status": "new",
+      "area": "docs-tooling",
+      "sha256": "625315e1102015b6b677bec565e9af19c966171026785fd22b517c1e4fbfed02",
+      "bytes": 2896
+    },
+    {
+      "file": "docs/audit/AUDIT_2026-10-23.md",
+      "status": "new",
+      "area": "local-evidence",
+      "sha256": "5d7de9d0a3dc6705fd87fee0abee0dbe9331a384c9871e7621dc849f61478335",
+      "bytes": 56439,
+      "publicationDestination": "docs/audit/AUDIT_2026-10-23_PUBLIC.md",
+      "transformation": "Sanitized publication; sha256 remains original snapshot hash"
+    },
+    {
+      "file": "docs/audit/SOURCE_BASELINE.json",
+      "status": "new",
+      "area": "local-evidence",
+      "sha256": "b5aa01a1da10954ae16ce23be0ad21b146991eb17bce71adef2ed9ebbf05f7c0",
+      "bytes": 244593,
+      "publicationDestination": "docs/audit/SOURCE_BASELINE_PUBLIC.json",
+      "transformation": "Sanitized publication; sha256 remains original snapshot hash"
+    },
+    {
+      "file": "frontend/src/components/questoes/QuestionClassificationPanel.tsx",
+      "status": "new",
+      "area": "frontend",
+      "sha256": "68cf4c82c965b902f3a984613e1cd0615e848f6e93ade433c9a514b2a45d503e",
+      "bytes": 5551
+    },
+    {
+      "file": "frontend/src/utils/attemptSubmission.ts",
+      "status": "new",
+      "area": "frontend",
+      "sha256": "d6642255dc9c1db7fdbccb2a5cea328d46e76a16f51c80d41dbaa34ffe0dac99",
+      "bytes": 1612
+    },
+    {
+      "file": "frontend/src/utils/ingestionAccess.ts",
+      "status": "new",
+      "area": "frontend",
+      "sha256": "805a7713c23d620a0dbf654f0b725f9c7ae5e2606088bf22ff5fb1a98d324436",
+      "bytes": 507
+    },
+    {
+      "file": "frontend/src/utils/studyPreferences.ts",
+      "status": "new",
+      "area": "frontend",
+      "sha256": "d3978e5ddcfbf14e73deddfdc2d3aca1e76e2de87b0743eabde055295372120e",
+      "bytes": 1998
+    },
+    {
+      "file": "frontend/tests/learning-contracts.test.mjs",
+      "status": "new",
+      "area": "frontend",
+      "sha256": "ca14bdbe91a49b9fd30a144647b9580e3e5373e1d6c576627ca378e2470999c0",
+      "bytes": 5157
+    },
+    {
+      "file": "scripts/start-isolated.ps1",
+      "status": "new",
+      "area": "docs-tooling",
+      "sha256": "e21dfbc9fbda966b9423e34244c9bbe6be0785f62e707bbff147e1ddf835e192",
+      "bytes": 1087
+    },
+    {
+      "file": "scripts/validate-backend.cjs",
+      "status": "new",
+      "area": "docs-tooling",
+      "sha256": "da87262c1565f9a0fa88f16155aca65a6c899f88ed7a66137ab4ad4750a01e78",
+      "bytes": 2418
+    },
+    {
+      "file": "scripts/validate.ps1",
+      "status": "new",
+      "area": "docs-tooling",
+      "sha256": "e5df28f4dccadd4aa1d06a7c5c2d164b3da84d882b14f58159ea034699f7cb45",
+      "bytes": 3587
+    },
+    {
+      "file": "tests/test_inventory_integrity.py",
+      "status": "new",
+      "area": "ingestion",
+      "sha256": "688824a1aa689de0a675a7b264adb319c43de0212a400a0649cde33f2d377d4d",
+      "bytes": 3737
+    },
+    {
+      "file": "work-persistence.cjs",
+      "status": "new",
+      "area": "local-evidence",
+      "sha256": "e58a0e2e76d54989f8c54e5c441e8b1c84895f466e7be75c6633b4c60b1f05f3",
+      "bytes": 10259
+    }
+  ],
+  "warning": "Inventory predates this planning document and inventory file; add both to documentation area. No branches/commits/push performed."
+}

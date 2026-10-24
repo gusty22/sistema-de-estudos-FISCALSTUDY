@@ -1,0 +1,739 @@
+{
+  "baseline": "docs/audit/AUDIT_2026-10-23_PUBLIC.md",
+  "sourceRoot": "<original-checkout>",
+  "implementationRoot": "<implementation-checkout>",
+  "startedAt": "2026-10-23T16:57:59.844Z",
+  "tasks": [
+    {
+      "id": "F01",
+      "priority": "Alta",
+      "title": "Banco sem classificação por assunto",
+      "evidence": "SQL somente leitura: 13.241/13.241 questions.assunto IS NULL. B/application/StudentKnowledgeStateService.java:318–320 ignora assunto vazio; B/infrastructure/out/persistence/QuestionRepositoryImpl.java:96–99 filtra esse campo.",
+      "impact": "Diagnóstico e seleção por tópico não têm os dados necessários. 181 tópicos do edital não equivalem a questões vinculadas.",
+      "recommendation": "Definir vínculo canônico questão→tópico com confiança, origem e revisão humana; preservar não classificado e medir cobertura antes de alimentar domínio.",
+      "dependencies": "Taxonomia, política de curadoria e conjunto rotulado de validação.",
+      "reuse": "Question_Extractor: fatores de confiança e fila de revisão; adaptar o padrão para classificação, sem presumir que ele classifique assuntos.",
+      "owner": "content",
+      "status": "em andamento",
+      "revalidation": "Revalidar no diff e testes antes de declarar corrigido",
+      "acceptance": "Definir vínculo canônico questão→tópico com confiança, origem e revisão humana; preservar não classificado e medir cobertura antes de alimentar domínio.",
+      "tests": [
+        "Suíte global255 Java sem falhas/erros/ignorados; escopo específico em docs/VALIDATION_REPORT.md"
+      ],
+      "rollback": "Código rastreável na cópia; recuperação db/recovery preservada; não migrar originais.",
+      "executionMode": "sequencial, sem subagentes nesta execução",
+      "validationScope": "Correções e/ou documentação parciais; aprovação da suíte global não encerra automaticamente este achado. Ver limites do relatório."
+    },
+    {
+      "id": "F02",
+      "priority": "Alta",
+      "title": "Histórico observado não comprova uso de estudo real",
+      "evidence": "Banco principal: 107 eventos; seis ANSWER_SUBMITTED, todos origin=AUTOMATED_TEST. StudentKnowledgeStateService.java:303–309 não filtra origin.",
+      "impact": "Os indicadores podem processar testes como se fossem resultados pessoais. Não existe aqui evidência de eficácia adaptativa individual.",
+      "recommendation": "Centralizar elegibilidade de evidências por origem e finalidade; separar histórico desconhecido, demonstração e teste; não reclassificar eventos retroativamente como reais.",
+      "dependencies": "Contrato de proveniência e consumidores Java/R alinhados.",
+      "reuse": "analytics-engine/R/provenance.R e seus testes já oferecem separação mais cuidadosa.",
+      "owner": "attempts",
+      "status": "em andamento",
+      "revalidation": "Revalidar no diff e testes antes de declarar corrigido",
+      "acceptance": "Centralizar elegibilidade de evidências por origem e finalidade; separar histórico desconhecido, demonstração e teste; não reclassificar eventos retroativamente como reais.",
+      "tests": [
+        "Suíte global255 Java sem falhas/erros/ignorados; escopo específico em docs/VALIDATION_REPORT.md"
+      ],
+      "rollback": "Código rastreável na cópia; recuperação db/recovery preservada; não migrar originais.",
+      "executionMode": "sequencial, sem subagentes nesta execução",
+      "validationScope": "Correções e/ou documentação parciais; aprovação da suíte global não encerra automaticamente este achado. Ver limites do relatório."
+    },
+    {
+      "id": "F03",
+      "priority": "Alta",
+      "title": "Hooks condicionais nos fluxos de abertura",
+      "evidence": "Lint: MotorParetoEditalModal.tsx:136 e AssistenteObjetivoWizard.tsx:231,236,241,254. Ambos possuem return por !isOpen antes desses Hooks.",
+      "impact": "Abrir/fechar componentes pode quebrar a ordem de Hooks. Cinco erros estáticos reais; reprodução visual não concluída.",
+      "recommendation": "Na fase de correção, preservar ordem incondicional de Hooks e validar abertura/fechamento com testes de interação.",
+      "dependencies": "Baseline da interface e teste automatizado de transições.",
+      "reuse": "Nenhum reaproveitamento necessário.",
+      "owner": "frontend",
+      "status": "validada",
+      "revalidation": "Revalidar no diff e testes antes de declarar corrigido",
+      "acceptance": "Na fase de correção, preservar ordem incondicional de Hooks e validar abertura/fechamento com testes de interação.",
+      "tests": [
+        "Suíte global255 Java sem falhas/erros/ignorados; escopo específico em docs/VALIDATION_REPORT.md"
+      ],
+      "rollback": "Código rastreável na cópia; recuperação db/recovery preservada; não migrar originais.",
+      "executionMode": "sequencial, sem subagentes nesta execução",
+      "validationScope": "TypeScript/Vite e lint sem erros; homologação visual pendente."
+    },
+    {
+      "id": "F04",
+      "priority": "Alta",
+      "title": "Cadernos e simulados usam DDLs incompatíveis",
+      "evidence": "QuestionBankService.java:533 e StrategicSimuladoService.java:46 criam study_notebooks com colunas distintas. Banco atual não possui tempo_minutos; INSERT do simulado em :196 exige essa coluna. O catch :199–201 não impede retorno de notebookId em :203–214.",
+      "impact": "Simulado pode aparentar ter sido criado sem persistência; instalação nova depende da ordem de criação das tabelas.",
+      "recommendation": "Uma migração canônica e erro de API em falha de persistência; verificar esquema existente antes de migrar.",
+      "dependencies": "Snapshot consistente e migração testada em bancos novos e existentes.",
+      "reuse": "Nenhum reaproveitamento necessário.",
+      "owner": "persistence",
+      "status": "validada",
+      "revalidation": "Revalidar no diff e testes antes de declarar corrigido",
+      "acceptance": "Uma migração canônica e erro de API em falha de persistência; verificar esquema existente antes de migrar.",
+      "tests": [
+        "Suíte global255 Java sem falhas/erros/ignorados; escopo específico em docs/VALIDATION_REPORT.md"
+      ],
+      "rollback": "Código rastreável na cópia; recuperação db/recovery preservada; não migrar originais.",
+      "executionMode": "sequencial, sem subagentes nesta execução",
+      "validationScope": "PersistenceContractTest e SimuladoControllerTest aprovados."
+    },
+    {
+      "id": "F05",
+      "priority": "Alta",
+      "title": "Busca global incompatível com o schema real",
+      "evidence": "SystemSettingsService.java:534 usa questions.statement; :560 usa materials/title; :583 usa study_notebooks.title/mode/question_count. Preparação das consultas no SQLite reproduziu no such column/table, sem executar escrita.",
+      "impact": "QUESTOES, MATERIAIS e ATIVIDADES podem parecer vazias por falha capturada.",
+      "recommendation": "Consumir repositórios canônicos e distinguir falha de fonte de zero resultados.",
+      "dependencies": "Contrato do banco e testes de integração da busca.",
+      "reuse": "Nenhum reaproveitamento necessário.",
+      "owner": "persistence",
+      "status": "validada",
+      "revalidation": "Revalidar no diff e testes antes de declarar corrigido",
+      "acceptance": "Consumir repositórios canônicos e distinguir falha de fonte de zero resultados.",
+      "tests": [
+        "Suíte global255 Java sem falhas/erros/ignorados; escopo específico em docs/VALIDATION_REPORT.md"
+      ],
+      "rollback": "Código rastreável na cópia; recuperação db/recovery preservada; não migrar originais.",
+      "executionMode": "sequencial, sem subagentes nesta execução",
+      "validationScope": "PersistenceContractTest: busca nas categorias do schema real."
+    },
+    {
+      "id": "F06",
+      "priority": "Alta",
+      "title": "Causa do erro enviada pela interface não é registrada",
+      "evidence": "ResolucaoQuestaoModal.tsx:257–275 reenvia tentativa para registrar causaErro depois do feedback. AttemptSubmissionService.java:162–164 retorna antes da gravação quando a questão já existe na sessão.",
+      "impact": "A taxonomia e as intervenções não recebem a informação que o estudante acredita ter salvo.",
+      "recommendation": "Criar evento separado de anotação/correção da tentativa, ligado ao attemptId, preservando append-only.",
+      "dependencies": "Identificador estável da tentativa e contrato de anotação.",
+      "reuse": "Nenhum reaproveitamento necessário.",
+      "owner": "attempts",
+      "status": "validada",
+      "revalidation": "Revalidar no diff e testes antes de declarar corrigido",
+      "acceptance": "Criar evento separado de anotação/correção da tentativa, ligado ao attemptId, preservando append-only.",
+      "tests": [
+        "Suíte global255 Java sem falhas/erros/ignorados; escopo específico em docs/VALIDATION_REPORT.md"
+      ],
+      "rollback": "Código rastreável na cópia; recuperação db/recovery preservada; não migrar originais.",
+      "executionMode": "sequencial, sem subagentes nesta execução",
+      "validationScope": "AttemptIdentityRegressionTest e QuestionControllerTest aprovados."
+    },
+    {
+      "id": "F07",
+      "priority": "Alta",
+      "title": "Sessão do banco reutilizada e tempo confundido com atividade",
+      "evidence": "ResolucaoQuestaoModal.tsx:72–78 persiste fiscalstudy_bank_session_id em sessionStorage; busca textual encontrou apenas leitura/escrita dessa chave. Mesmo sessionId ativa deduplicação por questão. Cronômetro :95–100 mede visibilidade da página, não interação.",
+      "impact": "Retestes na mesma aba podem ser ignorados; ficar com a aba visível infla tempo dito ativo.",
+      "recommendation": "Ciclo de vida explícito de sessão e attemptId por tentativa; documentar tempo de tela e medir atividade com critérios transparentes.",
+      "dependencies": "F06/F08 e política de sessão; sem inferir atenção neurológica.",
+      "reuse": "Nenhum reaproveitamento necessário.",
+      "owner": "attempts",
+      "status": "validada",
+      "revalidation": "Revalidar no diff e testes antes de declarar corrigido",
+      "acceptance": "Ciclo de vida explícito de sessão e attemptId por tentativa; documentar tempo de tela e medir atividade com critérios transparentes.",
+      "tests": [
+        "Suíte global255 Java sem falhas/erros/ignorados; escopo específico em docs/VALIDATION_REPORT.md"
+      ],
+      "rollback": "Código rastreável na cópia; recuperação db/recovery preservada; não migrar originais.",
+      "executionMode": "sequencial, sem subagentes nesta execução",
+      "validationScope": "Retry estável e reteste por novo attemptId cobertos."
+    },
+    {
+      "id": "F08",
+      "priority": "Alta",
+      "title": "Idempotência não atômica e JSON manual",
+      "evidence": "AttemptSubmissionService.java:162 usa hasEvent; EventStoreRepositoryImpl.java:46 consulta separadamente da inserção. Payload manual em AttemptSubmissionService.java:223.",
+      "impact": "Concorrência pode duplicar eventos; replay calcula resultado usando a alternativa reenviada; textos podem gerar JSON inválido. No banco observado não havia duplicatas de resposta nem JSON inválido.",
+      "recommendation": "Serialização estruturada, chave idempotente e retorno do resultado persistido; migração de unicidade apenas após inventário.",
+      "dependencies": "Contrato de tentativa e backup; a correção da entrega anterior permanece apenas na cópia isolada, não foi aplicada ao original.",
+      "reuse": "Nenhum reaproveitamento necessário.",
+      "owner": "attempts",
+      "status": "validada",
+      "revalidation": "Revalidar no diff e testes antes de declarar corrigido",
+      "acceptance": "Serialização estruturada, chave idempotente e retorno do resultado persistido; migração de unicidade apenas após inventário.",
+      "tests": [
+        "Suíte global255 Java sem falhas/erros/ignorados; escopo específico em docs/VALIDATION_REPORT.md"
+      ],
+      "rollback": "Código rastreável na cópia; recuperação db/recovery preservada; não migrar originais.",
+      "executionMode": "sequencial, sem subagentes nesta execução",
+      "validationScope": "Anotação append-only e leitura posterior cobertas."
+    },
+    {
+      "id": "F09",
+      "priority": "Alta",
+      "title": "Revisões podem ser adiadas e misturadas entre concursos",
+      "evidence": "RevisionCalendarService.java:201 sobrescreve data_agendada mantendo MAX da prioridade. Deduplicação no startup :47 particiona só disciplina/topico; procura pendência sem concurso.",
+      "impact": "Acerto posterior pode adiar revisão motivada por erro; concursos podem compartilhar ou perder pendências indevidamente.",
+      "recommendation": "Estado de pendência por escopo canônico; transições explícitas e histórico de replanejamento.",
+      "dependencies": "Identidade de tópico/concurso, migração preservando histórico.",
+      "reuse": "Nenhum reaproveitamento necessário.",
+      "owner": "adaptive",
+      "status": "em andamento",
+      "revalidation": "Revalidar no diff e testes antes de declarar corrigido",
+      "acceptance": "Estado de pendência por escopo canônico; transições explícitas e histórico de replanejamento.",
+      "tests": [
+        "Suíte global255 Java sem falhas/erros/ignorados; escopo específico em docs/VALIDATION_REPORT.md",
+        "Fila FSRS:24 testes direcionados aprovados;data/intervalo/prioridade por tentativa atual;manual preservado"
+      ],
+      "rollback": "Código rastreável na cópia; recuperação db/recovery preservada; não migrar originais.",
+      "executionMode": "sequencial, sem subagentes nesta execução",
+      "validationScope": "Correções e/ou documentação parciais; aprovação da suíte global não encerra automaticamente este achado. Ver limites do relatório."
+    },
+    {
+      "id": "F10",
+      "priority": "Alta",
+      "title": "Duas rotinas para o mesmo concurso e fallback cruzado",
+      "evidence": "SQL: duas student_routines para o mesmo concurso. StudentRoutineRepositoryImpl.java:63–66 pega list.get(0) sem ordenação; :70 retorna rotina global mais recente em ausência.",
+      "impact": "Planejamento pode escolher rotina não determinística ou de outro objetivo.",
+      "recommendation": "Definir uma rotina ativa por escopo, seleção explícita e restrição de integridade após resolver duplicatas.",
+      "dependencies": "Auditoria dos registros duplicados e semântica de versões de rotina.",
+      "reuse": "Nenhum reaproveitamento necessário.",
+      "owner": "adaptive",
+      "status": "em andamento",
+      "revalidation": "Revalidar no diff e testes antes de declarar corrigido",
+      "acceptance": "Definir uma rotina ativa por escopo, seleção explícita e restrição de integridade após resolver duplicatas.",
+      "tests": [
+        "Suíte global255 Java sem falhas/erros/ignorados; escopo específico em docs/VALIDATION_REPORT.md"
+      ],
+      "rollback": "Código rastreável na cópia; recuperação db/recovery preservada; não migrar originais.",
+      "executionMode": "sequencial, sem subagentes nesta execução",
+      "validationScope": "Correções e/ou documentação parciais; aprovação da suíte global não encerra automaticamente este achado. Ver limites do relatório."
+    },
+    {
+      "id": "F11",
+      "priority": "Alta",
+      "title": "Personalização configurável não é política efetivamente aplicada",
+      "evidence": "SystemSettingsService.java:110–158 define duração, fonte, limites de revisão, sono e privacidade. Buscas no código próprio encontraram essas chaves no serviço e formulário, não nos respectivos motores. App.tsx usa fiscalstudy_calm_theme separadamente.",
+      "impact": "Salvar preferências não garante alteração do comportamento; duas fontes de tema podem discordar.",
+      "recommendation": "Mapear cada preferência a consumidor, efeito e teste; retirar ou rotular controles ainda não conectados.",
+      "dependencies": "Contrato tipado de preferências e escopo por perfil.",
+      "reuse": "Nenhum reaproveitamento necessário.",
+      "owner": "frontend",
+      "status": "em andamento",
+      "revalidation": "Revalidar no diff e testes antes de declarar corrigido",
+      "acceptance": "Mapear cada preferência a consumidor, efeito e teste; retirar ou rotular controles ainda não conectados.",
+      "tests": [
+        "Suíte global255 Java sem falhas/erros/ignorados; escopo específico em docs/VALIDATION_REPORT.md"
+      ],
+      "rollback": "Código rastreável na cópia; recuperação db/recovery preservada; não migrar originais.",
+      "executionMode": "sequencial, sem subagentes nesta execução",
+      "validationScope": "Correções e/ou documentação parciais; aprovação da suíte global não encerra automaticamente este achado. Ver limites do relatório."
+    },
+    {
+      "id": "F12",
+      "priority": "Alta",
+      "title": "Integração Anki pode sincronizar fora do controle de privacidade anunciado",
+      "evidence": "AnkiIntegrationService.java:45 autoSyncEnabled inicia true, :784 agenda 25s, :767–773 chama AnkiWeb após envio. Toggle :813–820 é estado em memória. Não se localizou consumo de armazenamentoLocalEstrito nessa integração.",
+      "impact": "Preferência visual de armazenamento local não governa o fluxo de sincronização; reinício retorna ao padrão.",
+      "recommendation": "Consentimento e opções independentes para fila local, Anki Desktop e AnkiWeb, persistidos e efetivamente consultados; impedir efeitos externos nos testes.",
+      "dependencies": "F11 e política de integração.",
+      "reuse": "Nenhum reaproveitamento necessário.",
+      "owner": "integrations",
+      "status": "em andamento",
+      "revalidation": "Revalidar no diff e testes antes de declarar corrigido",
+      "acceptance": "Consentimento e opções independentes para fila local, Anki Desktop e AnkiWeb, persistidos e efetivamente consultados; impedir efeitos externos nos testes.",
+      "tests": [
+        "Suíte global255 Java sem falhas/erros/ignorados; escopo específico em docs/VALIDATION_REPORT.md"
+      ],
+      "rollback": "Código rastreável na cópia; recuperação db/recovery preservada; não migrar originais.",
+      "executionMode": "sequencial, sem subagentes nesta execução",
+      "validationScope": "Correções e/ou documentação parciais; aprovação da suíte global não encerra automaticamente este achado. Ver limites do relatório."
+    },
+    {
+      "id": "F13",
+      "priority": "Alta",
+      "title": "Restauração de backup não está confinada nem coordenada com conexões",
+      "evidence": "SystemSettingsService.java:315 combina pasta com filename sem normalização/containment; :334 substitui arquivo com pool JDBC ativo. Controller :61–67 aceita filename.",
+      "impact": "Risco de restaurar caminho fora da pasta e inconsistência com WAL/conexões existentes. Exploração não executada; exposição depende da rede.",
+      "recommendation": "Restauração offline/coordenada, caminho validado por pertencimento, verificação de formato e ensaio de recuperação.",
+      "dependencies": "Fluxo de manutenção e segurança de API; não usar o recurso atual como recuperação comprovada.",
+      "reuse": "Nenhum reaproveitamento necessário.",
+      "owner": "persistence",
+      "status": "em andamento",
+      "revalidation": "Revalidar no diff e testes antes de declarar corrigido",
+      "acceptance": "Restauração offline/coordenada, caminho validado por pertencimento, verificação de formato e ensaio de recuperação.",
+      "tests": [
+        "Suíte global255 Java sem falhas/erros/ignorados; escopo específico em docs/VALIDATION_REPORT.md"
+      ],
+      "rollback": "Código rastreável na cópia; recuperação db/recovery preservada; não migrar originais.",
+      "executionMode": "sequencial, sem subagentes nesta execução",
+      "validationScope": "Correções e/ou documentação parciais; aprovação da suíte global não encerra automaticamente este achado. Ver limites do relatório."
+    },
+    {
+      "id": "F14",
+      "priority": "Alta",
+      "title": "Backup/overview usam caminho diferente do datasource e logam schema inválido",
+      "evidence": "application.yml usa ../db/fiscalstudy.db; SystemSettingsService.java:26 usa db/fiscalstudy.db. VACUUM INTO usa datasource, mas fallback Files.copy :230 usa caminho fixo. INSERTs de auditoria :242 e :344 usam payload/timestamp inexistentes; prepare reproduziu erro.",
+      "impact": "Overview e fallback podem mirar banco vazio/errado ao iniciar no backend; criação/restauração não registra evento esperado.",
+      "recommendation": "Derivar caminhos da configuração única; manter backup consistente e contrato canônico de eventos; falha no fallback deve ser explícita.",
+      "dependencies": "F13, definição do diretório de execução e teste de backup/restauração.",
+      "reuse": "Nenhum reaproveitamento necessário.",
+      "owner": "persistence",
+      "status": "em andamento",
+      "revalidation": "Revalidar no diff e testes antes de declarar corrigido",
+      "acceptance": "Derivar caminhos da configuração única; manter backup consistente e contrato canônico de eventos; falha no fallback deve ser explícita.",
+      "tests": [
+        "Suíte global255 Java sem falhas/erros/ignorados; escopo específico em docs/VALIDATION_REPORT.md"
+      ],
+      "rollback": "Código rastreável na cópia; recuperação db/recovery preservada; não migrar originais.",
+      "executionMode": "sequencial, sem subagentes nesta execução",
+      "validationScope": "Correções e/ou documentação parciais; aprovação da suíte global não encerra automaticamente este achado. Ver limites do relatório."
+    },
+    {
+      "id": "F15",
+      "priority": "Alta",
+      "title": "Staging possui sete violações referenciais",
+      "evidence": "PRAGMA foreign_key_check encontrou sete staging_support_materials órfãos de staging_documents. StagingDatabaseService.java:56 abre conexão sem ativar foreign_keys; deleteStagingFile :673–678 não apaga os materiais de apoio antes dos documentos.",
+      "impact": "Acervo e evidências ficam inconsistentes. A relação com esse caminho de exclusão é inferência plausível, não reconstituição histórica provada.",
+      "recommendation": "Auditar/reconciliar órfãos e impor integridade em toda conexão; teste transacional de exclusão com materiais.",
+      "dependencies": "Backup do staging e política para evidências compartilhadas.",
+      "reuse": "Nenhum reaproveitamento necessário.",
+      "owner": "persistence",
+      "status": "em andamento",
+      "revalidation": "Revalidar no diff e testes antes de declarar corrigido",
+      "acceptance": "Auditar/reconciliar órfãos e impor integridade em toda conexão; teste transacional de exclusão com materiais.",
+      "tests": [
+        "Suíte global255 Java sem falhas/erros/ignorados; escopo específico em docs/VALIDATION_REPORT.md"
+      ],
+      "rollback": "Código rastreável na cópia; recuperação db/recovery preservada; não migrar originais.",
+      "executionMode": "sequencial, sem subagentes nesta execução",
+      "validationScope": "Correções e/ou documentação parciais; aprovação da suíte global não encerra automaticamente este achado. Ver limites do relatório."
+    },
+    {
+      "id": "F16",
+      "priority": "Alta",
+      "title": "Dependências R ausentes e exportação JSON silenciosamente omitida",
+      "evidence": "Teste isolado: 291 verificações aprovadas, duas falhas. digest não instalado; export_metrics_package (R/export_results.R:171–174) simplesmente não escreve JSON sem jsonlite. Teste exige o arquivo.",
+      "impact": "Pipeline pode produzir apenas CSV e preservar JSON antigo no disco; ambiente não é reproduzível como descrito no README.",
+      "recommendation": "Manifesto/checagem explícita de dependências e publicação de artefatos atômicos com runId; ausência de requisito não pode parecer sucesso completo.",
+      "dependencies": "Definir dependências mínimas e contrato de saída; sem instalar nada nesta auditoria.",
+      "reuse": "Nenhum reaproveitamento necessário.",
+      "owner": "integrations",
+      "status": "em andamento",
+      "revalidation": "Revalidar no diff e testes antes de declarar corrigido",
+      "acceptance": "Manifesto/checagem explícita de dependências e publicação de artefatos atômicos com runId; ausência de requisito não pode parecer sucesso completo.",
+      "tests": [
+        "Suíte global255 Java sem falhas/erros/ignorados; escopo específico em docs/VALIDATION_REPORT.md"
+      ],
+      "rollback": "Código rastreável na cópia; recuperação db/recovery preservada; não migrar originais.",
+      "executionMode": "sequencial, sem subagentes nesta execução",
+      "validationScope": "Correções e/ou documentação parciais; aprovação da suíte global não encerra automaticamente este achado. Ver limites do relatório."
+    },
+    {
+      "id": "F17",
+      "priority": "Alta",
+      "title": "Múltiplas raízes e saídas analíticas concorrentes",
+      "evidence": "Existem analytics/, core-app/analytics-engine e ../analytics-engine. Código textual das duas cópias do engine coincide normalizando CRLF; quatro JSON de saída diferem. AnalyticsBridgeService.java:40–45 e RobinHoodCycleService.java:116–128 escolhem locais relativos diferentes; também há fallback em Downloads.",
+      "impact": "Mesmo código pode consumir resultados de execuções diferentes conforme cwd, sem garantir procedência ou atualidade.",
+      "recommendation": "Uma raiz analítica configurada; manifestos de execução e validação de dataset/model version antes do consumo. Não apagar cópias antes de migrar consumidores.",
+      "dependencies": "F14/F16 e mapa de leitores/escritores.",
+      "reuse": "Nenhum reaproveitamento necessário.",
+      "owner": "integrations",
+      "status": "em andamento",
+      "revalidation": "Revalidar no diff e testes antes de declarar corrigido",
+      "acceptance": "Uma raiz analítica configurada; manifestos de execução e validação de dataset/model version antes do consumo. Não apagar cópias antes de migrar consumidores.",
+      "tests": [
+        "Suíte global255 Java sem falhas/erros/ignorados; escopo específico em docs/VALIDATION_REPORT.md"
+      ],
+      "rollback": "Código rastreável na cópia; recuperação db/recovery preservada; não migrar originais.",
+      "executionMode": "sequencial, sem subagentes nesta execução",
+      "validationScope": "Correções e/ou documentação parciais; aprovação da suíte global não encerra automaticamente este achado. Ver limites do relatório."
+    },
+    {
+      "id": "F18",
+      "priority": "Alta",
+      "title": "FSRS mistura declaração de versão e parâmetros",
+      "evidence": "FsrsParameters declara v5 com primeiros 19 pesos do vetor v6; comparação direta com references/.../FSRS-5.test.ts:14 e FSRS-6.test.ts:15. FsrsEngine não aplica ramo específico de curto prazo.",
+      "impact": "Não há conformidade demonstrada com versão oficial; testes existentes verificam propriedades do motor próprio.",
+      "recommendation": "Escolher versão, fixar origem e comparar sequências com vetores independentes; separar adaptação de confiança da implementação canônica.",
+      "dependencies": "Histórico elegível e critérios de rating.",
+      "reuse": "ts-fsrs/packages/fsrs/src/algorithm.ts:329,390 e testes FSRS-5/6, MIT.",
+      "owner": "adaptive",
+      "status": "em andamento",
+      "revalidation": "Revalidar no diff e testes antes de declarar corrigido",
+      "acceptance": "Escolher versão, fixar origem e comparar sequências com vetores independentes; separar adaptação de confiança da implementação canônica.",
+      "tests": [
+        "Suíte global255 Java sem falhas/erros/ignorados; escopo específico em docs/VALIDATION_REPORT.md"
+      ],
+      "rollback": "Código rastreável na cópia; recuperação db/recovery preservada; não migrar originais.",
+      "executionMode": "sequencial, sem subagentes nesta execução",
+      "validationScope": "Correções e/ou documentação parciais; aprovação da suíte global não encerra automaticamente este achado. Ver limites do relatório."
+    },
+    {
+      "id": "F19",
+      "priority": "Alta",
+      "title": "Domínio cognitivo implementado, mas sem ligação produtiva demonstrada",
+      "evidence": "TopicMastery.processAttempt aparece como declaração no código principal; consumidores de DynamicStudyCycleEngine estão no próprio domínio/testes, sem chamada de aplicação encontrada. Banco operacional não tem user_topic_mastery/question_attempts da migração PostgreSQL.",
+      "impact": "Existência de classes/testes é confundível com capacidade adaptativa ativa. O caminho real usa outros serviços e heurísticas.",
+      "recommendation": "Rastrear e documentar caminho canônico resposta→estado→fila; integrar apenas depois de decidir qual autoridade manter.",
+      "dependencies": "F01/F08/F18; não remover domínio somente por ainda não estar conectado.",
+      "reuse": "Nenhum reaproveitamento necessário.",
+      "owner": "adaptive",
+      "status": "em andamento",
+      "revalidation": "Revalidar no diff e testes antes de declarar corrigido",
+      "acceptance": "Rastrear e documentar caminho canônico resposta→estado→fila; integrar apenas depois de decidir qual autoridade manter.",
+      "tests": [
+        "Suíte global255 Java sem falhas/erros/ignorados; escopo específico em docs/VALIDATION_REPORT.md",
+        "Fila FSRS:24 testes direcionados aprovados;data/intervalo/prioridade por tentativa atual;manual preservado"
+      ],
+      "rollback": "Código rastreável na cópia; recuperação db/recovery preservada; não migrar originais.",
+      "executionMode": "sequencial, sem subagentes nesta execução",
+      "validationScope": "Correções e/ou documentação parciais; aprovação da suíte global não encerra automaticamente este achado. Ver limites do relatório."
+    },
+    {
+      "id": "F20",
+      "priority": "Alta",
+      "title": "Estimativas apresentadas como realidade e sucesso de revisão presumido",
+      "evidence": "StudentKnowledgeStateService.java:295 conta toda CONCLUIDA; :358 converte data inválida em now; :494–516 usa coeficientes fixos e quatro tentativas para CONSOLIDADO. RevisionCalendarService.java:102 atribui erro não classificado a lacuna teórica.",
+      "impact": "O sistema pode exibir certeza ou causa que os dados não sustentam.",
+      "recommendation": "Separar observação, estimativa e hipótese; desconhecido não é zero; considerar diversidade/intervalo e preservar causa não classificada.",
+      "dependencies": "F01/F02/F06; calibração posterior com dados reais.",
+      "reuse": "Nenhum reaproveitamento necessário.",
+      "owner": "adaptive",
+      "status": "em andamento",
+      "revalidation": "Revalidar no diff e testes antes de declarar corrigido",
+      "acceptance": "Separar observação, estimativa e hipótese; desconhecido não é zero; considerar diversidade/intervalo e preservar causa não classificada.",
+      "tests": [
+        "Suíte global255 Java sem falhas/erros/ignorados; escopo específico em docs/VALIDATION_REPORT.md"
+      ],
+      "rollback": "Código rastreável na cópia; recuperação db/recovery preservada; não migrar originais.",
+      "executionMode": "sequencial, sem subagentes nesta execução",
+      "validationScope": "Correções e/ou documentação parciais; aprovação da suíte global não encerra automaticamente este achado. Ver limites do relatório."
+    },
+    {
+      "id": "F21",
+      "priority": "Alta",
+      "title": "Resumos semeados com fontes/páginas literais e conteúdo por template",
+      "evidence": "StrategicSummaryService.java:76–78 semeia em banco vazio; :1232–1250 fixa títulos e páginas. Os dois registros do banco coincidem com esses seeds. :602–650 usa textos por domínio; :445–449 gera fichas/pegadinhas sem receber texto-fonte.",
+      "impact": "Proveniência aparente não comprova que as páginas foram consultadas; conteúdo genérico pode ser apresentado como síntese específica.",
+      "recommendation": "Separar demonstrações e material editorial de conteúdo extraído; exibir evidência recuperável por afirmação e bloquear falsa rastreabilidade.",
+      "dependencies": "Contrato de fontes e validação humana de conteúdo.",
+      "reuse": "NotebookLM referência inspira ancoragem, não valida os templates nem as alegações de banca.",
+      "owner": "content",
+      "status": "em andamento",
+      "revalidation": "Revalidar no diff e testes antes de declarar corrigido",
+      "acceptance": "Separar demonstrações e material editorial de conteúdo extraído; exibir evidência recuperável por afirmação e bloquear falsa rastreabilidade.",
+      "tests": [
+        "Suíte global255 Java sem falhas/erros/ignorados; escopo específico em docs/VALIDATION_REPORT.md"
+      ],
+      "rollback": "Código rastreável na cópia; recuperação db/recovery preservada; não migrar originais.",
+      "executionMode": "sequencial, sem subagentes nesta execução",
+      "validationScope": "Correções e/ou documentação parciais; aprovação da suíte global não encerra automaticamente este achado. Ver limites do relatório."
+    },
+    {
+      "id": "F22",
+      "priority": "Alta",
+      "title": "Atualização parcial de progresso pode falhar por campos obrigatórios",
+      "evidence": "StudyMaterialService.java:74–79 cria TopicMaterialLink somente com id/progresso/status. StudyMaterialRepositoryImpl.java:175–198 faz INSERT/UPSERT de todos campos, incluindo topico_id/material_id NOT NULL.",
+      "impact": "No SQLite a inserção parcial pode violar NOT NULL antes do tratamento do conflito; se sem restrições, poderia apagar vínculos. Não executado no banco real.",
+      "recommendation": "Atualização específica de progresso ou carregamento do objeto completo; testes contra schema real.",
+      "dependencies": "Contrato de update e teste de integração em banco descartável.",
+      "reuse": "Nenhum reaproveitamento necessário.",
+      "owner": "persistence",
+      "status": "validada",
+      "revalidation": "Revalidar no diff e testes antes de declarar corrigido",
+      "acceptance": "Atualização específica de progresso ou carregamento do objeto completo; testes contra schema real.",
+      "tests": [
+        "Suíte global255 Java sem falhas/erros/ignorados; escopo específico em docs/VALIDATION_REPORT.md"
+      ],
+      "rollback": "Código rastreável na cópia; recuperação db/recovery preservada; não migrar originais.",
+      "executionMode": "sequencial, sem subagentes nesta execução",
+      "validationScope": "Atualização parcial de material coberta por PersistenceContractTest."
+    },
+    {
+      "id": "F23",
+      "priority": "Média",
+      "title": "Componentes fora do fluxo atual, candidatos a legado",
+      "evidence": "Grafo de imports estáticos a partir de frontend/src/main.tsx: CadastroConcursoWizard.tsx, CronogramaSemanal.tsx, GerenciadorCadernos.tsx e CSS associados inalcançáveis. App.css e AnalyticsView.css também sem importação encontrada.",
+      "impact": "Manutenção e lint abrangem recursos que a aplicação atual não expõe; possível duplicação de fluxos.",
+      "recommendation": "Comparar recursos exclusivos e histórico; retirar/arquivar somente após busca de carregamento dinâmico e teste de navegação.",
+      "dependencies": "Estado Git verificável e validação de equivalência funcional.",
+      "reuse": "Nenhum reaproveitamento necessário.",
+      "owner": "frontend",
+      "status": "em andamento",
+      "revalidation": "Revalidar no diff e testes antes de declarar corrigido",
+      "acceptance": "Comparar recursos exclusivos e histórico; retirar/arquivar somente após busca de carregamento dinâmico e teste de navegação.",
+      "tests": [
+        "Suíte global255 Java sem falhas/erros/ignorados; escopo específico em docs/VALIDATION_REPORT.md"
+      ],
+      "rollback": "Código rastreável na cópia; recuperação db/recovery preservada; não migrar originais.",
+      "executionMode": "sequencial, sem subagentes nesta execução",
+      "validationScope": "Correções e/ou documentação parciais; aprovação da suíte global não encerra automaticamente este achado. Ver limites do relatório."
+    },
+    {
+      "id": "F24",
+      "priority": "Média",
+      "title": "Componentes e serviços concentram responsabilidades",
+      "evidence": "ImportStudio 3.121 linhas; QuestionViewer 2.296; BibliotecaMateriais 2.282; EditalVerticalizado 2.256; StrategicSummaryService 1.256; StagingDatabaseService 1.037.",
+      "impact": "Mudanças pequenas atingem estado, requisições, regras e apresentação no mesmo arquivo. Tamanho é indício de custo, não prova de bug.",
+      "recommendation": "Extrair por responsabilidade somente durante correções com testes; evitar reescrita geral.",
+      "dependencies": "Fluxos críticos mapeados e contratos estabilizados.",
+      "reuse": "Nenhum reaproveitamento necessário.",
+      "owner": "frontend",
+      "status": "em andamento",
+      "revalidation": "Revalidar no diff e testes antes de declarar corrigido",
+      "acceptance": "Extrair por responsabilidade somente durante correções com testes; evitar reescrita geral.",
+      "tests": [
+        "Suíte global255 Java sem falhas/erros/ignorados; escopo específico em docs/VALIDATION_REPORT.md"
+      ],
+      "rollback": "Código rastreável na cópia; recuperação db/recovery preservada; não migrar originais.",
+      "executionMode": "sequencial, sem subagentes nesta execução",
+      "validationScope": "Correções e/ou documentação parciais; aprovação da suíte global não encerra automaticamente este achado. Ver limites do relatório."
+    },
+    {
+      "id": "F25",
+      "priority": "Média",
+      "title": "Bundle inicial monolítico",
+      "evidence": "Build Vite isolado: JS 1.180,46 kB (gzip 295,16 kB); CSS 412,93 kB (gzip 60,75 kB); aviso de chunk acima de 500 kB. App importa telas estaticamente.",
+      "impact": "Carga inicial inclui fluxos administrativos e de ingestão; pode afetar tablet/dispositivos modestos, sem benchmark de UX realizado.",
+      "recommendation": "Medir carregamento e dividir telas pesadas por lazy import quando justificado.",
+      "dependencies": "Baseline de navegação e tamanho; não trocar framework.",
+      "reuse": "Nenhum reaproveitamento necessário.",
+      "owner": "frontend",
+      "status": "em andamento",
+      "revalidation": "Revalidar no diff e testes antes de declarar corrigido",
+      "acceptance": "Medir carregamento e dividir telas pesadas por lazy import quando justificado.",
+      "tests": [
+        "Suíte global255 Java sem falhas/erros/ignorados; escopo específico em docs/VALIDATION_REPORT.md"
+      ],
+      "rollback": "Código rastreável na cópia; recuperação db/recovery preservada; não migrar originais.",
+      "executionMode": "sequencial, sem subagentes nesta execução",
+      "validationScope": "Correções e/ou documentação parciais; aprovação da suíte global não encerra automaticamente este achado. Ver limites do relatório."
+    },
+    {
+      "id": "F26",
+      "priority": "Média",
+      "title": "Cobertura automática desigual entre camadas",
+      "evidence": "43 classes Java de teste compiladas; 15 testes de domínio executados e aprovados. Frontend package.json não define script de testes nem framework de teste de UI; lint tem 5 erros e 115 avisos.",
+      "impact": "Build aprovado não protege fluxo de abrir modal, salvar causa do erro, criar simulado ou aplicar preferências.",
+      "recommendation": "Conjunto enxuto de testes de fluxo e integração cobrindo achados prioritários; CI com build/lint/testes.",
+      "dependencies": "Isolamento de DB, arquivos, Anki e R antes de suíte completa Spring.",
+      "reuse": "Nenhum reaproveitamento necessário.",
+      "owner": "orchestrator",
+      "status": "em andamento",
+      "revalidation": "Revalidar no diff e testes antes de declarar corrigido",
+      "acceptance": "Conjunto enxuto de testes de fluxo e integração cobrindo achados prioritários; CI com build/lint/testes.",
+      "tests": [
+        "Suíte global255 Java sem falhas/erros/ignorados; escopo específico em docs/VALIDATION_REPORT.md"
+      ],
+      "rollback": "Código rastreável na cópia; recuperação db/recovery preservada; não migrar originais.",
+      "executionMode": "sequencial, sem subagentes nesta execução",
+      "validationScope": "Correções e/ou documentação parciais; aprovação da suíte global não encerra automaticamente este achado. Ver limites do relatório."
+    },
+    {
+      "id": "F27",
+      "priority": "Média",
+      "title": "Índices e restrições insuficientes para regras atuais",
+      "evidence": "Banco principal não tem índices explícitos adicionais aos automáticos; EXPLAIN da consulta de tentativa mostra SCAN event_store. Somente três tabelas declaram FKs; rotina não é única por concurso; event_store não possui triggers append-only.",
+      "impact": "Proteção depende da aplicação e crescimento do histórico amplia varreduras. 107 eventos não demonstram gargalo atual.",
+      "recommendation": "Índices baseados em planos e restrições coerentes após auditoria/migração; defesa de imutabilidade com manutenção documentada.",
+      "dependencies": "F08/F10, medição e compatibilidade de migração.",
+      "reuse": "Nenhum reaproveitamento necessário.",
+      "owner": "persistence",
+      "status": "em andamento",
+      "revalidation": "Revalidar no diff e testes antes de declarar corrigido",
+      "acceptance": "Índices baseados em planos e restrições coerentes após auditoria/migração; defesa de imutabilidade com manutenção documentada.",
+      "tests": [
+        "Suíte global255 Java sem falhas/erros/ignorados; escopo específico em docs/VALIDATION_REPORT.md"
+      ],
+      "rollback": "Código rastreável na cópia; recuperação db/recovery preservada; não migrar originais.",
+      "executionMode": "sequencial, sem subagentes nesta execução",
+      "validationScope": "Correções e/ou documentação parciais; aprovação da suíte global não encerra automaticamente este achado. Ver limites do relatório."
+    },
+    {
+      "id": "F28",
+      "priority": "Média",
+      "title": "Conteúdo de questões repetido exige identidade conceitual",
+      "evidence": "GROUP BY enunciado,options_json,correct_option retornou 1.107 grupos com repetição e 3.511 ocorrências além da primeira.",
+      "impact": "Questão repetida em cargos/provas pode parecer item inédito; não é prova de registro inválido.",
+      "recommendation": "Manter ocorrências e proveniência; vincular item canônico/família para não contar familiaridade como transferência. Não excluir em massa.",
+      "dependencies": "F01 e política de identidade de conteúdo.",
+      "reuse": "Nenhum reaproveitamento necessário.",
+      "owner": "content",
+      "status": "em andamento",
+      "revalidation": "Revalidar no diff e testes antes de declarar corrigido",
+      "acceptance": "Manter ocorrências e proveniência; vincular item canônico/família para não contar familiaridade como transferência. Não excluir em massa.",
+      "tests": [
+        "Suíte global255 Java sem falhas/erros/ignorados; escopo específico em docs/VALIDATION_REPORT.md"
+      ],
+      "rollback": "Código rastreável na cópia; recuperação db/recovery preservada; não migrar originais.",
+      "executionMode": "sequencial, sem subagentes nesta execução",
+      "validationScope": "Correções e/ou documentação parciais; aprovação da suíte global não encerra automaticamente este achado. Ver limites do relatório."
+    },
+    {
+      "id": "F29",
+      "priority": "Alta",
+      "title": "Schema fragmentado e migração de outro banco sem aplicação comprovada",
+      "evidence": "CREATE/ALTER em serviços, repositórios e schema.sql; study_notebooks com DDL divergente. db/migration/V1__init_cognitive_platform_schema.sql contém construções PostgreSQL; pom não declara Flyway e tabelas correspondentes não existem no SQLite.",
+      "impact": "Schema depende da história e ordem de startup; documentação pode descrever arquitetura futura como ativa.",
+      "recommendation": "Inventário de schema real e migrações SQLite versionadas; classificar SQL PostgreSQL como projeto futuro/legado até decisão explícita.",
+      "dependencies": "F04/F14 e plano reversível de migração.",
+      "reuse": "Nenhum reaproveitamento necessário.",
+      "owner": "persistence",
+      "status": "em andamento",
+      "revalidation": "Revalidar no diff e testes antes de declarar corrigido",
+      "acceptance": "Inventário de schema real e migrações SQLite versionadas; classificar SQL PostgreSQL como projeto futuro/legado até decisão explícita.",
+      "tests": [
+        "Suíte global255 Java sem falhas/erros/ignorados; escopo específico em docs/VALIDATION_REPORT.md",
+        "SchemaBootstrapIntegrationTest e regressão completa256/256 aprovados"
+      ],
+      "rollback": "Código rastreável na cópia; recuperação db/recovery preservada; não migrar originais.",
+      "executionMode": "sequencial, sem subagentes nesta execução",
+      "validationScope": "Inicialização central consolidada em SchemaMigration;configurações principal/teste sem inicializador SQL automático. DDL legados individuais ainda exigem revisão."
+    },
+    {
+      "id": "F30",
+      "priority": "Média",
+      "title": "Portabilidade depende de máquina e intérpretes não declarados",
+      "evidence": "StagingDatabaseService.java:43 fixa <materials-directory>; publicação chama py em :601; não há requirements/pyproject/uv.lock no código próprio inventariado. Exportação escreve em Downloads por caminho literal.",
+      "impact": "Outro usuário ou instalação limpa não reproduz ingestão/integração com segurança.",
+      "recommendation": "Configuração única de diretórios e executáveis; manifesto de dependências e comando de diagnóstico somente leitura.",
+      "dependencies": "Definir ambiente suportado e F17.",
+      "reuse": "Nenhum reaproveitamento necessário.",
+      "owner": "content",
+      "status": "em andamento",
+      "revalidation": "Revalidar no diff e testes antes de declarar corrigido",
+      "acceptance": "Configuração única de diretórios e executáveis; manifesto de dependências e comando de diagnóstico somente leitura.",
+      "tests": [
+        "Suíte global255 Java sem falhas/erros/ignorados; escopo específico em docs/VALIDATION_REPORT.md"
+      ],
+      "rollback": "Código rastreável na cópia; recuperação db/recovery preservada; não migrar originais.",
+      "executionMode": "sequencial, sem subagentes nesta execução",
+      "validationScope": "Correções e/ou documentação parciais; aprovação da suíte global não encerra automaticamente este achado. Ver limites do relatório."
+    },
+    {
+      "id": "F31",
+      "priority": "Média",
+      "title": "Subprocessos podem bloquear e saídas não têm execução identificada",
+      "evidence": "AnalyticsBridgeService.java:131–138 lê até EOF e aguarda R sem timeout. StagingDatabaseService.java:615 lê stdout antes de stderr e waitFor.",
+      "impact": "Processo travado ou stderr cheio pode bloquear requisição/thread; saída antiga pode ser reutilizada.",
+      "recommendation": "Timeout, consumo concorrente dos streams e estado de execução com runId; manter fallback transparente.",
+      "dependencies": "F16/F17 e teste de processo com falha/timeout.",
+      "reuse": "Nenhum reaproveitamento necessário.",
+      "owner": "integrations",
+      "status": "em andamento",
+      "revalidation": "Revalidar no diff e testes antes de declarar corrigido",
+      "acceptance": "Timeout, consumo concorrente dos streams e estado de execução com runId; manter fallback transparente.",
+      "tests": [
+        "Suíte global255 Java sem falhas/erros/ignorados; escopo específico em docs/VALIDATION_REPORT.md"
+      ],
+      "rollback": "Código rastreável na cópia; recuperação db/recovery preservada; não migrar originais.",
+      "executionMode": "sequencial, sem subagentes nesta execução",
+      "validationScope": "Correções e/ou documentação parciais; aprovação da suíte global não encerra automaticamente este achado. Ver limites do relatório."
+    },
+    {
+      "id": "F32",
+      "priority": "Alta se exposto à rede; média no uso local",
+      "title": "API administrativa sem proteção comprovada",
+      "evidence": "WebConfig permite qualquer origem/método; controllers têm @CrossOrigin(*); pom sem Spring Security. SystemSettingsController expõe restore, settings e diagnósticos; application.yml não restringe server.address.",
+      "impact": "Acesso de outros dispositivos/processos pode alcançar operações sensíveis. Aplicação estava desligada; não houve teste de exposição ou exploração.",
+      "recommendation": "Definir modo pessoal local e modo de rede; restringir origens/bind e proteger ações administrativas antes de compartilhar acesso.",
+      "dependencies": "Decisão de acesso pelo tablet, F13 e modelo de identidade.",
+      "reuse": "Nenhum reaproveitamento necessário.",
+      "owner": "integrations",
+      "status": "em andamento",
+      "revalidation": "Revalidar no diff e testes antes de declarar corrigido",
+      "acceptance": "Definir modo pessoal local e modo de rede; restringir origens/bind e proteger ações administrativas antes de compartilhar acesso.",
+      "tests": [
+        "Suíte global255 Java sem falhas/erros/ignorados; escopo específico em docs/VALIDATION_REPORT.md"
+      ],
+      "rollback": "Código rastreável na cópia; recuperação db/recovery preservada; não migrar originais.",
+      "executionMode": "sequencial, sem subagentes nesta execução",
+      "validationScope": "Correções e/ou documentação parciais; aprovação da suíte global não encerra automaticamente este achado. Ver limites do relatório."
+    },
+    {
+      "id": "F33",
+      "priority": "Média",
+      "title": "Adaptabilidade por pessoa não equivale a multiusuário",
+      "evidence": "system_settings usa setting_key global; principais tabelas/eventos não têm user_id e não há users no banco. localStorage/sessionStorage isolam navegador, não estudante autenticado.",
+      "impact": "Perfis de pessoas diferentes compartilhariam dados na mesma instância. Para uso pessoal atual, é limitação de escopo, não obrigação de SaaS.",
+      "recommendation": "Manter single-user explícito ou definir perfis com isolamento antes de múltiplos usuários; não introduzir infraestrutura multi-tenant por antecipação.",
+      "dependencies": "Decisão de produto: perfis locais ou serviço compartilhado.",
+      "reuse": "OpenViking/server/identity.py ilustra contexto de identidade; não importar a stack completa.",
+      "owner": "adaptive",
+      "status": "em andamento",
+      "revalidation": "Revalidar no diff e testes antes de declarar corrigido",
+      "acceptance": "Manter single-user explícito ou definir perfis com isolamento antes de múltiplos usuários; não introduzir infraestrutura multi-tenant por antecipação.",
+      "tests": [
+        "Suíte global255 Java sem falhas/erros/ignorados; escopo específico em docs/VALIDATION_REPORT.md"
+      ],
+      "rollback": "Código rastreável na cópia; recuperação db/recovery preservada; não migrar originais.",
+      "executionMode": "sequencial, sem subagentes nesta execução",
+      "validationScope": "Correções e/ou documentação parciais; aprovação da suíte global não encerra automaticamente este achado. Ver limites do relatório."
+    },
+    {
+      "id": "F34",
+      "priority": "Média",
+      "title": "Auditoria interna exagera garantias e confunde métricas",
+      "evidence": "SystemSettingsService.java:461 calcula duplicatas por event_id, que é PK, e :463 diz 100% íntegro. Status de extrator/OCR são constantes. R/export_results.R:92–93 coloca quartis como ci_lower/upper.",
+      "impact": "Diagnóstico pode passar com duplicatas semânticas, falhas de integração ou intervalo estatístico rotulado incorretamente.",
+      "recommendation": "Definir testes de saúde reais e escopo de cada garantia; usar IQR para quartis e IC somente quando estimado como tal.",
+      "dependencies": "F05/F16/F27 e contrato de métricas.",
+      "reuse": "Nenhum reaproveitamento necessário.",
+      "owner": "integrations",
+      "status": "em andamento",
+      "revalidation": "Revalidar no diff e testes antes de declarar corrigido",
+      "acceptance": "Definir testes de saúde reais e escopo de cada garantia; usar IQR para quartis e IC somente quando estimado como tal.",
+      "tests": [
+        "Suíte global255 Java sem falhas/erros/ignorados; escopo específico em docs/VALIDATION_REPORT.md"
+      ],
+      "rollback": "Código rastreável na cópia; recuperação db/recovery preservada; não migrar originais.",
+      "executionMode": "sequencial, sem subagentes nesta execução",
+      "validationScope": "Correções e/ou documentação parciais; aprovação da suíte global não encerra automaticamente este achado. Ver limites do relatório."
+    },
+    {
+      "id": "F35",
+      "priority": "Baixa",
+      "title": "Artefatos derivados e resíduos de execução sem política clara",
+      "evidence": "backend/hs_err_pid*.log, replay_pid20876.log, db vazio em backend/db, scratch/, ingestion/output, target/dist e backups coexistem com fontes. Grafo tem 22.759 nós, 16.027 de referências.",
+      "impact": "Ruído de navegação, armazenamento e risco de remover evidências úteis por engano.",
+      "recommendation": "Classificar por fonte, fixture, cache, exportação e backup; retenção e regeneração documentadas. Não apagar backups/golden-set/refs por tamanho.",
+      "dependencies": "Validação do Git, consumidores e recuperação; limpeza só em etapa autorizada.",
+      "reuse": "Nenhum reaproveitamento necessário.",
+      "owner": "orchestrator",
+      "status": "em andamento",
+      "revalidation": "Revalidar no diff e testes antes de declarar corrigido",
+      "acceptance": "Classificar por fonte, fixture, cache, exportação e backup; retenção e regeneração documentadas. Não apagar backups/golden-set/refs por tamanho.",
+      "tests": [
+        "Suíte global255 Java sem falhas/erros/ignorados; escopo específico em docs/VALIDATION_REPORT.md"
+      ],
+      "rollback": "Código rastreável na cópia; recuperação db/recovery preservada; não migrar originais.",
+      "executionMode": "sequencial, sem subagentes nesta execução",
+      "validationScope": "Correções e/ou documentação parciais; aprovação da suíte global não encerra automaticamente este achado. Ver limites do relatório."
+    },
+    {
+      "id": "F36",
+      "priority": "Média",
+      "title": "Restrições de referência e adoção precisam de matriz atualizada",
+      "evidence": "ts-fsrs/Docling/N.A.G. têm MIT nos arquivos locais. OpenViking declara AGPL-3.0. Track Concursos LICENSE restringe modificações/derivações sem autorização; Question_Extractor não possui LICENSE encontrada.",
+      "impact": "Disponibilidade do código não comprova permissão para incorporar trechos; adoção integral pode aumentar dependências e conflitos de arquitetura.",
+      "recommendation": "Registrar origem, licença local, trecho/padrão e decisão de uso; priorizar padrões e testes independentes. Verificar autorização antes de copiar referências restritas.",
+      "dependencies": "Decisão de reutilização e revisão das condições do projeto específico.",
+      "reuse": "Nenhum reaproveitamento necessário.",
+      "owner": "content",
+      "status": "em andamento",
+      "revalidation": "Revalidar no diff e testes antes de declarar corrigido",
+      "acceptance": "Registrar origem, licença local, trecho/padrão e decisão de uso; priorizar padrões e testes independentes. Verificar autorização antes de copiar referências restritas.",
+      "tests": [
+        "Suíte global255 Java sem falhas/erros/ignorados; escopo específico em docs/VALIDATION_REPORT.md"
+      ],
+      "rollback": "Código rastreável na cópia; recuperação db/recovery preservada; não migrar originais.",
+      "executionMode": "sequencial, sem subagentes nesta execução",
+      "validationScope": "Correções e/ou documentação parciais; aprovação da suíte global não encerra automaticamente este achado. Ver limites do relatório."
+    }
+  ],
+  "lastValidation": {
+    "backend": 256,
+    "python": 11,
+    "frontend": 7,
+    "r": 325,
+    "visual": false,
+    "allFindingsResolved": false
+  }
+}
