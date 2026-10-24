@@ -14,4 +14,11 @@ class ErrorTaxonomyRegressionTest {
  @Test void absentCauseIsUnknownRatherThanKnowledgeGap(){event("{\"origin\":\"REAL_STUDY\",\"isCorrect\":false}");assertEquals(1,counts().get("NAO_CLASSIFICADO"));assertEquals(0,counts().get("E1"));}
  @Test void personalStatsExcludeOtherOriginsAndUnevaluatedAnswers(){for(String origin:List.of("AUTOMATED_TEST","DEMONSTRATION","UNVERIFIED_HISTORICAL"))event("{\"origin\":\""+origin+"\",\"isCorrect\":false}");event("not json");event("{\"origin\":\"REAL_STUDY\",\"isCorrect\":null}");assertEquals(0,service.getErrorTaxonomyStats(null).get("totalErrors"));}
  @Test void categoryComesOnlyFromCauseField(){event("{\"origin\":\"REAL_STUDY\",\"isCorrect\":false,\"causaErro\":\"E3\",\"notes\":\"NAO_SABIA_MATERIA\"}");assertEquals(1,counts().get("E3"));assertEquals(0,counts().get("E1"));}
+ @Test void laterAnnotationOverridesOriginalCauseWithoutChangingAnswer(){
+  String answer="{\"origin\":\"REAL_STUDY\",\"attemptId\":\"a\",\"isCorrect\":false,\"causaErro\":\"E1\"}";
+  event(answer);
+  jdbc.update("INSERT INTO event_store VALUES('annotation','ATTEMPT_ANNOTATED','q','s','2026-01-02T00:00:00Z',?)","{\"attemptId\":\"a\",\"causaErro\":\"E3\"}");
+  assertEquals(1,counts().get("E3"));assertEquals(0,counts().get("E1"));
+  assertEquals(answer,jdbc.queryForObject("SELECT payload_json FROM event_store WHERE event_type='ANSWER_SUBMITTED'",String.class));
+ }
 }

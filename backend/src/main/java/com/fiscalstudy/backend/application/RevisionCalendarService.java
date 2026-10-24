@@ -54,13 +54,15 @@ public class RevisionCalendarService {
         var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
         var rows = LearningEventEligibility.query(jdbcTemplate,
             "SELECT payload_json FROM event_store WHERE event_type='ANSWER_SUBMITTED'");
+        var annotations = AttemptAnnotationView.latest(jdbcTemplate);
         int totalErrors = 0;
         for (var row : rows) {
             try {
                 var payload = mapper.readTree((String) row.get("payload_json"));
                 if (!payload.path("isCorrect").isBoolean() || payload.path("isCorrect").asBoolean()) continue;
                 totalErrors++;
-                String code = errorCategory(payload.path("causaErro").asText(""));
+                String cause = annotations.getOrDefault(payload.path("attemptId").asText(""), payload.path("causaErro").asText(""));
+                String code = errorCategory(cause);
                 counts.merge(code, 1, Integer::sum);
                 String alias = switch (code) {
                     case "E1" -> "NAO_SABIA_MATERIA";
