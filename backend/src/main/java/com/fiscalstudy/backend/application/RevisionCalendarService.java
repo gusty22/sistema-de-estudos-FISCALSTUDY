@@ -53,13 +53,20 @@ public class RevisionCalendarService {
         counts.put("NAO_CLASSIFICADO", 0);
         var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
         var rows = LearningEventEligibility.query(jdbcTemplate,
-            "SELECT payload_json FROM event_store WHERE event_type='ANSWER_SUBMITTED'");
+            "SELECT aggregate_id,payload_json FROM event_store WHERE event_type='ANSWER_SUBMITTED'");
+        String scope = concursoId == null || concursoId.isBlank() ? null : concursoId.trim();
+        Set<String> scopedQuestions = scope == null ? Set.of() : new HashSet<>(jdbcTemplate.queryForList(
+            "SELECT DISTINCT c.question_id FROM (" + QuestionClassificationService.CURRENT_LINKS + ") c JOIN edital_topicos t ON t.id=c.topic_id WHERE c.status='CONFIRMED' AND t.concurso_id=?", String.class, scope));
         var annotations = AttemptAnnotationView.latest(jdbcTemplate);
         int totalErrors = 0;
         for (var row : rows) {
             try {
                 var payload = mapper.readTree((String) row.get("payload_json"));
                 if (!payload.path("isCorrect").isBoolean() || payload.path("isCorrect").asBoolean()) continue;
+                if (scope != null) {
+                    String declaredScope = payload.path("concursoId").asText("");
+                    if (!declaredScope.isBlank() ? !scope.equals(declaredScope) : !scopedQuestions.contains((String) row.get("aggregate_id"))) continue;
+                }
                 totalErrors++;
                 String cause = annotations.getOrDefault(payload.path("attemptId").asText(""), payload.path("causaErro").asText(""));
                 String code = errorCategory(cause);
@@ -78,6 +85,7 @@ public class RevisionCalendarService {
             }
         }
         stats.put("causeSource", "SELF_REPORTED");
+        stats.put("scope", scope == null ? "ALL_PERSONAL" : scope);
         stats.put("counts", counts);
         stats.put("totalErrors", totalErrors);
         return stats;

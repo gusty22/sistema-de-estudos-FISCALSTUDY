@@ -21,4 +21,18 @@ class ErrorTaxonomyRegressionTest {
   assertEquals(1,counts().get("E3"));assertEquals(0,counts().get("E1"));
   assertEquals(answer,jdbc.queryForObject("SELECT payload_json FROM event_store WHERE event_type='ANSWER_SUBMITTED'",String.class));
  }
+ @Test void explicitConcursoAndConfirmedLinksDoNotMixScopes(){
+  jdbc.execute("CREATE TABLE edital_topicos(id TEXT,concurso_id TEXT)");
+  jdbc.execute("CREATE TABLE question_topic_classifications(question_id TEXT,topic_id TEXT,status TEXT)");
+  jdbc.update("INSERT INTO edital_topicos VALUES('t','c1')");
+  jdbc.update("INSERT INTO question_topic_classifications VALUES('q','t','CONFIRMED')");
+  for(String scope:List.of("c1","c2"))event("{\"origin\":\"REAL_STUDY\",\"isCorrect\":false,\"concursoId\":\""+scope+"\"}");
+  event("{\"origin\":\"REAL_STUDY\",\"isCorrect\":false}");
+  assertEquals(2,service.getErrorTaxonomyStats("c1").get("totalErrors"));
+  assertEquals(1,service.getErrorTaxonomyStats("c2").get("totalErrors"));
+  assertEquals(0,service.getErrorTaxonomyStats("other").get("totalErrors"));
+  jdbc.update("INSERT INTO question_topic_classifications VALUES('q','t','REJECTED')");
+  assertEquals(1,service.getErrorTaxonomyStats("c1").get("totalErrors"));
+  assertEquals(3,service.getErrorTaxonomyStats(null).get("totalErrors"));
+ }
 }
