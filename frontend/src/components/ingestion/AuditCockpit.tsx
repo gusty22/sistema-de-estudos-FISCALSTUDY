@@ -1,3 +1,4 @@
+import { ingestionFetch } from '../../utils/ingestionAccess';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import type { StagingFile, StagingDocRole } from './ImportStudio';
 import { QuestionPreviewModal } from './QuestionPreviewModal';
@@ -335,7 +336,7 @@ export const AuditCockpit: React.FC<AuditCockpitProps> = ({
       setIsPublishing(true);
       setPublishFeedback(null);
       const targetId = fileId || sessionId;
-      const res = await fetch(`/api/v1/ingestion/staging-publish/${targetId}`, {
+      const res = await ingestionFetch(`/api/v1/ingestion/staging-publish/${targetId}`, {
         method: 'POST',
       });
       const data = await res.json();
