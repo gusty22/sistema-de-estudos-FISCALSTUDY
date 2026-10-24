@@ -218,3 +218,14 @@ select.form-control option {
 
 /* Persisted reading preference applies to question text in both study flows. */
 html .statement, html .statement-paragraph, html .statement-command, html .statement-item-body, html .option-text, html .resolucao-statement-box, html .resolucao-option-text { font-size: var(--question-reading-size, 1.08rem); }
+
+/* Acessibilidade Global: Indicador de Foco Visível para Navegação por Teclado */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--primary, #4f46e5);
+  outline-offset: 2px;
+}
+

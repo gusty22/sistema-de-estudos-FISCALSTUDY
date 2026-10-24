@@ -813,3 +813,86 @@
 .btn-footer-close:hover {
   background: var(--calm-card-bg, #ffffff);
 }
+
+/* Indicador de foco visível para acessibilidade */
+.resolucao-option-card:focus-visible {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
+}
+
+.conf-pill:focus-visible,
+.btn-confirm-answer:focus-visible,
+.btn-batch-nav:focus-visible,
+.btn-close-modal:focus-visible,
+.btn-footer-close:focus-visible,
+.btn-feedback-action:focus-visible,
+.tax-btn:focus-visible {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
+}
+
+/* Responsividade Tablet e Viewports Menores */
+@media (max-width: 768px) {
+  .resolucao-modal-backdrop {
+    padding: 0.75rem;
+  }
+
+  .resolucao-modal-container {
+    max-height: 96vh;
+    border-radius: 12px;
+  }
+
+  .resolucao-modal-header {
+    padding: 0.85rem 1rem;
+    flex-wrap: wrap;
+  }
+
+  .resolucao-modal-body {
+    padding: 1rem;
+    gap: 1rem;
+  }
+
+  .resolucao-modal-footer {
+    padding: 0.85rem 1rem;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .footer-left-info {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .footer-right-actions {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 0.75rem;
+  }
+
+  .confidence-selector-row {
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    gap: 0.35rem;
+  }
+
+  .confidence-pills {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .conf-pill {
+    flex: 1;
+    justify-content: center;
+    padding: 0.35rem 0.2rem;
+  }
+
+  .btn-confirm-answer,
+  .btn-footer-close {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
