@@ -1,3 +1,10 @@
+# Resolve an explicitly configured library first; sandbox LOCALAPPDATA may differ.
+configured_lib <- Sys.getenv("FISCALSTUDY_R_LIBS", "")
+user_lib <- file.path(Sys.getenv("USERPROFILE"), "AppData", "Local", "R", "win-library", paste(R.version$major, strsplit(R.version$minor, "\\.")[[1]][1], sep="."))
+for (lib in c(configured_lib, user_lib)) if (nzchar(lib) && dir.exists(lib)) .libPaths(c(lib, .libPaths()))
+for (pkg in c("jsonlite", "digest")) if (!requireNamespace(pkg, quietly=TRUE)) stop(paste("Required package unavailable:", pkg, "Configure FISCALSTUDY_R_LIBS; no outputs were published."))
+output_root <- Sys.getenv("FISCALSTUDY_ANALYTICS_OUTPUT", "output")
+
 # run_analytics.R
 # Pipeline Principal de Execução Analítica
 # Projeto: FiscalStudy Analytics (R >= 4.0.0)
@@ -59,6 +66,7 @@ main <- function() {
     questions_path <- args[2]
     if (length(args) >= 3) interventions_path <- args[3]
   } else if (!file.exists(events_path) || !file.exists(questions_path)) {
+    if (Sys.getenv("FISCALSTUDY_ALLOW_DEMO", "false") != "true") stop("Operational inputs missing; explicit demo opt-in required")
     # Fallback seguro para fixtures controladas com aviso explícito
     events_path <- "tests/fixtures/valid_events.csv"
     questions_path <- "tests/fixtures/valid_questions.csv"
@@ -152,8 +160,8 @@ main <- function() {
     cat("\n>>> [COLD START]: Nenhuma tentativa de resposta encontrada nos eventos.\n")
     cat(">>> Emitindo pesos balanceados de inicio a frio (Cold Start) para orquestracao segura.\n")
     
-    dir.create("output/metrics", showWarnings = FALSE, recursive = TRUE)
-    dir.create("output/figures", showWarnings = FALSE, recursive = TRUE)
+    dir.create(file.path(output_root, "metrics"), showWarnings = FALSE, recursive = TRUE)
+    dir.create(file.path(output_root, "figures"), showWarnings = FALSE, recursive = TRUE)
     
     cold_signals <- list(
       signals_count = 1L,
@@ -189,10 +197,15 @@ main <- function() {
     )
     
     if (requireNamespace("jsonlite", quietly = TRUE)) {
-      writeLines(jsonlite::toJSON(cold_signals, pretty = TRUE, auto_unbox = TRUE), con = "output/metrics/analytical_signals_v1.json", useBytes = TRUE)
-      writeLines(jsonlite::toJSON(cold_weights, pretty = TRUE, auto_unbox = TRUE), con = "output/metrics/robin_hood_weights.json", useBytes = TRUE)
+      writeLines(jsonlite::toJSON(cold_signals, pretty = TRUE, auto_unbox = TRUE), con = file.path(output_root, "metrics/analytical_signals_v1.json"), useBytes = TRUE)
+      writeLines(jsonlite::toJSON(cold_weights, pretty = TRUE, auto_unbox = TRUE), con = file.path(output_root, "metrics/robin_hood_weights.json"), useBytes = TRUE)
     }
     
+    empty_summary <- list(status="COLD_START", n_observations=0L, data_provenance=data_prov_type, is_real_student_data=FALSE, metrics=list(), run_id=Sys.getenv("FISCALSTUDY_RUN_ID", "manual"))
+    writeLines(jsonlite::toJSON(empty_summary, pretty=TRUE, auto_unbox=TRUE), con=file.path(output_root,"metrics/metrics_summary_v1.json"), useBytes=TRUE)
+    utils::write.csv(data.frame(metric_name="attempt_count", value=0, n_observations=0L), file.path(output_root,"metrics/metrics_summary_v1.csv"), row.names=FALSE)
+    writeLines(jsonlite::toJSON(list(status="INSUFFICIENT_EVIDENCE", n_observations=0L, can_generate_student_profile=FALSE),pretty=TRUE,auto_unbox=TRUE),con=file.path(output_root,"metrics/learning_profile_v1.json"),useBytes=TRUE)
+
     cat(">>> Artefatos de Cold Start gravados com sucesso em output/metrics/\n")
     cat("========================================================================\n")
     cat("Pipeline analitico concluido com sucesso sob Cold Start!\n")
@@ -238,14 +251,14 @@ main <- function() {
   
   # 5. Geração de Gráficos em Base R
   cat("\n[5/6] Gerando graficos estatisticos em Base R (PNG)...\n")
-  dir.create("output/figures", showWarnings = FALSE, recursive = TRUE)
-  dir.create("output/metrics", showWarnings = FALSE, recursive = TRUE)
+  dir.create(file.path(output_root, "figures"), showWarnings = FALSE, recursive = TRUE)
+  dir.create(file.path(output_root, "metrics"), showWarnings = FALSE, recursive = TRUE)
   
-  fig_acc <- "output/figures/accuracy_evolution.png"
-  fig_time <- "output/figures/response_time_distribution.png"
-  fig_calib <- "output/figures/calibration_curve.png"
-  fig_disc <- "output/figures/discipline_comparison.png"
-  fig_evidence <- "output/figures/evidence_volume_landscape.png"
+  fig_acc <- file.path(output_root, "figures/accuracy_evolution.png")
+  fig_time <- file.path(output_root, "figures/response_time_distribution.png")
+  fig_calib <- file.path(output_root, "figures/calibration_curve.png")
+  fig_disc <- file.path(output_root, "figures/discipline_comparison.png")
+  fig_evidence <- file.path(output_root, "figures/evidence_volume_landscape.png")
   
   plot_accuracy_evolution(temp_evolution, output_path = fig_acc)
   plot_response_time_distribution(attempts_df, output_path = fig_time)
@@ -280,20 +293,20 @@ main <- function() {
     period_end = period_end
   )
   
-  json_out <- "output/metrics/metrics_summary_v1.json"
-  csv_out <- "output/metrics/metrics_summary_v1.csv"
+  json_out <- file.path(output_root, "metrics/metrics_summary_v1.json")
+  csv_out <- file.path(output_root, "metrics/metrics_summary_v1.csv")
   export_metrics_package(consolidated_pkg, json_out, csv_out)
   
   # Exportar Perfil, Sinais e Pesos Robin Hood
-  profile_out <- "output/metrics/learning_profile_v1.json"
-  signals_out <- "output/metrics/analytical_signals_v1.json"
-  robin_hood_out <- "output/metrics/robin_hood_weights.json"
+  profile_out <- file.path(output_root, "metrics/learning_profile_v1.json")
+  signals_out <- file.path(output_root, "metrics/analytical_signals_v1.json")
+  robin_hood_out <- file.path(output_root, "metrics/robin_hood_weights.json")
   if (requireNamespace("jsonlite", quietly = TRUE)) {
     writeLines(jsonlite::toJSON(learning_profile, pretty = TRUE, auto_unbox = TRUE), con = profile_out, useBytes = TRUE)
     writeLines(jsonlite::toJSON(analytical_signals, pretty = TRUE, auto_unbox = TRUE), con = signals_out, useBytes = TRUE)
     writeLines(jsonlite::toJSON(robin_hood_weights, pretty = TRUE, auto_unbox = TRUE), con = robin_hood_out, useBytes = TRUE)
     if (!is.null(eval_recs)) {
-      writeLines(jsonlite::toJSON(eval_recs, pretty = TRUE, auto_unbox = TRUE), con = "output/metrics/intervention_evaluation_v1.json", useBytes = TRUE)
+      writeLines(jsonlite::toJSON(eval_recs, pretty = TRUE, auto_unbox = TRUE), con = file.path(output_root, "metrics/intervention_evaluation_v1.json"), useBytes = TRUE)
     }
   }
   
