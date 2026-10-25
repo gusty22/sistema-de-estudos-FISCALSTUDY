@@ -1,8 +1,12 @@
 # Resolve an explicitly configured library first; sandbox LOCALAPPDATA may differ.
 configured_lib <- Sys.getenv("FISCALSTUDY_R_LIBS", "")
-user_lib <- file.path(Sys.getenv("USERPROFILE"), "AppData", "Local", "R", "win-library", paste(R.version$major, strsplit(R.version$minor, "\\.")[[1]][1], sep="."))
-for (lib in c(configured_lib, user_lib)) if (nzchar(lib) && dir.exists(lib)) .libPaths(c(lib, .libPaths()))
-for (pkg in c("jsonlite", "digest")) if (!requireNamespace(pkg, quietly=TRUE)) stop(paste("Required package unavailable:", pkg, "Configure FISCALSTUDY_R_LIBS; no outputs were published."))
+r_ver_short <- paste(R.version$major, strsplit(R.version$minor, "\\.")[[1]][1], sep=".")
+user_lib <- file.path(Sys.getenv("USERPROFILE"), "AppData", "Local", "R", "win-library", r_ver_short)
+local_app_data_lib <- file.path(Sys.getenv("LOCALAPPDATA"), "R", "win-library", r_ver_short)
+for (lib in c(configured_lib, user_lib, local_app_data_lib)) if (nzchar(lib) && dir.exists(lib)) .libPaths(c(lib, .libPaths()))
+has_sha256 <- requireNamespace("digest", quietly = TRUE) || (requireNamespace("tools", quietly = TRUE) && exists("sha256sum", envir = asNamespace("tools")))
+if (!requireNamespace("jsonlite", quietly = TRUE)) stop("Required package unavailable: jsonlite. Configure FISCALSTUDY_R_LIBS; no outputs were published.")
+if (!has_sha256) stop("No cryptographic SHA-256 provider available (neither digest nor tools::sha256sum). Configure FISCALSTUDY_R_LIBS; no outputs were published.")
 output_root <- Sys.getenv("FISCALSTUDY_ANALYTICS_OUTPUT", "output")
 
 # run_analytics.R
@@ -187,7 +191,7 @@ main <- function() {
       algorithm = "ROBIN_HOOD_ADAPTIVE_CYCLE_V1",
       target_retention_threshold = 0.85,
       disciplines_count = 0L,
-      weights = list(),
+      weights = structure(list(), names=character(0)),
       recommendations = list(
         time_theft_donors = list(),
         priority_recipients = list(),

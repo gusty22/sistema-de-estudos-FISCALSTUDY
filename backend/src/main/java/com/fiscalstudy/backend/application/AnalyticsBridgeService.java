@@ -23,6 +23,54 @@ public class AnalyticsBridgeService {
  @Value("${fiscalstudy.analytics.timeout-seconds:120}") private long timeoutSeconds=120;
  @Value("${fiscalstudy.r-libs:}") private String rLibs="";
  public AnalyticsBridgeService(AnalyticsProjectionService projection,RobinHoodCycleService cycle,ObjectMapper mapper,AnalyticsPaths paths){this.projection=projection;this.cycle=cycle;this.mapper=mapper;this.paths=paths;}
+
+ public String resolveExecutable() {
+   if (executable != null && !executable.isBlank() && !executable.equalsIgnoreCase("Rscript")) {
+     if (Files.isRegularFile(Path.of(executable))) return executable;
+   }
+   String envRscript = System.getenv("FISCALSTUDY_RSCRIPT");
+   if (envRscript != null && !envRscript.isBlank() && Files.isRegularFile(Path.of(envRscript))) return envRscript;
+   if (System.getProperty("os.name", "").toLowerCase().contains("win")) {
+     String progFilesEnv = System.getenv("ProgramFiles");
+     Path progFiles = Path.of(progFilesEnv != null ? progFilesEnv : "C:\\Program Files", "R");
+     if (Files.isDirectory(progFiles)) {
+       try (var stream = Files.newDirectoryStream(progFiles, "R-*")) {
+         List<Path> versions = new ArrayList<>();
+         for (Path p : stream) versions.add(p);
+         versions.sort(Comparator.comparing(Path::toString).reversed());
+         for (Path v : versions) {
+           Path rscript = v.resolve("bin").resolve("Rscript.exe");
+           if (Files.isRegularFile(rscript)) return rscript.toString();
+           Path rscript64 = v.resolve("bin").resolve("x64").resolve("Rscript.exe");
+           if (Files.isRegularFile(rscript64)) return rscript64.toString();
+         }
+       } catch (Exception ignored) {}
+     }
+   }
+   return executable != null && !executable.isBlank() ? executable : "Rscript";
+ }
+
+ public String resolveRLibs() {
+   if (!rLibs.isBlank()) return rLibs;
+   String envLibs = System.getenv("FISCALSTUDY_R_LIBS");
+   if (envLibs != null && !envLibs.isBlank()) return envLibs;
+   if (System.getProperty("os.name", "").toLowerCase().contains("win")) {
+     String userProfile = System.getenv("USERPROFILE");
+     if (userProfile != null) {
+       Path rWinLib = Path.of(userProfile, "AppData", "Local", "R", "win-library");
+       if (Files.isDirectory(rWinLib)) {
+         try (var stream = Files.newDirectoryStream(rWinLib)) {
+           List<Path> libs = new ArrayList<>();
+           for (Path p : stream) libs.add(p);
+           libs.sort(Comparator.comparing(Path::toString).reversed());
+           if (!libs.isEmpty()) return libs.get(0).toString();
+         } catch (Exception ignored) {}
+       }
+     }
+   }
+   return "";
+ }
+
  public synchronized Path exportCanonicalCsv()throws Exception {
    Path file=paths.output().resolve("data/raw/operational_export_v1.csv");Files.createDirectories(file.getParent());
    Files.writeString(file,projection.exportCsv("REAL_STUDY"),StandardCharsets.UTF_8);return file;
@@ -36,8 +84,10 @@ public class AnalyticsBridgeService {
      Path input=run.resolve("input.csv");Files.copy(exportCanonicalCsv(),input);
      Path script=paths.engine().resolve("run_analytics.R");if(!Files.isRegularFile(script))throw new IllegalStateException("Analytics engine script missing: "+script);
      Map<String,String> env=new HashMap<>();env.put("FISCALSTUDY_ANALYTICS_OUTPUT",run.toString());env.put("FISCALSTUDY_RUN_ID",id);
-     if(!rLibs.isBlank())env.put("FISCALSTUDY_R_LIBS",rLibs);
-     var result=BoundedProcess.run(List.of(executable,script.toString(),input.toString()),paths.engine(),Duration.ofSeconds(timeoutSeconds),env);
+     String resolvedLibs = resolveRLibs();
+     if(!resolvedLibs.isBlank())env.put("FISCALSTUDY_R_LIBS",resolvedLibs);
+     String resolvedExec = resolveExecutable();
+     var result=BoundedProcess.run(List.of(resolvedExec,script.toString(),input.toString()),paths.engine(),Duration.ofSeconds(timeoutSeconds),env);
      logs=result.output();if(result.exitCode()!=0)throw new IllegalStateException("R failed with exit code "+result.exitCode()+": "+logs);
      for(String file:List.of("metrics/robin_hood_weights.json","metrics/analytical_signals_v1.json","metrics/metrics_summary_v1.json","metrics/learning_profile_v1.json")) {
        Path artifact=run.resolve(file);if(!Files.isRegularFile(artifact))throw new IllegalStateException("Required output missing: "+file);
