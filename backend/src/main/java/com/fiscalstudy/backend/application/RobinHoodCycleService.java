@@ -134,9 +134,8 @@ public class RobinHoodCycleService {
                     "FROM edital_topicos WHERE concurso_id = ? " +
                     "GROUP BY disciplina";
             rows = jdbcTemplate.queryForList(sql, concursoId.trim());
-        }
-
-        if (rows.isEmpty()) {
+        } else {
+            // Global view is explicit. An empty selected contest must stay empty.
             String fallbackSql = "SELECT disciplina, AVG(peso) as peso_medio, COUNT(*) as qtd_topicos " +
                     "FROM edital_topicos " +
                     "GROUP BY disciplina";
