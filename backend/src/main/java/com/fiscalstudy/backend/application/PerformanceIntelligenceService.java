@@ -52,7 +52,7 @@ public class PerformanceIntelligenceService {
         }
         sql.append(" ORDER BY e.occurred_at ASC");
 
-        List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql.toString(), params.toArray());
+        List<Map<String, Object>> rows = LearningEventEligibility.query(jdbcTemplate, sql.toString(), params.toArray());
 
         int totalAnswered = rows.size();
         int evaluated = 0;
@@ -136,7 +136,7 @@ public class PerformanceIntelligenceService {
 
         // Incorporar tempo de sessões de estudo teóricas/materiais gravadas em STUDY_SESSION_RECORDED
         try {
-            List<Map<String, Object>> studySessions = jdbcTemplate.queryForList("""
+            List<Map<String, Object>> studySessions = LearningEventEligibility.query(jdbcTemplate, """
                 SELECT payload_json FROM event_store WHERE event_type = 'STUDY_SESSION_RECORDED'
             """);
             for (Map<String, Object> ss : studySessions) {
@@ -157,7 +157,7 @@ public class PerformanceIntelligenceService {
         // Consultar revisões executadas no SQLite
         int revisoesExecutadas = 0;
         try {
-            List<Map<String, Object>> revCount = jdbcTemplate.queryForList("""
+            List<Map<String, Object>> revCount = LearningEventEligibility.query(jdbcTemplate, """
                 SELECT COUNT(*) as c FROM revision_agenda WHERE status = 'CONCLUIDA'
             """);
             if (!revCount.isEmpty() && revCount.get(0).get("c") != null) {
@@ -286,7 +286,7 @@ public class PerformanceIntelligenceService {
         double pAtualGlobal = sumWeightsPAtual > 0 ? Math.round((sumWeightedPAtual / sumWeightsPAtual) * 10.0) / 10.0 : Math.round(precisaoPercentual * 10.0) / 10.0;
         summary.put("proficienciaAtualGlobal", pAtualGlobal);
         summary.put("gapDecaimentoGlobal", Math.round((precisaoPercentual - pAtualGlobal) * 10.0) / 10.0);
-        summary.put("formulaConhecimento", "P_{atual}(t) = P_{base} \\cdot e^{-\\frac{\\Delta t}{S}}");
+        summary.put("formulaConhecimento", "");
 
         // Montar Alertas Canônicos (T26) a partir dos dados observados reais
         List<Map<String, Object>> alertas = new ArrayList<>();
@@ -381,9 +381,10 @@ public class PerformanceIntelligenceService {
                   AND (q.assunto = ? OR (? IS NULL AND q.assunto IS NOT NULL))
                 ORDER BY e.occurred_at ASC
             """;
-            List<Map<String, Object>> attRows = jdbcTemplate.queryForList(sqlAttempts, disciplina, disciplina, topico, topico);
+            List<Map<String, Object>> attRows = LearningEventEligibility.query(jdbcTemplate, sqlAttempts, disciplina, disciplina, topico, topico);
             totalAttempts = attRows.size();
 
+            Map<String,String> annotations=AttemptAnnotationView.latest(jdbcTemplate);
             for (Map<String, Object> ar : attRows) {
                 String qid = (String) ar.get("aggregate_id");
                 if (qid != null) {
@@ -405,7 +406,7 @@ public class PerformanceIntelligenceService {
                         confidenceSum += conf;
                         totalActiveMs += n.path("activeTimeMs").asLong(0);
 
-                        String cErro = n.path("causaErro").asText(null);
+                        String cErro = annotations.getOrDefault(n.path("attemptId").asText(),n.path("causaErro").asText(null));
                         if (cErro != null) {
                             if (cErro.contains("E1") || cErro.toUpperCase().contains("NAO_SABIA")) errosTax.put("E1_NaoSabia", errosTax.get("E1_NaoSabia") + 1);
                             else if (cErro.contains("E2") || cErro.toUpperCase().contains("LEMBRAVA")) errosTax.put("E2_NaoLembravava", errosTax.get("E2_NaoLembravava") + 1);
@@ -422,7 +423,7 @@ public class PerformanceIntelligenceService {
 
         // Consultar se há questões cadastradas para o tópico
         try {
-            List<Map<String, Object>> countQ = jdbcTemplate.queryForList("""
+            List<Map<String, Object>> countQ = LearningEventEligibility.query(jdbcTemplate, """
                 SELECT COUNT(*) as c FROM questions WHERE disciplina = ? AND assunto = ?
             """, disciplina, topico);
             if (!countQ.isEmpty() && countQ.get(0).get("c") != null) {
@@ -441,7 +442,7 @@ public class PerformanceIntelligenceService {
                 JOIN edital_topicos t ON l.topico_id = t.id
                 WHERE t.disciplina = ? AND t.assunto = ?
             """;
-            List<Map<String, Object>> matRows = jdbcTemplate.queryForList(sqlMat, disciplina, topico);
+            List<Map<String, Object>> matRows = LearningEventEligibility.query(jdbcTemplate, sqlMat, disciplina, topico);
             for (Map<String, Object> mr : matRows) {
                 Map<String, Object> matItem = new LinkedHashMap<>();
                 matItem.put("titulo", mr.get("titulo"));
@@ -532,7 +533,7 @@ public class PerformanceIntelligenceService {
                 LEFT JOIN questions q ON e.aggregate_id = q.id
                 WHERE e.event_type = 'ANSWER_SUBMITTED'
             """;
-            List<Map<String, Object>> calibRows = jdbcTemplate.queryForList(calibSql);
+            List<Map<String, Object>> calibRows = LearningEventEligibility.query(jdbcTemplate, calibSql);
 
             for (Map<String, Object> cr : calibRows) {
                 String pJson = (String) cr.get("payload_json");
@@ -693,14 +694,14 @@ public class PerformanceIntelligenceService {
         abaRetencao.put("conteudosAindaNaoTestados", naoTestados);
         abaRetencao.put("revisoesRealizadas", revisoesRealizadas);
         abaRetencao.put("regraAvisoEstimativa",
-            "Aviso metodológico: Taxas de proficiência atual (P_atual) utilizam a equação de Ebbinghaus P_atual = P_base * e^(-Δt/S), diferenciando simulados e retestes frios de questões imediatas pós-PDF.");
+            "Desempenho observado não é uma previsão de memória. O FSRS estima recuperação por questão, ainda sem calibração individual.");
         abaRetencao.put("itens", itensRetencao);
         abaRetencao.put("formula", Map.of(
-            "expressao", "P_{atual}(t) = P_{base} \\cdot e^{-\\frac{\\Delta t}{S}}",
-            "titulo", "Modelo Matemático do Estado Real de Conhecimento (Student Knowledge State)",
+            "expressao", "",
+            "titulo", "Desempenho observado por tópico",
             "pBase", "Taxa ponderada de acertos (Simulados 1.5x, Retestes Frios 1.2x, Imediato pós-PDF 0.5x)",
             "deltaT", "Dias decorridos desde o último contato",
-            "forcaS", "Força da memória consolidada por revisões espaçadas bem-sucedidas"
+            "forcaS", "Estabilidade FSRS por item; não é medida de domínio conceitual"
         ));
 
         // ABA C — MODELO DO ESTUDANTE (Agrupamento Dinâmico por Disciplina)

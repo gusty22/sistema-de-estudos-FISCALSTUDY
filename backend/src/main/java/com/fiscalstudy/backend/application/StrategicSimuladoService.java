@@ -37,48 +37,8 @@ public class StrategicSimuladoService {
         this.jdbcTemplate = jdbcTemplate;
         this.swotCycleCalibratorService = swotCycleCalibratorService;
         this.objectMapper = new ObjectMapper();
-        ensureTables();
     }
 
-    private void ensureTables() {
-        try {
-            jdbcTemplate.execute("""
-                CREATE TABLE IF NOT EXISTS study_notebooks (
-                    id TEXT PRIMARY KEY,
-                    nome TEXT NOT NULL,
-                    concurso_id TEXT,
-                    tipo TEXT NOT NULL,
-                    modo_resolucao TEXT DEFAULT 'SIMULADO',
-                    quantidade INTEGER DEFAULT 30,
-                    tempo_minutos INTEGER DEFAULT 90,
-                    filtros_json TEXT,
-                    created_at TEXT NOT NULL,
-                    last_executed_at TEXT
-                )
-            """);
-
-            jdbcTemplate.execute("""
-                CREATE TABLE IF NOT EXISTS simulado_executions (
-                    id TEXT PRIMARY KEY,
-                    notebook_id TEXT,
-                    concurso_id TEXT,
-                    titulo TEXT NOT NULL,
-                    estrategia TEXT NOT NULL,
-                    modo TEXT DEFAULT 'SIMULADO',
-                    total_questoes INTEGER NOT NULL,
-                    acertos INTEGER DEFAULT 0,
-                    erros INTEGER DEFAULT 0,
-                    nao_respondidas INTEGER DEFAULT 0,
-                    nota_liquida REAL DEFAULT 0.0,
-                    tempo_gasto_segundos INTEGER DEFAULT 0,
-                    disciplinas_json TEXT,
-                    finalizado_em TEXT NOT NULL
-                )
-            """);
-        } catch (Exception e) {
-            logger.warn("Aviso na criação/verificação de tabelas de simulado: {}", e.getMessage());
-        }
-    }
 
     /**
      * Retorna o Painel Estratégico de Simulados para o concurso especificado.
@@ -193,11 +153,11 @@ public class StrategicSimuladoService {
         try {
             String filtrosJson = objectMapper.writeValueAsString(filtros);
             jdbcTemplate.update("""
-                INSERT INTO study_notebooks (id, nome, concurso_id, tipo, modo_resolucao, quantidade, tempo_minutos, filtros_json, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, notebookId, titulo, concursoId, "SIMULADO_ESTRATEGICO", modo, questionIds.size(), tempoMinutos, filtrosJson, now);
+                INSERT INTO study_notebooks (id, nome, concurso_id, tipo, modo_resolucao, quantidade, tempo_minutos, filtros_json, questoes_ids_json, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, notebookId, titulo, concursoId, "SIMULADO_ESTRATEGICO", modo, questionIds.size(), tempoMinutos, filtrosJson, objectMapper.writeValueAsString(questionIds), now);
         } catch (Exception e) {
-            logger.error("Erro ao salvar notebook de simulado: {}", e.getMessage());
+            throw new IllegalStateException("Simulado não persistido; nenhuma criação confirmada", e);
         }
 
         Map<String, Object> result = new LinkedHashMap<>();
@@ -217,6 +177,7 @@ public class StrategicSimuladoService {
     /**
      * Registra a conclusão e o resultado detalhado de um simulado.
      */
+    @org.springframework.transaction.annotation.Transactional
     public Map<String, Object> recordSimuladoCompletion(Map<String, Object> payload) {
         String id = "exec_" + UUID.randomUUID().toString().substring(0, 10);
         String notebookId = (String) payload.get("notebookId");
@@ -255,7 +216,7 @@ public class StrategicSimuladoService {
                 jdbcTemplate.update("UPDATE study_notebooks SET last_executed_at = ? WHERE id = ?", now, notebookId);
             }
         } catch (Exception e) {
-            logger.error("Erro ao registrar execução de simulado: {}", e.getMessage());
+            throw new IllegalStateException("Execução de simulado não persistida", e);
         }
 
         Map<String, Object> resp = new LinkedHashMap<>();

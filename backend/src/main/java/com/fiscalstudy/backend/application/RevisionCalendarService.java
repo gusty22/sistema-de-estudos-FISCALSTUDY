@@ -18,41 +18,17 @@ public class RevisionCalendarService {
     private final JdbcTemplate jdbcTemplate;
     private final EventStoreRepository eventStoreRepository;
 
-    public RevisionCalendarService(JdbcTemplate jdbcTemplate, EventStoreRepository eventStoreRepository) {
-        this.jdbcTemplate = jdbcTemplate;
-        this.eventStoreRepository = eventStoreRepository;
+    private final java.time.Clock clock;
+    public RevisionCalendarService(JdbcTemplate jdbc, EventStoreRepository events) {
+        this(jdbc, events, java.time.Clock.system(java.time.ZoneId.of("America/Sao_Paulo")));
     }
-
-    @PostConstruct
-    public void initSchemaMigrations() {
-        try {
-            jdbcTemplate.execute("ALTER TABLE revision_calendar ADD COLUMN justificativa_pedagogica TEXT;");
-        } catch (Exception ignored) {}
-        try {
-            jdbcTemplate.execute("ALTER TABLE revision_calendar ADD COLUMN estagio_intervencao TEXT DEFAULT 'RECUPERACAO_ATIVA';");
-        } catch (Exception ignored) {}
-        try {
-            jdbcTemplate.execute("ALTER TABLE revision_calendar ADD COLUMN prioridade_score REAL DEFAULT 0.5;");
-        } catch (Exception ignored) {}
-
-        // Limpeza proativa de duplicatas legadas em aberto do mesmo tópico (mantém apenas o reforço mais próximo)
-        try {
-            jdbcTemplate.execute("""
-                DELETE FROM revision_calendar
-                WHERE status = 'PENDENTE'
-                  AND id NOT IN (
-                      SELECT id FROM (
-                          SELECT id,
-                                 ROW_NUMBER() OVER (
-                                     PARTITION BY disciplina, topico
-                                     ORDER BY data_agendada ASC, prioridade_score DESC
-                                 ) as rn
-                          FROM revision_calendar
-                          WHERE status = 'PENDENTE'
-                      ) WHERE rn = 1
-                  );
-            """);
-        } catch (Exception ignored) {}
+    @org.springframework.beans.factory.annotation.Autowired
+    public RevisionCalendarService(JdbcTemplate jdbc, EventStoreRepository events,
+        @org.springframework.beans.factory.annotation.Value("${fiscalstudy.zone:America/Sao_Paulo}") String zone) {
+        this(jdbc, events, java.time.Clock.system(java.time.ZoneId.of(zone)));
+    }
+    RevisionCalendarService(JdbcTemplate jdbc, EventStoreRepository events, java.time.Clock clock) {
+        this.jdbcTemplate=jdbc; this.eventStoreRepository=events; this.clock=clock;
     }
 
     /**
@@ -131,7 +107,7 @@ public class RevisionCalendarService {
             return;
         }
 
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(clock);
         String estagio;
         String tipoRevisao;
         int intervaloDias;
@@ -191,14 +167,14 @@ public class RevisionCalendarService {
 
         // Se já existe revisão PENDENTE deste mesmo tópico, atualiza justificativa e prioridade sem poluir com duplicatas
         List<Map<String, Object>> existing = jdbcTemplate.queryForList(
-                "SELECT id, prioridade_score FROM revision_calendar WHERE disciplina = ? AND topico = ? AND status = 'PENDENTE'",
-                disciplina, topico
+                "SELECT id, prioridade_score FROM revision_calendar WHERE disciplina = ? AND topico = ? AND concurso_id IS ? AND status = 'PENDENTE' ORDER BY data_agendada, id LIMIT 1",
+                disciplina, topico, concursoId
         );
 
         if (!existing.isEmpty()) {
             String existingId = (String) existing.get(0).get("id");
             jdbcTemplate.update(
-                    "UPDATE revision_calendar SET data_agendada = ?, tipo_revisao = ?, intervalo_dias = ?, origem_evento = ?, " +
+                    "UPDATE revision_calendar SET data_agendada = MIN(data_agendada, ?), tipo_revisao = ?, intervalo_dias = ?, origem_evento = ?, " +
                             "justificativa_pedagogica = ?, estagio_intervencao = ?, prioridade_score = MAX(prioridade_score, ?) WHERE id = ?",
                     dateStr, tipoRevisao, intervaloDias, origemEvento, justificativa, estagio, prioridadeScore, existingId
             );
@@ -246,25 +222,25 @@ public class RevisionCalendarService {
      * Retorna a agenda de revisões estruturada para o frontend com justificativa pedagógica e ordenação por prioridade
      */
     public Map<String, Object> getAgenda(String concursoId) {
-        String todayStr = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE);
+        String todayStr = LocalDate.now(clock).format(DateTimeFormatter.ISO_LOCAL_DATE);
 
         String baseSql = "SELECT id, session_id, concurso_id, disciplina, topico, tipo_revisao, intervalo_dias, data_agendada, origem_evento, status, taxa_acerto_revisao, created_at, concluida_em, justificativa_pedagogica, estagio_intervencao, prioridade_score FROM revision_calendar ";
 
         // 1. Revisões de Hoje ou Atrasadas (ordenadas pela maior prioridade/urgência cognitiva)
         List<Map<String, Object>> hojeRaw = jdbcTemplate.queryForList(
-                baseSql + "WHERE status = 'PENDENTE' AND data_agendada <= ? ORDER BY prioridade_score DESC, data_agendada ASC",
-                todayStr
+                baseSql + "WHERE status = 'PENDENTE' AND data_agendada <= ? AND (? IS NULL OR concurso_id = ?) ORDER BY prioridade_score DESC, data_agendada ASC",
+                todayStr, concursoId, concursoId
         );
 
         // 2. Próximos reforços na fila dinâmica
         List<Map<String, Object>> proximosRaw = jdbcTemplate.queryForList(
-                baseSql + "WHERE status = 'PENDENTE' AND data_agendada > ? ORDER BY prioridade_score DESC, data_agendada ASC LIMIT 25",
-                todayStr
+                baseSql + "WHERE status = 'PENDENTE' AND data_agendada > ? AND (? IS NULL OR concurso_id = ?) ORDER BY prioridade_score DESC, data_agendada ASC LIMIT 25",
+                todayStr, concursoId, concursoId
         );
 
         // 3. Revisões Concluídas Recentes
         List<Map<String, Object>> concluidasRaw = jdbcTemplate.queryForList(
-                baseSql + "WHERE status = 'CONCLUIDA' ORDER BY concluida_em DESC LIMIT 20"
+                baseSql + "WHERE status = 'CONCLUIDA' AND (? IS NULL OR concurso_id = ?) ORDER BY concluida_em DESC LIMIT 20", concursoId, concursoId
         );
 
         List<Map<String, Object>> hojeEnriched = hojeRaw.stream().map(this::enrichRevisionItem).toList();
@@ -331,7 +307,7 @@ public class RevisionCalendarService {
         String estagio = (String) item.get("estagio_intervencao");
         String dataAgendada = (String) item.get("data_agendada");
         String createdAt = (String) item.get("created_at");
-        String todayStr = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE);
+        String todayStr = LocalDate.now(clock).format(DateTimeFormatter.ISO_LOCAL_DATE);
 
         // Mapeamento dos 4 tipos canônicos de revisão (T24)
         String tipoCanonico;
@@ -378,7 +354,7 @@ public class RevisionCalendarService {
         if (createdAt != null && createdAt.length() >= 10) {
             try {
                 LocalDate createdDate = LocalDate.parse(createdAt.substring(0, 10));
-                long days = java.time.temporal.ChronoUnit.DAYS.between(createdDate, LocalDate.now());
+                long days = java.time.temporal.ChronoUnit.DAYS.between(createdDate, LocalDate.now(clock));
                 if (days == 0) {
                     ultimaRec = "Hoje";
                 } else if (days == 1) {
@@ -396,7 +372,7 @@ public class RevisionCalendarService {
         int numInterv = intervalo != null ? intervalo.intValue() : 1;
         String evText = numInterv <= 2 ? "Reforço corretivo imediato • Taxa de retenção em monitoramento"
                 : (numInterv <= 7 ? "Fase de consolidação • Curva de retenção ativa"
-                : "Manutenção preventiva • Retenção estável comprovada");
+                : "Manutenção preventiva • Desempenho recente observado; retenção futura ainda estimada");
         item.put("evidencia_disponivel", evText);
 
         boolean atrasada = dataAgendada != null && dataAgendada.compareTo(todayStr) < 0;
@@ -456,15 +432,9 @@ public class RevisionCalendarService {
             }
         }
 
-        if (disc == null) disc = "Direito Tributário";
-        if (top == null) top = "Suspensão do crédito tributário";
-
-        // Busca questão associada real no SQLite
+        if (disc == null || top == null) throw new IllegalArgumentException("Informe disciplina e tópico da revisão");
         List<Map<String, Object>> questions = jdbcTemplate.queryForList(
-                "SELECT id, statement, commentary, support_text, board, year FROM questions " +
-                        "WHERE discipline = ? AND (topic = ? OR topic LIKE ?) AND status = 'PUBLISHED' LIMIT 2",
-                disc, top, "%" + top + "%"
-        );
+                "SELECT id, enunciado AS statement, justificativa AS commentary, texto_apoio AS support_text, banca AS board, ano AS year FROM questions WHERE disciplina = ? AND assunto = ? AND status = 'VALIDADA' ORDER BY id LIMIT 2", disc, top);
 
         Map<String, Object> primeiraQuestao = new HashMap<>();
         Map<String, Object> segundaQuestao = new HashMap<>();
@@ -486,12 +456,6 @@ public class RevisionCalendarService {
                 segundaQuestao.put("board", q2.get("board"));
                 segundaQuestao.put("year", q2.get("year"));
             }
-        } else {
-            primeiraQuestao.put("id", "q-rev-1");
-            primeiraQuestao.put("statement", "Em relação a " + top + " no âmbito de " + disc + ", avalie a regra geral e assinale a opção correta conforme a legislação e jurisprudência.");
-            primeiraQuestao.put("commentary", "A matéria de " + top + " é informada pelo princípio da estrita legalidade, não comportando interpretação extensiva.");
-            primeiraQuestao.put("board", "FGV");
-            primeiraQuestao.put("year", 2024);
         }
 
         Map<String, Object> context = new HashMap<>();
@@ -502,8 +466,9 @@ public class RevisionCalendarService {
         context.put("objetivoPedagogico", "Produzir evidência de recuperação, não apenas exposição repetida.");
         context.put("motivo", motivo);
         context.put("retrievalPrompt", "Antes de ler o gabarito ou resumo, tente evocar mentalmente a regra principal de " + top + " e os pontos em que você costuma hesitar.");
-        context.put("explicacaoCurta", "Síntese Conceitual: " + top + " (" + disc + "). Lembre-se: os requisitos legais são taxativos e as causas de exclusão/suspensão não se presumem.");
-        context.put("exemploResolvido", "Caso Prático da Banca: A banca costuma apresentar uma situação hipotética tentando induzir o candidato a confundir os institutos congêneres de " + top + ". A distinção segura reside na verificação dos requisitos do texto legal.");
+        context.put("explicacaoCurta", "Consulte o material vinculado; nenhuma síntese fundamentada foi recuperada para esta revisão.");
+        context.put("exemploResolvido", "");
+        context.put("contentStatus", questions.isEmpty() ? "NO_CLASSIFIED_QUESTION" : "SOURCE_QUESTION_AVAILABLE");
         context.put("primeiraQuestao", primeiraQuestao);
         if (!segundaQuestao.isEmpty()) {
             context.put("segundaQuestao", segundaQuestao);
@@ -571,9 +536,10 @@ public class RevisionCalendarService {
         Map<String, Object> result = new HashMap<>();
         result.put("success", false);
 
-        double acerto = taxaAcerto != null ? taxaAcerto : 1.0;
+        if (taxaAcerto == null || !Double.isFinite(taxaAcerto) || taxaAcerto < 0 || taxaAcerto > 1) throw new IllegalArgumentException("Informe um resultado de revisão entre 0 e 1");
+        double acerto = taxaAcerto;
         int updated = jdbcTemplate.update(
-                "UPDATE revision_calendar SET status = 'CONCLUIDA', taxa_acerto_revisao = ?, concluida_em = CURRENT_TIMESTAMP WHERE id = ?",
+                "UPDATE revision_calendar SET status = 'CONCLUIDA', taxa_acerto_revisao = ?, concluida_em = CURRENT_TIMESTAMP WHERE id = ? AND status = 'PENDENTE'",
                 acerto, revisionId
         );
 
@@ -617,7 +583,7 @@ public class RevisionCalendarService {
                         proxPrioridade = 0.30;
                     }
 
-                    LocalDate nextDate = LocalDate.now().plusDays(proximoIntervalo);
+                    LocalDate nextDate = LocalDate.now(clock).plusDays(proximoIntervalo);
                     String nextDateStr = nextDate.format(DateTimeFormatter.ISO_LOCAL_DATE);
                     String nextId = "rev-" + UUID.randomUUID().toString().substring(0, 8);
 
@@ -634,7 +600,7 @@ public class RevisionCalendarService {
                     result.put("justificativaPedagogica", proxJustificativa);
                 } else {
                     // Se falhou ou teve dificuldade na revisão (< 80%), recua para Intervenção Corretiva com prioridade máxima
-                    LocalDate nextDate = LocalDate.now().plusDays(1);
+                    LocalDate nextDate = LocalDate.now(clock).plusDays(1);
                     String nextDateStr = nextDate.format(DateTimeFormatter.ISO_LOCAL_DATE);
                     String nextId = "rev-" + UUID.randomUUID().toString().substring(0, 8);
                     String just = "Dificuldade observada durante a revisão anterior (desempenho " + Math.round(acerto * 100) + "%). Intervalo reajustado para reavaliação corretiva imediata.";

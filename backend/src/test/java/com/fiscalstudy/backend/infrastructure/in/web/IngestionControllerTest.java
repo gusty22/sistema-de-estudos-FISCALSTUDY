@@ -22,7 +22,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(IngestionController.class)
+@WebMvcTest(value=IngestionController.class, properties="fiscalstudy.security.admin-token=isolated-test-token")
 public class IngestionControllerTest {
 
     @Autowired
@@ -41,7 +41,7 @@ public class IngestionControllerTest {
     public void testImportDataReturns200() throws Exception {
         String jsonPayload = "{\"version\":\"v1\",\"source\":\"test\",\"data\":{}}";
 
-        mockMvc.perform(post("/api/v1/ingestion/import")
+        mockMvc.perform(post("/api/v1/ingestion/import").header("X-FiscalStudy-Admin-Token", "isolated-test-token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(jsonPayload))
                 .andExpect(status().isOk());
@@ -51,7 +51,7 @@ public class IngestionControllerTest {
     public void testImportDataWithQuestionsReturns200() throws Exception {
         String jsonPayload = "{\"version\":\"v1\",\"source\":\"test\",\"data\":{\"metadata\":{\"banca\":\"IBGP\",\"ano\":2023,\"cargo\":\"Técnico Fiscal\"},\"questions\":[{\"id\":1,\"statement\":\"Qual a capital?\",\"options\":[\"A) BH\",\"B) SP\"],\"correct_option\":\"A\",\"disciplina\":\"Português\"}]}}";
 
-        mockMvc.perform(post("/api/v1/ingestion/import")
+        mockMvc.perform(post("/api/v1/ingestion/import").header("X-FiscalStudy-Admin-Token", "isolated-test-token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(jsonPayload))
                 .andExpect(status().isOk());
@@ -62,7 +62,7 @@ public class IngestionControllerTest {
         StagingSessionDTO session = new StagingSessionDTO("sess-123", "PENDING", "Criada");
         when(pipelineService.createSession(any())).thenReturn(session);
 
-        mockMvc.perform(post("/api/v1/ingestion/sessions")
+        mockMvc.perform(post("/api/v1/ingestion/sessions").header("X-FiscalStudy-Admin-Token", "isolated-test-token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"banca\":\"IBGP\"}"))
                 .andExpect(status().isOk())
@@ -76,8 +76,7 @@ public class IngestionControllerTest {
         StagingSessionDTO.StagingDocumentDTO doc = new StagingSessionDTO.StagingDocumentDTO("doc-1", "prova.pdf", "PROVA", 13, "PDF");
         when(pipelineService.uploadFile(eq("sess-123"), any(), eq("PROVA"))).thenReturn(doc);
 
-        mockMvc.perform(multipart("/api/v1/ingestion/sessions/sess-123/upload")
-                .file(file)
+        mockMvc.perform(multipart("/api/v1/ingestion/sessions/sess-123/upload").file(file).header("X-FiscalStudy-Admin-Token", "isolated-test-token")
                 .param("role", "PROVA"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.originalFilename").value("prova.pdf"))
@@ -96,7 +95,7 @@ public class IngestionControllerTest {
 
         when(pipelineService.getSessionQuestions("sess-123")).thenReturn(List.of(q));
 
-        mockMvc.perform(get("/api/v1/ingestion/sessions/sess-123/questions"))
+        mockMvc.perform(get("/api/v1/ingestion/sessions/sess-123/questions").header("X-FiscalStudy-Admin-Token", "isolated-test-token"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value("q15"))
                 .andExpect(jsonPath("$[0].numeroOriginal").value(15))
@@ -113,7 +112,7 @@ public class IngestionControllerTest {
 
         when(pipelineService.updateQuestion(eq("sess-123"), eq("q15"), any())).thenReturn(updated);
 
-        mockMvc.perform(put("/api/v1/ingestion/sessions/sess-123/questions/q15")
+        mockMvc.perform(put("/api/v1/ingestion/sessions/sess-123/questions/q15").header("X-FiscalStudy-Admin-Token", "isolated-test-token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"status\":\"SOURCE_VERIFIED\",\"statement\":\"Corrigido\"}"))
                 .andExpect(status().isOk())
@@ -131,7 +130,7 @@ public class IngestionControllerTest {
 
         when(pipelineService.simulateImport("sess-123")).thenReturn(sim);
 
-        mockMvc.perform(post("/api/v1/ingestion/sessions/sess-123/simulate-import"))
+        mockMvc.perform(post("/api/v1/ingestion/sessions/sess-123/simulate-import").header("X-FiscalStudy-Admin-Token", "isolated-test-token"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.mode").value("TEST_MODE_DRY_RUN"))
                 .andExpect(jsonPath("$.verifiedReadyToImport").value(35))
@@ -143,7 +142,7 @@ public class IngestionControllerTest {
         StagingSessionDTO cancelled = new StagingSessionDTO("sess-123", "CANCELLED", "Processamento cancelado pelo usuário.");
         when(pipelineService.cancelSession("sess-123")).thenReturn(cancelled);
 
-        mockMvc.perform(post("/api/v1/ingestion/sessions/sess-123/cancel"))
+        mockMvc.perform(post("/api/v1/ingestion/sessions/sess-123/cancel").header("X-FiscalStudy-Admin-Token", "isolated-test-token"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("CANCELLED"))
                 .andExpect(jsonPath("$.stepDescription").value("Processamento cancelado pelo usuário."));
@@ -156,13 +155,17 @@ public class IngestionControllerTest {
 
         MockMultipartFile emptyFile = new MockMultipartFile("file", "vazio.pdf", "application/pdf", new byte[0]);
 
-        mockMvc.perform(multipart("/api/v1/ingestion/sessions/sess-123/upload")
-                .file(emptyFile)
+        mockMvc.perform(multipart("/api/v1/ingestion/sessions/sess-123/upload").file(emptyFile).header("X-FiscalStudy-Admin-Token", "isolated-test-token")
                 .param("role", "PROVA"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("BAD_REQUEST"))
                 .andExpect(jsonPath("$.message").value("Arquivo vazio não é permitido."))
                 .andExpect(jsonPath("$.executionId").isNotEmpty())
                 .andExpect(jsonPath("$.timestamp").isNotEmpty());
+    }
+    @Test
+    void administrativeEndpointRejectsMissingToken() throws Exception {
+        mockMvc.perform(get("/api/v1/ingestion/sessions/sess-123/questions"))
+            .andExpect(status().isForbidden());
     }
 }

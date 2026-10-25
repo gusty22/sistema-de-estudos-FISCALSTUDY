@@ -28,6 +28,11 @@ public class AnkiController {
         this.questionRepository = questionRepository;
     }
 
+    @GetMapping("/preferences")
+    public Map<String,Object> preferences(){return ankiIntegrationService.getIntegrationPreferences();}
+    @PutMapping("/preferences")
+    public Map<String,Object> preferences(@RequestBody Map<String,Object> body){return ankiIntegrationService.updateIntegrationPreferences(body);}
+
     @GetMapping("/status")
     public ResponseEntity<AnkiConnectStatusDTO> getStatus() {
         return ResponseEntity.ok(ankiIntegrationService.checkConnection());

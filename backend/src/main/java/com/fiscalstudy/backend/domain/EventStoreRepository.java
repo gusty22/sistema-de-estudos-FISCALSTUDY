@@ -2,6 +2,8 @@ package com.fiscalstudy.backend.domain;
 
 public interface EventStoreRepository {
     void appendEvent(String eventType, String aggregateType, String aggregateId, String sessionId, int eventVersion, String schemaVersion, String payloadJson);
+    default boolean appendEventOnce(String eventId, String eventType, String aggregateType, String aggregateId, String sessionId, String occurredAt, String payloadJson) { throw new UnsupportedOperationException("Atomic event insertion is required"); }
+    default java.util.Optional<EventRecord> findByEventId(String eventId) { return java.util.Optional.empty(); }
     boolean hasRecentEvent(String eventType, String aggregateId, String sessionId, int minutes);
     boolean hasRecentEventSeconds(String eventType, String aggregateId, String sessionId, int seconds);
     boolean hasEvent(String eventType, String aggregateId, String sessionId);

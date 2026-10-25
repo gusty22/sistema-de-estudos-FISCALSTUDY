@@ -43,7 +43,6 @@ class RevisionCalendarServiceTest {
 
         eventStoreRepository = org.mockito.Mockito.mock(EventStoreRepository.class);
         service = new RevisionCalendarService(jdbcTemplate, eventStoreRepository);
-        service.initSchemaMigrations();
 
         jdbcTemplate.execute("DELETE FROM revision_calendar;");
         jdbcTemplate.execute("DELETE FROM event_store;");
@@ -123,4 +122,14 @@ class RevisionCalendarServiceTest {
         assertEquals("TESTE_TRANSFERENCIA", proximaEtapa.get("estagio_intervencao"));
         assertTrue((Integer) proximaEtapa.get("intervalo_dias") >= 2);
     }
+ @Test void schedulingUsesConfiguredLocalDayAtUtcMidnight() {
+   var instant=java.time.Instant.parse("2026-01-01T00:30:00Z");
+   service=new RevisionCalendarService(jdbcTemplate,eventStoreRepository,java.time.Clock.fixed(instant,java.time.ZoneId.of("America/Sao_Paulo")));
+   service.scheduleAdaptiveRevision("s","c","Tributário","Imunidade","ERRO_QUESTAO","q",false,5,null,false,null,0.0);
+   assertEquals("2026-01-01",jdbcTemplate.queryForObject("SELECT data_agendada FROM revision_calendar",String.class));
+   jdbcTemplate.update("DELETE FROM revision_calendar");
+   service=new RevisionCalendarService(jdbcTemplate,eventStoreRepository,java.time.Clock.fixed(instant,java.time.ZoneId.of("UTC")));
+   service.scheduleAdaptiveRevision("s","c","Tributário","Imunidade","ERRO_QUESTAO","q",false,5,null,false,null,0.0);
+   assertEquals("2026-01-02",jdbcTemplate.queryForObject("SELECT data_agendada FROM revision_calendar",String.class));
+ }
 }

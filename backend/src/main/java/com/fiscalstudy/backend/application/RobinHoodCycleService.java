@@ -27,6 +27,8 @@ public class RobinHoodCycleService {
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
     private RobinHoodWeightsDTO activeWeights;
+    @org.springframework.beans.factory.annotation.Autowired(required=false)
+    private com.fiscalstudy.backend.infrastructure.config.AnalyticsPaths analyticsPaths;
 
     public RobinHoodCycleService(TimeMetricService timeMetricService, JdbcTemplate jdbcTemplate, ObjectMapper objectMapper) {
         this.engine = new RobinHoodCycleEngine();
@@ -109,38 +111,21 @@ public class RobinHoodCycleService {
     }
 
     public synchronized RobinHoodWeightsDTO syncWeightsFromFile(String customPath) {
-        List<String> candidatePaths = new ArrayList<>();
-        if (customPath != null && !customPath.isBlank()) {
-            candidatePaths.add(customPath);
-        }
-        candidatePaths.add("../analytics-engine/output/metrics/robin_hood_weights.json");
-        candidatePaths.add("analytics-engine/output/metrics/robin_hood_weights.json");
-        candidatePaths.add("analytics/robin_hood_weights.json");
-        candidatePaths.add("../analytics/robin_hood_weights.json");
-        candidatePaths.add("output/metrics/robin_hood_weights.json");
-        candidatePaths.add("../output/metrics/robin_hood_weights.json");
-        candidatePaths.add("C:\\Users\\washi\\Downloads\\fiscalstudy-analytics\\output\\metrics\\robin_hood_weights.json");
-
-        for (String pStr : candidatePaths) {
-            try {
-                Path p = Paths.get(pStr);
-                if (Files.exists(p)) {
-                    String json = Files.readString(p);
-                    RobinHoodWeightsDTO dto = objectMapper.readValue(json, RobinHoodWeightsDTO.class);
-                    this.activeWeights = dto;
-                    logger.info("Robin Hood Weights sincronizados a partir do arquivo: {}", p.toAbsolutePath());
-                    return dto;
-                }
-            } catch (Exception e) {
-                logger.warn("Falha ao ler pesos Robin Hood de {}: {}", pStr, e.getMessage());
-            }
-        }
-        return this.activeWeights;
+        // Only the current completed run may supply analytical weights.
+        if(analyticsPaths==null)return activeWeights;
+        try {
+            var manifest=objectMapper.readTree(Files.readString(analyticsPaths.currentManifest()));
+            if(!"SUCCEEDED".equals(manifest.path("status").asText()))return activeWeights;
+            Path run=analyticsPaths.output().resolve("runs").resolve(manifest.path("runId").asText()).normalize();
+            if(!run.startsWith(analyticsPaths.output().resolve("runs")))throw new IllegalStateException("Invalid run path");
+            Path file=run.resolve("metrics/robin_hood_weights.json");
+            if(customPath!=null && !Path.of(customPath).toAbsolutePath().normalize().equals(file))throw new IllegalArgumentException("Only current run artifacts can be loaded");
+            activeWeights=objectMapper.readValue(Files.readString(file),RobinHoodWeightsDTO.class);
+            return activeWeights;
+        }catch(java.nio.file.NoSuchFileException e){return activeWeights;}
+        catch(Exception e){throw new IllegalStateException("Cannot load current analytical weights",e);}
     }
-
-    private void autoLoadWeightsIfPresent() {
-        syncWeightsFromFile(null);
-    }
+    private void autoLoadWeightsIfPresent(){syncWeightsFromFile(null);}
 
     private List<DisciplineProfile> loadDisciplineProfiles(String concursoId) {
         List<Map<String, Object>> rows = new ArrayList<>();

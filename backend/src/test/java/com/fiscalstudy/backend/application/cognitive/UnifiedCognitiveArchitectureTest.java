@@ -26,6 +26,7 @@ class UnifiedCognitiveArchitectureTest {
         jdbcTemplate.update("DELETE FROM event_store");
         jdbcTemplate.update("DELETE FROM questions");
 
+        jdbcTemplate.update("INSERT OR REPLACE INTO edital_topicos(id,edital_id,concurso_id,disciplina,assunto,peso) VALUES('cog-topic','e-cog','c-araguari-01','Direito Tributário','Imunidades Tributárias',1)");
         // Inserir questão de teste
         jdbcTemplate.update(
                 "INSERT INTO questions (id, enunciado, correct_option, banca, ano, cargo, disciplina, assunto) " +
@@ -36,15 +37,15 @@ class UnifiedCognitiveArchitectureTest {
     @Test
     void computeUnifiedState_IntegratesAllSixComponentsConsistently() {
         // Inserir 1 tentativa normal (confiável, correta, certeza 4)
-        String payloadNormal = "{\"questionId\":\"q_cog_1\",\"selectedOption\":\"A\",\"isCorrect\":true,\"confidenceLevel\":4,\"activeTimeMs\":35000,\"gabaritoStatus\":\"DEFINITIVO\",\"usedHelp\":false}";
+        String payloadNormal = "{\"origin\":\"REAL_STUDY\",\"questionId\":\"q_cog_1\",\"selectedOption\":\"A\",\"isCorrect\":true,\"confidenceLevel\":4,\"activeTimeMs\":35000,\"gabaritoStatus\":\"DEFINITIVO\",\"usedHelp\":false}";
         eventStoreRepository.appendEvent("ANSWER_SUBMITTED", "QUESTION", "q_cog_1", "sess_1", 1, "v1", payloadNormal);
 
         // Inserir 1 tentativa com ruído de tempo (< 1.5s) e overconfidence (certeza 5 e erro)
-        String payloadOverconfident = "{\"questionId\":\"q_cog_1\",\"selectedOption\":\"B\",\"isCorrect\":false,\"confidenceLevel\":5,\"activeTimeMs\":800,\"gabaritoStatus\":\"DEFINITIVO\",\"usedHelp\":false}";
+        String payloadOverconfident = "{\"origin\":\"REAL_STUDY\",\"questionId\":\"q_cog_1\",\"selectedOption\":\"B\",\"isCorrect\":false,\"confidenceLevel\":5,\"activeTimeMs\":800,\"gabaritoStatus\":\"DEFINITIVO\",\"usedHelp\":false}";
         eventStoreRepository.appendEvent("ANSWER_SUBMITTED", "QUESTION", "q_cog_1", "sess_2", 1, "v1", payloadOverconfident);
 
         // Inserir 1 tentativa assistida (usedHelp = true)
-        String payloadAssistida = "{\"questionId\":\"q_cog_1\",\"selectedOption\":\"A\",\"isCorrect\":true,\"confidenceLevel\":3,\"activeTimeMs\":45000,\"gabaritoStatus\":\"DEFINITIVO\",\"usedHelp\":true}";
+        String payloadAssistida = "{\"origin\":\"REAL_STUDY\",\"questionId\":\"q_cog_1\",\"selectedOption\":\"A\",\"isCorrect\":true,\"confidenceLevel\":3,\"activeTimeMs\":45000,\"gabaritoStatus\":\"DEFINITIVO\",\"usedHelp\":true}";
         eventStoreRepository.appendEvent("ANSWER_SUBMITTED", "QUESTION", "q_cog_1", "sess_3", 1, "v1", payloadAssistida);
 
         // Computar o estado unificado

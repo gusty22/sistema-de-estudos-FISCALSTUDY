@@ -1,0 +1,46 @@
+package com.fiscalstudy.backend.infrastructure.in.web;
+
+import jakarta.servlet.*;
+import jakarta.servlet.http.*;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
+import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.util.*;
+
+/** Local single-user boundary; browser origins never bypass administrative authorization. */
+@Component
+@Order(Ordered.HIGHEST_PRECEDENCE)
+public class LocalAccessFilter extends OncePerRequestFilter {
+    private final Set<String> origins;
+    private final String adminToken;
+    public LocalAccessFilter(@Value("${fiscalstudy.security.allowed-origins:http://localhost:5173,http://127.0.0.1:5173}") String allowed,
+                             @Value("${fiscalstudy.security.admin-token:}") String token) {
+        origins = new HashSet<>(Arrays.asList(allowed.split(",")));
+        adminToken = token;
+    }
+    @Override protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain chain) throws ServletException, IOException {
+        String origin = req.getHeader("Origin");
+        if (origin != null && !origins.contains(origin)) { deny(res,403,"Origin not allowed"); return; }
+        String uri=req.getRequestURI();
+        boolean admin=uri.startsWith("/api/v1/system/backup") || uri.startsWith("/api/v1/system/audit") || uri.startsWith("/api/v1/ingestion");
+        if (admin && !"OPTIONS".equals(req.getMethod())) {
+            boolean local;
+            try { local=InetAddress.getByName(req.getRemoteAddr()).isLoopbackAddress(); }
+            catch(Exception e){ local=false; }
+            String supplied=req.getHeader("X-FiscalStudy-Admin-Token");
+            if(!local || adminToken.isBlank() || supplied==null || !MessageDigest.isEqual(adminToken.getBytes(StandardCharsets.UTF_8),supplied.getBytes(StandardCharsets.UTF_8))) {
+                deny(res,403,"Administrative operation requires loopback access and configured admin token"); return;
+            }
+        }
+        chain.doFilter(req,res);
+    }
+    private static void deny(HttpServletResponse res,int code,String message)throws IOException {
+        res.setStatus(code);res.setContentType("application/json");res.getWriter().write("{\"error\":\""+message+"\"}");
+    }
+}

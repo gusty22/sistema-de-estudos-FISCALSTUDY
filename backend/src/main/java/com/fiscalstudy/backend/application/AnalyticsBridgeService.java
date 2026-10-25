@@ -1,260 +1,76 @@
 package com.fiscalstudy.backend.application;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.*;
+import com.fiscalstudy.backend.infrastructure.config.AnalyticsPaths;
+import com.fiscalstudy.backend.infrastructure.process.BoundedProcess;
 import com.fiscalstudy.backend.infrastructure.in.web.dto.RobinHoodWeightsDTO;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.InputStreamReader;
+import java.nio.file.*;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.time.Instant;
+import java.time.*;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
-/**
- * Serviço de Integração desacoplada (Batch CLI) entre Spring Boot e o motor estatístico R (analytics-engine).
- * Orquestra:
- * 1. Exportação canônica do banco SQLite para ../analytics-engine/data/raw/operational_export_v1.csv
- * 2. Execução autônoma em lote do Rscript run_analytics.R
- * 3. Consumo e desserialização de robin_hood_weights.json e analytical_signals_v1.json
- * 4. Fallback seguro e pedagógico caso R não esteja presente ou ocorra falha de execução.
- */
+/** Each execution owns its input/output; only a successful manifest makes results consumable. */
 @Service
 public class AnalyticsBridgeService {
-
-    private static final Logger logger = LoggerFactory.getLogger(AnalyticsBridgeService.class);
-
-    private final AnalyticsProjectionService analyticsProjectionService;
-    private final RobinHoodCycleService robinHoodCycleService;
-    private final ObjectMapper objectMapper;
-
-    // Caminhos relativos canônicos do Monorepo
-    private static Path resolveEngineDir() {
-        Path local = Paths.get("analytics-engine");
-        if (Files.exists(local) && Files.isDirectory(local)) {
-            return local;
-        }
-        return Paths.get("../analytics-engine");
-    }
-
-    private static Path resolveExportCsv() {
-        return resolveEngineDir().resolve("data/raw/operational_export_v1.csv");
-    }
-
-    private static Path resolveWeightsJson() {
-        return resolveEngineDir().resolve("output/metrics/robin_hood_weights.json");
-    }
-
-    private static Path resolveSignalsJson() {
-        return resolveEngineDir().resolve("output/metrics/analytical_signals_v1.json");
-    }
-
-    public AnalyticsBridgeService(AnalyticsProjectionService analyticsProjectionService,
-                                  RobinHoodCycleService robinHoodCycleService,
-                                  ObjectMapper objectMapper) {
-        this.analyticsProjectionService = analyticsProjectionService;
-        this.robinHoodCycleService = robinHoodCycleService;
-        this.objectMapper = objectMapper;
-    }
-
-    /**
-     * Exporta os dados consolidados do banco SQLite para o CSV canônico de entrada do motor R.
-     */
-    public synchronized Path exportCanonicalCsv() throws Exception {
-        Path targetPath = resolveExportCsv().toAbsolutePath().normalize();
-        if (targetPath.getParent() != null && !Files.exists(targetPath.getParent())) {
-            Files.createDirectories(targetPath.getParent());
-        }
-
-        // Gera CSV respeitando rigorosamente o contrato do adapter.R
-        String csvContent = analyticsProjectionService.exportCsv("ALL");
-        Files.writeString(targetPath, csvContent, StandardCharsets.UTF_8);
-        logger.info("Exportação canônica operacional concluída com sucesso em: {}", targetPath);
-        return targetPath;
-    }
-
-    /**
-     * Executa o pipeline de análise do R de forma assíncrona com fallback seguro.
-     */
-    @Async
-    public CompletableFuture<AnalyticsExecutionResult> triggerAnalyticsAsync() {
-        return CompletableFuture.completedFuture(executeAnalyticsPipeline());
-    }
-
-    /**
-     * Executa o pipeline de análise do R sincronicamente via CLI ProcessBuilder.
-     */
-    public synchronized AnalyticsExecutionResult executeAnalyticsPipeline() {
-        Instant startTime = Instant.now();
-        logger.info("Iniciando pipeline analítico desacoplado via CLI em R...");
-
-        try {
-            // 1. Exportar CSV
-            Path csvPath = exportCanonicalCsv();
-
-            // 2. Localizar binário do Rscript
-            String rscriptExe = locateRscriptExecutable();
-            if (rscriptExe == null) {
-                logger.warn("Rscript não encontrado no ambiente do sistema operacional. Aplicando fallback de pesos baseado no edital.");
-                return applyFallbackWeights("Rscript não encontrado no sistema operacional. Pesos mantidos conforme prioridade do edital.");
-            }
-
-            File engineDir = resolveEngineDir().toFile();
-            if (!engineDir.exists() || !engineDir.isDirectory()) {
-                logger.warn("Diretório do analytics-engine não encontrado em: {}. Aplicando fallback seguro.", engineDir.getAbsolutePath());
-                return applyFallbackWeights("Diretório analytics-engine ausente. Ciclo padronizado via edital.");
-            }
-
-            // 3. Execução desacoplada via ProcessBuilder
-            List<String> command = List.of(
-                    rscriptExe,
-                    "run_analytics.R",
-                    "data/raw/operational_export_v1.csv"
-            );
-
-            ProcessBuilder pb = new ProcessBuilder(command);
-            pb.directory(engineDir);
-            pb.redirectErrorStream(true);
-
-            logger.info("Executando CLI: {} run_analytics.R data/raw/operational_export_v1.csv (cwd: {})", rscriptExe, engineDir.getAbsolutePath());
-            Process process = pb.start();
-
-            StringBuilder logs = new StringBuilder();
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    logs.append(line).append("\n");
-                }
-            }
-
-            int exitCode = process.waitFor();
-            logger.info("Processo R finalizado com código de saída: {}", exitCode);
-
-            if (exitCode != 0) {
-                logger.warn("Pipeline em R retornou código de erro {}. Log: \n{}", exitCode, logs);
-                return applyFallbackWeights("Erro na execução estatística do R. Fallback aplicado com pesos padrão.");
-            }
-
-            // 4. Carregar e sincronizar artefatos de saída
-            RobinHoodWeightsDTO weights = loadRobinHoodWeights();
-            if (weights != null) {
-                robinHoodCycleService.injectWeights(weights);
-            }
-
-            List<Map<String, Object>> signals = loadAnalyticalSignals();
-
-            return new AnalyticsExecutionResult(
-                    true,
-                    "Pipeline estatístico e psicométrico em R executado com sucesso.",
-                    weights,
-                    signals,
-                    logs.toString(),
-                    Instant.now().toEpochMilli() - startTime.toEpochMilli()
-            );
-
-        } catch (Exception e) {
-            logger.error("Exceção ao orquestrar motor R: {}", e.getMessage(), e);
-            return applyFallbackWeights("Exceção operacional ao comunicar com analytics-engine: " + e.getMessage());
-        }
-    }
-
-    /**
-     * Desserializa os pesos de robin_hood_weights.json.
-     */
-    public RobinHoodWeightsDTO loadRobinHoodWeights() {
-        Path p = resolveWeightsJson().toAbsolutePath().normalize();
-        if (Files.exists(p)) {
-            try {
-                String json = Files.readString(p, StandardCharsets.UTF_8);
-                RobinHoodWeightsDTO dto = objectMapper.readValue(json, RobinHoodWeightsDTO.class);
-                logger.info("robin_hood_weights.json lido com sucesso (algoritmo: {})", dto.algorithm());
-                return dto;
-            } catch (Exception e) {
-                logger.warn("Falha ao ler robin_hood_weights.json: {}", e.getMessage());
-            }
-        }
-        return robinHoodCycleService.getActiveWeights();
-    }
-
-    /**
-     * Desserializa os sinais de analytical_signals_v1.json.
-     */
-    public List<Map<String, Object>> loadAnalyticalSignals() {
-        Path p = resolveSignalsJson().toAbsolutePath().normalize();
-        if (Files.exists(p)) {
-            try {
-                String json = Files.readString(p, StandardCharsets.UTF_8);
-                JsonNode root = objectMapper.readTree(json);
-                JsonNode sigArray = root.path("signals");
-                if (sigArray.isArray()) {
-                    List<Map<String, Object>> list = new ArrayList<>();
-                    for (JsonNode item : sigArray) {
-                        Map<String, Object> map = objectMapper.convertValue(item, Map.class);
-                        list.add(map);
-                    }
-                    return list;
-                }
-            } catch (Exception e) {
-                logger.warn("Falha ao ler analytical_signals_v1.json: {}", e.getMessage());
-            }
-        }
-        return Collections.emptyList();
-    }
-
-    /**
-     * Fallback seguro: mantém pesos equilibrados no Robin Hood sem interromper a rotina do aluno.
-     */
-    private AnalyticsExecutionResult applyFallbackWeights(String reason) {
-        logger.info("Aplicando pesos estáticos de contingência baseados no edital. Razão: {}", reason);
-        robinHoodCycleService.syncWeightsFromFile(null);
-        return new AnalyticsExecutionResult(
-                false,
-                reason,
-                robinHoodCycleService.getActiveWeights(),
-                Collections.emptyList(),
-                "Fallback executado preventivamente.",
-                0L
-        );
-    }
-
-    /**
-     * Localiza o executável do Rscript no PATH ou caminhos canônicos no Windows.
-     */
-    private String locateRscriptExecutable() {
-        List<String> candidates = List.of(
-                "Rscript",
-                "C:\\Program Files\\R\\R-4.5.1\\bin\\Rscript.exe",
-                "C:\\Program Files\\R\\R-4.5.1\\bin\\x64\\Rscript.exe",
-                "C:\\Program Files\\R\\R-4.4.1\\bin\\Rscript.exe",
-                "C:\\Program Files\\R\\R-4.3.1\\bin\\Rscript.exe",
-                "C:\\Program Files\\R\\R-4.2.1\\bin\\Rscript.exe"
-        );
-
-        for (String c : candidates) {
-            try {
-                Process p = new ProcessBuilder(c, "--version").start();
-                if (p.waitFor() == 0) {
-                    return c;
-                }
-            } catch (Exception ignored) {}
-        }
-        return null;
-    }
-
-    public record AnalyticsExecutionResult(
-            boolean success,
-            String message,
-            RobinHoodWeightsDTO weights,
-            List<Map<String, Object>> signals,
-            String logs,
-            long executionTimeMs
-    ) {}
+ private final AnalyticsProjectionService projection;
+ private final RobinHoodCycleService cycle;
+ private final ObjectMapper mapper;
+ private final AnalyticsPaths paths;
+ @Value("${fiscalstudy.rscript-executable:Rscript}") private String executable="Rscript";
+ @Value("${fiscalstudy.analytics.timeout-seconds:120}") private long timeoutSeconds=120;
+ @Value("${fiscalstudy.r-libs:}") private String rLibs="";
+ public AnalyticsBridgeService(AnalyticsProjectionService projection,RobinHoodCycleService cycle,ObjectMapper mapper,AnalyticsPaths paths){this.projection=projection;this.cycle=cycle;this.mapper=mapper;this.paths=paths;}
+ public synchronized Path exportCanonicalCsv()throws Exception {
+   Path file=paths.output().resolve("data/raw/operational_export_v1.csv");Files.createDirectories(file.getParent());
+   Files.writeString(file,projection.exportCsv("REAL_STUDY"),StandardCharsets.UTF_8);return file;
+ }
+ @Async public CompletableFuture<AnalyticsExecutionResult> triggerAnalyticsAsync(){return CompletableFuture.completedFuture(executeAnalyticsPipeline());}
+ public synchronized AnalyticsExecutionResult executeAnalyticsPipeline(){
+   Instant start=Instant.now();String id=UUID.randomUUID().toString();String logs="";
+   try {
+     Path run=paths.output().resolve("runs").resolve(id);Files.createDirectories(run);
+     writeManifest(id,"RUNNING",start,null);
+     Path input=run.resolve("input.csv");Files.copy(exportCanonicalCsv(),input);
+     Path script=paths.engine().resolve("run_analytics.R");if(!Files.isRegularFile(script))throw new IllegalStateException("Analytics engine script missing: "+script);
+     Map<String,String> env=new HashMap<>();env.put("FISCALSTUDY_ANALYTICS_OUTPUT",run.toString());env.put("FISCALSTUDY_RUN_ID",id);
+     if(!rLibs.isBlank())env.put("FISCALSTUDY_R_LIBS",rLibs);
+     var result=BoundedProcess.run(List.of(executable,script.toString(),input.toString()),paths.engine(),Duration.ofSeconds(timeoutSeconds),env);
+     logs=result.output();if(result.exitCode()!=0)throw new IllegalStateException("R failed with exit code "+result.exitCode()+": "+logs);
+     for(String file:List.of("metrics/robin_hood_weights.json","metrics/analytical_signals_v1.json","metrics/metrics_summary_v1.json","metrics/learning_profile_v1.json")) {
+       Path artifact=run.resolve(file);if(!Files.isRegularFile(artifact))throw new IllegalStateException("Required output missing: "+file);
+       mapper.readTree(Files.readString(artifact));
+     }
+     if(!Files.isRegularFile(run.resolve("metrics/metrics_summary_v1.csv")))throw new IllegalStateException("Required CSV output missing");
+     var weights=mapper.readValue(Files.readString(run.resolve("metrics/robin_hood_weights.json")),RobinHoodWeightsDTO.class);
+     writeManifest(id,"SUCCEEDED",start,null);cycle.injectWeights(weights);
+     return new AnalyticsExecutionResult(true,"Execução analítica concluída. runId="+id,weights,loadAnalyticalSignals(),logs,Duration.between(start,Instant.now()).toMillis());
+   }catch(Exception e){
+     if(e instanceof InterruptedException)Thread.currentThread().interrupt();
+     try{writeManifest(id,"FAILED",start,e.getMessage());}catch(Exception ignored){}
+     cycle.injectWeights(null);
+     return new AnalyticsExecutionResult(false,"Execução incompleta. runId="+id+": "+e.getMessage(),null,List.of(),logs,Duration.between(start,Instant.now()).toMillis());
+   }
+ }
+ private void writeManifest(String id,String status,Instant start,String error)throws Exception {
+   Files.createDirectories(paths.output());Map<String,Object> data=new LinkedHashMap<>();
+   data.put("runId",id);data.put("status",status);data.put("startedAt",start.toString());data.put("updatedAt",Instant.now().toString());data.put("engineVersion","analytics-v1");data.put("originFilter","REAL_STUDY");data.put("error",error);
+   Path run=paths.output().resolve("runs").resolve(id);Files.createDirectories(run);
+   Path input=run.resolve("input.csv");if(Files.isRegularFile(input))data.put("inputSha256",sha256(input));
+   Path engine=paths.engine().resolve("run_analytics.R");if(Files.isRegularFile(engine))data.put("engineSha256",sha256(engine));
+   mapper.writerWithDefaultPrettyPrinter().writeValue(run.resolve("run-manifest.json").toFile(),data);
+   Path temporary=paths.output().resolve("current-run.tmp");mapper.writerWithDefaultPrettyPrinter().writeValue(temporary.toFile(),data);
+   Files.move(temporary,paths.currentManifest(),StandardCopyOption.REPLACE_EXISTING);
+ }
+ private static String sha256(Path file)throws Exception{return java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(file)));}
+ private Path currentRun()throws Exception {
+   if(!Files.isRegularFile(paths.currentManifest()))return null;
+   var manifest=mapper.readTree(Files.readString(paths.currentManifest()));if(!"SUCCEEDED".equals(manifest.path("status").asText()))return null;
+   String id=manifest.path("runId").asText();UUID.fromString(id);return paths.output().resolve("runs").resolve(id);
+ }
+ public RobinHoodWeightsDTO loadRobinHoodWeights(){try{Path run=currentRun();return run==null?null:mapper.readValue(Files.readString(run.resolve("metrics/robin_hood_weights.json")),RobinHoodWeightsDTO.class);}catch(Exception e){throw new IllegalStateException("Invalid current run weights",e);}}
+ public List<Map<String,Object>> loadAnalyticalSignals(){try{Path run=currentRun();if(run==null)return List.of();JsonNode sig=mapper.readTree(Files.readString(run.resolve("metrics/analytical_signals_v1.json"))).path("signals");List<Map<String,Object>> out=new ArrayList<>();if(sig.isArray())for(JsonNode item:sig)out.add(mapper.convertValue(item,Map.class));return out;}catch(Exception e){throw new IllegalStateException("Invalid current run signals",e);}}
+ public record AnalyticsExecutionResult(boolean success,String message,RobinHoodWeightsDTO weights,List<Map<String,Object>> signals,String logs,long executionTimeMs){}
 }

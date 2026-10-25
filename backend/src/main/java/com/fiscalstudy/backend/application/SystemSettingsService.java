@@ -23,40 +23,26 @@ public class SystemSettingsService {
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
 
-    private static final String MAIN_DB_PATH = "db/fiscalstudy.db";
-    private static final String STAGING_DB_PATH = "db/staging.db";
-    private static final String BACKUP_DIR_PATH = "db/backups";
+    private final String MAIN_DB_PATH;
+    private final String STAGING_DB_PATH;
+    private final String BACKUP_DIR_PATH;
+    private final com.fiscalstudy.backend.infrastructure.config.DatabasePaths databasePaths;
 
-    public SystemSettingsService(JdbcTemplate jdbcTemplate) {
+    @org.springframework.beans.factory.annotation.Autowired
+    public SystemSettingsService(JdbcTemplate jdbcTemplate, com.fiscalstudy.backend.infrastructure.config.DatabasePaths paths) {
+        this.databasePaths = paths;
+        this.MAIN_DB_PATH = paths.mainDatabase().toString();
+        this.STAGING_DB_PATH = paths.stagingDatabase().toString();
+        this.BACKUP_DIR_PATH = paths.backupDirectory().toString();
         this.jdbcTemplate = jdbcTemplate;
         this.objectMapper = new ObjectMapper();
-        initSettingsTable();
         ensureBackupDir();
     }
 
-    private void initSettingsTable() {
-        try {
-            jdbcTemplate.execute("""
-                CREATE TABLE IF NOT EXISTS system_settings (
-                    setting_key TEXT PRIMARY KEY,
-                    setting_value TEXT NOT NULL,
-                    updated_at TEXT NOT NULL
-                );
-            """);
-        } catch (Exception e) {
-            logger.warn("Erro ao inicializar tabela system_settings: {}", e.getMessage());
-        }
-    }
 
     private void ensureBackupDir() {
-        try {
-            File dir = new File(BACKUP_DIR_PATH);
-            if (!dir.exists()) {
-                dir.mkdirs();
-            }
-        } catch (Exception e) {
-            logger.warn("Erro ao criar diretório de backups: {}", e.getMessage());
-        }
+        try { Files.createDirectories(databasePaths.backupDirectory()); }
+        catch(IOException e){throw new IllegalStateException("Diretório de backup indisponível",e);}
     }
 
     // =========================================================================
@@ -73,18 +59,21 @@ public class SystemSettingsService {
                 if (key != null && valJson != null) {
                     try {
                         Object parsed = objectMapper.readValue(valJson, Object.class);
-                        defaults.put(key, parsed);
+                        if(defaults.get(key) instanceof Map<?,?> existing && parsed instanceof Map<?,?> saved){
+                            Map<String,Object> merged=new LinkedHashMap<>();existing.forEach((k,v)->merged.put(String.valueOf(k),v));saved.forEach((k,v)->merged.put(String.valueOf(k),v));defaults.put(key,merged);
+                        }else defaults.put(key, parsed);
                     } catch (Exception parseEx) {
-                        defaults.put(key, valJson);
+                        throw new IllegalStateException("Configuração persistida inválida: "+key,parseEx);
                     }
                 }
             }
         } catch (Exception e) {
-            logger.warn("Erro ao carregar configurações do banco: {}", e.getMessage());
+            throw new IllegalStateException("Falha ao carregar configurações persistidas",e);
         }
         return defaults;
     }
 
+    @org.springframework.transaction.annotation.Transactional
     public Map<String, Object> updateSettings(Map<String, Object> newSettings) {
         if (newSettings == null) return getSettings();
         String now = Instant.now().toString();
@@ -101,7 +90,7 @@ public class SystemSettingsService {
                         updated_at = excluded.updated_at
                 """, key, valJson, now);
             } catch (Exception e) {
-                logger.error("Erro ao salvar configuração {}: {}", entry.getKey(), e.getMessage());
+                throw new IllegalStateException("Falha ao persistir configuração " + entry.getKey(), e);
             }
         }
         return getSettings();
@@ -207,66 +196,36 @@ public class SystemSettingsService {
     }
 
     public Map<String, Object> createConsistentBackup(String label) {
-        Map<String, Object> result = new LinkedHashMap<>();
         ensureBackupDir();
-
+        String suffix = label == null ? "" : label.replaceAll("[^a-zA-Z0-9_]", "");
+        String filename = "fiscalstudy_backup_" + java.time.Instant.now().toEpochMilli() + "_" + UUID.randomUUID().toString().substring(0,8) + "_" + suffix + ".db";
+        Path destination = databasePaths.backupDirectory().resolve(filename);
         try {
-            // 1. Executa checkpoint TRUNCATE no WAL para descarregar todas as escritas ativas
-            jdbcTemplate.execute("PRAGMA wal_checkpoint(TRUNCATE);");
-
-            // 2. Nome seguro com timestamp
-            String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-            String sanitizedLabel = (label != null && !label.isBlank()) ? "_" + label.replaceAll("[^a-zA-Z0-9_]", "") : "";
-            String backupFilename = "fiscalstudy_backup_" + timeStamp + sanitizedLabel + ".db";
-            File destFile = new File(BACKUP_DIR_PATH, backupFilename);
-
-            // 3. VACUUM INTO consistente ou cópia atômica pós-checkpoint
-            try {
-                String destPathSql = destFile.getAbsolutePath().replace("\\", "/");
-                jdbcTemplate.execute("VACUUM INTO '" + destPathSql + "';");
-            } catch (Exception vacuumEx) {
-                // Fallback caso a versão SQLite tenha restrição de VACUUM INTO
-                File source = new File(MAIN_DB_PATH);
-                Files.copy(source.toPath(), destFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            }
-
-            // 4. Registra no event_store imutável
-            try {
-                String eventId = UUID.randomUUID().toString();
-                String payload = objectMapper.writeValueAsString(Map.of(
-                    "filename", backupFilename,
-                    "sizeBytes", destFile.length(),
-                    "label", label != null ? label : "MANUAL_BACKUP"
-                ));
-                jdbcTemplate.update("""
-                    INSERT INTO event_store (event_id, aggregate_type, aggregate_id, event_type, payload, timestamp)
-                    VALUES (?, 'SYSTEM_BACKUP', ?, 'BACKUP_CREATED', ?, ?)
-                """, eventId, backupFilename, payload, Instant.now().toString());
-            } catch (Exception eventEx) {
-                logger.warn("Aviso ao registrar evento de backup: {}", eventEx.getMessage());
-            }
-
-            result.put("success", true);
-            result.put("filename", backupFilename);
-            result.put("path", destFile.getAbsolutePath());
-            result.put("sizeBytes", destFile.length());
-            result.put("sizeFormatted", String.format("%.2f MB", destFile.length() / (1024.0 * 1024.0)));
-            result.put("message", "Backup consistente gerado com sucesso (compatível com SQLite WAL).");
-
+            jdbcTemplate.execute((org.springframework.jdbc.core.ConnectionCallback<Void>) connection -> {
+                org.sqlite.SQLiteConnection sqlite = connection.unwrap(org.sqlite.SQLiteConnection.class);
+                int code = sqlite.getDatabase().backup("main", destination.toString(), null);
+                if (code != 0) throw new java.sql.SQLException("SQLite backup failed: " + code);
+                return null;
+            });
+            com.fiscalstudy.backend.infrastructure.config.SqliteRecovery.verify(destination);
+            appendBackupEvent("BACKUP_CREATED", filename, Map.of("filename", filename, "sizeBytes", Files.size(destination)));
+            return Map.of("success", true, "filename", filename, "path", destination.toString(), "sizeBytes", Files.size(destination), "message", "Backup SQLite consistente criado e verificado.");
         } catch (Exception e) {
-            logger.error("Falha ao criar backup consistente: {}", e.getMessage(), e);
-            result.put("success", false);
-            result.put("error", e.getMessage());
+            throw new IllegalStateException("Backup não concluído; não use o arquivo parcial", e);
         }
+    }
 
-        return result;
+    private void appendBackupEvent(String type, String aggregateId, Map<String,Object> details) throws IOException {
+        String now = Instant.now().toString();
+        String payload = objectMapper.writeValueAsString(details);
+        jdbcTemplate.update("INSERT INTO event_store(event_id,event_type,aggregate_type,aggregate_id,session_id,occurred_at,recorded_at,event_version,schema_version,payload_json) VALUES(?,?,'SYSTEM_BACKUP',?,'maintenance',?,?,1,'v1',?)", UUID.randomUUID().toString(), type, aggregateId, now, now, payload);
     }
 
     public Map<String, Object> verifyIntegrity() {
         Map<String, Object> result = new LinkedHashMap<>();
         try {
             List<String> integrityRows = jdbcTemplate.queryForList("PRAGMA integrity_check;", String.class);
-            List<String> fkRows = jdbcTemplate.queryForList("PRAGMA foreign_key_check;", String.class);
+            List<Map<String, Object>> fkRows = jdbcTemplate.queryForList("PRAGMA foreign_key_check;");
 
             boolean isIntegrityOk = integrityRows.size() == 1 && "ok".equalsIgnoreCase(integrityRows.get(0));
             boolean isFkOk = fkRows.isEmpty();
@@ -310,115 +269,41 @@ public class SystemSettingsService {
     }
 
     public Map<String, Object> restoreBackup(String backupFilename) {
-        Map<String, Object> result = new LinkedHashMap<>();
-        File backupDir = new File(BACKUP_DIR_PATH);
-        File targetBackup = new File(backupDir, backupFilename);
-
-        if (!targetBackup.exists()) {
-            result.put("success", false);
-            result.put("error", "Arquivo de backup não encontrado: " + backupFilename);
-            return result;
-        }
-
         try {
-            // 1. Cria snapshot de segurança do estado atual antes da restauração
-            String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-            File safetyCopy = new File(BACKUP_DIR_PATH, "fiscalstudy_safety_before_restore_" + timeStamp + ".db");
-            File currentDb = new File(MAIN_DB_PATH);
-            if (currentDb.exists()) {
-                jdbcTemplate.execute("PRAGMA wal_checkpoint(TRUNCATE);");
-                Files.copy(currentDb.toPath(), safetyCopy.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            }
-
-            // 2. Restaura o arquivo
-            Files.copy(targetBackup.toPath(), currentDb.toPath(), StandardCopyOption.REPLACE_EXISTING);
-
-            // 3. Registra no log append-only
-            try {
-                String eventId = UUID.randomUUID().toString();
-                String payload = objectMapper.writeValueAsString(Map.of(
-                    "restoredFrom", backupFilename,
-                    "safetySnapshot", safetyCopy.getName()
-                ));
-                jdbcTemplate.update("""
-                    INSERT INTO event_store (event_id, aggregate_type, aggregate_id, event_type, payload, timestamp)
-                    VALUES (?, 'SYSTEM_BACKUP', ?, 'BACKUP_RESTORED', ?, ?)
-                """, eventId, backupFilename, payload, Instant.now().toString());
-            } catch (Exception logEx) {
-                logger.warn("Aviso ao registrar evento de restauração: {}", logEx.getMessage());
-            }
-
-            result.put("success", true);
-            result.put("restoredBackup", backupFilename);
-            result.put("safetySnapshotCreated", safetyCopy.getName());
-            result.put("message", "Banco de dados restaurado com sucesso. Cópia prévia de segurança preservada.");
-
-        } catch (Exception e) {
-            logger.error("Falha ao restaurar backup: {}", e.getMessage(), e);
-            result.put("success", false);
-            result.put("error", e.getMessage());
-        }
-
-        return result;
+            Path source = com.fiscalstudy.backend.infrastructure.config.SqliteRecovery.confinedBackup(databasePaths.backupDirectory(), backupFilename);
+            Path prepared = databasePaths.dataDirectory().resolve("restored_" + Instant.now().toEpochMilli() + "_" + UUID.randomUUID().toString().substring(0,8) + ".db");
+            com.fiscalstudy.backend.infrastructure.config.SqliteRecovery.restoreToNewFile(source, prepared);
+            appendBackupEvent("RESTORE_PREPARED", backupFilename, Map.of("source", backupFilename, "preparedDatabase", prepared.toString()));
+            return Map.of("success", true, "status", "RESTORE_PREPARED", "requiresRestart", true, "mainDatabaseUnchanged", true,
+                    "preparedDatabase", prepared.toString(), "message", "Cópia restaurada e verificada. Banco ativo preservado; pare a aplicação e configure o datasource para a cópia antes de reiniciar.");
+        } catch (IllegalArgumentException e) { throw e; }
+        catch (Exception e) { throw new IllegalStateException("Preparação da restauração falhou; banco ativo preservado", e); }
     }
 
-    // =========================================================================
-    // T38 — INTEGRAÇÕES E MOTOR ANALÍTICO
-    // =========================================================================
-
-    public Map<String, Object> getIntegrationsStatus() {
-        Map<String, Object> status = new LinkedHashMap<>();
-
-        // 1. Motor Analítico em R
-        Map<String, Object> rEngine = new LinkedHashMap<>();
-        File rEngineDir = new File("../analytics-engine/R");
-        File rOutputDir = new File("../analytics-engine/R/output");
-        boolean rInstalled = checkCommandAvailable("Rscript --version");
-        boolean hasRDir = rEngineDir.exists();
-
-        rEngine.put("status", (rInstalled || hasRDir) ? "DISPONIVEL" : "EM_FALLBACK_RESILIENTE");
-        rEngine.put("engineInstalled", rInstalled);
-        rEngine.put("contractVersion", "v1.0 (Cognitive JSON Pipeline)");
-        rEngine.put("lastAnalysisCompleted", rOutputDir.exists() && rOutputDir.lastModified() > 0 
-                ? new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date(rOutputDir.lastModified()))
-                : "Recente (Memória Operacional Ativa)");
-        rEngine.put("resilienceNotice", "A eventual indisponibilidade do R NUNCA bloqueia abrir o sistema, estudar, resolver questões ou programar revisões.");
-        status.put("motorAnaliticoR", rEngine);
-
-        // 2. Extrator de PDF (Python / PyMuPDF / Docling)
-        Map<String, Object> pdfExtractor = new LinkedHashMap<>();
-        boolean pythonInstalled = checkCommandAvailable("python --version");
-        pdfExtractor.put("status", "DISPONIVEL");
-        pdfExtractor.put("service", "Python UniversalExtractor");
-        pdfExtractor.put("pythonAvailable", pythonInstalled);
-        pdfExtractor.put("isolationArea", "staging.db (Processamento estritamente isolado)");
-        status.put("extratorPdf", pdfExtractor);
-
-        // 3. OCR e Reconhecimento de Imagens
-        Map<String, Object> ocr = new LinkedHashMap<>();
-        ocr.put("status", "DISPONIVEL_LOCAL");
-        ocr.put("engine", "Tesseract Local / Fallback PDF Digital");
-        status.put("ocrService", ocr);
-
-        // 4. AnkiConnect (Porta 8765)
-        Map<String, Object> anki = new LinkedHashMap<>();
-        boolean ankiReachable = checkHttpPort("http://127.0.0.1:8765");
-        anki.put("status", ankiReachable ? "CONECTADO" : "AGUARDANDO_ANKI");
-        anki.put("port", 8765);
-        anki.put("host", "127.0.0.1");
-        status.put("ankiConnect", anki);
-
+    public Map<String,Object> getIntegrationsStatus() {
+        Map<String,Object> status=new LinkedHashMap<>();
+        String r=System.getenv().getOrDefault("FISCALSTUDY_RSCRIPT","Rscript");
+        String python=System.getenv().getOrDefault("FISCALSTUDY_PYTHON","python");
+        boolean rInstalled=checkCommandAvailable(r);
+        Path engine=databasePaths.projectRoot().resolve("analytics-engine");
+        Path manifest=databasePaths.dataDirectory().resolve("analytics/current-run.json");
+        Map<String,Object> rStatus=new LinkedHashMap<>();
+        rStatus.put("status",rInstalled && Files.isRegularFile(engine.resolve("run_analytics.R"))?"DISPONIVEL":"INDISPONIVEL");
+        rStatus.put("engineInstalled",rInstalled);rStatus.put("lastAnalysisCompleted","NENHUMA_EXECUCAO_CONFIRMADA");
+        if(Files.isRegularFile(manifest))try{rStatus.put("currentRun",objectMapper.readValue(Files.readString(manifest),Map.class));}catch(Exception e){rStatus.put("manifestError",e.getMessage());}
+        status.put("motorAnaliticoR",rStatus);
+        boolean py=checkCommandAvailable(python);
+        status.put("extratorPdf",Map.of("status",py?"PYTHON_DISPONIVEL_DEPENDENCIAS_NAO_VERIFICADAS":"INDISPONIVEL","pythonAvailable",py,"service","Python UniversalExtractor","isolationArea",databasePaths.stagingDatabase().toString()));
+        status.put("ocrService",Map.of("status","NAO_VERIFICADO","engine","OCR não foi sondado"));
+        Map<String,Object> settings=getSettings();Object raw=settings.get("ankiIntegration");
+        boolean enabled=raw instanceof Map<?,?> consent && Boolean.TRUE.equals(consent.get("enabled"));
+        status.put("ankiConnect",Map.of("status",enabled?"HABILITADO_CONEXAO_NAO_SONDADA":"DESATIVADO_POR_PREFERENCIA","host","127.0.0.1","port",8765));
         return status;
     }
-
-    private boolean checkCommandAvailable(String cmd) {
+    private boolean checkCommandAvailable(String executable) {
         try {
-            Process proc = Runtime.getRuntime().exec(cmd);
-            proc.waitFor(300, java.util.concurrent.TimeUnit.MILLISECONDS);
-            return proc.exitValue() == 0;
-        } catch (Exception e) {
-            return false;
-        }
+            return com.fiscalstudy.backend.infrastructure.process.BoundedProcess.run(List.of(executable,"--version"),databasePaths.projectRoot(),java.time.Duration.ofSeconds(3),Map.of()).exitCode()==0;
+        }catch(Exception e){if(e instanceof InterruptedException)Thread.currentThread().interrupt();return false;}
     }
 
     private boolean checkHttpPort(String urlStr) {
@@ -450,7 +335,7 @@ public class SystemSettingsService {
         Map<String, Integer> tables = new LinkedHashMap<>();
         tables.put("questions", safeCount("SELECT count(*) FROM questions"));
         tables.put("event_store", safeCount("SELECT count(*) FROM event_store"));
-        tables.put("materials", safeCount("SELECT count(*) FROM materials"));
+        tables.put("materials", safeCount("SELECT count(*) FROM study_materials"));
         tables.put("concursos", safeCount("SELECT count(*) FROM concursos"));
         tables.put("study_notebooks", safeCount("SELECT count(*) FROM study_notebooks"));
         tables.put("favorite_questions", safeCount("SELECT count(*) FROM favorite_questions"));
@@ -460,10 +345,14 @@ public class SystemSettingsService {
         // Verificação de eventos duplicados
         int duplicateEvents = safeCount("SELECT count(*) - count(distinct event_id) FROM event_store");
         report.put("duplicateEventsCount", duplicateEvents);
-        report.put("eventsIntegrity", duplicateEvents == 0 ? "100% ÍNTEGRO (Sem duplicações)" : "ATENÇÃO: " + duplicateEvents + " duplicações detectadas");
+        report.put("eventsIntegrity", "Identidade de eventos protegida por PK; isso não comprova integridade semântica ou elegibilidade");
+        report.put("invalidEventJson",safeCount("SELECT count(*) FROM event_store WHERE NOT json_valid(payload_json)"));
+        report.put("realStudyAttempts",safeCount("SELECT count(*) FROM event_store WHERE event_type='ANSWER_SUBMITTED' AND json_valid(payload_json) AND json_extract(payload_json,'$.origin')='REAL_STUDY'"));
+        report.put("quickCheck",jdbcTemplate.queryForList("PRAGMA quick_check"));
+        report.put("foreignKeyViolations",jdbcTemplate.queryForList("PRAGMA foreign_key_check"));
 
         // Sanitização de logs
-        report.put("logSanitization", "ATIVO (Credenciais, senhas e tokens nunca expostos nos logs)");
+        report.put("logSanitization", "NAO_AUDITADO_AUTOMATICAMENTE");
         report.put("serverTime", Instant.now().toString());
 
         return report;
@@ -525,21 +414,21 @@ public class SystemSettingsService {
                 results.get("CONTEUDOS").add(item);
             }
         } catch (Exception e) {
-            logger.warn("Erro ao buscar conteúdos: {}", e.getMessage());
+            throw new IllegalStateException("Busca de conteúdos indisponível", e);
         }
 
         // 2. QUESTÕES
         try {
             List<Map<String, Object>> rows = jdbcTemplate.queryForList("""
-                SELECT id, numero_original, statement, disciplina, assunto
+                SELECT id, numero_original, enunciado, disciplina, assunto
                 FROM questions
-                WHERE lower(statement) LIKE ? OR lower(disciplina) LIKE ? OR lower(assunto) LIKE ?
+                WHERE lower(enunciado) LIKE ? OR lower(disciplina) LIKE ? OR lower(assunto) LIKE ?
                 LIMIT 6
             """, searchPattern, searchPattern, searchPattern);
 
             for (Map<String, Object> r : rows) {
                 Map<String, Object> item = new LinkedHashMap<>();
-                String stmt = (String) r.get("statement");
+                String stmt = (String) r.get("enunciado");
                 String resumo = stmt != null ? (stmt.length() > 90 ? stmt.substring(0, 90) + "..." : stmt) : "Questão sem enunciado";
                 item.put("id", r.get("id"));
                 item.put("numeroOriginal", r.get("numero_original"));
@@ -551,15 +440,15 @@ public class SystemSettingsService {
                 results.get("QUESTOES").add(item);
             }
         } catch (Exception e) {
-            logger.warn("Erro ao buscar questões: {}", e.getMessage());
+            throw new IllegalStateException("Busca de questões indisponível", e);
         }
 
         // 3. MATERIAIS
         try {
             List<Map<String, Object>> rows = jdbcTemplate.queryForList("""
-                SELECT id, title, discipline, file_format, total_pages
-                FROM materials
-                WHERE lower(title) LIKE ? OR lower(discipline) LIKE ?
+                SELECT id, titulo AS title, disciplina AS discipline, formato AS file_format, total_paginas AS total_pages
+                FROM study_materials
+                WHERE lower(titulo) LIKE ? OR lower(disciplina) LIKE ?
                 LIMIT 6
             """, searchPattern, searchPattern);
 
@@ -574,15 +463,15 @@ public class SystemSettingsService {
                 results.get("MATERIAIS").add(item);
             }
         } catch (Exception e) {
-            logger.warn("Erro ao buscar materiais: {}", e.getMessage());
+            throw new IllegalStateException("Busca de materiais indisponível", e);
         }
 
         // 4. ATIVIDADES (Cadernos e Simulados)
         try {
             List<Map<String, Object>> rows = jdbcTemplate.queryForList("""
-                SELECT id, title, mode, question_count
+                SELECT id, nome AS title, modo_resolucao AS mode, quantidade AS question_count
                 FROM study_notebooks
-                WHERE lower(title) LIKE ?
+                WHERE lower(nome) LIKE ?
                 LIMIT 5
             """, searchPattern);
 
@@ -596,7 +485,7 @@ public class SystemSettingsService {
                 results.get("ATIVIDADES").add(item);
             }
         } catch (Exception e) {
-            logger.warn("Erro ao buscar atividades: {}", e.getMessage());
+            throw new IllegalStateException("Busca de atividades indisponível", e);
         }
 
         return results;
