@@ -1,24 +1,28 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
+import { loadStudyPreferences, saveStudyPreferences } from './utils/studyPreferences';
+import { requestJson } from './utils/attemptSubmission';
 import Sidebar, { type NavTab } from './components/navigation/Sidebar';
 import Dashboard from './components/dashboard/Dashboard';
-import PlanejamentoAdaptativo from './components/cronograma/PlanejamentoAdaptativo';
+const PlanejamentoAdaptativo = lazy(() => import('./components/cronograma/PlanejamentoAdaptativo'));
 import { RotinaDisponibilidade } from './components/cronograma/RotinaDisponibilidade';
 
-import CadernosSimulados, { type SimuladoConfig } from './components/simulados/CadernosSimulados';
-import CicloRevisoes from './components/revisoes/CicloRevisoes';
-import AnalyticsView from './components/analytics/AnalyticsView';
-import MeusConcursos, { type ConcursoItem } from './components/concursos/MeusConcursos';
-import EditalVerticalizado from './components/edital/EditalVerticalizado';
-import MapaConteudos from './components/edital/MapaConteudos';
-import QuestionViewer from './components/QuestionViewer';
-import ImportStudio from './components/ingestion/ImportStudio';
-import AssistenteObjetivoWizard from './components/onboarding/AssistenteObjetivoWizard';
+import type { SimuladoConfig } from './components/simulados/CadernosSimulados';
+const CadernosSimulados = lazy(() => import('./components/simulados/CadernosSimulados'));
+const CicloRevisoes = lazy(() => import('./components/revisoes/CicloRevisoes'));
+const AnalyticsView = lazy(() => import('./components/analytics/AnalyticsView'));
+import type { ConcursoItem } from './components/concursos/MeusConcursos';
+const MeusConcursos = lazy(() => import('./components/concursos/MeusConcursos'));
+const EditalVerticalizado = lazy(() => import('./components/edital/EditalVerticalizado'));
+const MapaConteudos = lazy(() => import('./components/edital/MapaConteudos'));
+const QuestionViewer = lazy(() => import('./components/QuestionViewer'));
+const ImportStudio = lazy(() => import('./components/ingestion/ImportStudio'));
+const AssistenteObjetivoWizard = lazy(() => import('./components/onboarding/AssistenteObjetivoWizard'));
 import BoasVindasT01 from './components/onboarding/BoasVindasT01';
 import { BibliotecaMateriais } from './components/materiais/BibliotecaMateriais';
 import { ResumosEstrategicos } from './components/resumos/ResumosEstrategicos';
 import { StudyTimerFab } from './components/timer/StudyTimerFab';
 import SessaoEstudoAtiva from './components/timer/SessaoEstudoAtiva';
-import HistoricoSessoes from './components/timer/HistoricoSessoes';
+const HistoricoSessoes = lazy(() => import('./components/timer/HistoricoSessoes'));
 import { PreMortemView } from './components/cognitive/PreMortemView';
 import { SessaoFeynmanView } from './components/cognitive/SessaoFeynmanView';
 import { MetodoEraView } from './components/cognitive/MetodoEraView';
@@ -26,7 +30,7 @@ import { PontosChaveView } from './components/cognitive/PontosChaveView';
 import { DigitalTwinView } from './components/digitaltwin/DigitalTwinView';
 import { CuradoriaAnki } from './components/anki/CuradoriaAnki';
 import { BancoQuestoes } from './components/questoes/BancoQuestoes';
-import ConfiguracoesAdminView from './components/configuracoes/ConfiguracoesAdminView';
+const ConfiguracoesAdminView = lazy(() => import('./components/configuracoes/ConfiguracoesAdminView'));
 import BuscaGlobalModal from './components/configuracoes/BuscaGlobalModal';
 
 function App() {
@@ -45,9 +49,20 @@ function App() {
     return (saved === 'night' || saved === 'paper') ? saved : 'paper';
   });
 
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === 'paper' ? 'night' : 'paper'));
+  const toggleTheme = async () => {
+    try {
+      const settings = await requestJson('/api/v1/system/settings');
+      await saveStudyPreferences({ ...settings, perfilEstudos: { ...settings.perfilEstudos, tema: theme === 'paper' ? 'CALMA_NOTURNA' : 'PAPEL_CLARO' } });
+    } catch (error) {
+      alert('O tema não foi salvo: ' + (error instanceof Error ? error.message : 'falha de conexão'));
+    }
   };
+  useEffect(() => {
+    const apply = (event: Event) => setTheme((event as CustomEvent).detail.theme);
+    window.addEventListener('fiscalstudy:preferences-updated', apply);
+    loadStudyPreferences().catch(error => console.warn('Preferências indisponíveis; usando visual local.', error));
+    return () => window.removeEventListener('fiscalstudy:preferences-updated', apply);
+  }, []);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -158,6 +173,7 @@ function App() {
           onRetry={loadConcursos}
           onStartWizard={() => setIsWizardOpen(true)}
         />
+        <Suspense fallback={<div role="status">Carregando assistente...</div>}>
         <AssistenteObjetivoWizard
           isOpen={isWizardOpen}
           onClose={() => setIsWizardOpen(false)}
@@ -167,6 +183,7 @@ function App() {
             setActiveTab('dashboard');
           }}
         />
+        </Suspense>
       </>
     );
   }
@@ -188,6 +205,7 @@ function App() {
 
       {/* Main Content View Area */}
       <main className="main-content-area">
+        <Suspense fallback={<div role="status">Carregando...</div>}>
         {activeTab === 'dashboard' && (
           <Dashboard
             activeConcurso={activeConcurso}
@@ -393,6 +411,7 @@ function App() {
         {activeTab === 'pontoschave' && <PontosChaveView />}
         {activeTab === 'premortem' && <PreMortemView />}
         {activeTab === 'configuracoes' && <ConfiguracoesAdminView />}
+        </Suspense>
       </main>
 
       {/* Global Floating Study Timer & Pomodoro FAB */}
@@ -401,6 +420,7 @@ function App() {
         onSessionSaved={() => loadConcursos()}
       />
 
+      <Suspense fallback={<div role="status">Carregando assistente...</div>}>
       {/* Assistente de Configuração de Objetivos (T02 a T06) */}
       <AssistenteObjetivoWizard
         isOpen={isWizardOpen}
@@ -411,6 +431,7 @@ function App() {
         }}
       />
 
+      </Suspense>
       {/* T40 — Busca Global Unificada Modal */}
       <BuscaGlobalModal
         isOpen={isBuscaGlobalOpen}

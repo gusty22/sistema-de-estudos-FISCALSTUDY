@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useModalA11y } from '../../utils/accessibility';
 import {
   Search,
   BookOpen,
@@ -23,6 +24,7 @@ export const BuscaGlobalModal: React.FC<BuscaGlobalModalProps> = ({
   onClose,
   onNavigate
 }) => {
+  useModalA11y({ isOpen, onClose, closeOnEscape: true, restoreFocus: true });
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<{
     CONTEUDOS: any[];
@@ -111,20 +113,32 @@ export const BuscaGlobalModal: React.FC<BuscaGlobalModalProps> = ({
 
   return (
     <div className="search-modal-backdrop" onClick={onClose}>
-      <div className="search-modal-dialog animate-scale-in" onClick={e => e.stopPropagation()}>
+      <div
+        className="search-modal-dialog animate-scale-in"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Busca global no acervo"
+        onClick={e => e.stopPropagation()}
+      >
         {/* Barra de Input */}
         <div className="search-input-header">
-          <Search className="w-5 h-5 text-slate-400 shrink-0" />
+          <Search className="w-5 h-5 text-slate-400 shrink-0" aria-hidden="true" />
           <input
             ref={inputRef}
             type="text"
             className="search-input-field"
             placeholder="Buscar por disciplina, tópico, questão, prova, material ou objetivo..."
             value={query}
+            aria-label="Campo de busca global"
             onChange={e => setQuery(e.target.value)}
           />
           {query && (
-            <button className="search-clear-btn" onClick={() => setQuery('')}>
+            <button
+              className="search-clear-btn"
+              onClick={() => setQuery('')}
+              aria-label="Limpar termo de busca"
+              title="Limpar busca"
+            >
               <X className="w-4 h-4" />
             </button>
           )}

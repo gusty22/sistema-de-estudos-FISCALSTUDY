@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useModalA11y } from '../../utils/accessibility';
 import {
   CheckCircle2,
   ArrowRight,
@@ -164,6 +165,7 @@ export default function AssistenteObjetivoWizard({
   onConcursoCreated,
   initialData
 }: AssistenteObjetivoWizardProps) {
+  useModalA11y({ isOpen, onClose, closeOnEscape: true, restoreFocus: true });
   // 1. Tema Paper / Night
   const [theme] = useState<'paper' | 'night'>(() => {
     return (localStorage.getItem('fiscalstudy_theme') as 'paper' | 'night') || 'paper';
@@ -214,7 +216,6 @@ export default function AssistenteObjetivoWizard({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  if (!isOpen) return null;
 
   // Helpers de Árvore Curricular
   const findNode = (nodes: CurriculumNode[], id: string): CurriculumNode | null => {
@@ -434,9 +435,16 @@ export default function AssistenteObjetivoWizard({
     input.click();
   };
 
+  if (!isOpen) return null;
+
   return (
-    <div className="wizard-calm-backdrop animate-fadeIn">
-      <div className={`wizard-calm-modal theme-${theme}`}>
+    <div className="wizard-calm-backdrop animate-fadeIn" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div
+        className={`wizard-calm-modal theme-${theme}`}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="wizard-modal-title"
+      >
         {/* HEADER & STEPPER */}
         <header className="wizard-calm-header">
           <div className="wizard-stepper">
@@ -465,7 +473,8 @@ export default function AssistenteObjetivoWizard({
             type="button"
             onClick={onClose}
             className="wizard-close-btn"
-            title="Fechar assistente"
+            aria-label="Fechar assistente de objetivo"
+            title="Fechar assistente (Esc)"
           >
             <X className="w-5 h-5" />
           </button>
@@ -487,7 +496,7 @@ export default function AssistenteObjetivoWizard({
             <div className="space-y-6 animate-fadeIn">
               <div className="wizard-section-heading">
                 <span className="wizard-section-tag">Passo 1 de 5</span>
-                <h2 className="wizard-section-title">Defina seu Objetivo</h2>
+                <h2 id="wizard-modal-title" className="wizard-section-title">Defina seu Objetivo</h2>
                 <p className="wizard-section-desc">
                   Uma unidade de planejamento independente. Pode ser um concurso fiscal,
                   certificação, vestibular ou disciplina livre.

@@ -1299,5 +1299,54 @@
   color: #bae6fd;
 }
 
+/* Indicador de foco visível para acessibilidade */
+.option-card:focus-visible {
+  outline: 2px solid var(--primary, #4f46e5);
+  outline-offset: 2px;
+}
+
+.conf-btn:focus-visible,
+.submit-btn:focus-visible,
+.cognitive-trigger-btn:focus-visible,
+.metacon-pill-btn:focus-visible,
+.btn-secondary:focus-visible {
+  outline: 2px solid var(--primary, #4f46e5);
+  outline-offset: 2px;
+}
+
+/* Responsividade Tablet e Viewports Menores */
+@media (max-width: 768px) {
+  .interaction-bar, .feedback-bar {
+    padding: 0.85rem 1rem;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .confidence-section {
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    gap: 0.35rem;
+  }
+
+  .confidence-buttons {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .conf-btn {
+    flex: 1;
+    min-width: 0;
+    padding: 4px 2px;
+  }
+
+  .submit-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+
 
 
