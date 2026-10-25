@@ -107,7 +107,13 @@ Consulte pontualmente via `view_file` conforme o escopo da tarefa:
 ## 5. Ferramentas e Skills Ativas
 - **Graphify (`graphify-out/`)**: Grafo estrutural do código via AST Tree-sitter. Consultas: `graphify query "<pergunta>"`, `graphify explain "<nó>"`, `graphify path "<A>" "<B>"`. Atualização local pós-código: `graphify update .`.
 - **OpenSpec (`openspec/`)**: Gestão de propostas (`/opsx-propose`) e tarefas (`/opsx-apply`).
-- **Skills Sob Demanda (`.agents/skills/`)**: `implement` (TDD), `code-review` (diffs), `taste-skill` (UI anti-slop).
+- **Skills Sob Demanda (`.agents/skills/`)**:
+  - *Engenharia & TDD*: `implement`, `test-driven-development`, `verification-before-completion` (Superpowers).
+  - *Qualidade & Revisão*: `code-review`, `code-simplification` (Addy Osmani).
+  - *Auditoria & Segurança*: `security-audit` (Cloudflare).
+  - *Investigação & Debugging*: `systematic-debugging` (Superpowers).
+  - *Orquestração Multiagente*: `subagent-driven-development` (Superpowers).
+  - *Frontend & Interface*: `taste-skill` (Design Tecnologia Calma anti-slop), `webapp-testing` (Anthropic).
 - **Obsidian & Segundo Cérebro (`scripts/`)**:
   - Busca semântica local (FTS5): `uv run python scripts/obsidian_kb.py --query [conceito]` (recupera trechos com BM25, sem custo de API).
   - Ponte conceitual <-> código: `uv run python scripts/second_brain_bridge.py [pergunta]` (cruza notas do Obsidian com nós AST do Graphify).
