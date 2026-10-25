@@ -59,6 +59,29 @@ class RobinHoodContestScopeRegressionTest {
         }
     }
 
+    @Test void completedCyclesAreCountedForQuotedContestIdentifiers() {
+        String contest = "d'agua";
+        jdbc.update("INSERT INTO edital_topicos VALUES(?,?,?)", contest, "Tributario", 1.0);
+        jdbc.update("INSERT INTO event_store VALUES(?,?,?)", "CYCLE_COMPLETED", contest, "{}");
+        jdbc.update("INSERT INTO event_store VALUES(?,?,?)", "CYCLE_COMPLETED", "other", "{}");
+        assertEquals(1, service.getOrGenerateCycle(contest, 12.0, 60).getCiclosCompletados());
+    }
+
+    @Test void contestIdentifierCannotChangeCompletedCyclesPredicate() {
+        String contest = "x' OR 1=1 --";
+        jdbc.update("INSERT INTO edital_topicos VALUES(?,?,?)", contest, "Tributario", 1.0);
+        jdbc.update("INSERT INTO event_store VALUES(?,?,?)", "CYCLE_COMPLETED", contest, "{}");
+        jdbc.update("INSERT INTO event_store VALUES(?,?,?)", "CYCLE_COMPLETED", "other", "{}");
+        jdbc.update("INSERT INTO event_store VALUES(?,?,?)", "ANSWER_SUBMITTED", contest, "{}");
+        assertEquals(1, service.getOrGenerateCycle(contest, 12.0, 60).getCiclosCompletados());
+    }
+
+    @Test void completedCyclesGlobalModeStillCountsAllContests() {
+        jdbc.update("INSERT INTO event_store VALUES(?,?,?)", "CYCLE_COMPLETED", "selected", "{}");
+        jdbc.update("INSERT INTO event_store VALUES(?,?,?)", "CYCLE_COMPLETED", "other", "{}");
+        assertEquals(2, service.getOrGenerateCycle(null, 12.0, 60).getCiclosCompletados());
+    }
+
     private Set<String> disciplines(String contest) {
         return service.getOrGenerateCycle(contest, 12.0, 60).getBlocos().stream()
             .filter(block -> block.getType() == RobinHoodCycleBlock.BlockType.ESTUDO_REGULAR)

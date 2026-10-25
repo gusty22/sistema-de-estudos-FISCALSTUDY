@@ -80,10 +80,10 @@ public class RobinHoodCycleService {
         // Contagem de ciclos completados para gatilho de recalibração
         int completedCycles = 0;
         try {
-            List<Map<String, Object>> countRow = jdbcTemplate.queryForList(
-                    "SELECT COUNT(*) as c FROM event_store WHERE event_type = 'CYCLE_COMPLETED' " +
-                            (concursoId != null ? "AND aggregate_id = '" + concursoId + "'" : "")
-            );
+            String countSql = "SELECT COUNT(*) as c FROM event_store WHERE event_type = 'CYCLE_COMPLETED' ";
+            List<Map<String, Object>> countRow = concursoId != null
+                    ? jdbcTemplate.queryForList(countSql + "AND aggregate_id = ?", concursoId)
+                    : jdbcTemplate.queryForList(countSql);
             if (!countRow.isEmpty() && countRow.get(0).get("c") != null) {
                 completedCycles = ((Number) countRow.get(0).get("c")).intValue();
             }
