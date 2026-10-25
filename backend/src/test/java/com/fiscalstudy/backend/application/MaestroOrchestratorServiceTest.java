@@ -39,7 +39,7 @@ class MaestroOrchestratorServiceTest {
         when(jdbcTemplate.queryForList(startsWith("SELECT disciplina, assunto"), any(Object[].class)))
                 .thenReturn(List.of(Map.of("disciplina", "Direito Administrativo", "assunto", "Atos Administrativos", "subassunto", "Atributos do Ato")));
 
-        when(jdbcTemplate.queryForList(startsWith("SELECT COUNT(*) as total FROM anki_flashcards")))
+        when(jdbcTemplate.queryForList(startsWith("SELECT COUNT(*) as total FROM anki_flashcards"), eq("concurso-123")))
                 .thenReturn(List.of(Map.of("total", 15)));
 
         MaestroPlanDTO plan = maestroService.generateDailyPlan("concurso-123", 180);
@@ -52,8 +52,8 @@ class MaestroOrchestratorServiceTest {
         var p1 = plan.getPassos().get(0);
         assertEquals(1, p1.getNumeroPasso());
         assertEquals("ANKI_SRS", p1.getTipo());
-        assertTrue(p1.getInstrucaoMastigada().contains("cards pendentes"));
-        assertTrue(p1.getInstrucaoMastigada().contains("Direito Administrativo"));
+        assertTrue(p1.getInstrucaoMastigada().contains("cards deste concurso pendentes"));
+        assertTrue(p1.getInstrucaoMastigada().contains("não informa revisões vencidas"));
 
         // Passo 2: Priming Cognitivo
         var p2 = plan.getPassos().get(1);

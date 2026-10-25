@@ -48,6 +48,8 @@ public class MaestroOrchestratorService {
     }
 
     public MaestroPlanDTO generateDailyPlan(String concursoId, Integer tempoDisponivelMinutos) {
+        concursoId = concursoId == null ? null : concursoId.trim();
+        if (concursoId != null && (concursoId.isEmpty() || "undefined".equalsIgnoreCase(concursoId) || "null".equalsIgnoreCase(concursoId))) concursoId = null;
         // 1. Obter nome do concurso
         String concursoNome = "Concurso Ativo";
         if (concursoId != null && !concursoId.isBlank() && !"undefined".equalsIgnoreCase(concursoId)) {
@@ -99,11 +101,13 @@ public class MaestroOrchestratorService {
 
         int tempoTotal = tempoDisponivel;
 
+        if (concursoId == null) return emptyPlan(null, concursoNome, tempoDisponivel, "SELECIONE_CONCURSO", "Selecione um concurso para gerar um plano vinculado ao seu edital.");
+
         // 3. Telemetria Cognitiva Real: Checagem de flashcards, retenção e revisões do calendário
         int cardsAtrasados = 0;
         try {
             List<Map<String, Object>> cardRows = jdbcTemplate.queryForList(
-                    "SELECT COUNT(*) as total FROM anki_flashcards WHERE status IN ('PENDING', 'PENDING_ANKI')"
+                    "SELECT COUNT(*) as total FROM anki_flashcards WHERE concurso_id = ? AND sync_status = 'PENDING_ANKI'", concursoId
             );
             if (!cardRows.isEmpty() && cardRows.get(0).get("total") != null) {
                 cardsAtrasados = ((Number) cardRows.get(0).get("total")).intValue();
@@ -133,9 +137,9 @@ public class MaestroOrchestratorService {
         List<Map<String, Object>> pendingRevisions = new ArrayList<>();
         try {
             String revSql = "SELECT id, disciplina, topico, tipo_revisao, prioridade_score, justificativa_pedagogica " +
-                    "FROM revision_calendar WHERE status = 'PENDENTE' AND data_agendada <= ? " +
+                    "FROM revision_calendar WHERE concurso_id = ? AND status = 'PENDENTE' AND data_agendada <= ? " +
                     "ORDER BY prioridade_score DESC, data_agendada ASC LIMIT 2";
-            pendingRevisions = new ArrayList<>(jdbcTemplate.queryForList(revSql, todayStr));
+            pendingRevisions = new ArrayList<>(jdbcTemplate.queryForList(revSql, concursoId, todayStr));
         } catch (Exception ignored) {}
 
         // 4. Seleção Intercalada de Tópicos (Interleaving Cognitivo - Máximo 50-60 min por disciplina)
@@ -150,11 +154,7 @@ public class MaestroOrchestratorService {
                     concursoId.trim()
             );
         }
-        if (candidateTopics.isEmpty()) {
-            candidateTopics = jdbcTemplate.queryForList(
-                    "SELECT disciplina, assunto, subassunto, peso FROM edital_topicos ORDER BY peso DESC, id ASC"
-            );
-        }
+        if (candidateTopics.isEmpty()) return emptyPlan(concursoId, concursoNome, tempoDisponivel, "SEM_TOPICOS_EDITAL", "Nenhum tópico cadastrado neste concurso. Importe ou revise o edital antes de gerar o plano.");
 
         // Extrai tópicos alternando disciplinas para evitar monotonia cognitiva
         List<Map<String, Object>> selectedTopics = new ArrayList<>();
@@ -181,13 +181,7 @@ public class MaestroOrchestratorService {
             }
         }
 
-        if (selectedTopics.isEmpty()) {
-            selectedTopics.add(Map.of(
-                    "disciplina", "Direito Administrativo",
-                    "assunto", "Atos Administrativos",
-                    "subassunto", "Conceito, Requisitos e Atributos"
-            ));
-        }
+        if (selectedTopics.isEmpty()) return emptyPlan(concursoId, concursoNome, tempoDisponivel, "SEM_TOPICOS_EDITAL", "Nenhum tópico disponível para este concurso.");
 
         String disciplinaPrincipal = (String) selectedTopics.get(0).getOrDefault("disciplina", "Conhecimentos Fiscais");
         String assuntoPrincipal = (String) selectedTopics.get(0).getOrDefault("assunto", "Tópico Estratégico");
@@ -217,10 +211,10 @@ public class MaestroOrchestratorService {
                 int ankiTime = Math.min(15, Math.max(8, (int) Math.round(targetBlockTime * 0.15)));
                 passos.add(new MaestroStepDTO(
                         passos.size() + 1, 0, ankiTime, "ANKI_SRS",
-                        "Repetição Espaçada (Revisão Anki)",
-                        String.format("Passo %d (%d min): Revise os %d cards pendentes de %s no Anki.", passos.size() + 1, ankiTime, cardsAtrasados, bDisciplina),
+                        "Cards pendentes de envio ao Anki",
+                        String.format("Passo %d (%d min): Verifique os %d cards deste concurso pendentes de exportação/sincronização com Anki. Esse total não informa revisões vencidas.", passos.size() + 1, ankiTime, cardsAtrasados),
                         bDisciplina, bAssunto,
-                        "Reativação rápida de memória antes de novo conteúdo", "ANKI_SYNC",
+                        "Pendência operacional de envio; vencimento de revisão não consultado", "ANKI_SYNC",
                         Map.of("cardsAtrasados", cardsAtrasados, "retencaoAtual", retencaoAtual, "metaRetencao", metaRetencao)
                 ));
                 blockTimeRemaining -= ankiTime;
@@ -386,6 +380,12 @@ public class MaestroOrchestratorService {
         );
     }
 
+    private MaestroPlanDTO emptyPlan(String concursoId, String concursoNome, int availableMinutes, String reason, String message) {
+        return new MaestroPlanDTO(concursoId, concursoNome, 0, availableMinutes, 0, null, null, List.of(),
+                Map.of("statusPlanejador", reason, "tempoPlanejadoMinutos", 0, "tempoDisponivelMinutos", availableMinutes,
+                        "totalBlocosIntercalados", 0, "revisoesInjetadas", 0, "disciplinasIntercaladas", List.of()), message);
+    }
+
     private Map<String, Object> findMaterialForDiscipline(String concursoId, String disciplina) {
         String materialDoc = "Biblioteca";
         int pagIni = 1;
@@ -408,7 +408,7 @@ public class MaestroOrchestratorService {
                     else pagFim = pagIni + 20;
                 } else {
                     List<Map<String, Object>> directMat = jdbcTemplate.queryForList(
-                            "SELECT titulo, total_paginas FROM study_materials WHERE (concurso_id = ? OR concurso_id IS NULL) AND disciplina = ? LIMIT 1",
+                            "SELECT titulo, total_paginas FROM study_materials WHERE concurso_id = ? AND disciplina = ? LIMIT 1",
                             concursoId, disciplina
                     );
                     if (!directMat.isEmpty() && directMat.get(0).get("titulo") != null) {
