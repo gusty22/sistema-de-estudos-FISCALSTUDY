@@ -496,3 +496,21 @@ CREATE INDEX IF NOT EXISTS idx_qfamily_id ON question_families(family_id);
 CREATE TABLE IF NOT EXISTS learning_memory_state(question_id TEXT PRIMARY KEY,stability REAL NOT NULL,difficulty REAL NOT NULL,reps INTEGER NOT NULL,lapses INTEGER NOT NULL,last_reviewed_at TEXT NOT NULL,due_at TEXT NOT NULL,model_version TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS learning_evidence_projection(attempt_id TEXT PRIMARY KEY,question_id TEXT NOT NULL,occurred_at TEXT NOT NULL,origin TEXT NOT NULL,recall_before REAL,pedagogical_signal TEXT NOT NULL,model_version TEXT NOT NULL);
 CREATE INDEX IF NOT EXISTS idx_learning_memory_due ON learning_memory_state(due_at);
+
+-- EPIC 02: Modelo Individual de Conhecimento (Read-Model Canônico)
+CREATE TABLE IF NOT EXISTS topic_knowledge_projections (
+    topic_id TEXT NOT NULL PRIMARY KEY,
+    discipline_id TEXT NOT NULL,
+    total_attempts INTEGER NOT NULL DEFAULT 0,
+    correct_attempts INTEGER NOT NULL DEFAULT 0,
+    accuracy_rate REAL NOT NULL DEFAULT 0.0,
+    brier_score REAL,
+    brier_calibration_status TEXT DEFAULT 'INSUFFICIENT_DATA',
+    avg_stability_days REAL,
+    current_retrieval_rate REAL,
+    transfer_index REAL,
+    sample_confidence_level TEXT NOT NULL DEFAULT 'UNCERTAIN_LOW_DATA',
+    updated_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_topic_knowledge_discipline ON topic_knowledge_projections(discipline_id);
+CREATE INDEX IF NOT EXISTS idx_topic_knowledge_updated ON topic_knowledge_projections(updated_at);
