@@ -14,6 +14,7 @@ import type { QuestionItem } from './BancoQuestoes';
 import { useSimplifiedMode } from '../../context/SimplifiedModeContext';
 import './ResolucaoQuestaoModal.css';
 import { AttemptSubmission, annotateAttempt } from '../../utils/attemptSubmission';
+import { useModalA11y, handleKeyActivate } from '../../utils/accessibility';
 
 interface AttemptFeedback {
   attemptId: string;
@@ -65,6 +66,8 @@ export const ResolucaoQuestaoModal: React.FC<ResolucaoQuestaoModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [feedback, setFeedback] = useState<AttemptFeedback | null>(null);
   const [selectedCausaErro, setSelectedCausaErro] = useState<string>('');
+  const [annotatingState, setAnnotatingState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [annotationMessage, setAnnotationMessage] = useState<string | null>(null);
   const [activeTimeMs, setActiveTimeMs] = useState<number>(0);
   const [ankiState, setAnkiState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [ankiMessage, setAnkiMessage] = useState<string | null>(null);
@@ -84,6 +87,8 @@ export const ResolucaoQuestaoModal: React.FC<ResolucaoQuestaoModalProps> = ({
     setIsSubmitting(false);
     setFeedback(null);
     setSelectedCausaErro('');
+    setAnnotatingState('idle');
+    setAnnotationMessage(null);
     setActiveTimeMs(0);
     setAnkiState('idle');
     setAnkiMessage(null);
@@ -151,21 +156,26 @@ export const ResolucaoQuestaoModal: React.FC<ResolucaoQuestaoModalProps> = ({
     onClose();
   };
 
+  useModalA11y({
+    isOpen: true,
+    onClose: handleClose,
+    closeOnEscape: true,
+    restoreFocus: true
+  });
+
   useEffect(() => {
     return () => {
       recordSessionSummary();
     };
   }, []);
 
-  // Atalhos de teclado (Esc para fechar, 1-5 confiança, setas para navegar se feedback exibido)
+  // Atalhos de teclado (1-5 confiança, setas para navegar se feedback exibido)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
         return;
       }
-      if (e.key === 'Escape') {
-        handleClose();
-      } else if (!feedback && !pendingAttemptRef.current && ['1', '2', '3', '4', '5'].includes(e.key)) {
+      if (!feedback && !pendingAttemptRef.current && ['1', '2', '3', '4', '5'].includes(e.key)) {
         setConfidence(parseInt(e.key, 10));
       } else if (feedback && e.key === 'ArrowRight' && onNext) {
         onNext();
@@ -252,12 +262,17 @@ export const ResolucaoQuestaoModal: React.FC<ResolucaoQuestaoModalProps> = ({
 
   // Atualizar metacognição pós-submissão
   const handleSelectCausaErro = async (causaCode: string) => {
-    if (!feedback?.attemptId) return;
+    if (!feedback?.attemptId || annotatingState === 'saving') return;
+    setAnnotatingState('saving');
+    setAnnotationMessage(null);
     try {
       await annotateAttempt(question.questionId, feedback.attemptId, sessionIdRef.current, causaCode);
       setSelectedCausaErro(causaCode);
+      setAnnotatingState('saved');
+      setAnnotationMessage('Diagnóstico metacognitivo salvo com sucesso.');
     } catch (error) {
-      alert('A anotação não foi salva: ' + (error instanceof Error ? error.message : 'falha de conexão'));
+      setAnnotatingState('error');
+      setAnnotationMessage(error instanceof Error ? error.message : 'Falha na conexão ao registrar diagnóstico.');
     }
   };
 
@@ -320,11 +335,17 @@ export const ResolucaoQuestaoModal: React.FC<ResolucaoQuestaoModalProps> = ({
 
   return (
     <div className="resolucao-modal-backdrop" onClick={handleClose}>
-      <div className="resolucao-modal-container" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="resolucao-modal-container"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="resolucao-modal-title"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Cabeçalho do Modal */}
         <header className="resolucao-modal-header">
           <div className="header-left-col">
-            <div className="header-badge-row">
+            <div className="header-badge-row" id="resolucao-modal-title">
               <span className="badge-tag-modal discipline">{question.discipline}</span>
               <span className="badge-tag-modal topic">{question.topic || 'Geral'}</span>
               <span className="badge-tag-modal">{question.board} • {question.year}</span>
@@ -358,11 +379,12 @@ export const ResolucaoQuestaoModal: React.FC<ResolucaoQuestaoModalProps> = ({
                 className="btn-batch-nav"
                 onClick={onPrev}
                 disabled={!onPrev || currentIndex <= 0}
+                aria-label="Questão anterior"
                 title="Questão anterior"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              <span className="batch-indicator">
+              <span className="batch-indicator" aria-live="polite">
                 {currentIndex + 1} de {totalInBatch}
               </span>
               <button
@@ -370,6 +392,7 @@ export const ResolucaoQuestaoModal: React.FC<ResolucaoQuestaoModalProps> = ({
                 className="btn-batch-nav"
                 onClick={onNext}
                 disabled={!onNext || currentIndex >= totalInBatch - 1}
+                aria-label="Próxima questão"
                 title="Próxima questão"
               >
                 <ChevronRight className="w-4 h-4" />
@@ -380,6 +403,7 @@ export const ResolucaoQuestaoModal: React.FC<ResolucaoQuestaoModalProps> = ({
               type="button"
               className="btn-close-modal"
               onClick={handleClose}
+              aria-label="Fechar resolução e voltar ao Banco"
               title="Fechar resolução e voltar ao Banco (Esc)"
             >
               <X className="w-5 h-5" />
@@ -410,7 +434,7 @@ export const ResolucaoQuestaoModal: React.FC<ResolucaoQuestaoModalProps> = ({
           )}
 
           {/* Alternativas */}
-          <div className="resolucao-options-list">
+          <div className="resolucao-options-list" role="radiogroup" aria-label="Alternativas da questão">
             {rawOptions.map((opt, idx) => {
               const letter = extractLetter(opt, idx);
               const isSelected = selectedOption === opt;
@@ -442,14 +466,23 @@ export const ResolucaoQuestaoModal: React.FC<ResolucaoQuestaoModalProps> = ({
               return (
                 <div
                   key={idx}
+                  role="radio"
+                  aria-checked={isSelected}
+                  tabIndex={feedback ? -1 : 0}
+                  aria-label={`Alternativa ${letter}: ${cleanText}`}
                   className={`resolucao-option-card ${optionStatusClass} ${feedback ? 'disabled' : ''}`}
                   onClick={() => {
                     if (!feedback && !pendingAttemptRef.current) {
                       setSelectedOption(opt);
                     }
                   }}
+                  onKeyDown={(e) => {
+                    if (!feedback && !pendingAttemptRef.current) {
+                      handleKeyActivate(e, () => setSelectedOption(opt));
+                    }
+                  }}
                 >
-                  <div className="option-marker-pill">
+                  <div className="option-marker-pill" aria-hidden="true">
                     {letter}
                   </div>
                   <div className="option-body-text">
@@ -523,10 +556,21 @@ export const ResolucaoQuestaoModal: React.FC<ResolucaoQuestaoModalProps> = ({
               </div>
 
               {/* Taxonomia do Erro / Metacognição */}
-              <div className="metacognitive-box">
-                <span className="metacognitive-title">
-                  Diagnóstico Metacognitivo: Qual foi o fator determinante nesta questão?
-                </span>
+              <div className="metacognitive-box" role="group" aria-label="Diagnóstico Metacognitivo pós-tentativa">
+                <div className="metacognitive-header">
+                  <span className="metacognitive-title">
+                    Diagnóstico Metacognitivo: Qual foi o fator determinante nesta questão?
+                  </span>
+                  {annotatingState === 'saving' && (
+                    <span className="annotation-status-inline saving" aria-live="polite">Salvando...</span>
+                  )}
+                  {annotatingState === 'saved' && (
+                    <span className="annotation-status-inline saved" aria-live="polite">✓ Registrado</span>
+                  )}
+                  {annotatingState === 'error' && (
+                    <span className="annotation-status-inline error" aria-live="assertive">⚠️ {annotationMessage}</span>
+                  )}
+                </div>
                 <div className="metacognitive-pills">
                   {ERROR_TAXONOMIES.map((tax) => (
                     <button
@@ -534,6 +578,9 @@ export const ResolucaoQuestaoModal: React.FC<ResolucaoQuestaoModalProps> = ({
                       type="button"
                       className={`tax-btn ${selectedCausaErro === tax.code ? 'active' : ''}`}
                       onClick={() => handleSelectCausaErro(tax.code)}
+                      onKeyDown={(e) => handleKeyActivate(e, () => handleSelectCausaErro(tax.code))}
+                      disabled={annotatingState === 'saving'}
+                      aria-pressed={selectedCausaErro === tax.code}
                     >
                       {tax.label}
                     </button>
@@ -614,8 +661,8 @@ export const ResolucaoQuestaoModal: React.FC<ResolucaoQuestaoModalProps> = ({
               <>
                 {/* Seletor de Certeza */}
                 <div className="confidence-selector-row">
-                  <span className="confidence-label">Certeza:</span>
-                  <div className="confidence-pills">
+                  <span className="confidence-label" id="resolucao-confidence-label">Certeza:</span>
+                  <div className="confidence-pills" role="group" aria-labelledby="resolucao-confidence-label">
                     {[
                       { lvl: 1, label: 'Chute' },
                       { lvl: 2, label: 'Baixa' },
@@ -626,6 +673,8 @@ export const ResolucaoQuestaoModal: React.FC<ResolucaoQuestaoModalProps> = ({
                       <button
                         key={lvl}
                         type="button"
+                        aria-pressed={confidence === lvl}
+                        aria-label={`Nível de certeza ${lvl}: ${label}`}
                         className={`conf-pill ${confidence === lvl ? 'active' : ''}`}
                         onClick={() => !pendingAttemptRef.current && setConfidence(lvl)}
                         title={`Nível ${lvl} — ${label} (tecla ${lvl})`}
@@ -641,6 +690,7 @@ export const ResolucaoQuestaoModal: React.FC<ResolucaoQuestaoModalProps> = ({
                   type="button"
                   className="btn-confirm-answer"
                   disabled={!selectedOption || isSubmitting}
+                  aria-busy={isSubmitting}
                   onClick={handleSubmit}
                 >
                   <Play className="w-4 h-4" />

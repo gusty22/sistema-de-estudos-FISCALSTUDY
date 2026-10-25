@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { AttemptSubmission, annotateAttempt } from '../utils/attemptSubmission';
 import { cachedStudyPreferences } from '../utils/studyPreferences';
+import { handleKeyActivate } from '../utils/accessibility';
 import './QuestionViewer.css';
 import { CrossDomainBridgeModal } from './cognitive/CrossDomainBridgeModal';
 import { CognitiveLockModal } from './cognitive/CognitiveLockModal';
@@ -1722,7 +1723,7 @@ const QuestionViewer: React.FC = () => {
           </div>
         )}
 
-        <div className="options">
+        <div className="options" role="radiogroup" aria-label="Alternativas da questão">
           {optionsList.map((opt, idx) => {
             const isSelected = selectedOption === opt;
             const letter = isCertoErrado 
@@ -1731,7 +1732,11 @@ const QuestionViewer: React.FC = () => {
             const isUnverifiedGabarito = feedback?.gabaritoStatus === 'AUSENTE' || feedback?.gabaritoStatus === 'SOB_REVISAO';
             return (
               <div 
-                key={idx} 
+                key={idx}
+                role="radio"
+                aria-checked={isSelected}
+                tabIndex={feedback ? -1 : 0}
+                aria-label={`Alternativa ${letter}: ${opt.replace(/^([A-Ea-e])\)?\s*/, '')}`}
                 className={`option-card ${isSelected ? 'selected' : ''} ${feedback && isSelected ? (isUnverifiedGabarito ? 'selected' : (feedback.isCorrect ? 'correct' : 'incorrect')) : ''} ${feedback ? 'disabled' : ''}`}
                 onMouseEnter={() => {
                   if (firstHoverMs === null && !feedback) {
@@ -1739,8 +1744,13 @@ const QuestionViewer: React.FC = () => {
                   }
                 }}
                 onClick={() => handleSelectOption(opt)}
+                onKeyDown={(e) => {
+                  if (!feedback && !pendingAttemptRef.current) {
+                    handleKeyActivate(e, () => handleSelectOption(opt));
+                  }
+                }}
               >
-                <div className="option-marker">{letter}</div>
+                <div className="option-marker" aria-hidden="true">{letter}</div>
                 <div className="option-text">{opt.replace(/^([A-Ea-e])\)?\s*/, '')}</div>
               </div>
             );
@@ -1772,14 +1782,14 @@ const QuestionViewer: React.FC = () => {
         <div className="interaction-bar glass animate-fade-in">
           <div className="confidence-section">
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '4px' }}>
-              <span style={{ fontSize: '0.82rem', color: '#94a3b8', fontWeight: 600 }}>Nível de Certeza:</span>
+              <span id="qw-confidence-label" style={{ fontSize: '0.82rem', color: '#94a3b8', fontWeight: 600 }}>Nível de Certeza:</span>
               {selectedOption && confidence === 0 && (
-                <span style={{ fontSize: '0.75rem', color: '#f59e0b', fontWeight: 600, background: 'rgba(245, 158, 11, 0.1)', padding: '2px 8px', borderRadius: '4px' }}>
+                <span role="status" style={{ fontSize: '0.75rem', color: '#f59e0b', fontWeight: 600, background: 'rgba(245, 158, 11, 0.1)', padding: '2px 8px', borderRadius: '4px' }}>
                   Marque seu nível de certeza para responder
                 </span>
               )}
             </div>
-            <div className="confidence-buttons">
+            <div className="confidence-buttons" role="group" aria-labelledby="qw-confidence-label">
               {[
                 { lvl: 1, label: 'Chute' },
                 { lvl: 2, label: 'Baixa' },
@@ -1790,6 +1800,8 @@ const QuestionViewer: React.FC = () => {
                 <button 
                   key={lvl} 
                   type="button"
+                  aria-pressed={confidence === lvl}
+                  aria-label={`Nível de certeza ${lvl}: ${label}`}
                   className={`conf-btn ${confidence === lvl ? 'active' : ''}`}
                   onClick={() => !pendingAttemptRef.current && setConfidence(lvl)}
                   title={`Nível ${lvl} — ${label} (tecla ${lvl})`}
@@ -1824,6 +1836,7 @@ const QuestionViewer: React.FC = () => {
             <button 
               className="btn submit-btn" 
               disabled={!selectedOption || confidence === 0 || isSubmitting}
+              aria-busy={isSubmitting}
               onClick={handleSubmit}
               title={
                 !selectedOption 
@@ -1832,10 +1845,12 @@ const QuestionViewer: React.FC = () => {
                     ? 'Indique seu Nível de Confiança (1 a 5) para liberar o botão Responder' 
                     : isSubmitting 
                       ? 'Gravando resposta...' 
-                      : 'Confirmar resposta (Brier Score / Calibração)'
+                      : pendingAttemptRef.current
+                        ? 'Reenviar mesma tentativa para gravação'
+                        : 'Confirmar resposta (Brier Score / Calibração)'
               }
             >
-              {isSubmitting ? 'Gravando...' : 'Responder'}
+              {isSubmitting ? 'Gravando...' : pendingAttemptRef.current ? 'Reenviar tentativa' : 'Responder'}
             </button>
           </div>
         </div>
@@ -2214,15 +2229,18 @@ const QuestionViewer: React.FC = () => {
 
       {/* Modal de Detalhes da Matriz de Mídia */}
       {showMediaModal && mediaPrescription && (
-        <div className="modal-backdrop animate-fade-in" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
-          <div className="glass modal-card" style={{ maxWidth: 520, width: '92%', padding: '1.5rem', borderRadius: 12, background: '#0f172a', border: '1px solid #334155' }}>
+        <div className="modal-backdrop animate-fade-in" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }} onClick={() => setShowMediaModal(false)}>
+          <div className="glass modal-card" role="dialog" aria-modal="true" aria-labelledby="media-modal-title" style={{ maxWidth: 520, width: '92%', padding: '1.5rem', borderRadius: 12, background: '#0f172a', border: '1px solid #334155' }} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-              <h3 style={{ margin: 0, color: '#f8fafc', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span>{mediaPrescription.veiculo === 'VIDEOAULA' ? '🎥' : '📄'}</span>
+              <h3 id="media-modal-title" style={{ margin: 0, color: '#f8fafc', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span aria-hidden="true">{mediaPrescription.veiculo === 'VIDEOAULA' ? '🎥' : '📄'}</span>
                 <span>{mediaPrescription.titulo}</span>
               </h3>
               <button
+                type="button"
                 onClick={() => setShowMediaModal(false)}
+                aria-label="Fechar detalhes da mídia"
+                title="Fechar (Esc)"
                 style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '1.2rem', cursor: 'pointer' }}
               >
                 ✕

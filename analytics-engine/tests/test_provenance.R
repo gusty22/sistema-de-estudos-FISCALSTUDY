@@ -67,6 +67,7 @@ legit_df <- data.frame(
   question_id = c("1", "2"),
   selected_option = c("A", "B"),
   is_correct = c(TRUE, FALSE),
+  origin_type = c("REAL_STUDY", "REAL_STUDY"),
   session_id = c("sess-01", "sess-01"),
   occurred_at = c("2026-10-12T19:30:00Z", "2026-10-12T19:32:00Z"),
   stringsAsFactors = FALSE
@@ -131,13 +132,13 @@ manifest_mismatch_hash <- create_operational_manifest(
   is_production_environment = TRUE,
   checksum = "hash_completamente_errado_1234567890abcdef"
 )
-manifest_mismatch_hash$total_records <- 20L
+manifest_mismatch_hash$total_records <- 2L
 
-if (file.exists("data/raw/operational_export_v1.csv")) {
+{
   prov_mismatch_hash <- verify_data_provenance(
-    op_raw,
+    legit_df,
     declared_provenance = "PROVEN_OPERATIONAL",
-    file_path = "data/raw/operational_export_v1.csv",
+    file_path = tmp_legit_csv,
     manifest = manifest_mismatch_hash
   )
   assert_equal(prov_mismatch_hash$audit_verdict, "REJEITADO_INCONSISTENCIA_MANIFESTO", "Divergencia de SHA-256 e rejeitada como REJEITADO_INCONSISTENCIA_MANIFESTO")
@@ -193,3 +194,55 @@ prov_tampered <- verify_data_provenance(legit_df, declared_provenance = "PROVEN_
 assert_equal(prov_tampered$audit_verdict, "REJEITADO_INCONSISTENCIA_MANIFESTO", "Arquivo modificado e rejeitado como REJEITADO_INCONSISTENCIA_MANIFESTO")
 assert_false(prov_tampered$is_proven_operational, "Arquivo adulterado nao e operacional")
 assert_true(any(grepl("CHECKSUM_MISMATCH", prov_tampered$reasons)), "Arquivo adulterado gera motivo explicito CHECKSUM_MISMATCH")
+
+# A valid checksum proves bytes, not that the answers belong to personal study.
+for (origin in c("AUTOMATED_TEST", "DEMO", "UNKNOWN", "", NA_character_)) {
+  rejected_df <- legit_df
+  rejected_df$origin_type[2] <- origin
+  path <- tempfile(fileext = ".csv")
+  utils::write.csv(rejected_df, path, row.names = FALSE)
+  manifest <- manifest_ok
+  manifest$checksum <- digest::digest(path, algo = "sha256", file = TRUE)
+  result <- verify_data_provenance(rejected_df, "PROVEN_OPERATIONAL", path, manifest)
+  assert_false(result$is_real_student_data, paste("Nonpersonal origin rejected:", origin))
+  assert_false(result$can_generate_student_profile, paste("No personal profile for:", origin))
+  unlink(path)
+}
+missing_origin <- legit_df
+missing_origin$origin_type <- NULL
+path <- tempfile(fileext = ".csv")
+utils::write.csv(missing_origin, path, row.names = FALSE)
+manifest <- manifest_ok
+manifest$checksum <- digest::digest(path, algo = "sha256", file = TRUE)
+result <- verify_data_provenance(missing_origin, "PROVEN_OPERATIONAL", path, manifest)
+assert_false(result$is_real_student_data, "Missing event origin remains unverified despite matching checksum")
+unlink(path)
+
+# 15. Teste Unitario Exaustivo de compute_file_sha256 (Base R e Fail-Closed)
+{
+  tmp_sha_test <- tempfile(fileext = ".txt")
+  writeLines("FiscalStudy SHA-256 validation test 2026", tmp_sha_test)
+  
+  # Validar que compute_file_sha256 calcula corretamente
+  h_computed <- compute_file_sha256(tmp_sha_test)
+  assert_true(!is.na(h_computed) && nchar(h_computed) == 64, "compute_file_sha256 gera hash hex de 64 caracteres")
+  
+  # Validar equivalencia com tools::sha256sum (Base R nativo)
+  if (requireNamespace("tools", quietly = TRUE) && exists("sha256sum", envir = asNamespace("tools"))) {
+    h_tools <- unname(tolower(as.character(tools::sha256sum(tmp_sha_test))))
+    assert_equal(h_computed, h_tools, "compute_file_sha256 coincide rigorosamente com tools::sha256sum")
+  }
+  
+  # Validar equivalencia com digest::digest (se instalado)
+  if (requireNamespace("digest", quietly = TRUE)) {
+    h_digest <- tolower(as.character(digest::digest(tmp_sha_test, algo = "sha256", file = TRUE)))
+    assert_equal(h_computed, h_digest, "compute_file_sha256 coincide rigorosamente com digest::digest")
+  }
+  
+  # Validar comportamento fail-closed em arquivos ausentes e entradas invalidas
+  assert_true(is.na(compute_file_sha256("arquivo_que_absolutamente_nao_existe.csv")), "compute_file_sha256 retorna NA em arquivo inexistente")
+  assert_true(is.na(compute_file_sha256(NULL)), "compute_file_sha256 retorna NA para input NULL")
+  assert_true(is.na(compute_file_sha256(character(0))), "compute_file_sha256 retorna NA para vetor vazio")
+  
+  unlink(tmp_sha_test)
+}

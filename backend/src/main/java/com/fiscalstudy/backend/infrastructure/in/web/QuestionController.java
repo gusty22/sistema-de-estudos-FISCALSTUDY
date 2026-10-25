@@ -179,7 +179,12 @@ public class QuestionController {
     public ResponseEntity<Map<String,Object>> annotate(@PathVariable String id,@PathVariable String attemptId,@RequestBody Map<String,String> payload) {
         try { return ResponseEntity.ok(attemptSubmissionService.annotateAttempt(id,attemptId,payload.get("annotationId"),payload.get("sessionId"),payload.get("causaErro"))); }
         catch(AttemptSubmissionService.AttemptConflictException e){ return ResponseEntity.status(409).build(); }
-        catch(IllegalArgumentException e){ return ResponseEntity.badRequest().build(); }
+        catch(IllegalArgumentException e){
+            if (e.getMessage() != null && e.getMessage().toLowerCase().contains("not found")) {
+                return ResponseEntity.notFound().build();
+            }
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     public static class QuestionDTO {

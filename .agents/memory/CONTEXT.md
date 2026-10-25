@@ -107,10 +107,27 @@ Consulte pontualmente via `view_file` conforme o escopo da tarefa:
 ## 5. Ferramentas e Skills Ativas
 - **Graphify (`graphify-out/`)**: Grafo estrutural do código via AST Tree-sitter. Consultas: `graphify query "<pergunta>"`, `graphify explain "<nó>"`, `graphify path "<A>" "<B>"`. Atualização local pós-código: `graphify update .`.
 - **OpenSpec (`openspec/`)**: Gestão de propostas (`/opsx-propose`) e tarefas (`/opsx-apply`).
-- **Skills Sob Demanda (`.agents/skills/`)**: `implement` (TDD), `code-review` (diffs), `taste-skill` (UI anti-slop).
+- **Skills Sob Demanda (`.agents/skills/`)**:
+  - *Engenharia & TDD*: `implement`, `test-driven-development`, `verification-before-completion` (Superpowers).
+  - *Qualidade & Revisão*: `code-review`, `code-simplification` (Addy Osmani).
+  - *Auditoria & Segurança*: `security-audit` (Cloudflare).
+  - *Investigação & Debugging*: `systematic-debugging` (Superpowers).
+  - *Orquestração Multiagente*: `subagent-driven-development` (Superpowers).
+  - *Frontend & Interface*: `taste-skill` (Design Tecnologia Calma anti-slop), `webapp-testing` (Anthropic).
 - **Obsidian & Segundo Cérebro (`scripts/`)**:
   - Busca semântica local (FTS5): `uv run python scripts/obsidian_kb.py --query [conceito]` (recupera trechos com BM25, sem custo de API).
   - Ponte conceitual <-> código: `uv run python scripts/second_brain_bridge.py [pergunta]` (cruza notas do Obsidian com nós AST do Graphify).
   - Auditoria de tokens: `uv run python scripts/measure_tokens.py` (telemetria real da sessão via transcript.jsonl).
   - Cofre Obsidian: `..\obsidian\FiscalStudy-Obsidian\00 - Painel\Dashboard.md`.
+
+## 6. Wave 1 — Homologação Integrada e Validação Funcional
+- **Branch Principal (`main`)**: Intacta no commit canônico `c26ee20352fc1b6ace0c58be4f24a41a1092fbf0` (merge NÃO autorizado até homologação formal completa).
+- **Worktree de Integração**: `target/worktrees/integration-wave-1` (Branch `integration/wave-1`, HEAD `926b642`).
+- **Branch Frontend**: `fix/frontend-accessibility-flows` (HEAD `3ee32d9`).
+- **Validação Integrada de Fluxo E2E (10 Etapas)**:
+  - Implementada em `Wave1IntegratedE2EFlowTest.java` (commit `926b642`).
+  - Suíte completa de 50 testes de backend aprovada (`mvnw.cmd test`, 0 falhas, 0 erros).
+  - 11 testes do pipeline Python de ingestão documental aprovados (`test_golden_set_q15`, `test_inventory_integrity`, `test_pipeline_resilience`).
+  - 12 testes do frontend aprovados via `npm test` (`learning-contracts.test.mjs`).
+- **Governança & Scripts**: `scripts/github_issues_sync.ps1` com suporte a `-WhatIf`, idempotência e associação aos PRs #8, #9, #10 e #11.
 

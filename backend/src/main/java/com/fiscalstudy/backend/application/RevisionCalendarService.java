@@ -50,37 +50,42 @@ public class RevisionCalendarService {
         counts.put("PEGADINHA_BANCA", 0);
         counts.put("DESATENCAO", 0);
 
-        String sql = "SELECT payload_json FROM event_store WHERE event_type = 'ANSWER_SUBMITTED' AND (payload_json LIKE '%\"isCorrect\": false%' OR payload_json LIKE '%\"isCorrect\":false%')";
-        List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql);
-
+        counts.put("NAO_CLASSIFICADO", 0);
+        var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        var rows = LearningEventEligibility.query(jdbcTemplate,
+            "SELECT aggregate_id,payload_json FROM event_store WHERE event_type='ANSWER_SUBMITTED'");
+        String scope = concursoId == null || concursoId.isBlank() ? null : concursoId.trim();
+        Set<String> scopedQuestions = scope == null ? Set.of() : new HashSet<>(jdbcTemplate.queryForList(
+            "SELECT DISTINCT c.question_id FROM (" + QuestionClassificationService.CURRENT_LINKS + ") c JOIN edital_topicos t ON t.id=c.topic_id WHERE c.status='CONFIRMED' AND t.concurso_id=?", String.class, scope));
+        var annotations = AttemptAnnotationView.latest(jdbcTemplate);
         int totalErrors = 0;
-        for (Map<String, Object> row : rows) {
-            String payload = (String) row.get("payload_json");
-            if (payload == null) continue;
-            totalErrors++;
-
-            if (payload.contains("NAO_SABIA_MATERIA") || payload.contains("\"causaErro\":\"E1\"")) {
-                counts.put("E1", counts.get("E1") + 1);
-                counts.put("NAO_SABIA_MATERIA", counts.get("NAO_SABIA_MATERIA") + 1);
-            } else if (payload.contains("NAO_LEMBRAVA") || payload.contains("\"causaErro\":\"E2\"")) {
-                counts.put("E2", counts.get("E2") + 1);
-                counts.put("NAO_LEMBRAVA", counts.get("NAO_LEMBRAVA") + 1);
-            } else if (payload.contains("CONFUSAO_CONCEITUAL") || payload.contains("SABIA_MAS_CONFUNDI") || payload.contains("\"causaErro\":\"E3\"")) {
-                counts.put("E3", counts.get("E3") + 1);
-                counts.put("CONFUSAO_CONCEITUAL", counts.get("CONFUSAO_CONCEITUAL") + 1);
-            } else if (payload.contains("PEGADINHA_BANCA") || payload.contains("EXCECAO_REGRA") || payload.contains("\"causaErro\":\"E4\"")) {
-                counts.put("E4", counts.get("E4") + 1);
-                counts.put("PEGADINHA_BANCA", counts.get("PEGADINHA_BANCA") + 1);
-            } else if (payload.contains("DESATENCAO") || payload.contains("FALTA_ATENCAO") || payload.contains("\"causaErro\":\"E5\"")) {
-                counts.put("E5", counts.get("E5") + 1);
-                counts.put("DESATENCAO", counts.get("DESATENCAO") + 1);
-            } else {
-                // Erros sem classificação explícita são contabilizados em E1 (Lacuna teórica inicial)
-                counts.put("E1", counts.get("E1") + 1);
-                counts.put("NAO_SABIA_MATERIA", counts.get("NAO_SABIA_MATERIA") + 1);
+        for (var row : rows) {
+            try {
+                var payload = mapper.readTree((String) row.get("payload_json"));
+                if (!payload.path("isCorrect").isBoolean() || payload.path("isCorrect").asBoolean()) continue;
+                if (scope != null) {
+                    String declaredScope = payload.path("concursoId").asText("");
+                    if (!declaredScope.isBlank() ? !scope.equals(declaredScope) : !scopedQuestions.contains((String) row.get("aggregate_id"))) continue;
+                }
+                totalErrors++;
+                String cause = annotations.getOrDefault(payload.path("attemptId").asText(""), payload.path("causaErro").asText(""));
+                String code = errorCategory(cause);
+                counts.merge(code, 1, Integer::sum);
+                String alias = switch (code) {
+                    case "E1" -> "NAO_SABIA_MATERIA";
+                    case "E2" -> "NAO_LEMBRAVA";
+                    case "E3" -> "CONFUSAO_CONCEITUAL";
+                    case "E4" -> "PEGADINHA_BANCA";
+                    case "E5" -> "DESATENCAO";
+                    default -> null;
+                };
+                if (alias != null) counts.merge(alias, 1, Integer::sum);
+            } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+                throw new IllegalStateException("Invalid personal answer payload", e);
             }
         }
-
+        stats.put("causeSource", "SELF_REPORTED");
+        stats.put("scope", scope == null ? "ALL_PERSONAL" : scope);
         stats.put("counts", counts);
         stats.put("totalErrors", totalErrors);
         return stats;
@@ -103,6 +108,8 @@ public class RevisionCalendarService {
             String fluenciaNeurologica,
             Double friccaoCognitiva
     ) {
+        // Respostas sem resultado avaliável não sustentam revisão baseada em desempenho.
+        if (isCorrect == null) return;
         if (disciplina == null || disciplina.isBlank() || topico == null || topico.isBlank()) {
             return;
         }
@@ -119,46 +126,46 @@ public class RevisionCalendarService {
         int confianca = confidenceLevel != null ? confidenceLevel : 2;
 
         if (errou) {
-            // Se errou com alta confiança (falsa fluência / erro cristalizado) ou causa E1/E2
+            // Prioridade operacional por confiança declarada ou causa relatada; não determina a causa.
             if (confianca >= 3 || (causaErro != null && (causaErro.contains("E1") || causaErro.contains("E2")))) {
                 estagio = "INTERVENCAO_CORRETIVA";
                 tipoRevisao = "D1_IMEDIATO";
                 intervaloDias = 1;
                 prioridadeScore = 0.95;
-                justificativa = "Falsa fluência ou equívoco conceitual crítico detectado (" + (causaErro != null ? causaErro : "Incompreensão do conceito") + "). Intervenção corretiva prioritária recomendada para reconstruir a regra antes que o erro se cristalize na memória.";
+                justificativa = "Resposta incorreta. " + (confidenceLevel != null ? "Confiança declarada: " + confidenceLevel + "/5. " : "Confiança não informada. ") + (causaErro != null && !causaErro.isBlank() ? "Causa relatada pelo estudante: " + causaErro + ". " : "Causa ainda não identificada. ") + "Revisão prioritária sugerida para investigar o erro e verificar a compreensão; a confiança não determina sua causa.";
             } else if (causaErro != null && (causaErro.contains("E3") || causaErro.contains("E4"))) {
                 estagio = "TESTE_TRANSFERENCIA";
                 tipoRevisao = "D1_IMEDIATO";
                 intervaloDias = 1;
                 prioridadeScore = 0.85;
-                justificativa = "Dificuldade na regra, exceção ou pegadinha da banca (" + causaErro + "). Recomendado teste de transferência com formulação inédita da mesma matéria.";
+                justificativa = "Resposta incorreta. Causa relatada pelo estudante: " + causaErro + ". Sugere-se uma questão com formulação diferente para investigar a dificuldade; o relato não confirma um diagnóstico causal.";
             } else {
                 estagio = "INTERVENCAO_CORRETIVA";
                 tipoRevisao = "D1_IMEDIATO";
                 intervaloDias = 1;
                 prioridadeScore = 0.80;
-                justificativa = "Erro observado na resolução. Revisão iminente do tópico para estancar a perda de retenção.";
+                justificativa = "Resposta incorreta observada. Causa ainda não identificada ou não classificada. Sugere-se revisar o tópico e investigar o erro; este resultado isolado não comprova esquecimento.";
             }
         } else if (chutou) {
             estagio = "RECUPERACAO_ATIVA";
             tipoRevisao = "D7_CONSOLIDACAO";
             intervaloDias = 2;
             prioridadeScore = 0.75;
-            justificativa = "Acerto assinalado por chute/dúvida. A resposta foi correta, mas sem segurança; requer recuperação ativa sem pistas para comprovar retenção real.";
+            justificativa = "Resposta correta com chute/dúvida assinalado. Sugere-se recuperação sem pistas em outra questão para reunir evidências adicionais; este acerto isolado não demonstra retenção duradoura.";
         } else {
-            // Acerto legítimo
+            // Resposta correta: observar condições sem concluir domínio a partir de um item.
             if (friccaoCognitiva != null && friccaoCognitiva > 0.45) {
                 estagio = "RECUPERACAO_ATIVA";
                 tipoRevisao = "D7_CONSOLIDACAO";
                 intervaloDias = 3;
                 prioridadeScore = 0.60;
-                justificativa = "Acerto com alta hesitação durante a deliberação. O conceito consumiu alto esforço cognitivo; reforço adaptativo recomendado para desenvolver fluência.";
+                justificativa = "Resposta correta com indicador de fricção acima do limiar configurado. Esse sinal não identifica esforço cognitivo ou sua causa. Sugere-se nova recuperação para verificar estabilidade do desempenho.";
             } else {
                 estagio = "MANUTENCAO_PREVENTIVA";
                 tipoRevisao = "D15_APROFUNDAMENTO";
                 intervaloDias = 7;
                 prioridadeScore = 0.35;
-                justificativa = "Domínio fluente demonstrado com consistência. Reforço preventivo de longo prazo agendado para monitoramento de retenção.";
+                justificativa = "Resposta correta observada. Revisão preventiva sugerida para verificar recuperação posterior; um acerto isolado não demonstra domínio conceitual ou retenção duradoura.";
             }
         }
 
@@ -636,4 +643,20 @@ public class RevisionCalendarService {
         }
         return result;
     }
+    private static String errorCategory(String cause) {
+        String value = cause.trim().toUpperCase(java.util.Locale.ROOT);
+        for (String code : List.of("E1", "E2", "E3", "E4", "E5")) {
+            if (value.equals(code) || value.startsWith(code + "_") || value.startsWith(code + ":")) return code;
+        }
+        return switch (value) {
+            case "NAO_SABIA_MATERIA" -> "E1";
+            case "NAO_LEMBRAVA" -> "E2";
+            case "CONFUSAO_CONCEITUAL", "SABIA_MAS_CONFUNDI" -> "E3";
+            case "PEGADINHA_BANCA", "EXCECAO_REGRA" -> "E4";
+            case "DESATENCAO", "FALTA_ATENCAO" -> "E5";
+            default -> "NAO_CLASSIFICADO";
+        };
+    }
+
+
 }

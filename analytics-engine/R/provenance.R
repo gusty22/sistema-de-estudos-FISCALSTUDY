@@ -10,6 +10,26 @@ DATA_PROVENANCE_TYPES <- c(
   "UNVERIFIED_SOURCE"     # Origem desconhecida, nÃÂ£o verificada ou sem cadeia de custÃÂ³dia
 )
 
+#' Calcula Hash Criptografico SHA-256 de Arquivo
+#' Prioriza digest::digest (se disponivel); recorre a tools::sha256sum (Base R nativo).
+#' Retorna NA_character_ em caso de erro, modulo indisponivel ou arquivo inacessivel (fail-closed).
+#' NUNCA substitui SHA-256 por MD5.
+compute_file_sha256 <- function(file_path) {
+  if (is.null(file_path) || !is.character(file_path) || length(file_path) != 1 || !file.exists(file_path)) {
+    return(NA_character_)
+  }
+  tryCatch({
+    if (requireNamespace("digest", quietly = TRUE)) {
+      tolower(as.character(digest::digest(file_path, algo = "sha256", file = TRUE)))
+    } else if (requireNamespace("tools", quietly = TRUE) && exists("sha256sum", envir = asNamespace("tools"))) {
+      res <- unname(as.character(tools::sha256sum(file_path)))
+      if (is.na(res) || !nzchar(res)) NA_character_ else tolower(res)
+    } else {
+      NA_character_
+    }
+  }, error = function(e) NA_character_)
+}
+
 #' Audita e Verifica a ProcedÃÂªncia de um Conjunto de Dados
 #' @param df data.frame com os dados a serem auditados
 #' @param declared_provenance String com a procedÃÂªncia declarada (opcional)
@@ -101,13 +121,7 @@ verify_data_provenance <- function(df, declared_provenance = NULL, file_path = N
 
     # 0.4 Se ha hash declarado ou pretensao operacional com arquivo presente, executa checagem criptografica
     if (has_chk && !is.null(file_path) && file.exists(file_path)) {
-      calc_hash <- tryCatch({
-        if (requireNamespace("digest", quietly = TRUE)) {
-          tolower(digest::digest(file_path, algo = "sha256", file = TRUE))
-        } else {
-          NA_character_
-        }
-      }, error = function(e) NA_character_)
+      calc_hash <- compute_file_sha256(file_path)
 
       if (is.na(calc_hash) || calc_hash == "") {
         return(list(
@@ -219,7 +233,12 @@ verify_data_provenance <- function(df, declared_provenance = NULL, file_path = N
     has_session_trace <- ("session_id" %in% names(df) &&
                           length(unique(df$session_id[!is.na(df$session_id)])) >= 1)
     
-    if (has_valid_manifest && has_audit_temporal && has_session_trace) {
+    # File integrity and a production manifest do not establish learning provenance.
+    # Require explicit per-attempt origins from the Java CSV export contract.
+    has_personal_origins <- ("origin_type" %in% names(df) &&
+                             all(!is.na(df$origin_type) & df$origin_type == "REAL_STUDY"))
+
+    if (has_valid_manifest && has_audit_temporal && has_session_trace && has_personal_origins) {
       return(list(
         provenance_type = "PROVEN_OPERATIONAL",
         is_proven_operational = TRUE,
@@ -227,9 +246,9 @@ verify_data_provenance <- function(df, declared_provenance = NULL, file_path = N
         can_generate_student_profile = TRUE,
         audit_verdict = "PROCEDENCIA_OPERACIONAL_COMPROVADA",
         reasons = c(
-          "Manifesto de exportacao operacional autenticado presente.",
-          "Cadeia de custodia temporal e sessoes reais verificadas.",
-          "Distincao formal contra eventos sinteticos atestada."
+          "Manifesto operacional com integridade SHA-256 verificada (nao constitui assinatura ou autenticacao do autor).",
+          "Campos de rastreabilidade temporal e sessao presentes; origem REAL_STUDY declarada em todas as tentativas.",
+          "Elegibilidade baseada na origem registrada; nao comprova aprendizagem nem a veracidade da declaracao."
         ),
         warnings = character(0)
       ))
@@ -237,7 +256,8 @@ verify_data_provenance <- function(df, declared_provenance = NULL, file_path = N
       # Tentativa de declarar como operacional sem evidÃÂªncias de custÃÂ³dia
       reasons <- c(
         "Declarado como PROVEN_OPERATIONAL, mas falhou na auditoria de custodia.",
-        if (!has_valid_manifest) "Manifesto de exportacao operacional assinado ausente." else NULL,
+        if (!has_valid_manifest) "Manifesto de exportacao operacional integro ausente." else NULL,
+        if (!has_personal_origins) "ORIGIN_NOT_PERSONAL: Exigida origem REAL_STUDY explicita em todas as tentativas; dados ausentes, mistos ou de teste permanecem nao verificados." else NULL,
         if (!has_audit_temporal) "Timestamps de resolucao (occurred_at) ausentes ou invalidos." else NULL,
         if (!has_session_trace) "Identificadores de sessao de estudo (session_id) ausentes." else NULL
       )

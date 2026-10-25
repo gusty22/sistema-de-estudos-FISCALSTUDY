@@ -31,6 +31,7 @@ backend/analytics/
 # DB
 db/
 analytics/*.json
+analytics/*.csv
 
 # Ingestion temp
 ingestion/inspection_*.json
