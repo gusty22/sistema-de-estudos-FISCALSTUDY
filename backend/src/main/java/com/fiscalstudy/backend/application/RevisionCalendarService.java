@@ -108,6 +108,8 @@ public class RevisionCalendarService {
             String fluenciaNeurologica,
             Double friccaoCognitiva
     ) {
+        // Respostas sem resultado avaliável não sustentam revisão baseada em desempenho.
+        if (isCorrect == null) return;
         if (disciplina == null || disciplina.isBlank() || topico == null || topico.isBlank()) {
             return;
         }
