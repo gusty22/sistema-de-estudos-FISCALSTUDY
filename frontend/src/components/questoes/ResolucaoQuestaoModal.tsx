@@ -13,8 +13,10 @@ import {
 import type { QuestionItem } from './BancoQuestoes';
 import { useSimplifiedMode } from '../../context/SimplifiedModeContext';
 import './ResolucaoQuestaoModal.css';
+import { AttemptSubmission, annotateAttempt } from '../../utils/attemptSubmission';
 
 interface AttemptFeedback {
+  attemptId: string;
   isCorrect: boolean | null;
   gabaritoStatus?: string;
   concursoPoint?: number;
@@ -67,18 +69,15 @@ export const ResolucaoQuestaoModal: React.FC<ResolucaoQuestaoModalProps> = ({
   const [ankiState, setAnkiState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [ankiMessage, setAnkiMessage] = useState<string | null>(null);
 
-  // ID persistente para a sessão de resolução no Banco de Questões
-  const sessionIdRef = useRef<string>(
-    sessionStorage.getItem('fiscalstudy_bank_session_id') ||
-    `bank-session-${Date.now()}`
-  );
-
-  useEffect(() => {
-    sessionStorage.setItem('fiscalstudy_bank_session_id', sessionIdRef.current);
-  }, []);
+  // Each modal opening is a new session; a transport retry retains its attempt UUID.
+  const sessionIdRef = useRef<string>('bank-session-' + crypto.randomUUID());
+  const pendingAttemptRef = useRef<AttemptSubmission | null>(null);
+  const submittingRef = useRef(false);
 
   // Resetar estado local ao mudar de questão
   useEffect(() => {
+    pendingAttemptRef.current = null;
+    submittingRef.current = false;
     setSelectedOption(null);
     setConfidence(3);
     setPensouContrario(false);
@@ -119,7 +118,7 @@ export const ResolucaoQuestaoModal: React.FC<ResolucaoQuestaoModalProps> = ({
       const durSec = Math.max(1, Math.round(m.totalActiveTimeMs / 1000));
       const rendPct = Math.round((m.correctCount / m.questionsCount) * 100);
       const confMedia = Math.round((m.confidenceSum / m.questionsCount) * 10) / 10;
-      await fetch('/api/v1/study-sessions/record', {
+      const response = await fetch('/api/v1/study-sessions/record', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -136,6 +135,7 @@ export const ResolucaoQuestaoModal: React.FC<ResolucaoQuestaoModalProps> = ({
           modo: 'BANCO_QUESTOES'
         })
       });
+      if (!response.ok) throw new Error('O resumo da sessão não foi gravado: HTTP ' + response.status);
       // Zerar contadores para não duplicar se o modal permanecer aberto
       m.questionsCount = 0;
       m.correctCount = 0;
@@ -165,7 +165,7 @@ export const ResolucaoQuestaoModal: React.FC<ResolucaoQuestaoModalProps> = ({
       }
       if (e.key === 'Escape') {
         handleClose();
-      } else if (!feedback && ['1', '2', '3', '4', '5'].includes(e.key)) {
+      } else if (!feedback && !pendingAttemptRef.current && ['1', '2', '3', '4', '5'].includes(e.key)) {
         setConfidence(parseInt(e.key, 10));
       } else if (feedback && e.key === 'ArrowRight' && onNext) {
         onNext();
@@ -205,31 +205,28 @@ export const ResolucaoQuestaoModal: React.FC<ResolucaoQuestaoModalProps> = ({
 
   // Submissão da resposta
   const handleSubmit = async () => {
-    if (!selectedOption || isSubmitting) return;
+    if (!selectedOption || isSubmitting || submittingRef.current || feedback) return;
+    submittingRef.current = true;
 
     setIsSubmitting(true);
     try {
       const selectedIndex = rawOptions.indexOf(selectedOption);
       const letterToSend = extractLetter(selectedOption, selectedIndex >= 0 ? selectedIndex : 0);
-      const timeSpent = Math.max(1000, activeTimeMs);
+      const timeSpent = Number(pendingAttemptRef.current?.payload.activeTimeMs ?? Math.max(1000, activeTimeMs));
 
       const payload = {
         selectedOption: letterToSend,
         confidenceLevel: Math.max(1, Math.min(5, confidence)),
         activeTimeMs: timeSpent,
         sessionId: sessionIdRef.current,
-        origin: 'BANCO_QUESTOES',
+        origin: 'REAL_STUDY',
+        studyMode: 'BANCO_QUESTOES',
         pensouContrario
       };
 
-      const res = await fetch(`/api/v1/questions/${question.questionId}/attempts`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      if (res.ok) {
-        const data: AttemptFeedback = await res.json();
+      pendingAttemptRef.current ??= new AttemptSubmission(payload);
+      const data: AttemptFeedback = await pendingAttemptRef.current.send(question.questionId);
+      {
         setFeedback(data);
         const acerto = data.isCorrect === true || data.gabaritoStatus === 'ANULADA';
         
@@ -243,38 +240,24 @@ export const ResolucaoQuestaoModal: React.FC<ResolucaoQuestaoModalProps> = ({
         sessionMetricsRef.current.concursoId = question.concursoId || sessionMetricsRef.current.concursoId;
 
         onQuestionAnswered(question.questionId, acerto);
-      } else {
-        alert('Não foi possível submeter a resposta. Tente novamente.');
       }
     } catch (e) {
       console.error('Erro ao submeter resposta:', e);
-      alert('Erro de conexão ao salvar sua resposta.');
+      alert('Não foi possível confirmar a gravação. Tente novamente para reenviar a mesma tentativa. ' + (e instanceof Error ? e.message : ''));
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };
 
   // Atualizar metacognição pós-submissão
   const handleSelectCausaErro = async (causaCode: string) => {
-    setSelectedCausaErro(causaCode);
+    if (!feedback?.attemptId) return;
     try {
-      const selectedIndex = selectedOption ? rawOptions.indexOf(selectedOption) : 0;
-      const letterToSend = selectedOption ? extractLetter(selectedOption, selectedIndex >= 0 ? selectedIndex : 0) : 'A';
-      await fetch(`/api/v1/questions/${question.questionId}/attempts`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          selectedOption: letterToSend,
-          confidenceLevel: Math.max(1, Math.min(5, confidence)),
-          activeTimeMs: Math.max(1000, activeTimeMs),
-          sessionId: sessionIdRef.current,
-          origin: 'BANCO_QUESTOES',
-          causaErro: causaCode,
-          pensouContrario
-        })
-      });
-    } catch {
-      // Metacognição silenciosa
+      await annotateAttempt(question.questionId, feedback.attemptId, sessionIdRef.current, causaCode);
+      setSelectedCausaErro(causaCode);
+    } catch (error) {
+      alert('A anotação não foi salva: ' + (error instanceof Error ? error.message : 'falha de conexão'));
     }
   };
 
@@ -461,7 +444,7 @@ export const ResolucaoQuestaoModal: React.FC<ResolucaoQuestaoModalProps> = ({
                   key={idx}
                   className={`resolucao-option-card ${optionStatusClass} ${feedback ? 'disabled' : ''}`}
                   onClick={() => {
-                    if (!feedback) {
+                    if (!feedback && !pendingAttemptRef.current) {
                       setSelectedOption(opt);
                     }
                   }}
@@ -644,7 +627,7 @@ export const ResolucaoQuestaoModal: React.FC<ResolucaoQuestaoModalProps> = ({
                         key={lvl}
                         type="button"
                         className={`conf-pill ${confidence === lvl ? 'active' : ''}`}
-                        onClick={() => setConfidence(lvl)}
+                        onClick={() => !pendingAttemptRef.current && setConfidence(lvl)}
                         title={`Nível ${lvl} — ${label} (tecla ${lvl})`}
                       >
                         <span className="num">{lvl}</span>
@@ -661,7 +644,7 @@ export const ResolucaoQuestaoModal: React.FC<ResolucaoQuestaoModalProps> = ({
                   onClick={handleSubmit}
                 >
                   <Play className="w-4 h-4" />
-                  {isSubmitting ? 'Validando...' : 'Confirmar Resposta'}
+                  {isSubmitting ? 'Validando...' : pendingAttemptRef.current ? 'Reenviar mesma tentativa' : 'Confirmar Resposta'}
                 </button>
               </>
             ) : (

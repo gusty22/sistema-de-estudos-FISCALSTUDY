@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { ConcursoItem } from '../concursos/MeusConcursos';
 import './StudyTimerFab.css';
+import { cachedStudyPreferences } from '../../utils/studyPreferences';
 
 interface StudyTimerFabProps {
   activeConcurso: ConcursoItem | null;
@@ -14,8 +15,17 @@ export const StudyTimerFab: React.FC<StudyTimerFabProps> = ({ activeConcurso, on
   const [seconds, setSeconds] = useState(0);
 
   // Pomodoro settings
-  const [pomoPreset, setPomoPreset] = useState<25 | 50>(25);
+  const [pomoPreset, setPomoPreset] = useState<number>(() => cachedStudyPreferences().sessionMinutes);
   const [isBreak, setIsBreak] = useState(false);
+
+  useEffect(() => {
+    const update = (event: Event) => {
+      // Never change an in-progress countdown when a preference is saved.
+      if (!isRunning) setPomoPreset((event as CustomEvent).detail.sessionMinutes);
+    };
+    window.addEventListener('fiscalstudy:preferences-updated', update);
+    return () => window.removeEventListener('fiscalstudy:preferences-updated', update);
+  }, [isRunning]);
 
   // Context selection
   const [disciplinas, setDisciplinas] = useState<string[]>([]);
@@ -130,7 +140,7 @@ export const StudyTimerFab: React.FC<StudyTimerFabProps> = ({ activeConcurso, on
     setIsSaving(false);
   };
 
-  const handlePomoPresetChange = (preset: 25 | 50) => {
+  const handlePomoPresetChange = (preset: number) => {
     setPomoPreset(preset);
     if (!isRunning && mode === 'POMODORO') {
       setSeconds(preset * 60);
@@ -276,8 +286,9 @@ export const StudyTimerFab: React.FC<StudyTimerFabProps> = ({ activeConcurso, on
                     className={`timer-pomo-pill ${pomoPreset === 50 ? 'active' : ''}`}
                     onClick={() => handlePomoPresetChange(50)}
                   >
-                    50m Ultradiano + 10m Pausa
+                    50m Estudo + 10m Pausa
                   </button>
+                  {[75, 90].map(minutes => <button key={minutes} className={`timer-pomo-pill ${pomoPreset === minutes ? 'active' : ''}`} onClick={() => handlePomoPresetChange(minutes)}>{minutes}m Estudo + 10m Pausa</button>)}
                 </div>
               )}
 

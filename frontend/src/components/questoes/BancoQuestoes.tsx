@@ -16,6 +16,7 @@ import {
 import type { ConcursoItem } from '../concursos/MeusConcursos';
 import { MontagemCadernoModal } from './MontagemCadernoModal';
 import { ResolucaoQuestaoModal } from './ResolucaoQuestaoModal';
+import { QuestionClassificationPanel } from './QuestionClassificationPanel';
 import { useSimplifiedMode } from '../../context/SimplifiedModeContext';
 import './BancoQuestoes.css';
 
@@ -52,6 +53,7 @@ export const BancoQuestoes: React.FC<BancoQuestoesProps> = ({
 }) => {
   const { isSimplifiedMode } = useSimplifiedMode();
   // Estado de resolução ativa focada (abre a questão diretamente sem redirecionar de tela)
+  const [classificationOpen, setClassificationOpen] = useState(false);
   const [resolvendoIndex, setResolvendoIndex] = useState<number | null>(null);
   // Modo de escopo: apenas disciplinas do edital ou acervo geral
   const [editalOnly, setEditalOnly] = useState<boolean>(true);
@@ -265,6 +267,8 @@ export const BancoQuestoes: React.FC<BancoQuestoesProps> = ({
   return (
     <div className="banco-questoes-wrapper">
       {/* Header */}
+      {classificationOpen && <QuestionClassificationPanel concursoId={activeConcurso?.id} onClose={() => setClassificationOpen(false)} />}
+      <button type="button" className="btn btn-secondary" onClick={() => setClassificationOpen(true)}>Classificar questões por tópico</button>
       <div className="banco-header">
         <div className="banco-header-info">
           <h1>Banco de Questões</h1>

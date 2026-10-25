@@ -21,6 +21,7 @@ import {
   Pause
 } from 'lucide-react';
 import './CuradoriaAnki.css';
+import { requestJson } from '../../utils/attemptSubmission';
 
 export interface FlashcardItem {
   id: string;
@@ -51,9 +52,11 @@ export const CuradoriaAnki: React.FC<CuradoriaAnkiProps> = ({
   // Estados do AnkiConnect e Sincronização Automática
   const [syncState, setSyncState] = useState<'idle' | 'syncing' | 'success'>('idle');
   const [syncWebState, setSyncWebState] = useState<'idle' | 'syncing' | 'success'>('idle');
-  const [ankiConnected, setAnkiConnected] = useState<boolean>(true);
+  const [ankiConnected, setAnkiConnected] = useState<boolean>(false);
   const [ankiVersion, setAnkiVersion] = useState<number>(6);
   const [autoSyncActive, setAutoSyncActive] = useState<boolean>(true);
+  const [ankiEnabled, setAnkiEnabled] = useState(false);
+  const [cloudEnabled, setCloudEnabled] = useState(false);
   const [lastSyncAt, setLastSyncAt] = useState<string | null>(null);
   const [totalCardsSynced, setTotalCardsSynced] = useState<number>(0);
   const [pendingQueueCount, setPendingQueueCount] = useState<number>(0);
@@ -70,6 +73,10 @@ export const CuradoriaAnki: React.FC<CuradoriaAnkiProps> = ({
   // Carregar status do Anki e flashcards reais do backend
   const loadAnkiData = async () => {
     try {
+      const prefs = await requestJson('/api/v1/anki/preferences');
+      setAnkiEnabled(prefs.enabled === true);
+      setCloudEnabled(prefs.cloudSyncEnabled === true);
+      setAutoSyncActive(prefs.autoSyncEnabled === true);
       // 1. Status do AnkiConnect e Auto-Sync
       const statusRes = await fetch('/api/v1/anki/status');
       if (statusRes.ok) {
@@ -158,17 +165,13 @@ export const CuradoriaAnki: React.FC<CuradoriaAnkiProps> = ({
       if (res.ok) {
         const data = await res.json();
         await loadAnkiData();
-        setCards(prev => prev.map(c => (c.status === 'approved' || c.status === 'pending') ? { ...c, status: 'synced' } : c));
         setSyncState('success');
-        setSyncFeedbackMsg(data.message || 'Cards sincronizados com sucesso no deck FiscalStudy!');
+        setSyncFeedbackMsg(data.message || 'Sincronização processada. Confira os estados confirmados abaixo.');
         setTimeout(() => setSyncState('idle'), 4000);
       } else {
-        setTimeout(() => {
-          setCards(prev => prev.map(c => (c.status === 'approved' || c.status === 'pending') ? { ...c, status: 'synced' } : c));
-          setSyncState('success');
-          setSyncFeedbackMsg('Flashcards injetados com sucesso no Anki local!');
-          setTimeout(() => setSyncState('idle'), 4000);
-        }, 1200);
+        setSyncState('idle');
+        const error = await res.json().catch(() => ({}));
+        setSyncFeedbackMsg(error.message || error.error || 'A sincronização falhou; nenhum card foi marcado como sincronizado.');
       }
     } catch {
       setSyncState('idle');
@@ -176,20 +179,20 @@ export const CuradoriaAnki: React.FC<CuradoriaAnkiProps> = ({
     }
   };
 
-  // Alternar Auto-Sync em segundo plano
-  const handleToggleAutoSync = async () => {
+  const updateAnkiPreferences = async (changes: Record<string, boolean>) => {
     try {
-      const res = await fetch('/api/v1/anki/auto-sync/toggle', { method: 'POST' });
-      if (res.ok) {
-        const data = await res.json();
-        setAutoSyncActive(data.autoSyncActive);
-        setSyncFeedbackMsg(data.message);
-        setTimeout(() => setSyncFeedbackMsg(null), 4000);
-      }
-    } catch (e) {
-      console.warn('Erro ao alternar auto-sync:', e);
+      const prefs = await requestJson('/api/v1/anki/preferences', {
+        method: 'PUT', body: JSON.stringify({ enabled: ankiEnabled, autoSyncEnabled: autoSyncActive, cloudSyncEnabled: cloudEnabled, ...changes })
+      });
+      setAnkiEnabled(prefs.enabled === true);
+      setAutoSyncActive(prefs.autoSyncEnabled === true);
+      setCloudEnabled(prefs.cloudSyncEnabled === true);
+      setSyncFeedbackMsg('Preferências da integração confirmadas pelo servidor.');
+    } catch (error) {
+      setSyncFeedbackMsg(error instanceof Error ? error.message : 'Falha ao salvar preferências da integração.');
     }
   };
+  const handleToggleAutoSync = () => updateAnkiPreferences({ autoSyncEnabled: !autoSyncActive });
 
   // Disparar sincronização com a nuvem AnkiWeb
   const handleSyncAnkiWeb = async () => {
@@ -323,12 +326,16 @@ export const CuradoriaAnki: React.FC<CuradoriaAnkiProps> = ({
               Curadoria para o Anki.
             </h1>
             <p className="curadoria-subtitle">
-              O Gêmeo Digital monitorou suas últimas sessões, perdas de retenção e erros críticos.
-              Aqui estão os flashcards atômicos gerados automaticamente para blindar sua memória no Anki.
+              Revise o conteúdo e a origem dos flashcards antes de sincronizar. Edição, aprovação e exclusão estão indisponíveis até terem persistência própria.
+              A conexão local e o envio à nuvem dependem das permissões abaixo.
             </p>
           </div>
         </header>
 
+        <div className="curadoria-preferences" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+          <label><input type="checkbox" checked={ankiEnabled} onChange={e => updateAnkiPreferences({ enabled: e.target.checked })} /> Permitir conexão com Anki Desktop</label>
+          <label><input type="checkbox" checked={cloudEnabled} disabled={!ankiEnabled} onChange={e => updateAnkiPreferences({ cloudSyncEnabled: e.target.checked })} /> Permitir sincronização com AnkiWeb (nuvem)</label>
+        </div>
         {/* ==================================================================
             2. BANNER DE CONEXÃO ANKICONNECT & AUTO-SYNC DAEMON
             ================================================================== */}
@@ -359,8 +366,9 @@ export const CuradoriaAnki: React.FC<CuradoriaAnkiProps> = ({
                   <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: ankiConnected ? '#10b981' : '#eab308' }} />
                   {ankiConnected ? `Porta 8765 Online (v${ankiVersion})` : 'Aguardando Anki Desktop'}
                 </span>
-                <span
+                <button type="button"
                   onClick={handleToggleAutoSync}
+                  disabled={!ankiEnabled}
                   title="Clique para alternar o Auto-Sync contínuo em segundo plano"
                   style={{
                     fontSize: '0.72rem',
@@ -378,7 +386,7 @@ export const CuradoriaAnki: React.FC<CuradoriaAnkiProps> = ({
                 >
                   {autoSyncActive ? <Play className="w-3 h-3 text-indigo-500" /> : <Pause className="w-3 h-3 text-stone-500" />}
                   Auto-Sync em Segundo Plano: {autoSyncActive ? 'Ativo (25s)' : 'Pausado'}
-                </span>
+                </button>
               </div>
 
               <p className={`curadoria-status-desc ${syncState === 'success' ? 'is-success' : ''}`}>
@@ -412,7 +420,7 @@ export const CuradoriaAnki: React.FC<CuradoriaAnkiProps> = ({
 
             <button
               onClick={handleSyncAnkiWeb}
-              disabled={!ankiConnected || syncWebState === 'syncing'}
+              disabled={!ankiEnabled || !cloudEnabled || !ankiConnected || syncWebState === 'syncing'}
               className="curadoria-btn-export"
               style={{
                 backgroundColor: syncWebState === 'success' ? 'rgba(16, 185, 129, 0.15)' : undefined,
@@ -440,7 +448,7 @@ export const CuradoriaAnki: React.FC<CuradoriaAnkiProps> = ({
 
             <button
               onClick={handleSyncToAnki}
-              disabled={(cardsAvailableForSync === 0 && pendingQueueCount === 0) || syncState !== 'idle'}
+              disabled={!ankiEnabled || (cardsAvailableForSync === 0 && pendingQueueCount === 0) || syncState !== 'idle'}
               className={`curadoria-btn-sync ${syncState === 'success' ? 'is-success' : ''}`}
             >
               {syncState === 'syncing' ? (
@@ -521,8 +529,8 @@ export const CuradoriaAnki: React.FC<CuradoriaAnkiProps> = ({
               {pendingCount > 0 && (
                 <button
                   onClick={handleApproveAllPending}
+                  disabled title="Aprovação persistida ainda não disponível"
                   className="curadoria-btn-batch"
-                  title="Aprovar todos os pendentes de uma vez"
                 >
                   <Check className="w-3.5 h-3.5 text-emerald-500" />
                   Aprovar Todos ({pendingCount})
@@ -671,6 +679,7 @@ export const CuradoriaAnki: React.FC<CuradoriaAnkiProps> = ({
                     <textarea
                       value={card.front}
                       onChange={(e) => handleEditFront(card.id, e.target.value)}
+                      readOnly title="Edição persistida ainda não disponível"
                       className="curadoria-textarea"
                     />
                   </div>
@@ -683,6 +692,7 @@ export const CuradoriaAnki: React.FC<CuradoriaAnkiProps> = ({
                     <textarea
                       value={card.back}
                       onChange={(e) => handleEditBack(card.id, e.target.value)}
+                      readOnly title="Edição persistida ainda não disponível"
                       className="curadoria-textarea"
                     />
                   </div>
@@ -700,6 +710,7 @@ export const CuradoriaAnki: React.FC<CuradoriaAnkiProps> = ({
                   <div className="curadoria-card-actions">
                     <button
                       onClick={() => handleDeleteCard(card.id)}
+                      disabled
                       className="curadoria-btn-delete"
                       title="Descartar este flashcard"
                     >
@@ -713,7 +724,7 @@ export const CuradoriaAnki: React.FC<CuradoriaAnkiProps> = ({
                     ) : (
                       <button
                         onClick={() => handleApproveCard(card.id)}
-                        disabled={isApproved}
+                        disabled
                         className={`curadoria-btn-approve ${isApproved ? 'is-approved' : 'not-approved'}`}
                       >
                         {isApproved ? (

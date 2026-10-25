@@ -49,7 +49,6 @@ export const MotorParetoEditalModal: React.FC<MotorParetoEditalModalProps> = ({
     return executarMotorParetoEdital(rawText, disciplinas);
   }, [rawText, disciplinas]);
 
-  if (!isOpen) return null;
 
   // Handlers para o Quadro de Provas
   const handleUpdateDisciplina = (id: string, field: keyof DisciplinaConfig, value: any) => {
@@ -254,6 +253,8 @@ export const MotorParetoEditalModal: React.FC<MotorParetoEditalModalProps> = ({
       setIsSaving(false);
     }
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="motor-pareto-overlay" onClick={e => e.target === e.currentTarget && onClose()}>

@@ -214,7 +214,6 @@ export default function AssistenteObjetivoWizard({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  if (!isOpen) return null;
 
   // Helpers de Árvore Curricular
   const findNode = (nodes: CurriculumNode[], id: string): CurriculumNode | null => {
@@ -433,6 +432,8 @@ export default function AssistenteObjetivoWizard({
     };
     input.click();
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="wizard-calm-backdrop animate-fadeIn">

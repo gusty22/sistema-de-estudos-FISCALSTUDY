@@ -1,3 +1,4 @@
+import { ingestionFetch, setIngestionToken } from '../../utils/ingestionAccess';
 import React, { useState, useEffect } from 'react';
 import './ImportStudio.css';
 import { AuditCockpit } from './AuditCockpit';
@@ -117,6 +118,7 @@ interface ImportSimulation {
 }
 
 export default function ImportStudio() {
+  const [ingestionToken, updateIngestionToken] = useState('');
   const [session, setSession] = useState<StagingSession | null>(null);
   const [questions, setQuestions] = useState<StagingQuestion[]>([]);
   const [activeQuestionId, setActiveQuestionId] = useState<string | null>(null);
@@ -202,7 +204,7 @@ export default function ImportStudio() {
   async function safeFetchJson<T>(url: string, init?: RequestInit): Promise<T> {
     let res: Response;
     try {
-      res = await fetch(url, init);
+      res = await ingestionFetch(url, init);
     } catch (netErr: any) {
       throw new Error(`Falha de conexão com o servidor (${netErr.message || 'Failed to fetch'}). Verifique se o backend está em execução.`);
     }
@@ -388,7 +390,7 @@ export default function ImportStudio() {
     try {
       setIsProcessing(true);
       setActionMessage(`Excluindo caderno ${filename}...`);
-      const res = await fetch(`/api/v1/ingestion/staging-files/${fileId}`, {
+      const res = await ingestionFetch(`/api/v1/ingestion/staging-files/${fileId}`, {
         method: 'DELETE',
       });
       if (!res.ok) {
@@ -511,7 +513,7 @@ export default function ImportStudio() {
     if (!confirmed) return;
 
     try {
-      await fetch(`/api/v1/ingestion/staging-questions/${activeQuestion.id}`, {
+      await ingestionFetch(`/api/v1/ingestion/staging-questions/${activeQuestion.id}`, {
         method: 'DELETE',
       });
       const remaining = questions.filter((q) => q.id !== activeQuestion.id);
@@ -845,7 +847,7 @@ export default function ImportStudio() {
       let res: Response;
       if (activeQuestion.id.startsWith('gap-') && selectedStagingFile) {
         // Gap preenchido manualmente: persiste como nova questão no staging
-        res = await fetch(`/api/v1/ingestion/staging-files/${selectedStagingFile.id}/questions/manual`, {
+        res = await ingestionFetch(`/api/v1/ingestion/staging-files/${selectedStagingFile.id}/questions/manual`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -872,7 +874,7 @@ export default function ImportStudio() {
           ? `/api/v1/ingestion/sessions/${session.sessionId}/questions/${activeQuestion.id}`
           : `/api/v1/ingestion/staging-questions/${activeQuestion.id}`;
 
-        res = await fetch(url, {
+        res = await ingestionFetch(url, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -957,7 +959,7 @@ export default function ImportStudio() {
         ? `/api/v1/ingestion/sessions/${session.sessionId}/questions/${activeQuestion.id}/verify`
         : `/api/v1/ingestion/staging-questions/${activeQuestion.id}/verify`;
 
-      const res = await fetch(url, { method: 'POST' });
+      const res = await ingestionFetch(url, { method: 'POST' });
       if (res.ok) {
         const verifiedQ: StagingQuestion = await res.json();
         setQuestions((prev) => prev.map((q) => (q.id === verifiedQ.id ? verifiedQ : q)));
@@ -976,7 +978,7 @@ export default function ImportStudio() {
         ? `/api/v1/ingestion/sessions/${session.sessionId}/questions/${activeQuestion.id}`
         : `/api/v1/ingestion/staging-questions/${activeQuestion.id}`;
 
-      await fetch(putUrl, {
+      await ingestionFetch(putUrl, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -989,7 +991,7 @@ export default function ImportStudio() {
         ? `/api/v1/ingestion/sessions/${session.sessionId}/questions/${activeQuestion.id}/reject`
         : `/api/v1/ingestion/staging-questions/${activeQuestion.id}/reject`;
 
-      const res = await fetch(postUrl, { method: 'POST' });
+      const res = await ingestionFetch(postUrl, { method: 'POST' });
       if (res.ok) {
         const rejectedQ: StagingQuestion = await res.json();
         rejectedQ.rejectionType = type;
@@ -1004,7 +1006,7 @@ export default function ImportStudio() {
   const handleSimulateImport = async () => {
     if (session) {
       try {
-        const res = await fetch(`/api/v1/ingestion/sessions/${session.sessionId}/simulate-import`, {
+        const res = await ingestionFetch(`/api/v1/ingestion/sessions/${session.sessionId}/simulate-import`, {
           method: 'POST',
         });
         if (res.ok) {
@@ -1041,7 +1043,7 @@ export default function ImportStudio() {
     if (!confirm('Deseja realmente publicar as questões verificadas no repositório seguro com backup físico automático prévio?')) return;
     try {
       if (session) {
-        const res = await fetch(`/api/v1/ingestion/sessions/${session.sessionId}/import-confirmed`, {
+        const res = await ingestionFetch(`/api/v1/ingestion/sessions/${session.sessionId}/import-confirmed`, {
           method: 'POST',
         });
         if (res.ok) {
@@ -1050,7 +1052,7 @@ export default function ImportStudio() {
           setIsSimulationOpen(false);
         }
       } else if (selectedStagingFile) {
-        const res = await fetch(`/api/v1/ingestion/staging-publish?fileId=${selectedStagingFile.id}`, {
+        const res = await ingestionFetch(`/api/v1/ingestion/staging-publish?fileId=${selectedStagingFile.id}`, {
           method: 'POST',
         });
         if (res.ok) {
@@ -1121,6 +1123,9 @@ export default function ImportStudio() {
           <p>Extração fiel à fonte com isolamento de layout, rastreabilidade e verificação visual lado a lado</p>
         </div>
         <div className="header-actions">
+          <label>Token administrativo
+            <input type="password" autoComplete="off" value={ingestionToken} onChange={e => { updateIngestionToken(e.target.value); setIngestionToken(e.target.value); }} />
+          </label>
           {(session || selectedStagingFile) && questions.length > 0 && (
             <>
               <button

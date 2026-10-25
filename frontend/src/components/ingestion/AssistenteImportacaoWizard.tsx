@@ -1,3 +1,4 @@
+import { ingestionFetch } from '../../utils/ingestionAccess';
 import React, { useState } from 'react';
 import {
   X,
@@ -69,7 +70,7 @@ export const AssistenteImportacaoWizard: React.FC<AssistenteImportacaoWizardProp
     setIsPreProcessing(true);
     setCurrentStep(4);
     try {
-      const res = await fetch('/api/v1/ingestion/wizard/preprocess', {
+      const res = await ingestionFetch('/api/v1/ingestion/wizard/preprocess', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
