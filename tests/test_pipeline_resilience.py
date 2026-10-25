@@ -10,6 +10,7 @@ import os
 import sys
 import unittest
 import sqlite3
+from contextlib import closing
 import tempfile
 import pymupdf
 
@@ -24,9 +25,28 @@ class TestPipelineResilience(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.acervo_dir = r"C:\Users\washi\Downloads\provas"
-        cls.staging_db_path = os.path.join(ROOT_DIR, "db", "staging.db")
+        import shutil
+        from ingestion.src.pipeline.inventory_manager import StagingDatabase, InventoryManager
+        cls.workspace = tempfile.TemporaryDirectory(prefix="fiscalstudy-pipeline-")
+        cls.addClassCleanup(cls.workspace.cleanup)
+        cls.acervo_dir = os.path.join(cls.workspace.name, "acervo")
+        os.makedirs(cls.acervo_dir)
+        fixture = os.path.join(ROOT_DIR, "tests", "golden-set", "docs", "ibgp-2023-prefeitura-de-araguari-mg-tecnico-fiscal-da-receita-municipal-prova.pdf")
+        shutil.copyfile(fixture, os.path.join(cls.acervo_dir, "prova.pdf"))
+        cls.staging_db_path = os.path.join(cls.workspace.name, "staging.db")
+        InventoryManager(cls.acervo_dir, StagingDatabase(cls.staging_db_path)).run_inventory()
+        # Curadoria explícita da fixture: bookmarks por página não são provas distintas.
+        with closing(sqlite3.connect(cls.staging_db_path)) as conn, conn:
+            conn.execute("DELETE FROM staging_documents")
+            file_id=conn.execute("SELECT id FROM staging_files").fetchone()[0]
+            with pymupdf.open(fixture) as pdf:
+                pages=len(pdf)
+            conn.execute("INSERT INTO staging_documents(id,file_id,doc_role,page_start,page_end,banca,cargo,status) VALUES('fixture-exam',?,'PROVA',1,?,'IBGP','Técnico Fiscal','CLASSIFIED')", (file_id,pages))
+            conn.execute("UPDATE staging_files SET banca='IBGP'")
         cls.processor = BatchProcessor(cls.staging_db_path, cls.acervo_dir)
+        result = cls.processor.process_single_file(cls.processor.fetch_pending_files()[0])
+        if result["status"] != "SUCCESS":
+            raise AssertionError(result)
 
     def test_01_idempotence_no_duplicate_questions(self):
         """Verifica se reprocessar um arquivo já processado mantém o mesmo número de questões."""
@@ -72,14 +92,14 @@ class TestPipelineResilience(unittest.TestCase):
         tmp_dir = tempfile.mkdtemp()
         temp_db = os.path.join(tmp_dir, "temp_staging.db")
         try:
-            with sqlite3.connect(self.staging_db_path) as src_conn, sqlite3.connect(temp_db) as dst_conn:
+            with closing(sqlite3.connect(self.staging_db_path)) as src_conn, closing(sqlite3.connect(temp_db)) as dst_conn, dst_conn:
                 src_conn.backup(dst_conn)
 
             corrupt_pdf = os.path.join(tmp_dir, "corrupt.pdf")
             with open(corrupt_pdf, "wb") as f:
                 f.write(b"%PDF-1.4 corrupt junk bytes that cannot be parsed by pymupdf\n")
 
-            with sqlite3.connect(temp_db) as conn:
+            with closing(sqlite3.connect(temp_db)) as conn, conn:
                 conn.execute("""
                     INSERT INTO staging_files (id, rel_path, filename, file_size_bytes, sha256, total_pages, status)
                     VALUES ('fake-corrupt-id', 'corrupt.pdf', 'corrupt.pdf', 100, 'sha-fake', 1, 'PENDING')
@@ -97,7 +117,7 @@ class TestPipelineResilience(unittest.TestCase):
             res = temp_processor.process_single_file(files[0])
             self.assertEqual(res["status"], "FAILED")
 
-            with sqlite3.connect(temp_db) as conn:
+            with closing(sqlite3.connect(temp_db)) as conn, conn:
                 status = conn.execute("SELECT status FROM staging_files WHERE id = 'fake-corrupt-id'").fetchone()[0]
                 self.assertEqual(status, "FAILED")
         finally:

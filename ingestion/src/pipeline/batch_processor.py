@@ -28,7 +28,7 @@ INGESTION_DIR = os.path.dirname(os.path.dirname(PIPELINE_DIR))
 if INGESTION_DIR not in sys.path:
     sys.path.insert(0, INGESTION_DIR)
 
-from src.pipeline.inventory_manager import slugify
+from src.pipeline.inventory_manager import slugify, ClosingConnection
 from src.pipeline.universal_extractor import (
     UniversalExtractor,
     detect_contextual_suspect_chars,
@@ -47,7 +47,7 @@ class BatchProcessor:
         self.acervo_dir = os.path.abspath(acervo_dir)
 
     def get_connection(self) -> sqlite3.Connection:
-        conn = sqlite3.connect(self.staging_db_path)
+        conn = sqlite3.connect(self.staging_db_path, factory=ClosingConnection)
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA journal_mode = WAL;")
         conn.execute("PRAGMA synchronous = NORMAL;")
@@ -74,7 +74,13 @@ class BatchProcessor:
     def process_single_file(self, file_row: sqlite3.Row) -> Dict[str, Any]:
         file_id = file_row["id"]
         rel_path = file_row["rel_path"]
-        full_path = os.path.join(self.acervo_dir, rel_path.replace("/", os.sep))
+        full_path = os.path.abspath(os.path.join(self.acervo_dir, rel_path.replace("/", os.sep)))
+        if os.path.commonpath([self.acervo_dir, full_path]) != self.acervo_dir:
+            raise ValueError("Caminho do documento escapa do acervo configurado")
+        with self.get_connection() as conn:
+            protected = conn.execute("SELECT COUNT(*) FROM staging_questions q JOIN staging_documents d ON d.id=q.document_id WHERE d.file_id=? AND (q.modified_by_user=1 OR q.status IN ('SOURCE_VERIFIED','PUBLISHED'))", (file_id,)).fetchone()[0]
+            if protected:
+                raise ValueError("Reprocessamento bloqueado: questões revisadas/publicadas devem ser preservadas")
         banca = file_row["banca"] or "IBGP"
         ano = file_row["ano"] or 0
         orgao = file_row["orgao"] or "UNKNOWN"
@@ -92,7 +98,10 @@ class BatchProcessor:
             cur = conn.execute("SELECT * FROM staging_documents WHERE file_id = ? ORDER BY page_start", (file_id,))
             docs = cur.fetchall()
 
-        prova_doc = next((d for d in docs if d["doc_role"] == "PROVA"), None)
+        prova_docs = [d for d in docs if d["doc_role"] == "PROVA"]
+        if len(prova_docs) > 1:
+            raise ValueError("Vários trechos de prova: revise os intervalos antes de processar; nenhum trecho será descartado silenciosamente")
+        prova_doc = prova_docs[0] if prova_docs else None
         gab_doc = next((d for d in docs if "GABARITO" in d["doc_role"]), None)
 
         if not prova_doc:
