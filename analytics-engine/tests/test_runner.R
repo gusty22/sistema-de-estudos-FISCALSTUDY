@@ -1,3 +1,9 @@
+# Resolve an explicitly configured library first; sandbox LOCALAPPDATA may differ.
+configured_lib <- Sys.getenv("FISCALSTUDY_R_LIBS", "")
+user_lib <- file.path(Sys.getenv("USERPROFILE"), "AppData", "Local", "R", "win-library", paste(R.version$major, strsplit(R.version$minor, "\\.")[[1]][1], sep="."))
+for (lib in c(configured_lib, user_lib)) if (nzchar(lib) && dir.exists(lib)) .libPaths(c(lib, .libPaths()))
+for (pkg in c("jsonlite", "digest")) if (!requireNamespace(pkg, quietly=TRUE)) stop(paste("Required package unavailable:", pkg, "Configure FISCALSTUDY_R_LIBS; no outputs were published."))
+
 # tests/test_runner.R
 # Executor Autônomo de Testes em Base R
 # Projeto: FiscalStudy Analytics (R >= 4.0.0)
