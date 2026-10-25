@@ -120,3 +120,14 @@ Consulte pontualmente via `view_file` conforme o escopo da tarefa:
   - Auditoria de tokens: `uv run python scripts/measure_tokens.py` (telemetria real da sessão via transcript.jsonl).
   - Cofre Obsidian: `..\obsidian\FiscalStudy-Obsidian\00 - Painel\Dashboard.md`.
 
+## 6. Wave 1 — Homologação Integrada e Validação Funcional
+- **Branch Principal (`main`)**: Intacta no commit canônico `c26ee20352fc1b6ace0c58be4f24a41a1092fbf0` (merge NÃO autorizado até homologação formal completa).
+- **Worktree de Integração**: `target/worktrees/integration-wave-1` (Branch `integration/wave-1`, HEAD `926b642`).
+- **Branch Frontend**: `fix/frontend-accessibility-flows` (HEAD `3ee32d9`).
+- **Validação Integrada de Fluxo E2E (10 Etapas)**:
+  - Implementada em `Wave1IntegratedE2EFlowTest.java` (commit `926b642`).
+  - Suíte completa de 50 testes de backend aprovada (`mvnw.cmd test`, 0 falhas, 0 erros).
+  - 11 testes do pipeline Python de ingestão documental aprovados (`test_golden_set_q15`, `test_inventory_integrity`, `test_pipeline_resilience`).
+  - 12 testes do frontend aprovados via `npm test` (`learning-contracts.test.mjs`).
+- **Governança & Scripts**: `scripts/github_issues_sync.ps1` com suporte a `-WhatIf`, idempotência e associação aos PRs #8, #9, #10 e #11.
+
