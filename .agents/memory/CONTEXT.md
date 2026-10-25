@@ -120,23 +120,18 @@ Consulte pontualmente via `view_file` conforme o escopo da tarefa:
   - Auditoria de tokens: `uv run python scripts/measure_tokens.py` (telemetria real da sessão via transcript.jsonl).
   - Cofre Obsidian: `..\obsidian\FiscalStudy-Obsidian\00 - Painel\Dashboard.md`.
 
-## 6. Wave 1 — Homologação e Merge Integral na Main
-- **Branch Principal (`main`)**: Integrada no commit canônico `fdd1639` com 100% dos Pull Requests e branches abertas consolidadas.
-- **Branches e PRs Integrados na Main**:
-  - `fix/analytics-learning-evidence` (PR #8) — Isolamento resiliente do motor R de Analytics.
-  - `fix/backend-pedagogical-reasons` (PR #9) — Separação e imutabilidade do `ANSWER_SUBMITTED` e `ATTEMPT_ANNOTATED`.
-  - `fix/backend-annotation-order` (PR #10) — Idempotência atômica da chave `attempt:UUID` no `event_store`.
-  - `fix/backend-ungraded-revisions` (PR #11) — Tratamento de revisões sem notas e mitigação de regressões.
-  - `feature/database-contracts` — Unificação de DDL SQLite e inicialização única de schema.
-  - `feature/learning-backend` — Conformidade formal com FSRS e persistência do histórico cognitivo.
-  - `feature/document-ingestion` — Pipeline de ingestão documental, deduplicação e publicação atômica auditada.
-  - `fix/frontend-accessibility-flows` e `feature/study-frontend` — Acessibilidade WCAG, navegação por teclado e modal calmo de anotações.
-  - `fix/backend-error-taxonomy` e `feature/analytics-runtime` — Taxonomia canônica de erros e desacoplamento do runtime.
-  - `docs/execution-and-validation` e `docs/production-round-20261025` — Evidências de produção e relatórios de auditoria.
-- **Validação Integrada Pós-Merge**:
-  - Backend: `mvnw.cmd test-compile` aprovado (BUILD SUCCESS).
-  - Teste Integrado E2E: `Wave1IntegratedE2EFlowTest` aprovado (7 testes, 0 falhas, 0 erros).
-  - Frontend: `npm test` aprovado (12 testes, 0 falhas).
-  - Ingestão Documental: `test_complete_ingestion_lifecycle.py` aprovado (100% de sucesso atômico com backup e auditoria no `event_store`).
-- **Governança**: `git branch -a --no-merged main` confirmado como vazio. Total de 36 commits consolidados à frente de `origin/main`.
+## 6. Wave 1 — Estabilização, Integração Isolada e Governança
+- **Estado da Branch `main`**: 🔒 **BLOQUEADA PARA MERGE**. A branch remota `origin/main` permanece estritamente intacta no commit canônico `c26ee20352fc1b6ace0c58be4f24a41a1092fbf0`.
+- **Ambiente de Trabalho**: Exclusivamente na worktree isolada `target/worktrees/integration-wave-1` (branch `integration/wave-1`).
+- **Catálogo Canônico dos 15 Epics**: Fonte única e definitiva em [`docs/architecture/EPICS_CANONICAL.md`](file:///c:/Users/washi/OneDrive/%C3%81rea%20de%20Trabalho/fiscalstudy-platform/core-app/docs/architecture/EPICS_CANONICAL.md). É expressamente proibido renumerar ou substituir estes identificadores por iniciativas de engenharia.
+- **Especificação de Avaliação Cognitiva**: Formalizada em [`docs/architecture/specs/AVALIACAO_CONHECIMENTO_CONCEITUAL.md`](file:///c:/Users/washi/OneDrive/%C3%81rea%20de%20Trabalho/fiscalstudy-platform/core-app/docs/architecture/specs/AVALIACAO_CONHECIMENTO_CONCEITUAL.md) com FSRS-4.5 oficial preservado, sem pesos fixos arbitrários e com segregação tripartite (Evidência Observada, Estimativa do Modelo, Hipótese Pedagógica).
+- **Validação Integrada Automatizada na Worktree**:
+  - Backend Java: 56 testes automatizados aprovados (`mvnw.cmd test`, 0 falhas, 0 erros).
+  - Fluxo Integrado E2E: `Wave1IntegratedE2EFlowTest` aprovado (7 testes de borda HTTP/JSON, 0 falhas).
+  - Suíte Python de Ingestão: `test_complete_ingestion_lifecycle.py` aprovado (100% de sucesso atômico, backup físico e auditoria no `event_store`).
+  - Frontend TypeScript/React: `npm test` aprovado (12 testes unitários, 0 falhas).
+  - Acessibilidade e DOM: Validação com Microsoft Edge local em modo headless.
+  - **N4 Homologação Visual**: Mantido formalmente como **PENDENTE** de sessão interativa em tela real com operador humano.
+- **Bancos de Dados**: Bancos reais de produção `db/fiscalstudy.db` e `db/staging.db` 100% intocados e preservados.
+
 
