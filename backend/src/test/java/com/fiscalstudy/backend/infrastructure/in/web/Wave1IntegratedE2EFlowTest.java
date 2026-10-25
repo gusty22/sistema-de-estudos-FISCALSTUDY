@@ -224,4 +224,226 @@ class Wave1IntegratedE2EFlowTest {
         );
         assertEquals(1, totalAttempts, "Reenvio de tentativa com mesmo attemptId e payload idêntico deve ser estritamente idempotente.");
     }
+
+    @Test
+    @DisplayName("Conflito: Reenvio de tentativa com mesmo attemptId e payload divergente deve responder 409 Conflict")
+    void testReenvioComMesmoIdentificadorEPayloadDivergente() throws Exception {
+        String testAttemptId = UUID.randomUUID().toString();
+        String initialPayload = objectMapper.writeValueAsString(Map.of(
+                "attemptId", testAttemptId,
+                "sessionId", sessionId,
+                "selectedOption", "B",
+                "confidenceLevel", 5,
+                "activeTimeMs", 10000
+        ));
+
+        mockMvc.perform(post("/api/v1/questions/" + questionId + "/attempts")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(initialPayload))
+                .andExpect(status().isOk());
+
+        // Reenvio com selectedOption divergente ("A" em vez de "B")
+        String conflictingPayload = objectMapper.writeValueAsString(Map.of(
+                "attemptId", testAttemptId,
+                "sessionId", sessionId,
+                "selectedOption", "A",
+                "confidenceLevel", 5,
+                "activeTimeMs", 10000
+        ));
+
+        mockMvc.perform(post("/api/v1/questions/" + questionId + "/attempts")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(conflictingPayload))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    @DisplayName("Anotação Concorrente: Idempotência com payload idêntico e 409 com payload divergente")
+    void testAnotacaoConcorrenteEConflitante() throws Exception {
+        String testAttemptId = UUID.randomUUID().toString();
+        String attemptPayload = objectMapper.writeValueAsString(Map.of(
+                "attemptId", testAttemptId,
+                "sessionId", sessionId,
+                "selectedOption", "A",
+                "confidenceLevel", 3,
+                "activeTimeMs", 15000
+        ));
+
+        mockMvc.perform(post("/api/v1/questions/" + questionId + "/attempts")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(attemptPayload))
+                .andExpect(status().isOk());
+
+        String testAnnotationId = UUID.randomUUID().toString();
+        String annotationPayload = objectMapper.writeValueAsString(Map.of(
+                "annotationId", testAnnotationId,
+                "sessionId", sessionId,
+                "causaErro", "CONCEITO_CONFUNDIDO"
+        ));
+
+        // Primeira anotação -> 200 OK
+        mockMvc.perform(post("/api/v1/questions/" + questionId + "/attempts/" + testAttemptId + "/annotations")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(annotationPayload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("RECORDED"));
+
+        // Reenvio idêntico -> 200 OK (idempotente)
+        mockMvc.perform(post("/api/v1/questions/" + questionId + "/attempts/" + testAttemptId + "/annotations")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(annotationPayload))
+                .andExpect(status().isOk());
+
+        // Reenvio com mesmo annotationId mas causaErro divergente -> 409 Conflict
+        String conflictingAnnotation = objectMapper.writeValueAsString(Map.of(
+                "annotationId", testAnnotationId,
+                "sessionId", sessionId,
+                "causaErro", "PEGADINHA"
+        ));
+
+        mockMvc.perform(post("/api/v1/questions/" + questionId + "/attempts/" + testAttemptId + "/annotations")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(conflictingAnnotation))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    @DisplayName("Propriedade de Questão: Tentar anotar tentativa associada a outra questão retorna 409 Conflict")
+    void testTentativaPertencenteAOutraQuestao() throws Exception {
+        String otherQuestionId = "q_e2e_fiscal_02";
+        jdbcTemplate.execute("DELETE FROM questions WHERE id = '" + otherQuestionId + "'");
+        jdbcTemplate.update(
+                "INSERT INTO questions (id, enunciado, options_json, correct_option, banca, ano, cargo, disciplina, assunto) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                otherQuestionId,
+                "Enunciado da questão 2",
+                "[\"A) Op1\", \"B) Op2\", \"C) Op3\", \"D) Op4\"]",
+                "A",
+                "FGV",
+                2024,
+                "Auditor Fiscal",
+                "Contabilidade Geral",
+                "Balanço"
+        );
+
+        String testAttemptId = UUID.randomUUID().toString();
+        mockMvc.perform(post("/api/v1/questions/" + questionId + "/attempts")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of(
+                        "attemptId", testAttemptId,
+                        "sessionId", sessionId,
+                        "selectedOption", "A",
+                        "confidenceLevel", 3,
+                        "activeTimeMs", 15000
+                ))))
+                .andExpect(status().isOk());
+
+        // Tenta anotar a tentativa de questionId usando a rota de otherQuestionId
+        mockMvc.perform(post("/api/v1/questions/" + otherQuestionId + "/attempts/" + testAttemptId + "/annotations")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of(
+                        "annotationId", UUID.randomUUID().toString(),
+                        "sessionId", sessionId,
+                        "causaErro", "CONCEITO_CONFUNDIDO"
+                ))))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    @DisplayName("Questão sem Gabarito Válido: ANULADA retorna isCorrect=null e ponto de concurso=1")
+    void testQuestaoSemGabaritoValido() throws Exception {
+        String anuladaId = "q_e2e_anulada_03";
+        jdbcTemplate.execute("DELETE FROM questions WHERE id = '" + anuladaId + "'");
+        jdbcTemplate.update(
+                "INSERT INTO questions (id, enunciado, options_json, correct_option, gabarito_status, banca, ano, cargo, disciplina, assunto) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                anuladaId,
+                "Questão que foi posteriormente anulada pela banca",
+                "[\"A) Op1\", \"B) Op2\", \"C) Op3\", \"D) Op4\"]",
+                "B",
+                "ANULADA",
+                "FGV",
+                2024,
+                "Auditor Fiscal",
+                "Contabilidade Geral",
+                "Patrimônio"
+        );
+
+        mockMvc.perform(post("/api/v1/questions/" + anuladaId + "/attempts")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of(
+                        "attemptId", UUID.randomUUID().toString(),
+                        "sessionId", sessionId,
+                        "selectedOption", "A",
+                        "confidenceLevel", 2,
+                        "activeTimeMs", 20000
+                ))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.isCorrect").doesNotExist())
+                .andExpect(jsonPath("$.gabaritoStatus").value("ANULADA"))
+                .andExpect(jsonPath("$.concursoPoint").value(1));
+    }
+
+    @Test
+    @DisplayName("Múltiplas Anotações: Persistência independente e agregação cronológica sem mutação da resposta original")
+    void testRecuperacaoCronologicaMultiplasAnotacoes() throws Exception {
+        String testAttemptId = UUID.randomUUID().toString();
+        mockMvc.perform(post("/api/v1/questions/" + questionId + "/attempts")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of(
+                        "attemptId", testAttemptId,
+                        "sessionId", sessionId,
+                        "selectedOption", "A",
+                        "confidenceLevel", 4,
+                        "activeTimeMs", 30000
+                ))))
+                .andExpect(status().isOk());
+
+        String rawOriginalAnswer = jdbcTemplate.queryForObject(
+                "SELECT payload_json FROM event_store WHERE event_type = 'ANSWER_SUBMITTED' AND session_id = ?",
+                String.class,
+                sessionId
+        );
+
+        // Anotação 1: Inicial
+        String ann1Id = UUID.randomUUID().toString();
+        mockMvc.perform(post("/api/v1/questions/" + questionId + "/attempts/" + testAttemptId + "/annotations")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of(
+                        "annotationId", ann1Id,
+                        "sessionId", sessionId,
+                        "causaErro", "LAPSO_INTERPRETACAO"
+                ))))
+                .andExpect(status().isOk());
+
+        // Anotação 2: Refinamento posterior
+        String ann2Id = UUID.randomUUID().toString();
+        mockMvc.perform(post("/api/v1/questions/" + questionId + "/attempts/" + testAttemptId + "/annotations")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of(
+                        "annotationId", ann2Id,
+                        "sessionId", sessionId,
+                        "causaErro", "CONCEITO_CONFUNDIDO"
+                ))))
+                .andExpect(status().isOk());
+
+        // Verificar histórico agregado
+        mockMvc.perform(get("/api/v1/questions/" + questionId + "/attempts/" + testAttemptId + "/annotations"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.annotations.length()").value(2))
+                .andExpect(jsonPath("$.annotations[0].causaErro").value("LAPSO_INTERPRETACAO"))
+                .andExpect(jsonPath("$.annotations[1].causaErro").value("CONCEITO_CONFUNDIDO"));
+
+        // Confirmar imutabilidade da resposta original
+        String rawAnswerAfter = jdbcTemplate.queryForObject(
+                "SELECT payload_json FROM event_store WHERE event_type = 'ANSWER_SUBMITTED' AND session_id = ?",
+                String.class,
+                sessionId
+        );
+        assertEquals(rawOriginalAnswer, rawAnswerAfter, "O evento original ANSWER_SUBMITTED nunca pode sofrer mutação.");
+
+        // Verificar que AttemptAnnotationView reflete a causa mais recente (última)
+        Map<String, String> latestMap = AttemptAnnotationView.latest(jdbcTemplate);
+        assertEquals("CONCEITO_CONFUNDIDO", latestMap.get(testAttemptId));
+    }
 }
