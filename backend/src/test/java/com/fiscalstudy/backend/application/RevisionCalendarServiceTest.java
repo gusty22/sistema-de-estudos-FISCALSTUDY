@@ -49,7 +49,7 @@ class RevisionCalendarServiceTest {
     }
 
     @Test
-    @DisplayName("Deve agendar Intervenção Corretiva com alta prioridade para erro com alta confiança (falsa fluência)")
+    @DisplayName("Deve agendar Intervenção Corretiva com alta prioridade para erro com alta confiança (causa a investigar)")
     void testScheduleAdaptiveRevision_HighConfidenceError() {
         service.scheduleAdaptiveRevision(
                 "sess-1", "conc-1", "Direito Tributário", "Imunidades",
@@ -71,7 +71,7 @@ class RevisionCalendarServiceTest {
         assertEquals("INTERVENCAO_CORRETIVA", item.get("estagio_intervencao"));
         assertTrue((Double) item.get("prioridade_score") >= 0.90);
         assertNotNull(item.get("justificativa_pedagogica"));
-        assertTrue(item.get("justificativa_pedagogica").toString().contains("Falsa fluência"));
+        assertTrue(item.get("justificativa_pedagogica").toString().contains("a confiança não determina sua causa"));
     }
 
     @Test
