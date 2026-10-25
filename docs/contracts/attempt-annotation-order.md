@@ -1,0 +1,11 @@
+# Ordem cronológica das anotações de tentativa
+
+AttemptAnnotationView.latest(JdbcTemplate) compara occurred_at como java.time.Instant, preservando nanossegundos. Textos ISO com frações ou offsets diferentes não são ordenados lexicalmente. O maior Instant por tentativa prevalece; Instants iguais são desempatados pelo maior rowid SQLite (ordem de anexação).
+
+O log permanece append-only. Nenhuma migração ou atualização de eventos é realizada. Timestamp ausente/inválido produz IllegalStateException explícita, assim como payload inválido já produzia. A sobrecarga latest(List<String>) continua recebendo payloads previamente ordenados.
+
+Teste AnnotationOrderingRegressionTest usa SQLite em memória e cobre fração após segundo inteiro, nanossegundos em ordem de inserção inversa, offsets equivalentes, desempate por anexação e timestamps inválidos/ausentes.
+
+Validação isolada: test-compile concluído; seis testes AnnotationOrderingRegressionTest aprovados (zero falhas/erros/ignorados). Execução conjunta ErrorTaxonomyRegressionTest encontrou problema operacional de attach ByteBuddy no pipe Windows; resultado dessa suíte ainda pendente. Log local externo: C:/workspace/annotation-order-tests.log. Nenhum banco original ou integração externa utilizado.
+
+Reexecução concluída em 25/10/2026: test-compile e 11 testes direcionados (6 ordenação + 5 taxonomia), zero falhas/erros/ignorados, BUILD SUCCESS em 22.074s. Usado somente no comando -DargLine=-javaagent:C:/Users/washi/.m2/repository/net/bytebuddy/byte-buddy-agent/1.14.19/byte-buddy-agent-1.14.19.jar para evitar self-attach; nenhuma dependência instalada ou pom alterado. Log annotation-order-tests-agent.log. A execução anterior foi interrompida após diagnóstico do bloqueio operacional.

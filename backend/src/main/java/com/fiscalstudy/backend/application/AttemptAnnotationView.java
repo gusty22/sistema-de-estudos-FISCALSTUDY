@@ -3,6 +3,8 @@ package com.fiscalstudy.backend.application;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import java.util.*;
+import java.time.Instant;
+import java.time.format.DateTimeParseException;
 
 /** Read projection only: original answer events remain unchanged. Causes are self reports. */
 public final class AttemptAnnotationView {
@@ -17,6 +19,15 @@ public final class AttemptAnnotationView {
   return result;
  }
  public static Map<String,String> latest(JdbcTemplate jdbc) {
-  return latest(jdbc.queryForList("SELECT payload_json FROM event_store WHERE event_type='ATTEMPT_ANNOTATED' ORDER BY occurred_at,rowid",String.class));
+  var annotations=jdbc.query("SELECT rowid,occurred_at,payload_json FROM event_store WHERE event_type='ATTEMPT_ANNOTATED'",
+   (row,index)->new TimedAnnotation(row.getLong(1),parseTime(row.getString(2)),row.getString(3)));
+  annotations.sort(Comparator.comparing(TimedAnnotation::occurredAt).thenComparingLong(TimedAnnotation::rowId));
+  return latest(annotations.stream().map(TimedAnnotation::payload).toList());
  }
+ private static Instant parseTime(String value) {
+  if(value==null)throw new IllegalStateException("Missing persisted annotation timestamp");
+  try{return Instant.parse(value);}
+  catch(DateTimeParseException e){throw new IllegalStateException("Invalid persisted annotation timestamp",e);}
+ }
+ private record TimedAnnotation(long rowId,Instant occurredAt,String payload) {}
 }
