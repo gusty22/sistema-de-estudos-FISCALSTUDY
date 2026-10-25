@@ -59,7 +59,7 @@ class Wave1IntegratedE2EFlowTest {
     @BeforeEach
     void setupCleanDatabase() {
         jdbcTemplate.execute("DELETE FROM event_store");
-        jdbcTemplate.execute("DELETE FROM questions WHERE id = '" + questionId + "'");
+        jdbcTemplate.execute("DELETE FROM questions WHERE disciplina = 'Contabilidade Geral'");
 
         String options = "[\"A) Opção Incorreta\", \"B) Opção Correta\", \"C) Opção Distrator\", \"D) Opção Errada\"]";
         jdbcTemplate.update(

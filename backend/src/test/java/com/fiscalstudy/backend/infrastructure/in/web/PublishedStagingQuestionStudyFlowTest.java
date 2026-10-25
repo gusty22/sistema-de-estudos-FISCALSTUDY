@@ -48,7 +48,7 @@ class PublishedStagingQuestionStudyFlowTest {
     @BeforeEach
     void setupPublishedQuestionFixture() {
         jdbcTemplate.execute("DELETE FROM event_store WHERE session_id = '" + sessionId + "'");
-        jdbcTemplate.execute("DELETE FROM questions WHERE id = '" + publishedStagingId + "'");
+        jdbcTemplate.execute("DELETE FROM questions WHERE disciplina = 'Direito Tributário'");
 
         // Simula exatamente o registro gerado pelo publish_verified.py no banco operacional
         String optionsJson = "[\"A) Primeira hipótese\", \"B) Hipótese correta da lei\", \"C) Distrator comum\", \"D) Erro crasso\"]";
