@@ -124,46 +124,46 @@ public class RevisionCalendarService {
         int confianca = confidenceLevel != null ? confidenceLevel : 2;
 
         if (errou) {
-            // Se errou com alta confiança (falsa fluência / erro cristalizado) ou causa E1/E2
+            // Prioridade operacional por confiança declarada ou causa relatada; não determina a causa.
             if (confianca >= 3 || (causaErro != null && (causaErro.contains("E1") || causaErro.contains("E2")))) {
                 estagio = "INTERVENCAO_CORRETIVA";
                 tipoRevisao = "D1_IMEDIATO";
                 intervaloDias = 1;
                 prioridadeScore = 0.95;
-                justificativa = "Falsa fluência ou equívoco conceitual crítico detectado (" + (causaErro != null ? causaErro : "Incompreensão do conceito") + "). Intervenção corretiva prioritária recomendada para reconstruir a regra antes que o erro se cristalize na memória.";
+                justificativa = "Resposta incorreta. " + (confidenceLevel != null ? "Confiança declarada: " + confidenceLevel + "/5. " : "Confiança não informada. ") + (causaErro != null && !causaErro.isBlank() ? "Causa relatada pelo estudante: " + causaErro + ". " : "Causa ainda não identificada. ") + "Revisão prioritária sugerida para investigar o erro e verificar a compreensão; a confiança não determina sua causa.";
             } else if (causaErro != null && (causaErro.contains("E3") || causaErro.contains("E4"))) {
                 estagio = "TESTE_TRANSFERENCIA";
                 tipoRevisao = "D1_IMEDIATO";
                 intervaloDias = 1;
                 prioridadeScore = 0.85;
-                justificativa = "Dificuldade na regra, exceção ou pegadinha da banca (" + causaErro + "). Recomendado teste de transferência com formulação inédita da mesma matéria.";
+                justificativa = "Resposta incorreta. Causa relatada pelo estudante: " + causaErro + ". Sugere-se uma questão com formulação diferente para investigar a dificuldade; o relato não confirma um diagnóstico causal.";
             } else {
                 estagio = "INTERVENCAO_CORRETIVA";
                 tipoRevisao = "D1_IMEDIATO";
                 intervaloDias = 1;
                 prioridadeScore = 0.80;
-                justificativa = "Erro observado na resolução. Revisão iminente do tópico para estancar a perda de retenção.";
+                justificativa = "Resposta incorreta observada. Causa ainda não identificada ou não classificada. Sugere-se revisar o tópico e investigar o erro; este resultado isolado não comprova esquecimento.";
             }
         } else if (chutou) {
             estagio = "RECUPERACAO_ATIVA";
             tipoRevisao = "D7_CONSOLIDACAO";
             intervaloDias = 2;
             prioridadeScore = 0.75;
-            justificativa = "Acerto assinalado por chute/dúvida. A resposta foi correta, mas sem segurança; requer recuperação ativa sem pistas para comprovar retenção real.";
+            justificativa = "Resposta correta com chute/dúvida assinalado. Sugere-se recuperação sem pistas em outra questão para reunir evidências adicionais; este acerto isolado não demonstra retenção duradoura.";
         } else {
-            // Acerto legítimo
+            // Resposta correta: observar condições sem concluir domínio a partir de um item.
             if (friccaoCognitiva != null && friccaoCognitiva > 0.45) {
                 estagio = "RECUPERACAO_ATIVA";
                 tipoRevisao = "D7_CONSOLIDACAO";
                 intervaloDias = 3;
                 prioridadeScore = 0.60;
-                justificativa = "Acerto com alta hesitação durante a deliberação. O conceito consumiu alto esforço cognitivo; reforço adaptativo recomendado para desenvolver fluência.";
+                justificativa = "Resposta correta com indicador de fricção acima do limiar configurado. Esse sinal não identifica esforço cognitivo ou sua causa. Sugere-se nova recuperação para verificar estabilidade do desempenho.";
             } else {
                 estagio = "MANUTENCAO_PREVENTIVA";
                 tipoRevisao = "D15_APROFUNDAMENTO";
                 intervaloDias = 7;
                 prioridadeScore = 0.35;
-                justificativa = "Domínio fluente demonstrado com consistência. Reforço preventivo de longo prazo agendado para monitoramento de retenção.";
+                justificativa = "Resposta correta observada. Revisão preventiva sugerida para verificar recuperação posterior; um acerto isolado não demonstra domínio conceitual ou retenção duradoura.";
             }
         }
 
