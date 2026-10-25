@@ -10,6 +10,26 @@ DATA_PROVENANCE_TYPES <- c(
   "UNVERIFIED_SOURCE"     # Origem desconhecida, nÃÂ£o verificada ou sem cadeia de custÃÂ³dia
 )
 
+#' Calcula Hash Criptografico SHA-256 de Arquivo
+#' Prioriza digest::digest (se disponivel); recorre a tools::sha256sum (Base R nativo).
+#' Retorna NA_character_ em caso de erro, modulo indisponivel ou arquivo inacessivel (fail-closed).
+#' NUNCA substitui SHA-256 por MD5.
+compute_file_sha256 <- function(file_path) {
+  if (is.null(file_path) || !is.character(file_path) || length(file_path) != 1 || !file.exists(file_path)) {
+    return(NA_character_)
+  }
+  tryCatch({
+    if (requireNamespace("digest", quietly = TRUE)) {
+      tolower(as.character(digest::digest(file_path, algo = "sha256", file = TRUE)))
+    } else if (requireNamespace("tools", quietly = TRUE) && exists("sha256sum", envir = asNamespace("tools"))) {
+      res <- unname(as.character(tools::sha256sum(file_path)))
+      if (is.na(res) || !nzchar(res)) NA_character_ else tolower(res)
+    } else {
+      NA_character_
+    }
+  }, error = function(e) NA_character_)
+}
+
 #' Audita e Verifica a ProcedÃÂªncia de um Conjunto de Dados
 #' @param df data.frame com os dados a serem auditados
 #' @param declared_provenance String com a procedÃÂªncia declarada (opcional)
@@ -101,13 +121,7 @@ verify_data_provenance <- function(df, declared_provenance = NULL, file_path = N
 
     # 0.4 Se ha hash declarado ou pretensao operacional com arquivo presente, executa checagem criptografica
     if (has_chk && !is.null(file_path) && file.exists(file_path)) {
-      calc_hash <- tryCatch({
-        if (requireNamespace("digest", quietly = TRUE)) {
-          tolower(digest::digest(file_path, algo = "sha256", file = TRUE))
-        } else {
-          NA_character_
-        }
-      }, error = function(e) NA_character_)
+      calc_hash <- compute_file_sha256(file_path)
 
       if (is.na(calc_hash) || calc_hash == "") {
         return(list(

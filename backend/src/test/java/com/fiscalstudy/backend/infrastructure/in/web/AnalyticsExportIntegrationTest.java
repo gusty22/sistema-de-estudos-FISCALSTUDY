@@ -15,6 +15,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 import static org.hamcrest.Matchers.*;
@@ -62,13 +64,49 @@ public class AnalyticsExportIntegrationTest {
         assertTrue(Files.isRegularFile(p),"Canonical R source must exist");
         return p.toString().replace("\\","/");
     }
+    private String resolveRscript() {
+        String executable = System.getenv("FISCALSTUDY_RSCRIPT");
+        if (executable != null && !executable.isBlank() && Files.isRegularFile(Path.of(executable))) {
+            return executable;
+        }
+        if (System.getProperty("os.name", "").toLowerCase().contains("win")) {
+            String progFilesEnv = System.getenv("ProgramFiles");
+            Path progFiles = Path.of(progFilesEnv != null ? progFilesEnv : "C:\\Program Files", "R");
+            if (Files.isDirectory(progFiles)) {
+                try (var stream = Files.newDirectoryStream(progFiles, "R-*")) {
+                    List<Path> versions = new ArrayList<>();
+                    for (Path p : stream) versions.add(p);
+                    versions.sort(Comparator.comparing(Path::toString).reversed());
+                    for (Path v : versions) {
+                        Path rscript = v.resolve("bin").resolve("Rscript.exe");
+                        if (Files.isRegularFile(rscript)) return rscript.toString();
+                        Path rscript64 = v.resolve("bin").resolve("x64").resolve("Rscript.exe");
+                        if (Files.isRegularFile(rscript64)) return rscript64.toString();
+                    }
+                } catch (Exception ignored) {}
+            }
+        }
+        return "Rscript";
+    }
+
     private String runR(String expression)throws Exception {
-        String executable=System.getenv("FISCALSTUDY_RSCRIPT");
-        org.junit.jupiter.api.Assumptions.assumeTrue(executable!=null && !executable.isBlank(),"Set FISCALSTUDY_RSCRIPT for cross-language tests");
-        String libs=System.getenv("FISCALSTUDY_R_LIBS");
-        if(libs!=null)expression=".libPaths(c('"+libs.replace("\\","/")+"',.libPaths()));"+expression;
-        var result=com.fiscalstudy.backend.infrastructure.process.BoundedProcess.run(java.util.List.of(executable,"-e",expression),Path.of(".").toAbsolutePath(),java.time.Duration.ofSeconds(30),java.util.Map.of());
-        assertEquals(0,result.exitCode(),result.output());return result.output().trim();
+        String executable = resolveRscript();
+        boolean hasExec = Files.isRegularFile(Path.of(executable));
+        if (!hasExec) {
+            try {
+                var testRes = com.fiscalstudy.backend.infrastructure.process.BoundedProcess.run(
+                        java.util.List.of(executable, "--version"), Path.of(".").toAbsolutePath(), java.time.Duration.ofSeconds(5), java.util.Map.of());
+                hasExec = (testRes.exitCode() == 0);
+            } catch (Exception e) {
+                hasExec = false;
+            }
+        }
+        org.junit.jupiter.api.Assumptions.assumeTrue(hasExec, "Rscript executable must be available for cross-language tests");
+        String libs = System.getenv("FISCALSTUDY_R_LIBS");
+        if (libs != null && !libs.isBlank()) expression = ".libPaths(c('" + libs.replace("\\", "/") + "', .libPaths())); " + expression;
+        var result = com.fiscalstudy.backend.infrastructure.process.BoundedProcess.run(java.util.List.of(executable, "-e", expression), Path.of(".").toAbsolutePath(), java.time.Duration.ofSeconds(30), java.util.Map.of());
+        assertEquals(0, result.exitCode(), result.output());
+        return result.output().trim();
     }
 
     @Test

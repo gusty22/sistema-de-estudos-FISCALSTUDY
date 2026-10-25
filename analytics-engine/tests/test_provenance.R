@@ -217,3 +217,32 @@ manifest$checksum <- digest::digest(path, algo = "sha256", file = TRUE)
 result <- verify_data_provenance(missing_origin, "PROVEN_OPERATIONAL", path, manifest)
 assert_false(result$is_real_student_data, "Missing event origin remains unverified despite matching checksum")
 unlink(path)
+
+# 15. Teste Unitario Exaustivo de compute_file_sha256 (Base R e Fail-Closed)
+{
+  tmp_sha_test <- tempfile(fileext = ".txt")
+  writeLines("FiscalStudy SHA-256 validation test 2026", tmp_sha_test)
+  
+  # Validar que compute_file_sha256 calcula corretamente
+  h_computed <- compute_file_sha256(tmp_sha_test)
+  assert_true(!is.na(h_computed) && nchar(h_computed) == 64, "compute_file_sha256 gera hash hex de 64 caracteres")
+  
+  # Validar equivalencia com tools::sha256sum (Base R nativo)
+  if (requireNamespace("tools", quietly = TRUE) && exists("sha256sum", envir = asNamespace("tools"))) {
+    h_tools <- unname(tolower(as.character(tools::sha256sum(tmp_sha_test))))
+    assert_equal(h_computed, h_tools, "compute_file_sha256 coincide rigorosamente com tools::sha256sum")
+  }
+  
+  # Validar equivalencia com digest::digest (se instalado)
+  if (requireNamespace("digest", quietly = TRUE)) {
+    h_digest <- tolower(as.character(digest::digest(tmp_sha_test, algo = "sha256", file = TRUE)))
+    assert_equal(h_computed, h_digest, "compute_file_sha256 coincide rigorosamente com digest::digest")
+  }
+  
+  # Validar comportamento fail-closed em arquivos ausentes e entradas invalidas
+  assert_true(is.na(compute_file_sha256("arquivo_que_absolutamente_nao_existe.csv")), "compute_file_sha256 retorna NA em arquivo inexistente")
+  assert_true(is.na(compute_file_sha256(NULL)), "compute_file_sha256 retorna NA para input NULL")
+  assert_true(is.na(compute_file_sha256(character(0))), "compute_file_sha256 retorna NA para vetor vazio")
+  
+  unlink(tmp_sha_test)
+}
