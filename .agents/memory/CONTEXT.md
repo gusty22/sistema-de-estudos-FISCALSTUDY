@@ -120,14 +120,23 @@ Consulte pontualmente via `view_file` conforme o escopo da tarefa:
   - Auditoria de tokens: `uv run python scripts/measure_tokens.py` (telemetria real da sessão via transcript.jsonl).
   - Cofre Obsidian: `..\obsidian\FiscalStudy-Obsidian\00 - Painel\Dashboard.md`.
 
-## 6. Wave 1 — Homologação Integrada e Validação Funcional
-- **Branch Principal (`main`)**: Intacta no commit canônico `c26ee20352fc1b6ace0c58be4f24a41a1092fbf0` (merge NÃO autorizado até homologação formal completa).
-- **Worktree de Integração**: `target/worktrees/integration-wave-1` (Branch `integration/wave-1`, HEAD `926b642`).
-- **Branch Frontend**: `fix/frontend-accessibility-flows` (HEAD `3ee32d9`).
-- **Validação Integrada de Fluxo E2E (10 Etapas)**:
-  - Implementada em `Wave1IntegratedE2EFlowTest.java` (commit `926b642`).
-  - Suíte completa de 50 testes de backend aprovada (`mvnw.cmd test`, 0 falhas, 0 erros).
-  - 11 testes do pipeline Python de ingestão documental aprovados (`test_golden_set_q15`, `test_inventory_integrity`, `test_pipeline_resilience`).
-  - 12 testes do frontend aprovados via `npm test` (`learning-contracts.test.mjs`).
-- **Governança & Scripts**: `scripts/github_issues_sync.ps1` com suporte a `-WhatIf`, idempotência e associação aos PRs #8, #9, #10 e #11.
+## 6. Wave 1 — Homologação e Merge Integral na Main
+- **Branch Principal (`main`)**: Integrada no commit canônico `fdd1639` com 100% dos Pull Requests e branches abertas consolidadas.
+- **Branches e PRs Integrados na Main**:
+  - `fix/analytics-learning-evidence` (PR #8) — Isolamento resiliente do motor R de Analytics.
+  - `fix/backend-pedagogical-reasons` (PR #9) — Separação e imutabilidade do `ANSWER_SUBMITTED` e `ATTEMPT_ANNOTATED`.
+  - `fix/backend-annotation-order` (PR #10) — Idempotência atômica da chave `attempt:UUID` no `event_store`.
+  - `fix/backend-ungraded-revisions` (PR #11) — Tratamento de revisões sem notas e mitigação de regressões.
+  - `feature/database-contracts` — Unificação de DDL SQLite e inicialização única de schema.
+  - `feature/learning-backend` — Conformidade formal com FSRS e persistência do histórico cognitivo.
+  - `feature/document-ingestion` — Pipeline de ingestão documental, deduplicação e publicação atômica auditada.
+  - `fix/frontend-accessibility-flows` e `feature/study-frontend` — Acessibilidade WCAG, navegação por teclado e modal calmo de anotações.
+  - `fix/backend-error-taxonomy` e `feature/analytics-runtime` — Taxonomia canônica de erros e desacoplamento do runtime.
+  - `docs/execution-and-validation` e `docs/production-round-20261025` — Evidências de produção e relatórios de auditoria.
+- **Validação Integrada Pós-Merge**:
+  - Backend: `mvnw.cmd test-compile` aprovado (BUILD SUCCESS).
+  - Teste Integrado E2E: `Wave1IntegratedE2EFlowTest` aprovado (7 testes, 0 falhas, 0 erros).
+  - Frontend: `npm test` aprovado (12 testes, 0 falhas).
+  - Ingestão Documental: `test_complete_ingestion_lifecycle.py` aprovado (100% de sucesso atômico com backup e auditoria no `event_store`).
+- **Governança**: `git branch -a --no-merged main` confirmado como vazio. Total de 36 commits consolidados à frente de `origin/main`.
 
