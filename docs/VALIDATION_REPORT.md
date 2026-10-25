@@ -94,3 +94,48 @@ Testes novos com mesmo instante próximo da meia-noite em UTC e São Paulo compr
 RevisionCalendarService usa Clock no fuso fiscalstudy.zone em todas as chamadas LocalDate.now:agendamento,agenda,contexto e conclusão/reagendamento. Antes dependia do fuso do computador,divergindo do FSRS configurado. Teste com instante2026-01-01T00:30Z comprova revisãoD1 em01/01para São Paulo e02/01para UTC. Instantes e datas históricas preservados.
 
 Validação:RevisionCalendarServiceTest,LearningEvidenceServiceTest,SchemaBootstrapIntegrationTest —13 testes aprovados,0 falhas/erros/ignorados;BUILD SUCCESS. Log target-calendar-zone.log. Suíte global não reexecutada nesta alteração;outros módulos de planejamento ainda exigem inspeção individual.
+
+## Validação da rodada de produção — 25/10/2026
+
+### Resultados finais
+
+| Área | Versão local validada | Resultado real | Evidência local |
+| --- | --- | --- | --- |
+| Justificativas pedagógicas | b0d44a261e7e584aa0adb572c38772957846b921 | test-compile e 17 testes aprovados, zero falhas/erros/ignorados | C:/workspace/pedagogy-tests-final.log |
+| Proveniência R | f90574fbe59f13156b16a2f379139cb851c0f5fb | R 4.5.1: 336 verificações aprovadas, zero falhas, exit 0, 8.211 segundos | C:/workspace/analytics-origin-final2.log |
+| Ordenação das anotações | 72022057f8658c34003acf62a92547be92a2b1c1 | test-compile e 11 testes aprovados, zero falhas/erros/ignorados | C:/workspace/annotation-order-tests.log |
+| Respostas não avaliáveis | 13509e69479f13f1dd77e1ce7c0b02ddf08d95ee | test-compile e 19 testes aprovados, zero falhas/erros/ignorados, 46.834 segundos | C:/workspace/ungraded-revision-tests.log |
+| Suplemento integrado após guard de null | Mesma versão null, demais fontes desta tabela | 25 testes aprovados, zero falhas/erros/ignorados, BUILD SUCCESS, 41.110 segundos | C:/workspace/round-ungraded-supplement.log |
+| Suíte backend completa | Pedagogia, anotações e R acima; anterior ao guard de null | 280 testes, uma falha ambiental, zero erros/ignorados, BUILD FAILURE | C:/workspace/round-backend-tests-final.log |
+
+As baterias direcionadas e o suplemento se sobrepõem; não são somados como casos distintos. Ambiente Java 21.0.7/Maven 3.9.16 offline, ByteBuddy 1.14.19 já instalado. A primeira tentativa pedagógica de autoattach falhou; a execução final pré-carregou o agente existente, sem instalar dependências.
+
+### Histórico da validação integrada e bloqueio
+
+1. Primeira execução: 280 testes, duas falhas, zero erros e um ignorado, BUILD FAILURE. O R herdava C.UTF-8 inválido no Windows, contaminando stdout com warnings; a fixture de recuperação estava ausente. Log C:/workspace/round-backend-tests.log.
+2. Segunda execução: LANG=C e LC_ALL=C, fixture copiada e hashes verificados; 280 testes, uma falha, zero erros e zero ignorados, BUILD FAILURE após 71 segundos. XML em C:/workspace/FiscalStudy-round-validation/full-suite-reports; resumo full-suite-summary.json no mesmo checkout de validação.
+3. Falha restante: AnalyticsExportIntegrationTest.integratedLifecycle_StudySessionToRValidation_SegregatedAsTest esperava SYNTHETIC_FIXTURE e recebeu UNVERIFIED_SOURCE. A auditoria retorna REJEITADO_FALHA_VERIFICACAO_CRIPTOGRAFICA / CRYPTO_VERIFICATION_UNAVAILABLE antes da nova regra de origem.
+4. Comparação controlada base R c0f63c5 versus nova f90574f reproduziu o mesmo erro do digest: The specified file is not readable. file.exists=TRUE e file.access(path,4)=-1, embora read.csv leia o CSV. readBin leu 458 bytes; seu SHA-256 ab5591f5c6c3a06b53c0a25a25ca635ff15c9612e9154af87bd3a5d460674965 coincide com manifesto e Get-FileHash. Logs C:/workspace/provenance-compare.log e C:/workspace/provenance-readbin-check.log. Bloqueio localizado no acesso nativo de arquivo/runtime/ACL deste ambiente, não regressão demonstrada da checagem REAL_STUDY. A validação criptográfica de produção foi mantida estrita.
+
+Relatório consolidado: C:/workspace/round-validation-report.md. Seis hashes das fontes/testes conferidos antes e após a suíte completa, sem divergência, em C:/workspace/FiscalStudy-round-validation/source-hashes-before.json e source-hashes-after.json. O guard de null foi incorporado depois; seus hashes constam em C:/workspace/FiscalStudy-round-validation/null-source-hashes.json, matches=true. Artefatos diagnósticos em C:/workspace/FiscalStudy-round-validation/backend/target/provenance-diagnostic. A instrumentação temporária não alterou produto ou asserções; o teste original foi restaurado.
+
+### Publicação e rastreabilidade
+
+Publicação pelo conector oficial GitHub, pois o Git local não conseguiu executar o gerenciador de credenciais. Os metadados de commit da API diferem dos locais; todas as árvores abaixo foram conferidas como idênticas. Não se afirma push de commits locais com o mesmo SHA.
+
+| PR draft / branch / base | Commit local | Commit remoto | Árvore idêntica |
+| --- | --- | --- | --- |
+| [#8](https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/8), fix/analytics-learning-evidence, base feature/analytics-runtime | f90574fbe59f13156b16a2f379139cb851c0f5fb | 0398e526f520ec6c992898511eaa262267a06a9c | c228a22f4b5a882e581e499ab2c71b4be4f005e1 |
+| [#9](https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/9), fix/backend-pedagogical-reasons, base fix/backend-error-taxonomy | b0d44a261e7e584aa0adb572c38772957846b921 | 959bfd3a739c6d19dfb9ffa0f5822be9d5070e6d | 983166fe527237e26a41fe9e3a7511673b087c98 |
+| [#10](https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/10), fix/backend-annotation-order, base fix/backend-error-taxonomy | bd023655308229529f9a8ffb45aef1cc29af44d9 | 235d34752c7635c4cebd9e812ba306f7d46cf51c | 46ccd7fd631da98d9efb538ebf4512ee9621395b |
+| #10, segundo commit | 72022057f8658c34003acf62a92547be92a2b1c1 | d180e6c7e76b0862790c4c840f9247111aa08e3c | 989d927649cc8aae239ed5d9b0fce08368276a9f |
+| [#11](https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/11), fix/backend-ungraded-revisions, base fix/backend-pedagogical-reasons | 604845ab893459db305603ed52635156b574fec1 | 33d85b4ef412c0e42050cc5599839c5c1e7f0779 | 409caaaec789518a7f1f3c0d0a2b3d7d66aaf538 |
+| #11, segundo commit | 13509e69479f13f1dd77e1ce7c0b02ddf08d95ee | e5320d055bc288ff590b33a9ce65e772f56890c9 | 9ffd1cce5571054cbf83e9da79b15b2028165a0b |
+
+PR #8 tem parent c0f63c547ba1db61e9415cb0b000c2ff582d1be5; #9 e #10 partem de 1033f8348daa937eb81af5ffbdb643dae851d1c6; #11 parte do parent remoto 959bfd3a739c6d19dfb9ffa0f5822be9d5070e6d. Os quatro heads remotos e main foram reconfirmados; main permanece c26ee20352fc1b6ace0c58be4f24a41a1092fbf0. Nenhum merge.
+
+### Limites da entrega
+
+Nenhuma escrita ou migração nos bancos originais, sincronização AnkiWeb, homologação visual ou demonstração de eficácia pedagógica nesta rodada. Testes usam AUTOMATED_TEST, SQLite em target/test-data e integrações externas desabilitadas. A migração testa cópia descartável da fixture, não o original. Consulta Git ao caminho original core-app retornou must be run in work tree e HEAD da5bc26; portanto, não se declara o checkout original limpo ou idêntico ao baseline. A rodada não escreveu ali.
+
+Estado final: quatro áreas publicadas em PRs draft, validações direcionadas e suplemento aprovados; suíte completa explicitamente não aprovada por uma falha ambiental reproduzida também na base. Isso não encerra globalmente F01–F36 nem comprova aprendizagem.

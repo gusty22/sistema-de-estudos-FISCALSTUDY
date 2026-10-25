@@ -493,3 +493,26 @@ Testes novos com mesmo instante próximo da meia-noite em UTC e São Paulo compr
 RevisionCalendarService usa Clock no fuso fiscalstudy.zone em todas as chamadas LocalDate.now:agendamento,agenda,contexto e conclusão/reagendamento. Antes dependia do fuso do computador,divergindo do FSRS configurado. Teste com instante2026-01-01T00:30Z comprova revisãoD1 em01/01para São Paulo e02/01para UTC. Instantes e datas históricas preservados.
 
 Validação:RevisionCalendarServiceTest,LearningEvidenceServiceTest,SchemaBootstrapIntegrationTest —13 testes aprovados,0 falhas/erros/ignorados;BUILD SUCCESS. Log target-calendar-zone.log. Suíte global não reexecutada nesta alteração;outros módulos de planejamento ainda exigem inspeção individual.
+
+## Rodada de produção — 25/10/2026
+
+Registro incremental posterior à auditoria F01–F36, que permanece preservada. A autorização atual permite commits e publicação por área; referências históricas à ausência de autorização descrevem etapas anteriores. Nenhum merge na main foi realizado. A main remota foi reconfirmada em c26ee20352fc1b6ace0c58be4f24a41a1092fbf0.
+
+| Área / achados relacionados | Agente real | Entrega e dependência | Estado final desta rodada |
+| --- | --- | --- | --- |
+| Justificativas pedagógicas / F20 | pedagogy_finish | fix/backend-pedagogical-reasons; base fix/backend-error-taxonomy; PR draft #9 | Publicada e validada em 17 testes direcionados. Observação, relato e hipótese separados; regras de agenda e FSRS preservadas. |
+| Proveniência / F02, F17, F20 | analytics_finish | fix/analytics-learning-evidence; base feature/analytics-runtime; PR draft #8 | Publicada; 336 verificações R aprovadas. Perfil pessoal exige REAL_STUDY em todas as linhas; CSV Java já fornece origin_type. |
+| Anotações e taxonomia / F07, F08 | taxonomy_review | fix/backend-annotation-order; base fix/backend-error-taxonomy; PR draft #10 | Publicada; 11 testes direcionados aprovados. Ordem por Instant preserva nanos, rowid desempata; eventos imutáveis. |
+| Respostas não avaliáveis / F09, F20 | pedagogy_finish | fix/backend-ungraded-revisions; base fix/backend-pedagogical-reasons; PR draft #11 | Publicada; 19 testes direcionados aprovados. isCorrect=null não agenda revisão nem representa acerto. |
+| Integração / F26 | integrated_validation | Cópia descartável FiscalStudy-round-validation, foundation e R externos apenas para testes | Suplemento de 25 testes aprovado. Suíte completa: 280 testes, uma falha ambiental, zero erros/ignorados; não aprovada integralmente. |
+| Publicação | publication_access | Quatro branches e PRs draft via conector GitHub | Árvores equivalentes verificadas; mapas de seis commits locais/remotos em VALIDATION_REPORT.md. Nenhum merge. |
+| Documentação | round_documentation | docs/production-round-20261025; base docs/execution-and-validation | Apenas plano central e relatório de validação; baseline preservada. |
+
+Critérios, limites e recuperação:
+
+- Uma área por branch, com dependências explícitas. Fontes emprestadas ao ambiente de teste não entram nos commits da área. Os testes direcionados e o suplemento de 25 se sobrepõem; não devem ser somados como casos distintos.
+- O Git local foi bloqueado no gerenciador de credenciais. A publicação oficial pela API gerou commits remotos com metadados diferentes; igualdade da árvore foi conferida. Não se afirma push do commit local idêntico.
+- Nenhuma migração ou escrita nos bancos originais, descarte de trabalho, sincronização AnkiWeb ou alteração das equações FSRS nesta rodada. Recuperação por branches e commits adicionais, sem reset destrutivo. A inspeção Git do caminho original foi inconclusiva; não se declara aquele checkout limpo.
+- Primeira suíte completa: 280 testes, duas falhas e um ignorado; segunda: 280 testes, uma falha e zero ignorados, ambas sem erros. O bloqueio restante é a leitura nativa de arquivo pelo digest no ambiente. Base R c0f63c5 e nova f90574f rejeitam igualmente antes da regra de origem. Hash dos bytes via readBin coincide com manifesto e Get-FileHash; a auditoria não foi enfraquecida para aprovar o teste.
+- Manifesto e SHA-256 demonstram integridade, não autoria, veracidade da origem ou aprendizagem. CSV sem origem permanece legível, porém inelegível como evidência pessoal.
+- Não se encerram globalmente F01–F36. Curadoria, calibração individual, eficácia pedagógica, homologação visual e demais limitações anteriores permanecem. Evidências e mapas completos constam em VALIDATION_REPORT.md.
