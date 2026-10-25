@@ -1,0 +1,17 @@
+server:
+  address: 127.0.0.1
+  port: ${FISCALSTUDY_PORT:18080}
+spring:
+  datasource:
+    url: "jdbc:sqlite:${fiscalstudy.data-dir}/fiscalstudy.db"
+fiscalstudy:
+  data-dir: ${FISCALSTUDY_DATA_DIR:${fiscalstudy.project-root}/target/isolated-data}
+  staging-db: ${fiscalstudy.data-dir}/staging.db
+  analytics-dir: ${fiscalstudy.data-dir}/analytics
+  acervo-root: ${fiscalstudy.data-dir}/materials
+  event-origin: AUTOMATED_TEST
+  anki:
+    network-allowed: false
+    enabled: false
+    auto-sync-enabled: false
+    cloud-sync-enabled: false

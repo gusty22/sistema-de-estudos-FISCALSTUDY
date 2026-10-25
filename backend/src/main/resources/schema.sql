@@ -463,6 +463,7 @@ CREATE TABLE IF NOT EXISTS study_notebooks (
     filtros_json TEXT,
     questoes_ids_json TEXT,
     quantidade INTEGER DEFAULT 20,
+    tempo_minutos INTEGER DEFAULT 90,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     last_executed_at TEXT
 );
@@ -482,3 +483,16 @@ CREATE TABLE IF NOT EXISTS question_reports (
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
+
+-- Canonical persistence contracts; services must not create these independently.
+CREATE TABLE IF NOT EXISTS system_settings(setting_key TEXT PRIMARY KEY,setting_value TEXT NOT NULL,updated_at TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS simulado_executions(id TEXT PRIMARY KEY,notebook_id TEXT,concurso_id TEXT,titulo TEXT NOT NULL,estrategia TEXT NOT NULL,modo TEXT DEFAULT 'SIMULADO',total_questoes INTEGER NOT NULL,acertos INTEGER DEFAULT 0,erros INTEGER DEFAULT 0,nao_respondidas INTEGER DEFAULT 0,nota_liquida REAL DEFAULT 0,tempo_gasto_segundos INTEGER DEFAULT 0,disciplinas_json TEXT,finalizado_em TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS question_topic_classifications(id TEXT PRIMARY KEY,question_id TEXT NOT NULL REFERENCES questions(id),topic_id TEXT NOT NULL REFERENCES edital_topicos(id),status TEXT NOT NULL CHECK(status IN ('SUGGESTED','CONFIRMED','REJECTED')),confidence REAL NOT NULL CHECK(confidence>=0 AND confidence<=1),origin TEXT NOT NULL,reviewer TEXT,evidence TEXT NOT NULL,created_at TEXT NOT NULL);
+CREATE INDEX IF NOT EXISTS idx_qtc_question ON question_topic_classifications(question_id,created_at);
+CREATE INDEX IF NOT EXISTS idx_qtc_topic ON question_topic_classifications(topic_id,status);
+CREATE TABLE IF NOT EXISTS question_families(question_id TEXT PRIMARY KEY REFERENCES questions(id),family_id TEXT NOT NULL,fingerprint_version TEXT NOT NULL,created_at TEXT NOT NULL);
+CREATE INDEX IF NOT EXISTS idx_qfamily_id ON question_families(family_id);
+
+CREATE TABLE IF NOT EXISTS learning_memory_state(question_id TEXT PRIMARY KEY,stability REAL NOT NULL,difficulty REAL NOT NULL,reps INTEGER NOT NULL,lapses INTEGER NOT NULL,last_reviewed_at TEXT NOT NULL,due_at TEXT NOT NULL,model_version TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS learning_evidence_projection(attempt_id TEXT PRIMARY KEY,question_id TEXT NOT NULL,occurred_at TEXT NOT NULL,origin TEXT NOT NULL,recall_before REAL,pedagogical_signal TEXT NOT NULL,model_version TEXT NOT NULL);
+CREATE INDEX IF NOT EXISTS idx_learning_memory_due ON learning_memory_state(due_at);
