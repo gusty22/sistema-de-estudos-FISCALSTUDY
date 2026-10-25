@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import type { ConcursoItem } from '../concursos/MeusConcursos';
 import { QuestionHistoryModal } from './QuestionHistoryModal';
 import {
@@ -17,6 +17,15 @@ import {
   Zap
 } from 'lucide-react';
 import { useSimplifiedMode } from '../../context/SimplifiedModeContext';
+import {
+  computeQueueActivities,
+  getDashboardUIState,
+  getCurrentActivity,
+  getNextQueueIndex,
+  prepareSessionPayload,
+  type QueueActivity,
+  type DashboardUIState
+} from './dashboardLogic';
 import './Dashboard.css';
 
 interface DashboardProps {
@@ -127,44 +136,64 @@ export const Dashboard: React.FC<DashboardProps> = ({
     }
   };
 
-  // Carregar dados reais da API
-  useEffect(() => {
-    if (!activeConcurso) return;
+  // Estados de Carregamento e Comunicação
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-    // Tópicos do Edital
-    fetch(`/api/v1/concursos/${activeConcurso.id}/edital`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data && data.topicos) setTopics(data.topicos);
+  // Carregar dados reais da API com tratamento explícito de erros
+  const loadDashboardData = useCallback(() => {
+    if (!activeConcurso) {
+      setTopics([]);
+      setRevisionAgenda(null);
+      setRobinHoodCycle(null);
+      setAnomalyReport(null);
+      setIsLoading(false);
+      setLoadError(null);
+      return;
+    }
+
+    setIsLoading(true);
+    setLoadError(null);
+
+    // 1. Tópicos do Edital Verticalizado (Endpoint Canônico)
+    const editalPromise = fetch(`/api/v1/concursos/${encodeURIComponent(activeConcurso.id)}/edital`)
+      .then(async (res) => {
+        if (!res.ok) {
+          throw new Error(`Falha HTTP ${res.status} ao carregar o edital do concurso.`);
+        }
+        return res.json();
       })
-      .catch(() => { });
+      .then((data) => {
+        if (data && Array.isArray(data.topicos)) {
+          setTopics(data.topicos);
+        } else {
+          setTopics([]);
+        }
+      });
 
-    // Agenda de Revisões Adaptativas
-    fetch(`/api/v1/revisoes/agenda?concursoId=${encodeURIComponent(activeConcurso.id)}`)
+    // 2. Agenda de Revisões Adaptativas
+    const agendaPromise = fetch(`/api/v1/revisoes/agenda?concursoId=${encodeURIComponent(activeConcurso.id)}`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data) setRevisionAgenda(data);
-      })
-      .catch(() => { });
+      });
 
-    // Ciclo Robin Hood
-    fetch(`/api/v1/cycle/robin-hood?concursoId=${encodeURIComponent(activeConcurso.id)}`)
+    // 3. Ciclo Robin Hood
+    const cyclePromise = fetch(`/api/v1/cycle/robin-hood?concursoId=${encodeURIComponent(activeConcurso.id)}`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data) setRobinHoodCycle(data);
-      })
-      .catch(() => { });
+      });
 
-    // Auditoria Automática de Anomalias de Estudo
-    fetch(`/api/v1/analytics/study-anomalies?concursoId=${encodeURIComponent(activeConcurso.id)}`)
+    // 4. Auditoria Automática de Anomalias de Estudo
+    const anomaliesPromise = fetch(`/api/v1/analytics/study-anomalies?concursoId=${encodeURIComponent(activeConcurso.id)}`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data && data.anomalies) setAnomalyReport(data);
-      })
-      .catch(() => { });
+      });
 
-    // Sumário de Horas Rastreadas
-    fetch(`/api/v1/study-sessions/summary?concursoId=${encodeURIComponent(activeConcurso.id)}`)
+    // 5. Sumário de Horas Rastreadas
+    const summaryPromise = fetch(`/api/v1/study-sessions/summary?concursoId=${encodeURIComponent(activeConcurso.id)}`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data && data.totalHours !== undefined) {
@@ -173,17 +202,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
             setStudiedTime(minutes);
           }
         }
-      })
-      .catch(() => { });
+      });
 
-    // Capacidade do Dia calculada a partir da Rotina
-    fetch(`/api/v1/routine/effective-hours?concursoId=${encodeURIComponent(activeConcurso.id)}`)
+    // 6. Capacidade do Dia calculada a partir da Rotina
+    const routinePromise = fetch(`/api/v1/routine/effective-hours?concursoId=${encodeURIComponent(activeConcurso.id)}`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data && data.effectiveMinutes && data.effectiveMinutes > 0) {
           setAvailableTime(data.effectiveMinutes);
         } else {
-          // Checar se há configuração local salva no mapa tátil
           try {
             const savedSchedule: string[] = JSON.parse(localStorage.getItem('fiscalstudy_routine_schedule') || '[]');
             const savedHours = parseFloat(localStorage.getItem('fiscalstudy_routine_hours_shift') || '2');
@@ -194,14 +221,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
               setAvailableTime(Math.round(count * savedHours * 60));
             }
           } catch {
-            // Usa fallback
+            // usa valor padrao
           }
         }
-      })
-      .catch(() => { });
+      });
 
-    // Status do Anki e Flashcards Pendentes
-    fetch('/api/v1/anki/status')
+    // 7. Status do Anki
+    const ankiPromise = fetch('/api/v1/anki/status')
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data) {
@@ -212,104 +238,59 @@ export const Dashboard: React.FC<DashboardProps> = ({
             autoSyncActive: data.autoSyncActive ?? true
           });
         }
+      });
+
+    Promise.allSettled([editalPromise, agendaPromise, cyclePromise, anomaliesPromise, summaryPromise, routinePromise, ankiPromise])
+      .then((results) => {
+        const editalResult = results[0];
+        if (editalResult.status === 'rejected') {
+          const err = editalResult.reason;
+          setLoadError(err instanceof Error ? err.message : 'Falha na comunicação com o servidor.');
+        }
       })
-      .catch(() => { });
+      .finally(() => {
+        setIsLoading(false);
+      });
   }, [activeConcurso]);
 
-  // Construção da Fila de Atividades Unificada
-  const queueActivities = useMemo(() => {
-    const list: Array<{
-      id: string;
-      type: 'Revisão' | 'Questões' | 'Novo Conteúdo';
-      discipline: string;
-      topic: string;
-      reason: string;
-      duration: number;
-      material: string;
-      strategy: string;
-      pedagogyNote: string;
-    }> = [];
+  useEffect(() => {
+    loadDashboardData();
+  }, [loadDashboardData]);
 
-    // 1. Prioridade Máxima: Revisões Adaptativas do dia
-    if (revisionAgenda && revisionAgenda.hoje && revisionAgenda.hoje.length > 0) {
-      revisionAgenda.hoje.forEach((rev, idx) => {
-        const stage = rev.estagio_intervencao || 'Intervenção Corretiva';
-        list.push({
-          id: `rev-${rev.id || idx}`,
-          type: 'Revisão',
-          discipline: rev.disciplina || 'Direito Tributário',
-          topic: rev.topico || 'Crédito Tributário',
-          reason: rev.justificativa_pedagogica || 'Dificuldade recorrente + Alta prioridade',
-          duration: Math.min(30, (rev.intervalo_dias ? 20 : 15)),
-          material: 'Resumo Teórico & Caderno de Erros',
-          strategy: `${stage} (Robin Hood)`,
-          pedagogyNote: rev.justificativa_pedagogica || 'Revisão priorizada pelo histórico recente de retenção para evitar a curva do esquecimento.'
-        });
-      });
-    }
+  // Construção da Fila de Atividades Unificada (100% Determinística, ZERO Conteúdo Fictício)
+  const queueActivities: QueueActivity[] = useMemo(() => {
+    return computeQueueActivities(revisionAgenda, robinHoodCycle);
+  }, [revisionAgenda, robinHoodCycle]);
 
-    // 2. Blocos do Ciclo de Estudo (Robin Hood & Feedback Loop SWOT)
-    if (robinHoodCycle && robinHoodCycle.blocos && robinHoodCycle.blocos.length > 0) {
-      robinHoodCycle.blocos.forEach((b, idx) => {
-        const isEmergency = b.type === 'EMERGENCIA_ROBIN_HOOD';
-        list.push({
-          id: `cycle-${idx}`,
-          type: (b.type === 'REVISAO' || isEmergency) ? 'Revisão' : 'Questões',
-          discipline: b.disciplina,
-          topic: isEmergency ? 'Intervenção Emergencial de Erros' : `Bloco Estratégico #${b.sequenceOrder}`,
-          reason: isEmergency
-            ? '🚨 Pós-Simulado SWOT (Tempo Injetado)'
-            : (b.horasTransferidasRobinHood > 0
-              ? `Robin Hood (+${b.horasTransferidasRobinHood}h alocadas)`
-              : 'Consolidação de Dificuldades'),
-          duration: b.duracaoMinutos || 35,
-          material: 'Material Vinculado da Biblioteca',
-          strategy: isEmergency ? 'Intervenção Crítica Pós-Simulado' : 'Prática de Questões e Fixação',
-          pedagogyNote: b.mensagemEuDoPassado || 'Tópico prioritário de acordo com a distribuição ponderada do seu edital.'
-        });
-      });
-    }
+  // Estado Explícito da Interface do Dashboard
+  const dashboardState: DashboardUIState = useMemo(() => {
+    return getDashboardUIState({
+      hasActiveConcurso: Boolean(activeConcurso),
+      isLoading,
+      loadError,
+      topicsCount: topics.length,
+      queueActivitiesCount: queueActivities.length
+    });
+  }, [activeConcurso, isLoading, loadError, topics.length, queueActivities.length]);
 
-    // 3. Fallback dinâmico estritamente baseado no edital real cadastrado (se houver)
-    if (list.length === 0 && topics.length > 0) {
-      const firstTopic = topics[0];
-      list.push({
-        id: `topic-${firstTopic.id || 0}`,
-        type: 'Questões',
-        discipline: firstTopic.disciplina || 'Conhecimentos do Edital',
-        topic: firstTopic.assunto || 'Tópico Prioritário',
-        reason: 'Conteúdo do edital com questões pendentes',
-        duration: 30,
-        material: 'Banco de Questões e Biblioteca',
-        strategy: 'Prática de Questões e Diagnóstico',
-        pedagogyNote: 'Atividade gerada diretamente a partir do edital cadastrado para este concurso.'
-      });
-    }
-
-    return list;
-  }, [revisionAgenda, robinHoodCycle, topics]);
-
-  // Atividade atual em destaque (Hero)
-  const currentActivity = queueActivities[activeQueueIndex % queueActivities.length] || queueActivities[0];
+  // Atividade atual em destaque (Hero) — com guarda segura contra NaN e array vazio
+  const currentActivity: QueueActivity | undefined = useMemo(() => {
+    return getCurrentActivity(queueActivities, activeQueueIndex);
+  }, [queueActivities, activeQueueIndex]);
 
   // Disparar atividade ao clicar em Começar Agora
   const handleStartActivity = (activity = currentActivity) => {
-    sessionStorage.setItem('fiscalstudy_session_discipline', activity.discipline);
-    sessionStorage.setItem('fiscalstudy_session_topic', activity.topic);
-    sessionStorage.setItem('fiscalstudy_session_objective', activity.pedagogyNote || activity.reason);
-    if (activity.type === 'Revisão') {
-      sessionStorage.setItem('fiscalstudy_session_type', 'REVISAO');
-    } else if (activity.type === 'Questões' || modeOnlyQuestions) {
-      sessionStorage.setItem('fiscalstudy_session_type', 'QUESTOES');
-    } else {
-      sessionStorage.setItem('fiscalstudy_session_type', 'ESTUDO_ORIENTADO');
+    const payload = prepareSessionPayload(activity, modeOnlyQuestions);
+    if (!payload) {
+      // Nenhuma atividade válida: não cria sessão, não grava storage, não inventa dados
+      return;
     }
 
-    onNavigateToTab('session', {
-      disciplina: activity.discipline,
-      assunto: activity.topic,
-      mode: modeOnlyQuestions ? 'ONLY_QUESTIONS' : 'STANDARD'
-    });
+    for (const [key, value] of Object.entries(payload.sessionStorageItems)) {
+      sessionStorage.setItem(key, value);
+    }
+
+    onNavigateToTab('session', payload.navigationParams);
   };
 
   // Ajustes Rápidos
@@ -335,12 +316,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
         setTimeout(() => setRestMessage(null), 5000);
         break;
       case 'NEXT_ACTIVITY':
-        setActiveQueueIndex(prev => (prev + 1) % queueActivities.length);
+        setActiveQueueIndex(prev => getNextQueueIndex(prev, queueActivities.length));
         setShowWhy(false);
         break;
       case 'NO_MATERIAL':
-        setModeOnlyQuestions(true);
-        handleStartActivity();
+        if (currentActivity) {
+          setModeOnlyQuestions(true);
+          handleStartActivity(currentActivity);
+        } else {
+          setRestMessage('Nenhuma atividade na fila ativa para alternar modo. Escolha uma ação do edital ou banco.');
+          setTimeout(() => setRestMessage(null), 5000);
+        }
         break;
       case 'REST':
         setRestMessage('Excelente decisão! Pausas ativas restauram a memória de trabalho. Relaxe 15 minutos sem telas.');
@@ -576,9 +562,198 @@ export const Dashboard: React.FC<DashboardProps> = ({
         )}
 
         {/* ==================================================================
-            2. HERO CARD: SUA PRÓXIMA ATIVIDADE
+            2. HERO CARD: ESTADOS EXPLÍCITOS DA APLICAÇÃO (SEM FICTÍCIOS)
             ================================================================== */}
-        {currentActivity ? (
+        {dashboardState === 'LOADING' && (
+          <section className="calm-hero-card" style={{ padding: '2.5rem 1.5rem', textAlign: 'center' }}>
+            <div style={{ maxWidth: '480px', margin: '0 auto' }}>
+              <div style={{
+                width: '3.5rem',
+                height: '3.5rem',
+                borderRadius: '9999px',
+                backgroundColor: 'var(--calm-subtle-bg)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 1rem auto'
+              }}>
+                <RotateCcw className="w-6 h-6 text-indigo-500 animate-spin" />
+              </div>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--calm-text)', margin: '0 0 0.5rem 0' }}>
+                Carregando Dados...
+              </h3>
+              <p style={{ fontSize: '0.88rem', color: 'var(--calm-text-muted)', lineHeight: 1.5, margin: 0 }}>
+                Sincronizando tópicos do concurso, agenda de revisões e ciclo de estudos.
+              </p>
+            </div>
+          </section>
+        )}
+
+        {dashboardState === 'ERROR' && (
+          <section className="calm-hero-card" style={{ padding: '2.5rem 1.5rem', textAlign: 'center', border: '1px solid rgba(244, 63, 94, 0.3)', background: 'rgba(244, 63, 94, 0.04)' }}>
+            <div style={{ maxWidth: '480px', margin: '0 auto' }}>
+              <div style={{
+                width: '3.5rem',
+                height: '3.5rem',
+                borderRadius: '9999px',
+                backgroundColor: 'rgba(244, 63, 94, 0.12)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 1rem auto'
+              }}>
+                <AlertTriangle className="w-6 h-6 text-rose-500" />
+              </div>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--calm-text)', margin: '0 0 0.5rem 0' }}>
+                Erro de Comunicação
+              </h3>
+              <p style={{ fontSize: '0.88rem', color: 'var(--calm-text-muted)', lineHeight: 1.5, margin: '0 0 1.5rem 0' }}>
+                {loadError || 'Não foi possível carregar as informações do concurso.'}
+              </p>
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
+                <button
+                  onClick={loadDashboardData}
+                  className="calm-btn-start"
+                  style={{ padding: '0.65rem 1.25rem', fontSize: '0.85rem' }}
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  Tentar Novamente
+                </button>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {dashboardState === 'NO_CONCURSO' && (
+          <section className="calm-hero-card" style={{ padding: '2.5rem 1.5rem', textAlign: 'center' }}>
+            <div style={{ maxWidth: '480px', margin: '0 auto' }}>
+              <div style={{
+                width: '3.5rem',
+                height: '3.5rem',
+                borderRadius: '9999px',
+                backgroundColor: 'var(--calm-subtle-bg)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 1rem auto'
+              }}>
+                <Target className="w-6 h-6 text-indigo-500" />
+              </div>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--calm-text)', margin: '0 0 0.5rem 0' }}>
+                Nenhum Concurso Selecionado
+              </h3>
+              <p style={{ fontSize: '0.88rem', color: 'var(--calm-text-muted)', lineHeight: 1.5, margin: '0 0 1.5rem 0' }}>
+                Selecione um concurso existente ou cadastre seu objetivo para estruturar o edital e a rotina de estudos.
+              </p>
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
+                <button
+                  onClick={() => onNavigateToTab('concursos')}
+                  className="calm-btn-start"
+                  style={{ padding: '0.65rem 1.25rem', fontSize: '0.85rem' }}
+                >
+                  <Target className="w-4 h-4" />
+                  Selecionar ou Cadastrar Concurso
+                </button>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {dashboardState === 'NO_EDITAL_TOPICS' && (
+          <section className="calm-hero-card" style={{ padding: '2.5rem 1.5rem', textAlign: 'center' }}>
+            <div style={{ maxWidth: '480px', margin: '0 auto' }}>
+              <div style={{
+                width: '3.5rem',
+                height: '3.5rem',
+                borderRadius: '9999px',
+                backgroundColor: 'var(--calm-subtle-bg)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 1rem auto'
+              }}>
+                <BookOpen className="w-6 h-6 text-indigo-500" />
+              </div>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--calm-text)', margin: '0 0 0.5rem 0' }}>
+                Edital Ainda Não Cadastrado
+              </h3>
+              <p style={{ fontSize: '0.88rem', color: 'var(--calm-text-muted)', lineHeight: 1.5, margin: '0 0 1.5rem 0' }}>
+                O concurso '{activeConcurso?.nome}' não possui tópicos cadastrados no momento. Importe o edital verticalizado para que as recomendações pedagógicas sejam geradas.
+              </p>
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => onNavigateToTab('edital')}
+                  className="calm-btn-start"
+                  style={{ padding: '0.65rem 1.25rem', fontSize: '0.85rem' }}
+                >
+                  <BookOpen className="w-4 h-4" />
+                  Cadastrar / Importar Edital
+                </button>
+                <button
+                  onClick={() => onNavigateToTab('banco')}
+                  className="calm-btn-why"
+                  style={{ padding: '0.65rem 1.25rem', fontSize: '0.85rem' }}
+                >
+                  <Play className="w-4 h-4" />
+                  Abrir Banco de Questões
+                </button>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {dashboardState === 'NO_ACTIVITIES' && (
+          <section className="calm-hero-card" style={{ padding: '2.5rem 1.5rem', textAlign: 'center' }}>
+            <div style={{ maxWidth: '480px', margin: '0 auto' }}>
+              <div style={{
+                width: '3.5rem',
+                height: '3.5rem',
+                borderRadius: '9999px',
+                backgroundColor: 'var(--calm-subtle-bg)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 1rem auto'
+              }}>
+                <Target className="w-6 h-6 text-emerald-500" />
+              </div>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--calm-text)', margin: '0 0 0.5rem 0' }}>
+                Nenhuma Atividade Elegível para Hoje
+              </h3>
+              <p style={{ fontSize: '0.88rem', color: 'var(--calm-text-muted)', lineHeight: 1.5, margin: '0 0 1.5rem 0' }}>
+                O edital possui {topics.length} tópico(s) cadastrado(s), mas você não tem revisões atrasadas pendentes nem blocos de estudo no ciclo para este momento.
+              </p>
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => onNavigateToTab('edital')}
+                  className="calm-btn-start"
+                  style={{ padding: '0.65rem 1.25rem', fontSize: '0.85rem' }}
+                >
+                  <BookOpen className="w-4 h-4" />
+                  Ver Edital Verticalizado
+                </button>
+                <button
+                  onClick={() => onNavigateToTab('cronograma')}
+                  className="calm-btn-why"
+                  style={{ padding: '0.65rem 1.25rem', fontSize: '0.85rem' }}
+                >
+                  <CalendarDays className="w-4 h-4" />
+                  Configurar Planejamento
+                </button>
+                <button
+                  onClick={() => onNavigateToTab('banco')}
+                  className="calm-btn-why"
+                  style={{ padding: '0.65rem 1.25rem', fontSize: '0.85rem' }}
+                >
+                  <Play className="w-4 h-4" />
+                  Praticar Questões do Banco
+                </button>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {dashboardState === 'HAS_ACTIVITIES' && currentActivity && (
           <section className="calm-hero-card">
             <div className="calm-hero-inner">
               <div className="calm-hero-tag">
@@ -639,47 +814,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 </div>
               </div>
             )}
-          </section>
-        ) : (
-          <section className="calm-hero-card" style={{ padding: '2.5rem 1.5rem', textAlign: 'center' }}>
-            <div style={{ maxWidth: '480px', margin: '0 auto' }}>
-              <div style={{
-                width: '3.5rem',
-                height: '3.5rem',
-                borderRadius: '9999px',
-                backgroundColor: 'var(--calm-subtle-bg)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto 1rem auto'
-              }}>
-                <Target className="w-6 h-6 text-indigo-500" />
-              </div>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--calm-text)', margin: '0 0 0.5rem 0' }}>
-                Pronto para Começar
-              </h3>
-              <p style={{ fontSize: '0.88rem', color: 'var(--calm-text-muted)', lineHeight: 1.5, margin: '0 0 1.5rem 0' }}>
-                Nenhuma revisão atrasada pendente. Escolha um conteúdo do seu edital ou inicie uma sessão no banco de questões.
-              </p>
-              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
-                <button
-                  onClick={() => onNavigateToTab('edital')}
-                  className="calm-btn-start"
-                  style={{ padding: '0.65rem 1.25rem', fontSize: '0.85rem' }}
-                >
-                  <BookOpen className="w-4 h-4" />
-                  Abrir Edital Verticalizado
-                </button>
-                <button
-                  onClick={() => onNavigateToTab('banco')}
-                  className="calm-btn-why"
-                  style={{ padding: '0.65rem 1.25rem', fontSize: '0.85rem' }}
-                >
-                  <Play className="w-4 h-4" />
-                  Praticar Questões
-                </button>
-              </div>
-            </div>
           </section>
         )}
 
