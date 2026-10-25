@@ -13,7 +13,7 @@ public record RobinHoodWeightsDTO(
         @JsonProperty("algorithm") String algorithm,
         @JsonProperty("target_retention_threshold") Double targetRetentionThreshold,
         @JsonProperty("disciplines_count") Integer disciplinesCount,
-        @JsonProperty("weights") Map<String, DisciplineWeightDTO> weights,
+        @JsonProperty("weights") @com.fasterxml.jackson.databind.annotation.JsonDeserialize(using = WeightsMapDeserializer.class) Map<String, DisciplineWeightDTO> weights,
         @JsonProperty("recommendations") RecommendationsDTO recommendations,
         @JsonProperty("parameters") Map<String, Object> parameters,
         @JsonProperty("critical_topics") List<CriticalTopicDTO> criticalTopics,
@@ -77,4 +77,16 @@ public record RobinHoodWeightsDTO(
             @JsonProperty("receiver_topic") String receiverTopic,
             @JsonProperty("intervention_type") String interventionType
     ) {}
+
+    public static class WeightsMapDeserializer extends com.fasterxml.jackson.databind.JsonDeserializer<Map<String, DisciplineWeightDTO>> {
+        @Override
+        public Map<String, DisciplineWeightDTO> deserialize(com.fasterxml.jackson.core.JsonParser p, com.fasterxml.jackson.databind.DeserializationContext ctxt) throws java.io.IOException {
+            if (p.currentToken() == com.fasterxml.jackson.core.JsonToken.START_ARRAY) {
+                p.skipChildren();
+                return java.util.Collections.emptyMap();
+            }
+            com.fasterxml.jackson.databind.type.MapType mapType = ctxt.getTypeFactory().constructMapType(java.util.LinkedHashMap.class, String.class, DisciplineWeightDTO.class);
+            return ctxt.readValue(p, mapType);
+        }
+    }
 }
