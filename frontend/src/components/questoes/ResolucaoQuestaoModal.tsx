@@ -66,6 +66,8 @@ export const ResolucaoQuestaoModal: React.FC<ResolucaoQuestaoModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [feedback, setFeedback] = useState<AttemptFeedback | null>(null);
   const [selectedCausaErro, setSelectedCausaErro] = useState<string>('');
+  const [annotatingState, setAnnotatingState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [annotationMessage, setAnnotationMessage] = useState<string | null>(null);
   const [activeTimeMs, setActiveTimeMs] = useState<number>(0);
   const [ankiState, setAnkiState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [ankiMessage, setAnkiMessage] = useState<string | null>(null);
@@ -85,6 +87,8 @@ export const ResolucaoQuestaoModal: React.FC<ResolucaoQuestaoModalProps> = ({
     setIsSubmitting(false);
     setFeedback(null);
     setSelectedCausaErro('');
+    setAnnotatingState('idle');
+    setAnnotationMessage(null);
     setActiveTimeMs(0);
     setAnkiState('idle');
     setAnkiMessage(null);
@@ -258,12 +262,17 @@ export const ResolucaoQuestaoModal: React.FC<ResolucaoQuestaoModalProps> = ({
 
   // Atualizar metacognição pós-submissão
   const handleSelectCausaErro = async (causaCode: string) => {
-    if (!feedback?.attemptId) return;
+    if (!feedback?.attemptId || annotatingState === 'saving') return;
+    setAnnotatingState('saving');
+    setAnnotationMessage(null);
     try {
       await annotateAttempt(question.questionId, feedback.attemptId, sessionIdRef.current, causaCode);
       setSelectedCausaErro(causaCode);
+      setAnnotatingState('saved');
+      setAnnotationMessage('Diagnóstico metacognitivo salvo com sucesso.');
     } catch (error) {
-      alert('A anotação não foi salva: ' + (error instanceof Error ? error.message : 'falha de conexão'));
+      setAnnotatingState('error');
+      setAnnotationMessage(error instanceof Error ? error.message : 'Falha na conexão ao registrar diagnóstico.');
     }
   };
 
@@ -547,10 +556,21 @@ export const ResolucaoQuestaoModal: React.FC<ResolucaoQuestaoModalProps> = ({
               </div>
 
               {/* Taxonomia do Erro / Metacognição */}
-              <div className="metacognitive-box">
-                <span className="metacognitive-title">
-                  Diagnóstico Metacognitivo: Qual foi o fator determinante nesta questão?
-                </span>
+              <div className="metacognitive-box" role="group" aria-label="Diagnóstico Metacognitivo pós-tentativa">
+                <div className="metacognitive-header">
+                  <span className="metacognitive-title">
+                    Diagnóstico Metacognitivo: Qual foi o fator determinante nesta questão?
+                  </span>
+                  {annotatingState === 'saving' && (
+                    <span className="annotation-status-inline saving" aria-live="polite">Salvando...</span>
+                  )}
+                  {annotatingState === 'saved' && (
+                    <span className="annotation-status-inline saved" aria-live="polite">✓ Registrado</span>
+                  )}
+                  {annotatingState === 'error' && (
+                    <span className="annotation-status-inline error" aria-live="assertive">⚠️ {annotationMessage}</span>
+                  )}
+                </div>
                 <div className="metacognitive-pills">
                   {ERROR_TAXONOMIES.map((tax) => (
                     <button
@@ -558,6 +578,9 @@ export const ResolucaoQuestaoModal: React.FC<ResolucaoQuestaoModalProps> = ({
                       type="button"
                       className={`tax-btn ${selectedCausaErro === tax.code ? 'active' : ''}`}
                       onClick={() => handleSelectCausaErro(tax.code)}
+                      onKeyDown={(e) => handleKeyActivate(e, () => handleSelectCausaErro(tax.code))}
+                      disabled={annotatingState === 'saving'}
+                      aria-pressed={selectedCausaErro === tax.code}
                     >
                       {tax.label}
                     </button>

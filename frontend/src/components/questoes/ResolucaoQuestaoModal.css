@@ -527,10 +527,48 @@
   border-color: rgba(255, 255, 255, 0.08);
 }
 
+.metacognitive-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
 .metacognitive-title {
   font-size: 0.82rem;
   font-weight: 600;
   color: var(--calm-text-muted, #64748b);
+}
+
+.annotation-status-inline {
+  font-size: 0.74rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+}
+
+.annotation-status-inline.saving {
+  background: rgba(99, 102, 241, 0.1);
+  color: #6366f1;
+}
+
+.annotation-status-inline.saved {
+  background: rgba(5, 150, 105, 0.1);
+  color: #059669;
+}
+
+.annotation-status-inline.error {
+  background: rgba(220, 38, 38, 0.1);
+  color: #dc2626;
+}
+
+[data-theme="night"] .annotation-status-inline.saved {
+  color: #34d399;
+}
+
+[data-theme="night"] .annotation-status-inline.error {
+  color: #f87171;
 }
 
 .metacognitive-pills {
@@ -550,13 +588,18 @@
   transition: all 0.15s ease;
 }
 
+.tax-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 [data-theme="night"] .tax-btn {
   background: rgba(255, 255, 255, 0.05);
   border-color: rgba(255, 255, 255, 0.12);
   color: #cbd5e1;
 }
 
-.tax-btn:hover {
+.tax-btn:hover:not(:disabled) {
   background: rgba(99, 102, 241, 0.08);
   border-color: #6366f1;
 }

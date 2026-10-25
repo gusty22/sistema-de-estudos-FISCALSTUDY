@@ -91,3 +91,17 @@ test('ingestion authorization stays in memory and is restricted to its API', asy
   await ingestionFetch('/api/v1/ingestion/sessions');
   assert.equal(sent[3].headers.has('X-FiscalStudy-Admin-Token'), false);
 });
+
+test('annotateAttempt handles HTTP 409 conflict and propagates descriptive error without mutating original attempt', async () => {
+  globalThis.fetch = async () => new Response(JSON.stringify({ message: 'Conflito de anotação concorrente' }), { status: 409 });
+  await assert.rejects(
+    annotateAttempt('q-test', 'attempt-123', 'sess-123', 'CONCEITO_CONFUNDIDO'),
+    /Conflito de anotação concorrente/
+  );
+
+  globalThis.fetch = async () => new Response(JSON.stringify({ error: 'Tentativa não encontrada' }), { status: 404 });
+  await assert.rejects(
+    annotateAttempt('q-test', 'attempt-inexistente', 'sess-123', 'PEGADINHA'),
+    /Tentativa não encontrada/
+  );
+});
