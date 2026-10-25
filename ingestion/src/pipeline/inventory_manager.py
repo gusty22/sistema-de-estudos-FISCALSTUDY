@@ -41,107 +41,26 @@ def is_processed_path(path: str) -> bool:
     return "processados" in parts
 
 
+class ClosingConnection(sqlite3.Connection):
+    """A transaction context must also release Windows SQLite file handles."""
+    def __exit__(self, exc_type, exc_value, traceback):
+        try:
+            return super().__exit__(exc_type, exc_value, traceback)
+        finally:
+            self.close()
+
+
 class StagingDatabase:
     """Gerenciador do banco de dados isolado de staging (db/staging.db)."""
 
-    SCHEMA_SQL = """
-    PRAGMA journal_mode = WAL;
-    PRAGMA synchronous = NORMAL;
-    PRAGMA foreign_keys = ON;
-
-    CREATE TABLE IF NOT EXISTS staging_files (
-        id TEXT PRIMARY KEY,
-        rel_path TEXT NOT NULL UNIQUE,
-        filename TEXT NOT NULL,
-        file_size_bytes INTEGER NOT NULL,
-        sha256 TEXT NOT NULL,
-        total_pages INTEGER NOT NULL,
-        has_selectable_text INTEGER DEFAULT 1,
-        is_scanned INTEGER DEFAULT 0,
-        has_bookmarks INTEGER DEFAULT 0,
-        bookmarks_json TEXT,
-        doc_family TEXT,
-        banca TEXT,
-        ano INTEGER,
-        orgao TEXT,
-        cargo TEXT,
-        status TEXT DEFAULT 'DISCOVERED',
-        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-        updated_at TEXT DEFAULT CURRENT_TIMESTAMP
-    );
-
-    CREATE TABLE IF NOT EXISTS staging_documents (
-        id TEXT PRIMARY KEY,
-        file_id TEXT NOT NULL,
-        doc_role TEXT NOT NULL, -- PROVA, GABARITO_DEFINITIVO, GABARITO_PRELIMINAR, EDITAL, ALTERACOES
-        page_start INTEGER NOT NULL,
-        page_end INTEGER NOT NULL,
-        banca TEXT,
-        orgao TEXT,
-        cargo TEXT,
-        cargo_codigo TEXT,
-        ano INTEGER,
-        status TEXT DEFAULT 'CLASSIFIED',
-        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY(file_id) REFERENCES staging_files(id) ON DELETE CASCADE
-    );
-
-    CREATE TABLE IF NOT EXISTS staging_questions (
-        id TEXT PRIMARY KEY,
-        document_id TEXT NOT NULL,
-        numero_original INTEGER NOT NULL,
-        statement TEXT NOT NULL,
-        options_json TEXT NOT NULL,
-        correct_option TEXT,
-        gabarito_status TEXT NOT NULL DEFAULT 'DEFINITIVO',
-        disciplina TEXT,
-        assunto TEXT,
-        subassunto TEXT,
-        edital_topico_id TEXT,
-        status TEXT NOT NULL DEFAULT 'EXTRACTED', -- EXTRACTED, STRUCTURALLY_VALID, NEEDS_REVIEW, SOURCE_VERIFIED, REJECTED, PUBLISHED
-        flags_json TEXT DEFAULT '[]',
-        pages_json TEXT NOT NULL,
-        evidence_image_path TEXT,
-        modified_by_user INTEGER DEFAULT 0,
-        review_notes TEXT,
-        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-        updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY(document_id) REFERENCES staging_documents(id) ON DELETE CASCADE
-    );
-
-    CREATE TABLE IF NOT EXISTS staging_support_materials (
-        id TEXT PRIMARY KEY,
-        document_id TEXT NOT NULL,
-        tipo TEXT NOT NULL, -- TEXTO_BASE, TABELA, GRAFICO, FIGURA, FORMULA
-        titulo TEXT,
-        conteudo_texto TEXT,
-        media_path TEXT,
-        pagina_inicio INTEGER,
-        pagina_fim INTEGER,
-        coordenadas_json TEXT,
-        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY(document_id) REFERENCES staging_documents(id) ON DELETE CASCADE
-    );
-
-    CREATE TABLE IF NOT EXISTS staging_question_support_materials (
-        question_id TEXT NOT NULL,
-        material_id TEXT NOT NULL,
-        PRIMARY KEY(question_id, material_id),
-        FOREIGN KEY(question_id) REFERENCES staging_questions(id) ON DELETE CASCADE,
-        FOREIGN KEY(material_id) REFERENCES staging_support_materials(id) ON DELETE CASCADE
-    );
-
-    CREATE TABLE IF NOT EXISTS staging_inventory_runs (
-        id TEXT PRIMARY KEY,
-        acervo_dir TEXT NOT NULL,
-        total_files_scanned INTEGER NOT NULL,
-        eligible_files_count INTEGER NOT NULL,
-        excluded_processed_count INTEGER NOT NULL,
-        duplicate_hash_count INTEGER NOT NULL,
-        unreadable_count INTEGER NOT NULL,
-        run_timestamp TEXT DEFAULT CURRENT_TIMESTAMP
-    );
-    """
+    @staticmethod
+    def schema_sql() -> str:
+        from pathlib import Path
+        default = Path(__file__).resolve().parents[3] / "backend/src/main/resources/staging-schema.sql"
+        schema = Path(os.environ.get("FISCALSTUDY_STAGING_SCHEMA", str(default)))
+        if not schema.is_file():
+            raise FileNotFoundError(f"Schema canônico de staging indisponível: {schema}; configure FISCALSTUDY_STAGING_SCHEMA")
+        return schema.read_text(encoding="utf-8-sig")
 
     def __init__(self, db_path: str):
         self.db_path = db_path
@@ -149,13 +68,19 @@ class StagingDatabase:
         self.init_db()
 
     def get_connection(self) -> sqlite3.Connection:
-        conn = sqlite3.connect(self.db_path)
+        conn = sqlite3.connect(self.db_path, factory=ClosingConnection)
         conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA foreign_keys = ON")
+        conn.execute("PRAGMA busy_timeout = 10000")
         return conn
 
     def init_db(self):
         with self.get_connection() as conn:
-            conn.executescript(self.SCHEMA_SQL)
+            conn.executescript(self.schema_sql())
+            columns = {row[1] for row in conn.execute("PRAGMA table_info(staging_questions)")}
+            for name in ("justificativa", "texto_apoio", "texto_apoio_titulo"):
+                if name not in columns:
+                    conn.execute(f"ALTER TABLE staging_questions ADD COLUMN {name} TEXT")
 
 
 class InventoryManager:
@@ -343,6 +268,11 @@ class InventoryManager:
         with self.staging_db.get_connection() as conn:
             # Inserir ou atualizar arquivos elegíveis
             for f_meta in eligible_files:
+                existing = conn.execute("SELECT id,sha256 FROM staging_files WHERE rel_path = ?", (f_meta["rel_path"],)).fetchone()
+                if existing:
+                    if existing["sha256"] == f_meta["sha256"]:
+                        continue  # Preserve document identities, reviewed questions and extraction status.
+                    raise ValueError("Arquivo alterado exige revisão/arquivamento explícito antes de reingestão: " + f_meta["rel_path"])
                 conn.execute(
                     """
                     INSERT INTO staging_files (
@@ -376,8 +306,7 @@ class InventoryManager:
                 cur = conn.execute("SELECT id FROM staging_files WHERE rel_path = ?", (f_meta["rel_path"],))
                 real_file_id = cur.fetchone()[0]
 
-                # Deletar documentos lógicos antigos para reinserção limpa (idempotente)
-                conn.execute("DELETE FROM staging_documents WHERE file_id = ?", (real_file_id,))
+                # New files only. Existing occurrences are preserved; no cascading content deletion.
 
                 for doc in f_meta["logical_documents"]:
                     doc["file_id"] = real_file_id

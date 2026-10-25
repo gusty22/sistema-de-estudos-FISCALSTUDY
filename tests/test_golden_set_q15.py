@@ -12,6 +12,7 @@ Verifica:
 import os
 import sys
 import unittest
+import tempfile
 
 # Adiciona diretório ingestion ao path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "ingestion")))
@@ -31,9 +32,9 @@ class GoldenSetQ15RegressionTest(unittest.TestCase):
             os.path.dirname(__file__), "golden-set", "docs",
             "gabarito-preliminar-prova-objetiva-tarde-1.pdf"
         ))
-        cls.output_dir = os.path.abspath(os.path.join(
-            os.path.dirname(__file__), "..", "ingestion", "output", "test_regression_q15"
-        ))
+        cls.workspace = tempfile.TemporaryDirectory(prefix="fiscalstudy-golden-")
+        cls.addClassCleanup(cls.workspace.cleanup)
+        cls.output_dir = cls.workspace.name
         cls.result = run_pipeline(
             exam_pdf_path=cls.exam_pdf,
             output_dir=cls.output_dir,
