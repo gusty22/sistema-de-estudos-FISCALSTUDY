@@ -1,3 +1,11 @@
+## Provenance correction — 2026-10-25
+
+`verify_data_provenance` now requires `origin_type == REAL_STUDY` in every row before granting personal-study/profile eligibility. Mixed, missing, unknown, automated and demonstration origins remain `UNVERIFIED_SOURCE`; their rows are preserved for diagnostics. The existing Java `AnalyticsProjectionService.exportCsv` already exports `origin_type`; no Java migration is needed. Legacy CSV files without this column remain readable but cannot establish personal learning evidence.
+
+SHA-256 verifies file integrity, not authorship or the truth of a production/origin declaration. The operational provenance label is conditional on the recorded declarations and is not proof of learning. No FSRS equation or pedagogical model changed.
+
+Regression tests cover an otherwise valid matching-checksum manifest with nonpersonal/missing origins and preserve the positive REAL_STUDY case. The checksum-mismatch regression uses a temporary fixture so it does not depend on native file-access checks for repository-managed files. Validation: Rscript 4.5.1 `tests/test_runner.R`, 336 passed, 0 failed, exit 0; elapsed suite time 8.211 seconds. Libraries were configured through FISCALSTUDY_R_LIBS; none installed. Log: analytics-origin-final2.log (local execution evidence, not published).
+
 # FiscalStudy Analytics — Estado de Desenvolvimento e Registro de Execução
 
 > **Data de Atualização:** 2026-10-12  

@@ -21,13 +21,16 @@ build_metric_record <- function(metric_name, definition, value,
                                 period_start = NA_character_, period_end = NA_character_,
                                 method_version = "v1.0.0",
                                 limitations = character(0),
-                                quality_flags = character(0)) {
+                                quality_flags = character(0),
+                                q25 = NA_real_, q75 = NA_real_) {
   list(
     metric_name = as.character(metric_name),
     definition = as.character(definition),
     value = value,
     ci_lower = if (!is.na(ci_lower)) round(as.numeric(ci_lower), 4) else NULL,
     ci_upper = if (!is.na(ci_upper)) round(as.numeric(ci_upper), 4) else NULL,
+    q25 = if (!is.na(q25)) as.numeric(q25) else NULL,
+    q75 = if (!is.na(q75)) as.numeric(q75) else NULL,
     n_observations = as.integer(n_observations),
     period_start = as.character(period_start),
     period_end = as.character(period_end),
@@ -81,7 +84,7 @@ consolidate_analytics_metrics <- function(overall_res, time_res, conf_res, reten
   )
   
   # 2. Tempo Mediano de Resolução
-  time_lims <- c("Tempo ativo medido em milissegundos de foco")
+  time_lims <- c("Tempo de tela em milissegundos; não mede atenção ou carga cognitiva")
   if (time_res$outliers_detected > 0) {
     time_lims <- c(time_lims, sprintf("%d valores extremos identificados (Tukey 1.5x IQR)", time_res$outliers_detected))
   }
@@ -89,8 +92,8 @@ consolidate_analytics_metrics <- function(overall_res, time_res, conf_res, reten
     metric_name = "median_active_time_seconds",
     definition = "Mediana do tempo de tela ativo gasto por questao, em segundos.",
     value = time_res$median_sec,
-    ci_lower = time_res$q25_sec,
-    ci_upper = time_res$q75_sec,
+    q25 = time_res$q25_sec,
+    q75 = time_res$q75_sec,
     n_observations = time_res$n_valid_times,
     period_start = period_start,
     period_end = period_end,
@@ -182,6 +185,8 @@ export_metrics_package <- function(consolidated_package, json_output_path, csv_o
       value = as.character(m$value),
       ci_lower = if (!is.null(m$ci_lower)) as.character(m$ci_lower) else "",
       ci_upper = if (!is.null(m$ci_upper)) as.character(m$ci_upper) else "",
+      q25 = if (!is.null(m$q25)) as.character(m$q25) else "",
+      q75 = if (!is.null(m$q75)) as.character(m$q75) else "",
       n_observations = m$n_observations,
       period_start = m$period_start,
       period_end = m$period_end,

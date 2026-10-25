@@ -43,14 +43,13 @@ class RevisionCalendarServiceTest {
 
         eventStoreRepository = org.mockito.Mockito.mock(EventStoreRepository.class);
         service = new RevisionCalendarService(jdbcTemplate, eventStoreRepository);
-        service.initSchemaMigrations();
 
         jdbcTemplate.execute("DELETE FROM revision_calendar;");
         jdbcTemplate.execute("DELETE FROM event_store;");
     }
 
     @Test
-    @DisplayName("Deve agendar Intervenção Corretiva com alta prioridade para erro com alta confiança (falsa fluência)")
+    @DisplayName("Deve agendar Intervenção Corretiva com alta prioridade para erro com alta confiança (causa a investigar)")
     void testScheduleAdaptiveRevision_HighConfidenceError() {
         service.scheduleAdaptiveRevision(
                 "sess-1", "conc-1", "Direito Tributário", "Imunidades",
@@ -72,7 +71,7 @@ class RevisionCalendarServiceTest {
         assertEquals("INTERVENCAO_CORRETIVA", item.get("estagio_intervencao"));
         assertTrue((Double) item.get("prioridade_score") >= 0.90);
         assertNotNull(item.get("justificativa_pedagogica"));
-        assertTrue(item.get("justificativa_pedagogica").toString().contains("Falsa fluência"));
+        assertTrue(item.get("justificativa_pedagogica").toString().contains("a confiança não determina sua causa"));
     }
 
     @Test
@@ -123,4 +122,14 @@ class RevisionCalendarServiceTest {
         assertEquals("TESTE_TRANSFERENCIA", proximaEtapa.get("estagio_intervencao"));
         assertTrue((Integer) proximaEtapa.get("intervalo_dias") >= 2);
     }
+ @Test void schedulingUsesConfiguredLocalDayAtUtcMidnight() {
+   var instant=java.time.Instant.parse("2026-01-01T00:30:00Z");
+   service=new RevisionCalendarService(jdbcTemplate,eventStoreRepository,java.time.Clock.fixed(instant,java.time.ZoneId.of("America/Sao_Paulo")));
+   service.scheduleAdaptiveRevision("s","c","Tributário","Imunidade","ERRO_QUESTAO","q",false,5,null,false,null,0.0);
+   assertEquals("2026-01-01",jdbcTemplate.queryForObject("SELECT data_agendada FROM revision_calendar",String.class));
+   jdbcTemplate.update("DELETE FROM revision_calendar");
+   service=new RevisionCalendarService(jdbcTemplate,eventStoreRepository,java.time.Clock.fixed(instant,java.time.ZoneId.of("UTC")));
+   service.scheduleAdaptiveRevision("s","c","Tributário","Imunidade","ERRO_QUESTAO","q",false,5,null,false,null,0.0);
+   assertEquals("2026-01-02",jdbcTemplate.queryForObject("SELECT data_agendada FROM revision_calendar",String.class));
+ }
 }

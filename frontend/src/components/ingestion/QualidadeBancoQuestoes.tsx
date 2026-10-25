@@ -1,3 +1,4 @@
+import { ingestionFetch } from '../../utils/ingestionAccess';
 import React, { useState, useEffect } from 'react';
 import {
   ShieldCheck,
@@ -73,7 +74,7 @@ export const QualidadeBancoQuestoes: React.FC<QualidadeBancoQuestoesProps> = ({
 
   const loadQuality = () => {
     setIsLoading(true);
-    fetch('/api/v1/ingestion/quality-overview')
+    ingestionFetch('/api/v1/ingestion/quality-overview')
       .then(res => res.ok ? res.json() : null)
       .then(data => {
         if (data) setQualityData(data);
@@ -88,7 +89,7 @@ export const QualidadeBancoQuestoes: React.FC<QualidadeBancoQuestoesProps> = ({
 
   const handleSuspendQuestion = async (qId: string) => {
     try {
-      const res = await fetch(`/api/v1/ingestion/questions/${qId}/suspend`, { method: 'POST' });
+      const res = await ingestionFetch(`/api/v1/ingestion/questions/${qId}/suspend`, { method: 'POST' });
       if (res.ok) {
         setMonitoredQuestions(prev => prev.map(q => q.id === qId ? { ...q, status: 'SUSPENDED' } : q));
         setActionSuccessMsg(`✓ Questão ${qId} suspensa com sucesso. Não será exibida em novos cadernos, preservando integralmente as respostas históricas no event_store.`);
@@ -102,7 +103,7 @@ export const QualidadeBancoQuestoes: React.FC<QualidadeBancoQuestoesProps> = ({
 
   const handleRevalidateQuestion = async (qId: string) => {
     try {
-      const res = await fetch(`/api/v1/ingestion/questions/${qId}/revalidate`, { method: 'POST' });
+      const res = await ingestionFetch(`/api/v1/ingestion/questions/${qId}/revalidate`, { method: 'POST' });
       if (res.ok) {
         setMonitoredQuestions(prev => prev.map(q => q.id === qId ? { ...q, status: 'PUBLISHED' } : q));
         setActionSuccessMsg(`✓ Questão ${qId} revalidada e republicada para prática dos estudantes.`);

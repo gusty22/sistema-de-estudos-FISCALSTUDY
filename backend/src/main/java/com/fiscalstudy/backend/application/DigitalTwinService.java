@@ -48,74 +48,15 @@ public class DigitalTwinService {
         this.analyticsProjectionService = analyticsProjectionService;
     }
 
+    @org.springframework.beans.factory.annotation.Autowired(required=false)
+    private AnalyticsBridgeService analyticsBridge;
+
     public Map<String, Object> getDigitalTwinStatus(String concursoId) {
         return getDigitalTwinStatus(concursoId, "Concurso Fiscal");
     }
 
     public Map<String, Object> getDigitalTwinStatus(String concursoId, String concursoNome) {
-        // 1. Tenta carregar o estado calibrado pelo motor estatístico em R
-        Path rPath = Paths.get("analytics/digital_twin_state.json");
-        if (!Files.exists(rPath)) {
-            rPath = Paths.get("../analytics/digital_twin_state.json");
-        }
-        if (Files.exists(rPath)) {
-            try {
-                String json = Files.readString(rPath);
-                Map<String, Object> rData = objectMapper.readValue(json, Map.class);
-                String rCid = (String) rData.get("concursoId");
-                boolean matchesConcurso = (concursoId == null || concursoId.isBlank() || (rCid != null && rCid.equalsIgnoreCase(concursoId)));
-
-                if (matchesConcurso && rData != null && rData.containsKey("telemetriaGeral")) {
-                    Map<String, Object> telemetria = (Map<String, Object>) rData.get("telemetriaGeral");
-                    Map<String, Object> rawSim = (Map<String, Object>) rData.get("simulacaoMonteCarlo");
-                    Map<String, Object> sim = new LinkedHashMap<>();
-                    if (rawSim != null) {
-                        sim.putAll(rawSim);
-                        sim.put("notaProjetadaHojePct", rawSim.getOrDefault("notaMediaProjetadaPct", 0.0));
-                        sim.put("diagnosticoGeral", rawSim.getOrDefault("diagnosticoEstatistico", ""));
-                        sim.put("totalQuestoesSimuladas", rawSim.getOrDefault("iteracoes", 10000));
-                        sim.put("timestampSimulacao", rData.getOrDefault("timestampCalibracao", Instant.now().toString()));
-                    }
-                    if (rData.containsKey("pontosCriticosFalha")) {
-                        sim.put("pontosCriticosFalha", rData.get("pontosCriticosFalha"));
-                    }
-
-                    Map<String, Object> timeSummary = studySessionService.getStudyTimeSummary(concursoId);
-
-                    Map<String, Object> enriched = new LinkedHashMap<>();
-                    enriched.put("concursoId", concursoId != null ? concursoId : "c-araguari-01");
-                    enriched.put("concursoNome", concursoNome != null ? concursoNome : (String) rData.getOrDefault("concursoNome", "Concurso Fiscal"));
-                    enriched.put("calibradoPorR", true);
-                    enriched.put("motorEstatistico", rData.getOrDefault("geradoPor", "R 4.5.1 Base R"));
-                    enriched.put("timestampCalibracao", rData.get("timestampCalibracao"));
-
-                    enriched.put("totalNos", telemetria.get("totalNos"));
-                    enriched.put("nosConsolidados", telemetria.get("nosConsolidados"));
-                    enriched.put("nosEmEquilibrio", telemetria.get("nosEmEquilibrio"));
-                    enriched.put("nosRiscoAmnesia", telemetria.get("nosRiscoAmnesia"));
-                    enriched.put("nosVirgens", telemetria.get("nosVirgens"));
-                    enriched.put("saudeNeuralMediaPct", telemetria.get("saudeNeuralMediaPct"));
-
-                    // Micro-telemetria de tempo
-                    enriched.put("horasLiquidasAcumuladas", timeSummary.getOrDefault("totalHours", 0.0));
-                    enriched.put("metaHorasAprovacao", 3100.0);
-                    enriched.put("progressoMetaPct", timeSummary.getOrDefault("progressTowardsThresholdPct", 0.0));
-                    enriched.put("velocidadeLeituraMedia", timeSummary.getOrDefault("avgPagesPerHour", 0.0));
-                    enriched.put("velocidadeQuestoesMedia", telemetria.getOrDefault("tempoMedioPorQuestaoSegundos", 43.0));
-                    enriched.put("rendimentoMedioBlocos", timeSummary.getOrDefault("overallScorePct", 0.0));
-                    enriched.put("hePercentage", timeSummary.getOrDefault("hrePercentage", 0.0));
-
-                    enriched.put("grafoNos", rData.get("grafoNos"));
-                    enriched.put("simulacaoRecente", sim);
-                    enriched.put("roteiroDoDia", rData.get("roteiroDoDia"));
-
-                    return enriched;
-                }
-            } catch (Exception e) {
-                logger.warn("Falha ao ler estado do Gêmeo Digital em R: {}", e.getMessage());
-            }
-        }
-
+        // Legacy unversioned R state is intentionally not consumed.
         // 2. Fallback heurístico em memória caso o motor R ainda não tenha sido executado
         List<EditalTopico> topicos = (concursoId != null && !concursoId.isBlank())
                 ? editalRepository.findTopicosByConcurso(concursoId)
@@ -483,60 +424,11 @@ public class DigitalTwinService {
      * psicométrica completa (BKT, FSRS v5, Regressão de Tempo e Monte Carlo).
      */
     public Map<String, Object> recalibrateWithREngine(String concursoId) {
-        String cid = (concursoId != null && !concursoId.isBlank()) ? concursoId : "c-araguari-01";
-
-        // 1. Exporta telemetria recente do Event Store para questions_v1.csv
-        if (analyticsProjectionService != null) {
-            try {
-                analyticsProjectionService.exportSyncToLocal("analytics", null);
-            } catch (Exception e) {
-                logger.warn("Aviso ao exportar telemetria para R: {}", e.getMessage());
-            }
-        }
-
-        // 2. Localiza executável do Rscript
-        String rScriptBin = findRscriptExecutable();
-
-        // 3. Executa o motor estatístico em R
-        try {
-            Path scriptPath = Paths.get("analytics/digital_twin_engine.R");
-            if (!Files.exists(scriptPath)) {
-                scriptPath = Paths.get("../analytics/digital_twin_engine.R");
-            }
-
-            ProcessBuilder pb = new ProcessBuilder(
-                    rScriptBin,
-                    scriptPath.toAbsolutePath().toString(),
-                    "analytics/questions_v1.csv",
-                    "analytics/digital_twin_state.json",
-                    cid
-            );
-            pb.redirectErrorStream(true);
-            Process proc = pb.start();
-            int exitCode = proc.waitFor();
-            logger.info("Motor estatístico em R (analytics/digital_twin_engine.R) finalizado com código: {}", exitCode);
-        } catch (Exception e) {
-            logger.error("Erro ao executar motor estatístico em R: {}", e.getMessage(), e);
-        }
-
-        return getDigitalTwinStatus(cid);
-    }
-
-    private String findRscriptExecutable() {
-        List<String> candidatePaths = List.of(
-                "C:\\Program Files\\R\\R-4.5.1\\bin\\Rscript.exe",
-                "C:\\Program Files\\R\\R-4.5.1\\bin\\x64\\Rscript.exe",
-                "C:\\Program Files\\R\\bin\\Rscript.exe",
-                "Rscript"
-        );
-        for (String p : candidatePaths) {
-            try {
-                if (Files.exists(Paths.get(p))) {
-                    return p;
-                }
-            } catch (Exception ignored) {}
-        }
-        return "Rscript";
+        if(analyticsBridge==null)throw new IllegalStateException("Analytics bridge unavailable");
+        var execution=analyticsBridge.executeAnalyticsPipeline();
+        Map<String,Object> status=new LinkedHashMap<>(getDigitalTwinStatus(concursoId));
+        status.put("analyticsExecution",execution);
+        status.put("calibradoPorR",false); // Batch descriptive metrics are not an individually calibrated memory model.
+        return status;
     }
 }
-

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useModalA11y } from '../../utils/accessibility';
 import {
   Compass,
   ArrowRight,
@@ -29,20 +30,28 @@ export default function BoasVindasT01({
 
   // 2. Modal calmo de "Conhecer o funcionamento"
   const [showHowItWorks, setShowHowItWorks] = useState(false);
+  useModalA11y({
+    isOpen: showHowItWorks,
+    onClose: () => setShowHowItWorks(false),
+    closeOnEscape: true,
+    restoreFocus: true
+  });
 
   return (
     <div className="welcome-calm-wrapper">
 
       {/* MODAL: Conhecer o Funcionamento */}
       {showHowItWorks && (
-        <div className="welcome-modal-backdrop animate-fadeIn">
-          <div className="welcome-modal-card">
+        <div className="welcome-modal-backdrop animate-fadeIn" onClick={(e) => e.target === e.currentTarget && setShowHowItWorks(false)}>
+          <div className="welcome-modal-card" role="dialog" aria-modal="true" aria-labelledby="welcome-modal-title">
             <div className="welcome-modal-header">
-              <h3 className="welcome-modal-title">Como o FiscalStudy Funciona</h3>
+              <h3 id="welcome-modal-title" className="welcome-modal-title">Como o FiscalStudy Funciona</h3>
               <button
                 type="button"
                 onClick={() => setShowHowItWorks(false)}
                 className="welcome-modal-close-btn"
+                aria-label="Fechar explicação do funcionamento"
+                title="Fechar (Esc)"
               >
                 <X className="w-5 h-5" />
               </button>

@@ -46,9 +46,10 @@ public class QuestionBankService {
         }
 
         if (assunto != null && !assunto.isBlank() && !assunto.equalsIgnoreCase("TODOS")) {
-            whereClause.append(" AND (LOWER(q.assunto) LIKE ? OR LOWER(q.assunto) = LOWER(?)) ");
-            params.add("%" + assunto.trim().toLowerCase() + "%");
-            params.add(assunto.trim());
+            whereClause.append(" AND EXISTS (SELECT 1 FROM ("+QuestionClassificationService.CURRENT_LINKS+") qc JOIN edital_topicos et ON et.id=qc.topic_id WHERE qc.question_id=q.id AND qc.status='CONFIRMED' AND (et.id=? OR LOWER(et.assunto)=LOWER(?)) ");
+            params.add(assunto.trim()); params.add(assunto.trim());
+            if(concursoId!=null && !concursoId.isBlank()){whereClause.append(" AND et.concurso_id=? ");params.add(concursoId.trim());}
+            whereClause.append(") ");
         }
 
         if (banca != null && !banca.isBlank() && !banca.equalsIgnoreCase("TODAS")) {
@@ -81,10 +82,10 @@ public class QuestionBankService {
 
         if (Boolean.TRUE.equals(editalOnly)) {
             if (concursoId != null && !concursoId.isBlank() && !"undefined".equalsIgnoreCase(concursoId)) {
-                whereClause.append(" AND EXISTS (SELECT 1 FROM edital_topicos et WHERE et.concurso_id = ? AND (LOWER(et.disciplina) = LOWER(q.disciplina) OR (LOWER(et.disciplina) LIKE '%portug%' AND LOWER(q.disciplina) LIKE '%portug%'))) ");
+                whereClause.append(" AND EXISTS (SELECT 1 FROM ("+QuestionClassificationService.CURRENT_LINKS+") qc JOIN edital_topicos et ON et.id=qc.topic_id WHERE qc.question_id=q.id AND qc.status='CONFIRMED' AND et.concurso_id=?) ");
                 params.add(concursoId.trim());
             } else {
-                whereClause.append(" AND EXISTS (SELECT 1 FROM edital_topicos et WHERE (LOWER(et.disciplina) = LOWER(q.disciplina) OR (LOWER(et.disciplina) LIKE '%portug%' AND LOWER(q.disciplina) LIKE '%portug%'))) ");
+                whereClause.append(" AND EXISTS (SELECT 1 FROM ("+QuestionClassificationService.CURRENT_LINKS+") qc WHERE qc.question_id=q.id AND qc.status='CONFIRMED') ");
             }
         }
 
@@ -436,8 +437,7 @@ public class QuestionBankService {
     // CADERNOS E SIMULADOS (T19 & T23)
     // =========================================================================
     public List<Map<String, Object>> getNotebooks(String concursoId) {
-        ensureNotebooksTable();
-        String sql = "SELECT * FROM study_notebooks ORDER BY created_at DESC";
+        String sql = "SELECT * FROM study_notebooks WHERE (? IS NULL OR concurso_id = ? OR concurso_id IS NULL) ORDER BY created_at DESC";
         List<Map<String, Object>> dbNotebooks = jdbcTemplate.query(sql, (rs, rowNum) -> {
             Map<String, Object> map = new HashMap<>();
             map.put("id", rs.getString("id"));
@@ -446,6 +446,8 @@ public class QuestionBankService {
             map.put("tipo", rs.getString("tipo"));
             map.put("modoResolucao", rs.getString("modo_resolucao"));
             map.put("quantidade", rs.getInt("quantidade"));
+            map.put("tempoMinutos", rs.getInt("tempo_minutos"));
+            try { map.put("questionIds", objectMapper.readValue(Optional.ofNullable(rs.getString("questoes_ids_json")).orElse("[]"), List.class)); } catch (Exception e) { throw new IllegalStateException("Identidades do caderno inválidas", e); }
             map.put("createdAt", rs.getString("created_at"));
             map.put("lastExecutedAt", rs.getString("last_executed_at"));
             try {
@@ -455,7 +457,7 @@ public class QuestionBankService {
                 }
             } catch (Exception ignored) {}
             return map;
-        });
+        }, concursoId, concursoId);
 
         // Cadernos dinâmicos pré-computados
         List<Map<String, Object>> result = new ArrayList<>();
@@ -496,57 +498,29 @@ public class QuestionBankService {
     }
 
     public Map<String, Object> saveNotebook(Map<String, Object> payload) {
-        ensureNotebooksTable();
-        String id = (String) payload.getOrDefault("id", "cad_" + UUID.randomUUID().toString().substring(0, 8));
-        String nome = (String) payload.getOrDefault("nome", "Novo Caderno de Questões");
-        String concursoId = (String) payload.get("concursoId");
-        String tipo = (String) payload.getOrDefault("tipo", "DINAMICO");
-        String modo = (String) payload.getOrDefault("modoResolucao", "PRATICA");
-        int quantidade = payload.get("quantidade") instanceof Number ? ((Number) payload.get("quantidade")).intValue() : 20;
-
-        String filtrosJson = null;
+        String id=payload.get("id") instanceof String value && !value.isBlank()?value:"cad_"+UUID.randomUUID();
+        String nome=String.valueOf(payload.getOrDefault("nome","Novo Caderno de Questões"));
+        if(nome.isBlank())throw new IllegalArgumentException("Nome do caderno obrigatório");
+        int quantidade=payload.get("quantidade") instanceof Number n?n.intValue():20;
+        int tempo=payload.get("tempoMinutos") instanceof Number n?n.intValue():90;
+        if(quantidade<0||tempo<0)throw new IllegalArgumentException("Quantidade e duração não podem ser negativas");
         try {
-            if (payload.containsKey("filtros")) {
-                filtrosJson = objectMapper.writeValueAsString(payload.get("filtros"));
-            }
-        } catch (Exception ignored) {}
-
-        String sql = """
-            INSERT INTO study_notebooks (id, nome, concurso_id, tipo, modo_resolucao, filtros_json, quantidade, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-            ON CONFLICT(id) DO UPDATE SET
-                nome = excluded.nome,
-                modo_resolucao = excluded.modo_resolucao,
-                filtros_json = excluded.filtros_json,
-                quantidade = excluded.quantidade
-        """;
-        jdbcTemplate.update(sql, id, nome, concursoId, tipo, modo, filtrosJson, quantidade);
-
-        Map<String, Object> res = new HashMap<>(payload);
-        res.put("id", id);
-        return res;
+            String filtros=payload.containsKey("filtros")?objectMapper.writeValueAsString(payload.get("filtros")):null;
+            Object ids=payload.containsKey("questionIds")?payload.get("questionIds"):payload.get("questoesIds");
+            if(ids!=null && !(ids instanceof List<?>))throw new IllegalArgumentException("questionIds deve ser uma lista");
+            String idsJson=ids==null?null:objectMapper.writeValueAsString(ids);
+            jdbcTemplate.update("""
+                INSERT INTO study_notebooks(id,nome,concurso_id,tipo,modo_resolucao,filtros_json,questoes_ids_json,quantidade,tempo_minutos,created_at)
+                VALUES(?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
+                ON CONFLICT(id) DO UPDATE SET nome=excluded.nome,concurso_id=excluded.concurso_id,tipo=excluded.tipo,
+                  modo_resolucao=excluded.modo_resolucao,filtros_json=excluded.filtros_json,
+                  questoes_ids_json=COALESCE(excluded.questoes_ids_json,study_notebooks.questoes_ids_json),
+                  quantidade=excluded.quantidade,tempo_minutos=excluded.tempo_minutos
+                """,id,nome,payload.get("concursoId"),payload.getOrDefault("tipo","DINAMICO"),payload.getOrDefault("modoResolucao","PRATICA"),filtros,idsJson,quantidade,tempo);
+            Map<String,Object> result=new HashMap<>(payload);result.put("id",id);return result;
+        }catch(com.fasterxml.jackson.core.JsonProcessingException e){throw new IllegalArgumentException("Caderno contém dados não serializáveis",e);}
     }
 
-    private void ensureNotebooksTable() {
-        try {
-            jdbcTemplate.execute("""
-                CREATE TABLE IF NOT EXISTS study_notebooks (
-                    id TEXT PRIMARY KEY,
-                    nome TEXT NOT NULL,
-                    concurso_id TEXT,
-                    tipo TEXT NOT NULL DEFAULT 'DINAMICO',
-                    modo_resolucao TEXT NOT NULL DEFAULT 'PRATICA',
-                    filtros_json TEXT,
-                    questoes_ids_json TEXT,
-                    quantidade INTEGER DEFAULT 20,
-                    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-                    last_executed_at TEXT
-                )
-            """);
-            jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS favorite_questions (question_id TEXT PRIMARY KEY, created_at TEXT DEFAULT CURRENT_TIMESTAMP)");
-            jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS question_reports (id TEXT PRIMARY KEY, question_id TEXT NOT NULL, motivo TEXT NOT NULL, descricao TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP)");
-        } catch (Exception ignored) {}
-    }
 
     /**
      * Sanitiza lista de alternativas removendo cabeçalhos/rodapés de prova vazados e letras duplicadas.

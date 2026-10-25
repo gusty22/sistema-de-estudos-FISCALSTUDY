@@ -23,7 +23,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest
+@SpringBootTest(properties="fiscalstudy.event-origin=REAL_STUDY")
 @AutoConfigureMockMvc
 class QuestionControllerTest {
 
@@ -278,7 +278,7 @@ class QuestionControllerTest {
 
     @Test
     void submitAttempt_DuplicateAttemptInSameSession_IsIdempotent() throws Exception {
-        String payload = "{\"selectedOption\":\"A\", \"confidenceLevel\":5, \"activeTimeMs\":1500, \"sessionId\":\"sess_idem\"}";
+        String payload = "{\"selectedOption\":\"A\", \"confidenceLevel\":5, \"activeTimeMs\":1500, \"sessionId\":\"sess_idem\",\"attemptId\":\"00000000-0000-0000-0000-000000000001\"}";
 
         // First attempt
         mockMvc.perform(post("/api/v1/questions/q123/attempts")
@@ -315,9 +315,9 @@ class QuestionControllerTest {
                 .andExpect(jsonPath("$.gabaritoStatus").value("ANULADA"));
 
         String savedPayload = jdbcTemplate.queryForObject("SELECT payload_json FROM event_store WHERE aggregate_id = 'q_anulada'", String.class);
-        org.junit.jupiter.api.Assertions.assertTrue(savedPayload.contains("\"gabaritoStatus\": \"ANULADA\""));
-        org.junit.jupiter.api.Assertions.assertTrue(savedPayload.contains("\"concursoPoint\": 1"));
-        org.junit.jupiter.api.Assertions.assertTrue(savedPayload.contains("\"isCorrect\": null"));
+        org.junit.jupiter.api.Assertions.assertTrue(jsonHas(savedPayload, "\"gabaritoStatus\": \"ANULADA\""));
+        org.junit.jupiter.api.Assertions.assertTrue(jsonHas(savedPayload, "\"concursoPoint\": 1"));
+        org.junit.jupiter.api.Assertions.assertTrue(jsonHas(savedPayload, "\"isCorrect\": null"));
     }
 
 
@@ -337,8 +337,8 @@ class QuestionControllerTest {
                 .andExpect(jsonPath("$.gabaritoStatus").value("AUSENTE"));
 
         String savedPayload = jdbcTemplate.queryForObject("SELECT payload_json FROM event_store WHERE aggregate_id = 'q_ausente'", String.class);
-        org.junit.jupiter.api.Assertions.assertTrue(savedPayload.contains("\"gabaritoStatus\": \"AUSENTE\""));
-        org.junit.jupiter.api.Assertions.assertTrue(savedPayload.contains("\"isCorrect\": null"));
+        org.junit.jupiter.api.Assertions.assertTrue(jsonHas(savedPayload, "\"gabaritoStatus\": \"AUSENTE\""));
+        org.junit.jupiter.api.Assertions.assertTrue(jsonHas(savedPayload, "\"isCorrect\": null"));
     }
 
     @Test
@@ -357,8 +357,8 @@ class QuestionControllerTest {
                 .andExpect(jsonPath("$.gabaritoStatus").value("SOB_REVISAO"));
 
         String savedPayload = jdbcTemplate.queryForObject("SELECT payload_json FROM event_store WHERE aggregate_id = 'q_revisao'", String.class);
-        org.junit.jupiter.api.Assertions.assertTrue(savedPayload.contains("\"gabaritoStatus\": \"SOB_REVISAO\""));
-        org.junit.jupiter.api.Assertions.assertTrue(savedPayload.contains("\"isCorrect\": null"));
+        org.junit.jupiter.api.Assertions.assertTrue(jsonHas(savedPayload, "\"gabaritoStatus\": \"SOB_REVISAO\""));
+        org.junit.jupiter.api.Assertions.assertTrue(jsonHas(savedPayload, "\"isCorrect\": null"));
     }
 
     @Test
@@ -427,11 +427,11 @@ class QuestionControllerTest {
                 String.class
         );
         assertNotNull(savedJson1);
-        assertTrue(savedJson1.contains("\"exposicaoAnteriorCount\": 0"), "Primeira exposição deve ter contador 0");
-        assertTrue(savedJson1.contains("\"diasDesdeUltimaExposicao\": null"), "Primeira exposição não tem intervalo prévio");
-        assertTrue(savedJson1.contains("\"usedHelp\": true"), "Deve registrar que consultou ajuda");
-        assertTrue(savedJson1.contains("\"helpType\": \"MATERIAL_APOIO\""));
-        assertTrue(savedJson1.contains("\"interventionType\": \"BLOCO_EMERGENCIA_15MIN\""));
+        assertTrue(jsonHas(savedJson1, "\"exposicaoAnteriorCount\": 0"), "Primeira exposição deve ter contador 0");
+        assertTrue(jsonHas(savedJson1, "\"diasDesdeUltimaExposicao\": null"), "Primeira exposição não tem intervalo prévio");
+        assertTrue(jsonHas(savedJson1, "\"usedHelp\": true"), "Deve registrar que consultou ajuda");
+        assertTrue(jsonHas(savedJson1, "\"helpType\": \"MATERIAL_APOIO\""));
+        assertTrue(jsonHas(savedJson1, "\"interventionType\": \"BLOCO_EMERGENCIA_15MIN\""));
 
         // Tentativa 2: segunda exposição da mesma questão em nova sessão, sem ajuda
         String payload2 = "{\"selectedOption\":\"B\", \"confidenceLevel\":2, \"activeTimeMs\":4200, \"sessionId\":\"sess_inst_2\", \"usedHelp\":false, \"causaErro\":\"E1\"}";
@@ -447,10 +447,14 @@ class QuestionControllerTest {
                 String.class
         );
         assertNotNull(savedJson2);
-        assertTrue(savedJson2.contains("\"exposicaoAnteriorCount\": 1"), "Segunda exposição deve registrar contador 1");
-        assertTrue(savedJson2.contains("\"resultadoAnterior\": true"), "Deve rastrear o resultado da tentativa anterior");
-        assertTrue(savedJson2.contains("\"usedHelp\": false"));
-        assertTrue(savedJson2.contains("\"causaErro\": \"E1\""));
+        assertTrue(jsonHas(savedJson2, "\"exposicaoAnteriorCount\": 1"), "Segunda exposição deve registrar contador 1");
+        assertTrue(jsonHas(savedJson2, "\"resultadoAnterior\": true"), "Deve rastrear o resultado da tentativa anterior");
+        assertTrue(jsonHas(savedJson2, "\"usedHelp\": false"));
+        assertTrue(jsonHas(savedJson2, "\"causaErro\": \"E1\""));
     }
+ private static boolean jsonHas(String payload,String fragment) throws Exception {
+  var mapper=new com.fasterxml.jackson.databind.ObjectMapper();var expected=mapper.readTree("{"+fragment+"}");var actual=mapper.readTree(payload);
+  var fields=expected.fields();while(fields.hasNext()){var field=fields.next();if(!field.getValue().equals(actual.get(field.getKey())))return false;}return true;
+ }
 }
 

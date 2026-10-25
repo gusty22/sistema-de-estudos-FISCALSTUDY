@@ -74,9 +74,7 @@ public class StrategicSummaryService {
             """);
 
             Integer count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM strategic_summaries", Integer.class);
-            if (count == null || count == 0) {
-                seedInitialSummaries();
-            }
+            // New installations intentionally contain no demonstration summaries.
         } catch (Exception e) {
             log.error("Erro ao inicializar tabela strategic_summaries: {}", e.getMessage());
         }
@@ -157,7 +155,9 @@ public class StrategicSummaryService {
 
         sql.append(" ORDER BY updated_at DESC");
 
-        return jdbcTemplate.queryForList(sql.toString(), params.toArray());
+        List<Map<String,Object>> summaries=jdbcTemplate.queryForList(sql.toString(), params.toArray());
+        summaries.forEach(row -> {row.put("contentKind","UNVERIFIED"); row.put("sourceVerified",false);});
+        return summaries;
     }
 
     /**
@@ -178,6 +178,10 @@ public class StrategicSummaryService {
             deserializeJsonField(row, "pegadinhas_banca_json", "pegadinhasBanca");
             deserializeJsonField(row, "estatisticas_base_json", "estatisticasBase");
 
+            row.put("contentKind", "LEGACY_UNVERIFIED");
+            row.put("sourceVerified", false);
+            if(row.get("estatisticasBase") instanceof Map<?,?> stats && stats.containsKey("contentKind")) row.put("contentKind",stats.get("contentKind"));
+            row.put("provenanceNotice", "Título e páginas vinculados não comprovam leitura nem validação da fonte.");
             return Optional.of(row);
         } catch (Exception e) {
             log.error("Erro ao buscar resumo {}: {}", id, e.getMessage());
@@ -189,88 +193,24 @@ public class StrategicSummaryService {
      * Localiza automaticamente o material didático vinculado e páginas do PDF do estudante.
      */
     private Map<String, Object> resolveMaterialContext(String concursoId, String disciplina, String topico,
-                                                       String materialId, String materialOrigemNome,
-                                                       String materialPaginas, String textoOrigem) {
-        Map<String, Object> ctx = new LinkedHashMap<>();
-        String resolvedMaterialId = materialId;
-        String resolvedNome = materialOrigemNome;
-        String resolvedPaginas = materialPaginas;
-        String resolvedTexto = textoOrigem != null ? textoOrigem : "";
-        String materialAutor = "";
-        String materialFormato = "PDF";
-
-        // Se o estudante não forneceu dados explícitos de material, cruzamos o banco local
-        if (resolvedMaterialId == null || resolvedMaterialId.isBlank() ||
-                resolvedNome == null || resolvedNome.isBlank() || "Apostila Base do Edital".equalsIgnoreCase(resolvedNome)) {
-            try {
-                // 1. Tenta buscar no topic_material_links cruzando com study_materials
-                List<Map<String, Object>> linkRows = jdbcTemplate.queryForList("""
-                    SELECT l.material_id, l.pagina_inicio, l.pagina_fim, l.anotacoes,
-                           m.titulo, m.autor, m.formato
-                    FROM topic_material_links l
-                    JOIN study_materials m ON m.id = l.material_id
-                    WHERE (m.concurso_id = ? OR m.concurso_id IS NULL OR m.concurso_id = 'GLOBAL')
-                      AND (LOWER(m.disciplina) = LOWER(?) OR LOWER(l.anotacoes) LIKE LOWER(?))
-                    ORDER BY l.paginas_lidas DESC LIMIT 1
-                """, concursoId, disciplina, "%" + topico + "%");
-
-                if (!linkRows.isEmpty()) {
-                    Map<String, Object> r = linkRows.get(0);
-                    resolvedMaterialId = (String) r.get("material_id");
-                    resolvedNome = (String) r.get("titulo");
-                    materialAutor = (String) r.get("autor");
-                    materialFormato = (String) r.get("formato");
-                    Integer pIni = (Integer) r.get("pagina_inicio");
-                    Integer pFim = (Integer) r.get("pagina_fim");
-                    if (pIni != null && pFim != null) {
-                        resolvedPaginas = String.format("Páginas %d a %d", pIni, pFim);
-                    } else if (pIni != null) {
-                        resolvedPaginas = String.format("A partir da pág. %d", pIni);
-                    }
-                    String anots = (String) r.get("anotacoes");
-                    if (anots != null && !anots.isBlank() && resolvedTexto.isBlank()) {
-                        resolvedTexto = anots;
-                    }
-                } else {
-                    // 2. Busca na biblioteca de materiais pela disciplina
-                    List<Map<String, Object>> matRows = jdbcTemplate.queryForList("""
-                        SELECT id, titulo, autor, formato, notas
-                        FROM study_materials
-                        WHERE (concurso_id = ? OR concurso_id IS NULL OR concurso_id = 'GLOBAL')
-                          AND LOWER(disciplina) = LOWER(?)
-                        ORDER BY total_paginas DESC LIMIT 1
-                    """, concursoId, disciplina);
-
-                    if (!matRows.isEmpty()) {
-                        Map<String, Object> r = matRows.get(0);
-                        resolvedMaterialId = (String) r.get("id");
-                        resolvedNome = (String) r.get("titulo");
-                        materialAutor = (String) r.get("autor");
-                        materialFormato = (String) r.get("formato");
-                        String notas = (String) r.get("notas");
-                        if (notas != null && !notas.isBlank() && resolvedTexto.isBlank()) {
-                            resolvedTexto = notas;
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                log.warn("Aviso ao cruzar material do estudante: {}", e.getMessage());
-            }
+            String materialId, String materialOrigemNome, String materialPaginas, String textoOrigem) {
+        Map<String,Object> ctx=new LinkedHashMap<>();
+        ctx.put("materialId",null); ctx.put("materialNome", "Fonte não vinculada");
+        ctx.put("materialFormato", "DESCONHECIDO");ctx.put("materialAutor", "");
+        ctx.put("materialPaginas", "Não verificadas");
+        // A title, page range or study note is not evidence that PDF content was retrieved.
+        ctx.put("textoOrigem", textoOrigem==null?"":textoOrigem);
+        if(materialId!=null && !materialId.isBlank()) {
+            List<Map<String,Object>> rows=jdbcTemplate.queryForList("SELECT id,titulo,autor,formato,concurso_id FROM study_materials WHERE id=?",materialId);
+            if(rows.isEmpty()) throw new IllegalArgumentException("Material informado não existe");
+            Map<String,Object> material=rows.get(0);
+            Object scope=material.get("concurso_id");
+            if(scope!=null && !"GLOBAL".equals(scope) && !Objects.equals(scope,concursoId)) throw new IllegalArgumentException("Material pertence a outro concurso");
+            ctx.put("materialId", materialId);ctx.put("materialNome", material.get("titulo"));
+            ctx.put("materialFormato", Objects.toString(material.get("formato"),"DESCONHECIDO"));
+            ctx.put("materialAutor", Objects.toString(material.get("autor"),""));
+            if(materialPaginas!=null && !materialPaginas.isBlank()) ctx.put("materialPaginas",materialPaginas+" (informadas pelo usuário; não verificadas)");
         }
-
-        if (resolvedNome == null || resolvedNome.isBlank()) {
-            resolvedNome = "Material Didático do Estudante";
-        }
-        if (resolvedPaginas == null || resolvedPaginas.isBlank()) {
-            resolvedPaginas = "Páginas Principais do Tópico";
-        }
-
-        ctx.put("materialId", resolvedMaterialId);
-        ctx.put("materialNome", resolvedNome);
-        ctx.put("materialAutor", materialAutor != null ? materialAutor : "");
-        ctx.put("materialFormato", materialFormato != null ? materialFormato : "PDF");
-        ctx.put("materialPaginas", resolvedPaginas);
-        ctx.put("textoOrigem", resolvedTexto);
         return ctx;
     }
 
@@ -397,7 +337,7 @@ public class StrategicSummaryService {
             List<Map<String, Object>> studentEvents = jdbcTemplate.queryForList(
                     "SELECT e.payload_json FROM event_store e " +
                             "INNER JOIN questions q ON q.id = e.aggregate_id " +
-                            "WHERE e.event_type = 'ANSWER_SUBMITTED' AND LOWER(q.disciplina) = LOWER(?) " +
+                            "WHERE e.event_type = 'ANSWER_SUBMITTED' AND e.origin = 'REAL_STUDY' AND LOWER(q.disciplina) = LOWER(?) " +
                             "AND LOWER(q.assunto) LIKE LOWER(?)",
                     disciplina, "%" + topico + "%"
             );
@@ -440,18 +380,27 @@ public class StrategicSummaryService {
             justificativa = "Conteúdo de fundamentação teórica de apoio, recomendado para consulta orientada sem sobrecarga horária.";
         }
 
-        // 7. Geração Especializada por Domínio Epistêmico (Motor Local sem alucinações)
-        String resumoMarkdown = buildStructuredSummary(domain, disciplina, topico, bancaAlvo, finalMaterialNome, finalMaterialPaginas, finalTextoOrigem);
-        List<Map<String, Object>> fichasRapidas = buildQuickCards(domain, disciplina, topico, bancaAlvo);
-        Map<String, Object> mapaMental = buildMindMap(domain, disciplina, topico);
-        List<Map<String, Object>> quadrosComparativos = buildComparativeTables(domain, disciplina, topico);
-        List<Map<String, Object>> flashcards = buildIntelligentFlashcards(domain, disciplina, topico, finalMaterialNome, finalMaterialPaginas);
-        List<Map<String, Object>> pegadinhasBanca = buildExamTraps(domain, disciplina, topico, bancaAlvo);
-        String resumoRetaFinal = buildRetaFinalSummary(domain, disciplina, topico, bancaAlvo);
+        justificativa = "Prioridade indicativa pelo peso cadastrado e respostas elegíveis; recorrência da banca e domínio não foram demonstrados.";
+
+        // Without a source retrieval pipeline, return an explicit scaffold or verbatim user excerpt.
+        boolean hasExcerpt=finalTextoOrigem!=null && !finalTextoOrigem.isBlank();
+        String resumoMarkdown="## "+topico+"\n\n"+(hasExcerpt
+                ? "**Trecho fornecido pelo usuário — não verificado contra o documento.**\n\n"+finalTextoOrigem
+                : "**Roteiro de estudo (template), sem síntese fundamentada em fonte.**\n\nRecupere o conceito sem consulta, registre sua dúvida e vincule um trecho verificável do material antes de elaborar uma síntese.");
+        List<Map<String,Object>> fichasRapidas=List.of();
+        Map<String,Object> mapaMental=Map.of("topico",topico,"status","AGUARDANDO_FONTE");
+        List<Map<String,Object>> quadrosComparativos=List.of();
+        List<Map<String,Object>> flashcards=List.of();
+        List<Map<String,Object>> pegadinhasBanca=List.of();
+        String resumoRetaFinal="Não gerado: exige síntese revisada com referências verificáveis.";
 
         // 8. Registro de Rastreabilidade e Proveniência do Pipeline Híbrido
         Map<String, Object> estatisticasBase = new LinkedHashMap<>();
-        estatisticasBase.put("pipelineHibrido", true);
+        estatisticasBase.put("pipelineHibrido", false);
+        estatisticasBase.put("contentKind", hasExcerpt ? "USER_EXCERPT" : "TEMPLATE");
+        estatisticasBase.put("sourceVerified", false);
+        estatisticasBase.put("sourceText", hasExcerpt ? finalTextoOrigem : "");
+        estatisticasBase.put("sourceRetrieval", "NOT_PERFORMED");
         estatisticasBase.put("dominioEpistemico", domain.name());
         estatisticasBase.put("bancaAlvo", bancaAlvo);
         estatisticasBase.put("totalQuestoesBanca", totalQuestoesBanca);
@@ -493,10 +442,10 @@ public class StrategicSummaryService {
 
             log.info("Resumo estratégico gerado via Pipeline Híbrido [{}]: {} - {}", domain, disciplina, topico);
         } catch (Exception e) {
-            log.error("Erro ao salvar resumo estratégico gerado: {}", e.getMessage(), e);
+            throw new IllegalStateException("Falha ao persistir resumo; nenhuma criação foi confirmada", e);
         }
 
-        return getSummaryById(id).orElse(Map.of("id", id, "status", "CREATED"));
+        return getSummaryById(id).orElseThrow(() -> new IllegalStateException("Resumo gravado não pôde ser lido"));
     }
 
     /**

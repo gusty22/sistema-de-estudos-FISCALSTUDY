@@ -17,6 +17,7 @@ import {
   Layers
 } from 'lucide-react';
 import './ConfiguracoesAdminView.css';
+import { saveStudyPreferences } from '../../utils/studyPreferences';
 
 export interface ConfiguracoesAdminViewProps {
   onNavigateToTab?: (tab: string) => void;
@@ -26,6 +27,15 @@ export const ConfiguracoesAdminView: React.FC<ConfiguracoesAdminViewProps> = ({
   onNavigateToTab: _onNavigateToTab
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<'PREFERENCIAS' | 'BACKUP' | 'INTEGRACOES' | 'AUDITORIA'>('PREFERENCIAS');
+
+  const [adminToken, setAdminToken] = useState('');
+  const [adminError, setAdminError] = useState<string | null>(null);
+  const adminFetch = (url: string, init: RequestInit = {}) => fetch(url, {
+    ...init, headers: { ...init.headers, 'X-FiscalStudy-Admin-Token': adminToken }
+  }).then(response => {
+    if (!response.ok) throw new Error('Operação administrativa recusada (HTTP ' + response.status + '). Confira o token configurado no servidor.');
+    return response;
+  });
 
   // T36: Configurações
   const [settings, setSettings] = useState<any>(null);
@@ -64,15 +74,15 @@ export const ConfiguracoesAdminView: React.FC<ConfiguracoesAdminViewProps> = ({
   };
 
   const loadBackupData = () => {
-    fetch('/api/v1/system/backup/overview')
+    adminFetch('/api/v1/system/backup/overview')
       .then(res => res.ok ? res.json() : null)
       .then(data => {
         if (data) setBackupOverview(data);
-      });
+      }).catch(error => setAdminError(error.message));
 
     fetch('/api/v1/system/backup/list')
       .then(res => res.ok ? res.json() : [])
-      .then(list => setBackupsList(list));
+      .then(list => setBackupsList(list)).catch(error => setAdminError(error.message));
   };
 
   const loadIntegrations = () => {
@@ -82,38 +92,33 @@ export const ConfiguracoesAdminView: React.FC<ConfiguracoesAdminViewProps> = ({
       .then(data => {
         if (data) setIntegrationsStatus(data);
       })
+      .catch(error => setAdminError(error.message))
       .finally(() => setIsLoadingIntegrations(false));
   };
 
   const loadAuditReport = () => {
     setIsLoadingAudit(true);
-    fetch('/api/v1/system/audit/report')
+    adminFetch('/api/v1/system/audit/report')
       .then(res => res.ok ? res.json() : null)
       .then(data => {
         if (data) setAuditReport(data);
       })
+      .catch(error => setAdminError(error.message))
       .finally(() => setIsLoadingAudit(false));
   };
 
   useEffect(() => {
     loadSettings();
-    loadBackupData();
     loadIntegrations();
-    loadAuditReport();
   }, []);
 
   const handleSaveSettings = async () => {
     if (!settings) return;
     try {
-      const res = await fetch('/api/v1/system/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(settings)
-      });
-      if (res.ok) {
-        setSaveSuccessMsg('✓ Preferências salvas com sucesso!');
-        setTimeout(() => setSaveSuccessMsg(null), 3500);
-      }
+      const persisted = await saveStudyPreferences(settings);
+      setSettings(persisted);
+      setSaveSuccessMsg('✓ Preferências confirmadas pelo servidor.');
+      setTimeout(() => setSaveSuccessMsg(null), 3500);
     } catch {
       setSaveSuccessMsg('Erro ao salvar preferências.');
       setTimeout(() => setSaveSuccessMsg(null), 3000);
@@ -170,7 +175,7 @@ export const ConfiguracoesAdminView: React.FC<ConfiguracoesAdminViewProps> = ({
       });
       const data = await res.json();
       if (res.ok) {
-        setBackupActionMsg(`✓ Restauração concluída com sucesso! Snapshot prévio de segurança preservado: ${data.safetySnapshotCreated}`);
+        setBackupActionMsg(`✓ Banco restaurado preparado e verificado: ${data.restoredPath || data.preparedPath || data.filename}. O banco atual não foi substituído; é necessário configurar o caminho e reiniciar com o aplicativo parado.`);
         setRestoreCandidate(null);
         loadBackupData();
       } else {
@@ -224,8 +229,17 @@ export const ConfiguracoesAdminView: React.FC<ConfiguracoesAdminViewProps> = ({
         </div>
       </div>
 
+      {(activeSubTab === 'BACKUP' || activeSubTab === 'AUDITORIA') && (
+        <div className="config-card" style={{ marginBottom: '1rem' }}>
+          <label htmlFor="admin-token">Token administrativo desta sessão</label>
+          <input id="admin-token" type="password" autoComplete="off" value={adminToken} onChange={e => setAdminToken(e.target.value)} placeholder="Token configurado no servidor" />
+          <button type="button" disabled={!adminToken} onClick={() => { setAdminError(null); loadBackupData(); loadAuditReport(); }}>Carregar dados administrativos</button>
+          <p>O token permanece somente na memória desta tela.</p>
+        </div>
+      )}
+      {adminError && <div role="alert" className="status-banner error">{adminError}</div>}
       {saveSuccessMsg && (
-        <div className="status-banner success animate-fade-in">{saveSuccessMsg}</div>
+        <div role="status" className={`status-banner ${saveSuccessMsg.startsWith('✓') ? 'success' : 'error'} animate-fade-in`}>{saveSuccessMsg}</div>
       )}
 
       {/* =========================================================================
@@ -237,6 +251,7 @@ export const ConfiguracoesAdminView: React.FC<ConfiguracoesAdminViewProps> = ({
             <div className="loading-state">Carregando preferências...</div>
           ) : settings ? (
             <div className="config-grid-layout">
+              <p role="note">Tema, tamanho da leitura, duração inicial do cronômetro e quantidade inicial de questões são aplicados. Controles desabilitados ainda não alteram o estudo. Configure os horários por concurso em Rotina & Disponibilidade.</p>
               {/* Card 1: Perfil de Estudos */}
               <div className="config-card glass">
                 <div className="config-card-header">
@@ -265,6 +280,7 @@ export const ConfiguracoesAdminView: React.FC<ConfiguracoesAdminViewProps> = ({
                     <label>Estilo de Pausas</label>
                     <select
                       className="form-control"
+                      disabled title="Preferência ainda sem consumidor funcional; indisponível nesta versão"
                       value={settings.perfilEstudos?.estiloPausa || 'POMODORO'}
                       onChange={e => setSettings({
                         ...settings,
@@ -336,6 +352,7 @@ export const ConfiguracoesAdminView: React.FC<ConfiguracoesAdminViewProps> = ({
                     <input
                       type="checkbox"
                       id="chkPriorizarDificuldades"
+                      disabled title="Preferência ainda sem consumidor funcional; indisponível nesta versão"
                       checked={settings.objetivos?.priorizarDificuldades ?? true}
                       onChange={e => setSettings({
                         ...settings,
@@ -351,6 +368,7 @@ export const ConfiguracoesAdminView: React.FC<ConfiguracoesAdminViewProps> = ({
                     <input
                       type="checkbox"
                       id="chkAlertaDatasLimite"
+                      disabled title="Preferência ainda sem consumidor funcional; indisponível nesta versão"
                       checked={settings.objetivos?.alertaDatasLimite ?? true}
                       onChange={e => setSettings({
                         ...settings,
@@ -377,6 +395,7 @@ export const ConfiguracoesAdminView: React.FC<ConfiguracoesAdminViewProps> = ({
                       type="number"
                       step="0.5"
                       className="form-control"
+                      disabled title="Preferência ainda sem consumidor funcional; indisponível nesta versão"
                       value={settings.rotina?.disponibilidadeDiasUteisHoras || 3.5}
                       onChange={e => setSettings({
                         ...settings,
@@ -391,6 +410,7 @@ export const ConfiguracoesAdminView: React.FC<ConfiguracoesAdminViewProps> = ({
                       type="number"
                       step="0.5"
                       className="form-control"
+                      disabled title="Preferência ainda sem consumidor funcional; indisponível nesta versão"
                       value={settings.rotina?.disponibilidadeFimSemanaHoras || 6.0}
                       onChange={e => setSettings({
                         ...settings,
@@ -403,6 +423,7 @@ export const ConfiguracoesAdminView: React.FC<ConfiguracoesAdminViewProps> = ({
                     <input
                       type="checkbox"
                       id="chkDescansoDomingo"
+                      disabled title="Preferência ainda sem consumidor funcional; indisponível nesta versão"
                       checked={settings.rotina?.descansoObrigatorioDomingo ?? false}
                       onChange={e => setSettings({
                         ...settings,
@@ -428,6 +449,7 @@ export const ConfiguracoesAdminView: React.FC<ConfiguracoesAdminViewProps> = ({
                     <input
                       type="number"
                       className="form-control"
+                      disabled title="Preferência ainda sem consumidor funcional; indisponível nesta versão"
                       value={settings.revisoes?.limiteCardsDia || 40}
                       onChange={e => setSettings({
                         ...settings,
@@ -441,6 +463,7 @@ export const ConfiguracoesAdminView: React.FC<ConfiguracoesAdminViewProps> = ({
                     <input
                       type="number"
                       className="form-control"
+                      disabled title="Preferência ainda sem consumidor funcional; indisponível nesta versão"
                       value={settings.revisoes?.limiteQuestoesRevisaoDia || 25}
                       onChange={e => setSettings({
                         ...settings,
@@ -453,6 +476,7 @@ export const ConfiguracoesAdminView: React.FC<ConfiguracoesAdminViewProps> = ({
                     <input
                       type="checkbox"
                       id="chkProtegerSono"
+                      disabled title="Preferência ainda sem consumidor funcional; indisponível nesta versão"
                       checked={settings.revisoes?.protegerJanelaSono ?? true}
                       onChange={e => setSettings({
                         ...settings,
@@ -475,7 +499,7 @@ export const ConfiguracoesAdminView: React.FC<ConfiguracoesAdminViewProps> = ({
                 <div className="config-form-body">
                   <div className="info-callout">
                     <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-                    <span>Seus dados ficam 100% no seu computador (Local-First). Nenhuma resposta, métrica ou nota de estudo é enviada a servidores externos.</span>
+                    <span>Os dados de estudo são armazenados localmente. O envio de flashcards ao Anki Desktop e ao AnkiWeb depende das permissões específicas na Curadoria Anki.</span>
                   </div>
 
                   <div className="form-check-row">
@@ -483,7 +507,7 @@ export const ConfiguracoesAdminView: React.FC<ConfiguracoesAdminViewProps> = ({
                       type="checkbox"
                       id="chkLocalEstrito"
                       checked={settings.privacidade?.armazenamentoLocalEstrito ?? true}
-                      disabled
+                      onChange={e => setSettings({ ...settings, privacidade: { ...settings.privacidade, armazenamentoLocalEstrito: e.target.checked } })}
                     />
                     <label htmlFor="chkLocalEstrito">
                       Armazenamento local estrito ativo (SQLite local)
@@ -494,6 +518,7 @@ export const ConfiguracoesAdminView: React.FC<ConfiguracoesAdminViewProps> = ({
                     <input
                       type="checkbox"
                       id="chkTelemetriaNuvem"
+                      disabled title="Preferência ainda sem consumidor funcional; indisponível nesta versão"
                       checked={settings.privacidade?.telemetriaExterna ?? false}
                       onChange={e => setSettings({
                         ...settings,
@@ -526,6 +551,7 @@ export const ConfiguracoesAdminView: React.FC<ConfiguracoesAdminViewProps> = ({
                       min={1.1}
                       max={1.6}
                       className="form-control"
+                      disabled title="Preferência ainda sem consumidor funcional; indisponível nesta versão"
                       value={settings.parametrosAvancados?.fatorEspacamentoMin || 1.3}
                       onChange={e => setSettings({
                         ...settings,
@@ -542,6 +568,7 @@ export const ConfiguracoesAdminView: React.FC<ConfiguracoesAdminViewProps> = ({
                       min={2.0}
                       max={3.0}
                       className="form-control"
+                      disabled title="Preferência ainda sem consumidor funcional; indisponível nesta versão"
                       value={settings.parametrosAvancados?.fatorEspacamentoMax || 2.6}
                       onChange={e => setSettings({
                         ...settings,

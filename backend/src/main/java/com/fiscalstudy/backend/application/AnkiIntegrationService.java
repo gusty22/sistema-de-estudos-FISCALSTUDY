@@ -42,7 +42,10 @@ public class AnkiIntegrationService {
     @Value("${fiscalstudy.anki.endpoint:http://127.0.0.1:8765}")
     private String ankiEndpoint = "http://127.0.0.1:8765";
 
-    private final AtomicBoolean autoSyncEnabled = new AtomicBoolean(true);
+    @Value("${fiscalstudy.anki.network-allowed:true}")
+    private boolean networkAllowed = true;
+
+    private final AtomicBoolean autoSyncEnabled = new AtomicBoolean(false);
     private final AtomicReference<String> lastSyncAt = new AtomicReference<>(null);
     private final AtomicInteger lastSyncCount = new AtomicInteger(0);
 
@@ -56,6 +59,33 @@ public class AnkiIntegrationService {
     private volatile String detectedClozeExtraField = "Back Extra";
 
     private volatile long lastModelCheckTime = 0;
+
+    public Map<String,Object> getIntegrationPreferences() {
+        Map<String,Object> defaults=new LinkedHashMap<>();
+        defaults.put("enabled",false);defaults.put("autoSyncEnabled",false);defaults.put("cloudSyncEnabled",false);
+        List<String> values=jdbcTemplate.queryForList("SELECT setting_value FROM system_settings WHERE setting_key = ?",String.class,"ankiIntegration");
+        if(!values.isEmpty()) try { defaults.putAll(objectMapper.readValue(values.get(0),new TypeReference<Map<String,Object>>(){})); }
+        catch(Exception e){throw new IllegalStateException("Invalid persisted Anki consent",e);}
+        return defaults;
+    }
+    public Map<String,Object> updateIntegrationPreferences(Map<String,Object> requested) {
+        Map<String,Object> prefs=getIntegrationPreferences();
+        for(String key:List.of("enabled","autoSyncEnabled","cloudSyncEnabled")) if(requested.containsKey(key)) {
+            if(!(requested.get(key) instanceof Boolean)) throw new IllegalArgumentException(key+" must be boolean");
+            prefs.put(key,requested.get(key));
+        }
+        try { jdbcTemplate.update("INSERT INTO system_settings(setting_key,setting_value,updated_at) VALUES(?,?,?) ON CONFLICT(setting_key) DO UPDATE SET setting_value=excluded.setting_value,updated_at=excluded.updated_at", "ankiIntegration",objectMapper.writeValueAsString(prefs),java.time.Instant.now().toString()); }
+        catch(Exception e){throw new IllegalStateException("Unable to persist Anki consent",e);}
+        return prefs;
+    }
+    private boolean integrationEnabled(){return networkAllowed && Boolean.TRUE.equals(getIntegrationPreferences().get("enabled"));}
+    private boolean cloudAllowed(){
+        if(!integrationEnabled() || !Boolean.TRUE.equals(getIntegrationPreferences().get("cloudSyncEnabled")))return false;
+        List<String> values=jdbcTemplate.queryForList("SELECT setting_value FROM system_settings WHERE setting_key=?",String.class,"privacidade");
+        if(values.isEmpty())return false; // strict local is the default
+        try{return !objectMapper.readTree(values.get(0)).path("armazenamentoLocalEstrito").asBoolean(true);}
+        catch(Exception e){throw new IllegalStateException("Invalid privacy settings",e);}
+    }
 
     public void setAnkiEndpoint(String ankiEndpoint) {
         this.ankiEndpoint = ankiEndpoint;
@@ -76,6 +106,7 @@ public class AnkiIntegrationService {
      * Atualiza metadados de modelos e campos do Anki Desktop (compatibilidade pt-BR e en-US)
      */
     public synchronized void refreshAnkiModelMetadata() {
+        if (!integrationEnabled()) return;
         long now = System.currentTimeMillis();
         if (now - lastModelCheckTime < 60_000 && lastModelCheckTime > 0) {
             return;
@@ -160,6 +191,7 @@ public class AnkiIntegrationService {
     }
 
     private List<String> fetchModelFields(String modelName) {
+        if (!integrationEnabled()) return Collections.emptyList();
         try {
             Map<String, Object> req = Map.of(
                     "action", "modelFieldNames",
@@ -193,6 +225,7 @@ public class AnkiIntegrationService {
      * Verifica se o plugin AnkiConnect está ativo na porta 8765
      */
     public AnkiConnectStatusDTO checkConnection() {
+        if (!integrationEnabled()) return new AnkiConnectStatusDTO(false,0,ankiEndpoint,getSyncedCardsCount(),getPendingCardsCount(),"Integração Anki desativada. Nenhuma conexão externa realizada.",false,lastSyncAt.get(),null);
         try {
             Map<String, Object> req = Map.of("action", "version", "version", 6);
             String jsonBody = objectMapper.writeValueAsString(req);
@@ -226,7 +259,7 @@ public class AnkiIntegrationService {
                         synced,
                         pending,
                         "🟢 Anki Desktop Conectado (Porta 8765). Sincronização automática ativa.",
-                        autoSyncEnabled.get(),
+                        isAutoSyncEnabled(),
                         lastSyncAt.get(),
                         modelInfo
                 );
@@ -244,7 +277,7 @@ public class AnkiIntegrationService {
                 synced,
                 pending,
                 "🟡 Anki não detectado na porta 8765. Os flashcards gerados automaticamente serão mantidos na fila local e enviados assim que você abrir o Anki Desktop.",
-                autoSyncEnabled.get(),
+                isAutoSyncEnabled(),
                 lastSyncAt.get(),
                 null
         );
@@ -254,6 +287,7 @@ public class AnkiIntegrationService {
      * Dispara sincronização imediata do Anki Desktop com a nuvem AnkiWeb
      */
     public boolean triggerAnkiWebSync() {
+        if (!cloudAllowed()) return false;
         try {
             Map<String, Object> req = Map.of(
                     "action", "sync",
@@ -279,6 +313,7 @@ public class AnkiIntegrationService {
      * Garante a criação do Deck no Anki (ex: FiscalStudy::Direito Administrativo)
      */
     public boolean ensureDeckExists(String deckName) {
+        if (!integrationEnabled()) return false;
         try {
             Map<String, Object> req = Map.of(
                     "action", "createDeck",
@@ -306,6 +341,7 @@ public class AnkiIntegrationService {
      * Envia um Flashcard direto para o Anki via AnkiConnect com tolerância a múltiplos idiomas
      */
     public Long sendNoteToAnkiConnect(String deckName, String cardType, String frontOrText, String backOrExtra, List<String> tags) {
+        if (!integrationEnabled()) return null;
         try {
             ensureDeckExists(deckName);
             refreshAnkiModelMetadata();
@@ -438,7 +474,7 @@ public class AnkiIntegrationService {
         if ("CLOZE".equalsIgnoreCase(cardType)) tags.add("cloze");
 
         // Tenta envio silencioso via AnkiConnect
-        Long ankiNoteId = sendNoteToAnkiConnect(deckName, cardType, frontOrText, backOrExtra, tags);
+        Long ankiNoteId = null; // Save locally first. Explicit queue sync performs network writes.
         String syncStatus = (ankiNoteId != null) ? "SYNCED" : "PENDING_ANKI";
         String syncedAt = (ankiNoteId != null) ? nowStr : null;
 
@@ -451,12 +487,12 @@ public class AnkiIntegrationService {
 
         // Registra evento no event_store imutável
         String eventType = (ankiNoteId != null) ? "FLASHCARD_SENT_TO_ANKI" : "FLASHCARD_QUEUED_FOR_ANKI";
-        String payloadJson = String.format(Locale.US,
-                "{\"cardId\": \"%s\", \"deckName\": \"%s\", \"cardType\": \"%s\", \"syncStatus\": \"%s\", \"ankiNoteId\": %s, \"disciplina\": \"%s\", \"assunto\": \"%s\"}",
-                cardId, deckName, cardType, syncStatus, ankiNoteId != null ? ankiNoteId.toString() : "null",
-                disciplina != null ? disciplina.replace("\"", "\\\"") : "",
-                assunto != null ? assunto.replace("\"", "\\\"") : ""
-        );
+        Map<String,Object> eventDetails=new LinkedHashMap<>();
+        eventDetails.put("cardId",cardId);eventDetails.put("deckName",deckName);eventDetails.put("cardType",cardType);
+        eventDetails.put("syncStatus",syncStatus);eventDetails.put("ankiNoteId",ankiNoteId);eventDetails.put("disciplina",disciplina);eventDetails.put("assunto",assunto);
+        String payloadJson;
+        try{payloadJson=objectMapper.writeValueAsString(eventDetails);}catch(Exception e){throw new IllegalStateException("Unable to serialize flashcard event",e);}
+
 
         eventStoreRepository.appendEvent(
                 eventType,
@@ -636,7 +672,7 @@ public class AnkiIntegrationService {
                 "SELECT DISTINCT q.id, q.enunciado, q.options_json, q.correct_option, q.disciplina, q.assunto, e.payload_json " +
                 "FROM questions q " +
                 "INNER JOIN event_store e ON e.aggregate_id = q.id " +
-                "WHERE e.event_type = 'ANSWER_SUBMITTED' " +
+                "WHERE e.event_type = 'ANSWER_SUBMITTED' AND json_extract(e.payload_json, '$.origin') = 'REAL_STUDY' " +
                 (sessionId != null && !sessionId.isBlank() ? "AND e.session_id = ? " : "") +
                 "ORDER BY e.recorded_at DESC LIMIT 15",
                 (sessionId != null && !sessionId.isBlank() ? new Object[]{sessionId} : new Object[]{})
@@ -722,7 +758,8 @@ public class AnkiIntegrationService {
     /**
      * Sincroniza a fila de cards pendentes com o AnkiConnect
      */
-    public int syncPendingQueue() {
+    public synchronized int syncPendingQueue() {
+        if (!integrationEnabled()) throw new IllegalStateException("Anki integration is disabled");
         List<Map<String, Object>> pendingRows = jdbcTemplate.queryForList(
                 "SELECT id, disciplina, assunto, card_type, front_or_text, back_or_extra, deck_name FROM anki_flashcards WHERE sync_status = 'PENDING_ANKI'"
         );
@@ -756,7 +793,7 @@ public class AnkiIntegrationService {
                             "sync-engine",
                             1,
                             "v1",
-                            String.format(Locale.US, "{\"cardId\":\"%s\",\"ankiNoteId\":%d,\"deckName\":\"%s\"}", id, noteId, deckName)
+                            objectMapper.writeValueAsString(Map.of("cardId",id,"ankiNoteId",noteId,"deckName",deckName))
                     );
                 } catch (Exception ignored) {}
 
@@ -783,7 +820,7 @@ public class AnkiIntegrationService {
      */
     @Scheduled(fixedDelayString = "${fiscalstudy.anki.auto-sync.interval-ms:25000}")
     public void runAutoSyncScheduled() {
-        if (!autoSyncEnabled.get()) {
+        if (!integrationEnabled() || !isAutoSyncEnabled()) {
             return;
         }
 
@@ -807,16 +844,16 @@ public class AnkiIntegrationService {
     }
 
     public boolean isAutoSyncEnabled() {
-        return autoSyncEnabled.get();
+        return Boolean.TRUE.equals(getIntegrationPreferences().get("autoSyncEnabled"));
     }
 
     public void setAutoSyncEnabled(boolean enabled) {
-        this.autoSyncEnabled.set(enabled);
+        updateIntegrationPreferences(Map.of("autoSyncEnabled",enabled));
     }
 
     public boolean toggleAutoSync() {
-        boolean next = !this.autoSyncEnabled.get();
-        this.autoSyncEnabled.set(next);
+        boolean next = !isAutoSyncEnabled();
+        setAutoSyncEnabled(next);
         return next;
     }
 

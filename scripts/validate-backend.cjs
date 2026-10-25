@@ -1,0 +1,23 @@
+/** Runs the locally cached Maven launcher without shell quoting or downloads. */
+const fs = require('node:fs');
+const path = require('node:path');
+const { spawn } = require('node:child_process');
+const root = path.resolve(__dirname, '..');
+const exists = p => !!p && fs.existsSync(p);
+const dirs = p => exists(p) ? fs.readdirSync(p,{withFileTypes:true}).filter(e=>e.isDirectory()).map(e=>path.join(p,e.name)) : [];
+const home = process.env.USERPROFILE || process.env.HOME || require('node:os').homedir();
+const cache = path.join(home,'.m2','wrapper','dists');
+const mavenCandidates = [process.env.FISCALSTUDY_MAVEN_HOME,process.env.MAVEN_HOME,process.env.M2_HOME,...dirs(cache).filter(p=>path.basename(p).startsWith('apache-maven-')).sort().reverse().flatMap(dirs)];
+const maven = mavenCandidates.find(p=>exists(p) && exists(path.join(p,'bin','m2.conf')));
+if (!maven) throw new Error('Maven not cached. Configure FISCALSTUDY_MAVEN_HOME; no download is performed by this runner.');
+const javaCandidates = [process.env.JAVA_HOME,...dirs(path.join(process.env.ProgramFiles || (process.platform==='win32'?'C:/Program Files':'/usr/lib'),'Eclipse Adoptium')).sort().reverse(),...dirs(path.join(process.env.ProgramFiles || (process.platform==='win32'?'C:/Program Files':'/usr/lib'),'Java')).sort().reverse()];
+const javaHome = javaCandidates.find(p=>exists(p) && exists(path.join(p,'bin',process.platform==='win32'?'java.exe':'java')));
+if (!javaHome) throw new Error('JDK unavailable. Configure JAVA_HOME.');
+const java = path.join(javaHome,'bin',process.platform==='win32'?'java.exe':'java');
+const launcher = fs.readdirSync(path.join(maven,'boot')).find(p=>/^plexus-classworlds.*\.jar$/.test(p));
+if (!launcher) throw new Error('Maven launcher missing.');
+const goals=process.argv.slice(2);
+const args=['-classpath',path.join(maven,'boot',launcher),'-Dclassworlds.conf='+path.join(maven,'bin','m2.conf'),'-Dmaven.home='+maven,'-Dmaven.multiModuleProjectDirectory='+path.join(root,'backend'),'org.codehaus.plexus.classworlds.launcher.Launcher','-o','-B',...(goals.length?goals:['test'])];
+const child=spawn(java,args,{cwd:path.join(root,'backend'),env:{...process.env,JAVA_HOME:javaHome},stdio:'inherit',windowsHide:true,shell:false});
+child.on('error',e=>{console.error(e.message);process.exitCode=1;});
+child.on('exit',(code,signal)=>{process.exitCode=code ?? 1;if(signal)console.error('Maven interrupted:',signal);});

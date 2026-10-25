@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:sqlite:target/test-fiscalstudy.db
+    url: jdbc:sqlite:target/test-data/fiscalstudy.db
     driver-class-name: org.sqlite.JDBC
   jpa:
     database-platform: org.hibernate.community.dialect.SQLiteDialect
@@ -9,7 +9,7 @@ spring:
     show-sql: false
   sql:
     init:
-      mode: always
+      mode: never
       schema-locations: classpath:schema.sql
 
   servlet:
@@ -20,4 +20,14 @@ spring:
 
 fiscalstudy:
   event-origin: AUTOMATED_TEST
+  project-root: ..
+  data-dir: target/test-data
+  staging-db: target/test-data/staging.db
+  analytics-dir: target/test-data/analytics
+  acervo-root: target/test-data/materials
+  anki:
+    network-allowed: false
+    enabled: false
+    auto-sync-enabled: false
+    cloud-sync-enabled: false
 

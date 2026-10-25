@@ -16,6 +16,7 @@ import {
 import type { ConcursoItem } from '../concursos/MeusConcursos';
 import { MontagemCadernoModal } from './MontagemCadernoModal';
 import { ResolucaoQuestaoModal } from './ResolucaoQuestaoModal';
+import { QuestionClassificationPanel } from './QuestionClassificationPanel';
 import { useSimplifiedMode } from '../../context/SimplifiedModeContext';
 import './BancoQuestoes.css';
 
@@ -52,6 +53,7 @@ export const BancoQuestoes: React.FC<BancoQuestoesProps> = ({
 }) => {
   const { isSimplifiedMode } = useSimplifiedMode();
   // Estado de resolução ativa focada (abre a questão diretamente sem redirecionar de tela)
+  const [classificationOpen, setClassificationOpen] = useState(false);
   const [resolvendoIndex, setResolvendoIndex] = useState<number | null>(null);
   // Modo de escopo: apenas disciplinas do edital ou acervo geral
   const [editalOnly, setEditalOnly] = useState<boolean>(true);
@@ -265,6 +267,8 @@ export const BancoQuestoes: React.FC<BancoQuestoesProps> = ({
   return (
     <div className="banco-questoes-wrapper">
       {/* Header */}
+      {classificationOpen && <QuestionClassificationPanel concursoId={activeConcurso?.id} onClose={() => setClassificationOpen(false)} />}
+      <button type="button" className="btn btn-secondary" onClick={() => setClassificationOpen(true)}>Classificar questões por tópico</button>
       <div className="banco-header">
         <div className="banco-header-info">
           <h1>Banco de Questões</h1>
@@ -593,11 +597,11 @@ export const BancoQuestoes: React.FC<BancoQuestoesProps> = ({
 
           {/* Lista de Questões */}
           {isLoading ? (
-            <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--calm-text-muted)' }}>
+            <div role="status" aria-live="polite" style={{ padding: '3rem', textAlign: 'center', color: 'var(--calm-text-muted)' }}>
               Carregando questões do acervo...
             </div>
           ) : questions.length === 0 ? (
-            <div style={{
+            <div role="status" aria-live="polite" style={{
               padding: '3rem',
               textAlign: 'center',
               borderRadius: '14px',
@@ -650,9 +654,18 @@ export const BancoQuestoes: React.FC<BancoQuestoesProps> = ({
                   {Array.isArray(q.options) && q.options.length > 0 && (
                     <div
                       className="question-options-preview"
+                      role="button"
+                      tabIndex={0}
                       onClick={() => setResolvendoIndex(qIndex)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setResolvendoIndex(qIndex);
+                        }
+                      }}
                       style={{ cursor: 'pointer' }}
-                      title="Clique para abrir e resolver esta questão"
+                      aria-label="Abrir e resolver esta questão"
+                      title="Clique ou pressione Enter para resolver esta questão"
                     >
                       {q.options.map((opt: string, i: number) => {
                         const cleanOpt = opt
@@ -685,7 +698,8 @@ export const BancoQuestoes: React.FC<BancoQuestoesProps> = ({
                       <button
                         className={`btn-q-action favorite ${q.isFavorite ? 'active' : ''}`}
                         onClick={() => handleToggleFavorite(q.questionId)}
-                        title="Favoritar questão"
+                        aria-label={q.isFavorite ? 'Remover dos favoritos' : 'Favoritar questão'}
+                        title={q.isFavorite ? 'Remover dos favoritos' : 'Favoritar questão'}
                       >
                         <Bookmark className="w-3.5 h-3.5" fill={q.isFavorite ? 'currentColor' : 'none'} />
                       </button>
@@ -693,6 +707,7 @@ export const BancoQuestoes: React.FC<BancoQuestoesProps> = ({
                       <button
                         className="btn-q-action"
                         onClick={() => setReportQuestionId(q.questionId)}
+                        aria-label="Reportar problema de gabarito ou digitação"
                         title="Reportar problema de gabarito ou digitação"
                       >
                         <Flag className="w-3.5 h-3.5" />
@@ -702,6 +717,7 @@ export const BancoQuestoes: React.FC<BancoQuestoesProps> = ({
                         <button
                           className="btn-q-action"
                           onClick={() => showFeedback(`Fonte: ${q.arquivoOrigem}`)}
+                          aria-label={`Abrir fonte: ${q.arquivoOrigem}`}
                           title="Abrir prova ou fonte original"
                         >
                           <FileText className="w-3.5 h-3.5" /> Fonte
@@ -711,6 +727,7 @@ export const BancoQuestoes: React.FC<BancoQuestoesProps> = ({
                       <button
                         className="btn-q-action"
                         onClick={() => setIsCadernoModalOpen(true)}
+                        aria-label="Adicionar questão ao caderno de exercícios"
                         title="Adicionar ao caderno de exercícios"
                       >
                         <Layers className="w-3.5 h-3.5" /> + Caderno
@@ -719,6 +736,7 @@ export const BancoQuestoes: React.FC<BancoQuestoesProps> = ({
                       <button
                         className="btn-q-action primary"
                         onClick={() => setResolvendoIndex(qIndex)}
+                        aria-label={`Abrir e resolver questão ${q.questionId}`}
                         title="Abrir questão para resolução focada"
                       >
                         <Play className="w-3.5 h-3.5" /> Resolver

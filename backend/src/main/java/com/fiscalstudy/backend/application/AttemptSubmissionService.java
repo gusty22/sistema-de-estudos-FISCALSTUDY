@@ -103,6 +103,17 @@ public class AttemptSubmissionService {
     public com.fiscalstudy.backend.domain.AttemptResult submitAttempt(String questionId, String selectedOption, int confidenceLevel, long activeTimeMs, String sessionId, String origin, String causaErro, Boolean naCordaBamba, Boolean pensouContrario,
                                                                       Long tempoLeituraMs, Long tempoHesitacaoMs, Integer trocasOpcaoCount, Double distanciaCursorPx, Double friccaoCognitivaScore, Boolean chuteEducadoDetectado, String fluenciaNeurologica,
                                                                       Boolean usedHelp, String helpType, String interventionType) {
+        return submitAttempt(questionId,selectedOption,confidenceLevel,activeTimeMs,sessionId,origin,causaErro,naCordaBamba,pensouContrario,tempoLeituraMs,tempoHesitacaoMs,trocasOpcaoCount,distanciaCursorPx,friccaoCognitivaScore,chuteEducadoDetectado,fluenciaNeurologica,usedHelp,helpType,interventionType,null);
+    }
+
+    public com.fiscalstudy.backend.domain.AttemptResult submitAttempt(String questionId, String selectedOption, int confidenceLevel, long activeTimeMs, String sessionId, String origin, String causaErro, Boolean naCordaBamba, Boolean pensouContrario,
+            Long tempoLeituraMs, Long tempoHesitacaoMs, Integer trocasOpcaoCount, Double distanciaCursorPx, Double friccaoCognitivaScore, Boolean chuteEducadoDetectado, String fluenciaNeurologica,
+            Boolean usedHelp, String helpType, String interventionType, String requestedAttemptId) {
+        String attemptId = requireUuid(requestedAttemptId == null || requestedAttemptId.isBlank() ? java.util.UUID.randomUUID().toString() : requestedAttemptId);
+        if(confidenceLevel<1 || confidenceLevel>5 || activeTimeMs<0) throw new IllegalArgumentException("Invalid confidence or duration");
+        var existing=eventStoreRepository.findByEventId("attempt:"+attemptId);
+        if(existing.isPresent()) return replay(existing.get(),questionId,sessionId,selectedOption,confidenceLevel,activeTimeMs,Boolean.TRUE.equals(usedHelp));
+
         if (sessionId == null || sessionId.isBlank()) {
             throw new IllegalArgumentException("Session ID is required");
         }
@@ -156,11 +167,6 @@ public class AttemptSubmissionService {
             } else {
                 status = com.fiscalstudy.backend.domain.GabaritoStatus.DEFINITIVO;
             }
-        }
-
-        // Idempotência: se já respondeu esta questão nesta mesma sessão, não duplica evento
-        if (eventStoreRepository.hasEvent("ANSWER_SUBMITTED", questionId, sessionId)) {
-            return calculateAttemptResult(question, optionLetter, status);
         }
 
         Boolean isCorrect;
@@ -220,39 +226,35 @@ public class AttemptSubmissionService {
         String helpTypeVal = (helpType != null && !helpType.isBlank()) ? helpType.trim() : (usedHelpVal ? "MATERIAL_APOIO" : "NENHUM");
         String interventionVal = (interventionType != null && !interventionType.isBlank()) ? interventionType.trim() : "REGULAR";
 
-        String payload = String.format(java.util.Locale.US,
-            "{\"questionId\": \"%s\", \"selectedOption\": \"%s\", \"isCorrect\": %s, \"concursoPoint\": %d, \"gabaritoStatus\": \"%s\", \"confidenceLevel\": %d, \"activeTimeMs\": %d, \"origin\": \"%s\", \"causaErro\": %s, \"naCordaBamba\": %b, \"pensouContrario\": %b, \"tempoLeituraMs\": %d, \"tempoHesitacaoMs\": %d, \"trocasOpcaoCount\": %d, \"distanciaCursorPx\": %.2f, \"friccaoCognitivaScore\": %.3f, \"chuteEducadoDetectado\": %b, \"fluenciaNeurologica\": \"%s\", \"usedHelp\": %b, \"helpType\": \"%s\", \"exposicaoAnteriorCount\": %d, \"diasDesdeUltimaExposicao\": %s, \"resultadoAnterior\": %s, \"interventionType\": \"%s\"}",
-            questionId, optionLetter, isCorrectStr, concursoPoint, status.name(), confidenceLevel, activeTimeMs, determinedOrigin,
-            causaErroStr != null ? "\"" + causaErroStr.replace("\"", "\\\"") + "\"" : "null",
-            cordaBambaVal, pensouContrarioVal,
-            leituraVal, hesitacaoVal, trocasVal, distanciaVal, friccaoVal, chuteVal, fluenciaVal,
-            usedHelpVal, helpTypeVal,
-            exposicaoAnteriorCount,
-            diasDesdeUltimaExposicao != null ? String.valueOf(diasDesdeUltimaExposicao) : "null",
-            resultadoAnterior != null ? String.valueOf(resultadoAnterior) : "null",
-            interventionVal
-        );
-
-        eventStoreRepository.appendEvent(
-                "ANSWER_SUBMITTED",
-                "QUESTION",
-                questionId,
-                sessionId,
-                1,
-                "v1",
-                payload
-        );
+        java.time.Instant occurredAt=java.time.Instant.now();
+        java.util.Map<String,Object> prediction=learningEvidenceService==null ? java.util.Map.of("evidenceStatus","UNAVAILABLE") : learningEvidenceService.preview(questionId);
+        java.util.Map<String,Object> fields=new java.util.LinkedHashMap<>();
+        fields.put("attemptId",attemptId); fields.put("questionId",questionId); fields.put("selectedOption",optionLetter);
+        fields.put("correctOption",question.getCorrectOption()); fields.put("isCorrect",isCorrect); fields.put("concursoPoint",concursoPoint);
+        fields.put("gabaritoStatus",status.name()); fields.put("confidenceLevel",confidenceLevel); fields.put("activeTimeMs",activeTimeMs);
+        fields.put("origin",determinedOrigin); fields.put("causaErro",causaErroStr); fields.put("naCordaBamba",cordaBambaVal); fields.put("pensouContrario",pensouContrarioVal);
+        fields.put("tempoLeituraMs",leituraVal); fields.put("tempoHesitacaoMs",hesitacaoVal); fields.put("trocasOpcaoCount",trocasVal);
+        fields.put("distanciaCursorPx",distanciaVal); fields.put("friccaoCognitivaScore",friccaoVal); fields.put("chuteEducadoDetectado",chuteVal);
+        fields.put("fluenciaNeurologica",fluenciaVal); fields.put("usedHelp",usedHelpVal); fields.put("helpType",helpTypeVal);
+        fields.put("exposicaoAnteriorCount",exposicaoAnteriorCount); fields.put("diasDesdeUltimaExposicao",diasDesdeUltimaExposicao);
+        fields.put("resultadoAnterior",resultadoAnterior); fields.put("interventionType",interventionVal); fields.put("memoryPrediction",prediction);
+        String payload=json(fields);
+        if(!eventStoreRepository.appendEventOnce("attempt:"+attemptId,"ANSWER_SUBMITTED","QUESTION",questionId,sessionId,occurredAt.toString(),payload)) {
+            return replay(eventStoreRepository.findByEventId("attempt:"+attemptId).orElseThrow(),questionId,sessionId,selectedOption,confidenceLevel,activeTimeMs,usedHelpVal);
+        }
+        boolean eligible="REAL_STUDY".equals(determinedOrigin) && isCorrect!=null && !usedHelpVal;
+        if(learningEvidenceService!=null) project(attemptId,questionId,occurredAt,isCorrect,determinedOrigin,confidenceLevel,usedHelpVal,prediction);
 
         // Trava 2: Gatilho por Erro Real ou Baixa Confiança/Dúvida (Nível <= 3)
         boolean shouldTriggerAnki = Boolean.FALSE.equals(isCorrect) || confidenceLevel <= 3 || chuteVal;
-        if (shouldTriggerAnki && ankiIntegrationService != null) {
+        if (eligible && shouldTriggerAnki && ankiIntegrationService != null) {
             try {
                 ankiIntegrationService.generateFromQuestionError(question, optionLetter, causaErroStr, sessionId);
             } catch (Exception ignored) {}
         }
 
         // Agendamento no Motor de Revisão Adaptativa Individualizada (Baseado em Nível de Retenção e Confiança)
-        if (revisionCalendarService != null) {
+        if (eligible && learningEvidenceService == null && revisionCalendarService != null) {
             try {
                 String origem = Boolean.FALSE.equals(isCorrect) ? "ERRO_QUESTAO" : (chuteVal ? "CHUTE_EDUCADO" : "PRATICA_RESOLUCAO");
                 revisionCalendarService.scheduleAdaptiveRevision(
@@ -268,7 +270,7 @@ public class AttemptSubmissionService {
         String prescricaoTexto = null;
         String veiculo = null;
 
-        if (Boolean.FALSE.equals(isCorrect) && mediaRoutingService != null) {
+        if (eligible && Boolean.FALSE.equals(isCorrect) && mediaRoutingService != null) {
             try {
                 var prescription = mediaRoutingService.evaluateRouting(null, question.getDiscipline(), question.getTopic(), sessionId);
                 if (prescription != null) {
@@ -285,8 +287,73 @@ public class AttemptSubmissionService {
                 bloqueioCognitivo, errosConsecutivos, prescricaoTexto, veiculo
         );
         result.setCorrectOption(question.getCorrectOption());
+        result.setAttemptId(attemptId);
         return result;
     }
+
+    @org.springframework.beans.factory.annotation.Autowired(required=false)
+    private LearningEvidenceService learningEvidenceService;
+
+    private void project(String id,String questionId,java.time.Instant occurredAt,Boolean correct,String origin,int confidence,boolean usedHelp,java.util.Map<String,Object> prediction) {
+        try { learningEvidenceService.projectAttempt(id,questionId,occurredAt,correct,origin,confidence,usedHelp,prediction); }
+        catch(RuntimeException e){throw new LearningProjectionPendingException(id,e);}
+    }
+    public static class LearningProjectionPendingException extends IllegalStateException {
+        private final String attemptId;
+        public LearningProjectionPendingException(String id,Throwable cause){super("Attempt persisted; learning projection pending. Retry the same attempt ID.",cause);attemptId=id;}
+        public String getAttemptId(){return attemptId;}
+    }
+    private boolean sameJson(String first,String second) {
+        try { return objectMapper.readTree(first).equals(objectMapper.readTree(second)); }
+        catch(com.fasterxml.jackson.core.JsonProcessingException e){throw new IllegalStateException("Invalid persisted annotation",e);}
+    }
+    private String requireUuid(String value) {
+        try { return java.util.UUID.fromString(value).toString(); }
+        catch(Exception e){ throw new IllegalArgumentException("Invalid attempt or annotation ID"); }
+    }
+    private String json(Object value) {
+        try { return objectMapper.writeValueAsString(value); }
+        catch(com.fasterxml.jackson.core.JsonProcessingException e){ throw new IllegalArgumentException("Invalid event payload",e); }
+    }
+    private com.fiscalstudy.backend.domain.AttemptResult replay(com.fiscalstudy.backend.domain.EventRecord event,String questionId,String sessionId,String option,int confidence,long activeTime,boolean help) {
+        try {
+            var n=objectMapper.readTree(event.getPayloadJson());
+            if(!event.getAggregateId().equals(questionId) || !java.util.Objects.equals(event.getSessionId(),sessionId) || !n.path("selectedOption").asText().equalsIgnoreCase(option==null?"":option.trim())) throw new AttemptConflictException("Attempt ID already belongs to a different submission");
+            if(n.path("confidenceLevel").asInt()!=confidence || n.path("activeTimeMs").asLong()!=activeTime || n.path("usedHelp").asBoolean()!=help) throw new AttemptConflictException("Attempt ID already belongs to different response data");
+            Boolean correct=n.hasNonNull("isCorrect")?n.get("isCorrect").asBoolean():null;
+            if(learningEvidenceService!=null) {
+                java.util.Map<String,Object> prediction=objectMapper.convertValue(n.path("memoryPrediction"),new com.fasterxml.jackson.core.type.TypeReference<java.util.Map<String,Object>>(){});
+                project(n.path("attemptId").asText(),questionId,java.time.Instant.parse(event.getOccurredAt()),correct,n.path("origin").asText(),n.path("confidenceLevel").asInt(),n.path("usedHelp").asBoolean(),prediction);
+            }
+            var result=new com.fiscalstudy.backend.domain.AttemptResult(correct,com.fiscalstudy.backend.domain.GabaritoStatus.valueOf(n.path("gabaritoStatus").asText()),n.path("concursoPoint").asInt());
+            result.setCorrectOption(n.path("correctOption").asText(null)); result.setAttemptId(n.path("attemptId").asText()); return result;
+        } catch(com.fasterxml.jackson.core.JsonProcessingException e){ throw new IllegalStateException("Persisted attempt payload is invalid",e); }
+    }
+    public java.util.Map<String,Object> getAttemptHistory(String questionId,String attemptId) {
+        attemptId=requireUuid(attemptId);
+        var event=eventStoreRepository.findByEventId("attempt:"+attemptId).orElseThrow(()->new IllegalArgumentException("Attempt not found"));
+        if(!questionId.equals(event.getAggregateId()))throw new AttemptConflictException("Attempt ownership does not match");
+        try {
+            var answer=objectMapper.readTree(event.getPayloadJson());
+            String target=attemptId;
+            var annotations=eventStoreRepository.getEventPayloads(event.getSessionId(),"ATTEMPT_ANNOTATED").stream().map(p->{try{return objectMapper.readTree(p);}catch(Exception e){throw new IllegalStateException("Invalid persisted annotation",e);}}).filter(n->target.equals(n.path("attemptId").asText())).toList();
+            return java.util.Map.of("answer",answer,"annotations",annotations,"origin",answer.path("origin").asText("UNVERIFIED_HISTORICAL"));
+        } catch(com.fasterxml.jackson.core.JsonProcessingException e){throw new IllegalStateException("Invalid persisted attempt",e);}
+    }
+    public java.util.Map<String,Object> annotateAttempt(String questionId,String attemptId,String annotationId,String sessionId,String causaErro) {
+        attemptId=requireUuid(attemptId); annotationId=requireUuid(annotationId);
+        if(causaErro==null || causaErro.isBlank() || causaErro.length()>2000) throw new IllegalArgumentException("Invalid error annotation");
+        var attempt=eventStoreRepository.findByEventId("attempt:"+attemptId).orElseThrow(()->new IllegalArgumentException("Attempt not found"));
+        if(!questionId.equals(attempt.getAggregateId()) || !java.util.Objects.equals(sessionId,attempt.getSessionId())) throw new AttemptConflictException("Attempt ownership does not match");
+        var data=java.util.Map.of("attemptId",attemptId,"annotationId",annotationId,"questionId",questionId,"causaErro",causaErro.trim(),"source","SELF_REPORTED");
+        String payload=json(data);
+        if(!eventStoreRepository.appendEventOnce("annotation:"+annotationId,"ATTEMPT_ANNOTATED","QUESTION",questionId,sessionId,java.time.Instant.now().toString(),payload)) {
+            var old=eventStoreRepository.findByEventId("annotation:"+annotationId).orElseThrow();
+            if(!sameJson(old.getPayloadJson(),payload) || !java.util.Objects.equals(old.getSessionId(),sessionId)) throw new AttemptConflictException("Annotation ID already exists with different content");
+        }
+        return java.util.Map.of("attemptId",attemptId,"annotationId",annotationId,"status","RECORDED");
+    }
+    public static class AttemptConflictException extends IllegalArgumentException { public AttemptConflictException(String message){super(message);} }
 
     private boolean isCertoErrado(Question question) {
         if (question == null || question.getOptions() == null) return false;

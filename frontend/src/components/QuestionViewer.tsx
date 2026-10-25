@@ -1,4 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { AttemptSubmission, annotateAttempt } from '../utils/attemptSubmission';
+import { cachedStudyPreferences } from '../utils/studyPreferences';
+import { handleKeyActivate } from '../utils/accessibility';
 import './QuestionViewer.css';
 import { CrossDomainBridgeModal } from './cognitive/CrossDomainBridgeModal';
 import { CognitiveLockModal } from './cognitive/CognitiveLockModal';
@@ -32,6 +35,7 @@ interface Question {
 }
 
 export interface AttemptFeedback {
+  attemptId: string;
   isCorrect: boolean | null;
   gabaritoStatus?: string;
   concursoPoint?: number;
@@ -128,6 +132,7 @@ export const METACON_FEEDBACK_OPTIONS: MetaconFeedbackOption[] = [
 ];
 
 export interface SessionAttemptHistoryItem {
+  attemptId: string;
   questionId: string;
   statement: string;
   discipline: string;
@@ -164,6 +169,8 @@ const QuestionViewer: React.FC = () => {
   const [confidence, setConfidence] = useState<number>(0);
   const [feedback, setFeedback] = useState<AttemptFeedback | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const pendingAttemptRef = useRef<AttemptSubmission | null>(null);
+  const submittingRef = useRef(false);
 
   // Configuração da Sessão Personalizada (Fase 8)
   const [concursos, setConcursos] = useState<ConcursoOption[]>([]);
@@ -174,7 +181,7 @@ const QuestionViewer: React.FC = () => {
   const [selectedAssunto, setSelectedAssunto] = useState<string>(() => sessionStorage.getItem('fiscalstudy_filter_assunto') || '');
   const [studyMode, setStudyMode] = useState<string>('LEARNING'); // LEARNING, EXAM, RETENTION, CREDIARIO
   const [includeAnswered, setIncludeAnswered] = useState<boolean>(false);
-  const [questionCountLimit, setQuestionCountLimit] = useState<number>(10);
+  const [questionCountLimit, setQuestionCountLimit] = useState<number>(() => cachedStudyPreferences().dailyQuestions);
   const [selectedCausaErro, setSelectedCausaErro] = useState<string>('');
   const [showSupportMaterial, setShowSupportMaterial] = useState<boolean>(true);
   const [sessionHistory, setSessionHistory] = useState<SessionAttemptHistoryItem[]>([]);
@@ -382,7 +389,7 @@ const QuestionViewer: React.FC = () => {
       const isInput = activeEl instanceof HTMLInputElement || activeEl instanceof HTMLTextAreaElement || activeEl?.getAttribute('contenteditable') === 'true';
       if (isInput) return;
 
-      if (!feedback && ['1', '2', '3', '4', '5'].includes(e.key)) {
+      if (!feedback && !pendingAttemptRef.current && ['1', '2', '3', '4', '5'].includes(e.key)) {
         setConfidence(Number(e.key));
       }
     };
@@ -391,7 +398,7 @@ const QuestionViewer: React.FC = () => {
   }, [feedback]);
 
   const handleSelectOption = (opt: string) => {
-    if (feedback) return;
+    if (feedback || pendingAttemptRef.current) return;
     if (selectedOption && selectedOption !== opt) {
       setOptionSwitchCount((prev) => prev + 1);
       const fromLetter = selectedOption.match(/^([A-E])\)?/)?.[1] || selectedOption.charAt(0);
@@ -542,6 +549,8 @@ const QuestionViewer: React.FC = () => {
   }, [selectedDiscipline]);
 
   const resetQuestionInteractions = () => {
+    pendingAttemptRef.current = null;
+    submittingRef.current = false;
     setFeedback(null);
     setSelectedOption(null);
     setConfidence(0);
@@ -775,7 +784,7 @@ const QuestionViewer: React.FC = () => {
       // calculamos os dados a partir do histórico para blindar a exibição contra latência de banco.
       if (!summaryData || summaryData.totalAnswered === 0) {
         let history = [...sessionHistory];
-        if (question && selectedOption && confidence > 0 && !history.some(h => h.questionId === question.questionId)) {
+        if (question && selectedOption && feedback?.attemptId && confidence > 0 && !history.some(h => h.questionId === question.questionId)) {
           const isCE = Array.isArray(question.options) && question.options.length === 2;
           let optLetter = selectedOption.match(/^([A-Ea-e])\)?/)?.[1]?.toUpperCase() || selectedOption.charAt(0).toUpperCase();
           if (isCE) {
@@ -783,6 +792,7 @@ const QuestionViewer: React.FC = () => {
             else if (selectedOption.toUpperCase().includes('ERR') || optLetter === 'E' || optLetter === 'B') optLetter = 'E';
           }
           history.push({
+            attemptId: feedback.attemptId,
             questionId: question.questionId,
             statement: question.statement,
             discipline: question.metadata?.discipline || selectedDiscipline || 'Geral',
@@ -791,9 +801,9 @@ const QuestionViewer: React.FC = () => {
             year: question.metadata?.year || 2024,
             options: [],
             selectedOption: optLetter,
-            isCorrect: feedback?.isCorrect ?? true,
+            isCorrect: feedback.isCorrect,
             gabaritoStatus: feedback?.gabaritoStatus || 'DEFINITIVO',
-            concursoPoint: feedback?.concursoPoint ?? 1,
+            concursoPoint: feedback.concursoPoint,
             confidenceLevel: confidence,
             activeTimeMs: Math.max(1200, activeTimeMs),
             tempoHesitacaoMs: 0,
@@ -856,7 +866,8 @@ const QuestionViewer: React.FC = () => {
   }, [lastFocusTime, sessionStarted, sessionEnded]);
 
   const handleSubmit = async () => {
-    if (!question || !selectedOption || confidence === 0 || isSubmitting) return;
+    if (!question || !selectedOption || confidence === 0 || isSubmitting || submittingRef.current || feedback) return;
+    submittingRef.current = true;
     setIsSubmitting(true);
 
     let finalActiveTime = Math.max(1200, activeTimeMs);
@@ -867,6 +878,8 @@ const QuestionViewer: React.FC = () => {
       }
     }
     
+    if (pendingAttemptRef.current) finalActiveTime = Number(pendingAttemptRef.current.payload.activeTimeMs);
+
     // Identificar questões de Certo ou Errado (Cebraspe)
     const isCE = Array.isArray(question.options) && question.options.length === 2;
 
@@ -914,10 +927,7 @@ const QuestionViewer: React.FC = () => {
       : (pensouContrario ? 'PENSAR_CONTRARIO' : (studyMode === 'EMERGENCY' ? 'BLOCO_EMERGENCIA_15MIN' : 'REGULAR'));
 
     try {
-      const response = await fetch(`/api/v1/questions/${question.questionId}/attempts`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      pendingAttemptRef.current ??= new AttemptSubmission({
           selectedOption: optionLetter,
           confidenceLevel: confidence,
           activeTimeMs: finalActiveTime,
@@ -928,23 +938,22 @@ const QuestionViewer: React.FC = () => {
           usedHelp: hasApoio,
           helpType: hasApoio ? 'MATERIAL_APOIO' : 'NENHUM',
           interventionType: currentIntervention,
+          origin: 'REAL_STUDY',
           ...bioPayload
-        })
-      });
-
-      if (response.ok) {
-        const result = await response.json();
+        });
+      const result = await pendingAttemptRef.current.send(question.questionId);
+      {
         setFeedback(result);
 
         const currentOptions = Array.isArray(question.options) 
           ? (typeof question.options[0] === 'string' ? (question.options as string[]) : (question.options as Option[]).map(o => `${o.label}) ${o.text}`))
           : [];
 
-        const defaultCausa = result.isCorrect 
-          ? (isChute ? 'CHUTE_EDUCADO' : 'SABIA_COM_CONVICCAO')
-          : (confidence === 5 ? 'SABIA_MAS_CONFUNDI' : '');
+        // Interaction heuristics and confidence do not establish an error's cause.
+        const defaultCausa = '';
 
         const historyItem: SessionAttemptHistoryItem = {
+          attemptId: result.attemptId,
           questionId: question.questionId,
           statement: question.statement,
           discipline: question.metadata?.discipline || 'Geral',
@@ -998,48 +1007,26 @@ const QuestionViewer: React.FC = () => {
       }
     } catch (error) {
       console.error("Failed to submit attempt:", error);
+      alert("Não foi possível confirmar a gravação. Reenvie a mesma tentativa. " + (error instanceof Error ? error.message : ""));
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };
 
   // Envia ou atualiza a causa do erro pós-feedback se o estudante selecionar (suporta ID da questão do histórico)
   const handleSelectCausaErroPostSubmission = async (code: string, targetQuestionId?: string) => {
-    setSelectedCausaErro(code);
     const qId = targetQuestionId || question?.questionId;
-    if (!qId) return;
-
-    setSessionHistory(prev => prev.map(item => {
-      if (item.questionId === qId) {
-        return { ...item, causaErro: code };
-      }
-      return item;
-    }));
-
+    const targetItem = sessionHistory.find(i => i.questionId === qId);
+    const attemptId = targetItem?.attemptId || feedback?.attemptId;
+    if (!qId || !attemptId) return;
     try {
-      const targetItem = sessionHistory.find(i => i.questionId === qId);
-      let optionLetter = 'A';
-      if (targetItem && targetItem.selectedOption) {
-        optionLetter = targetItem.selectedOption;
-      } else if (selectedOption) {
-        const matchLetter = selectedOption.match(/^([A-E])/i);
-        optionLetter = matchLetter ? matchLetter[1].toUpperCase() : selectedOption.charAt(0).toUpperCase();
-      }
-      await fetch(`/api/v1/questions/${qId}/attempts`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          selectedOption: optionLetter,
-          confidenceLevel: targetItem?.confidenceLevel || confidence || 3,
-          activeTimeMs: targetItem?.activeTimeMs || activeTimeMs,
-          sessionId,
-          causaErro: code,
-          naCordaBamba: targetItem?.naCordaBamba ?? naCordaBamba,
-          pensouContrario: targetItem?.pensouContrario ?? pensouContrario
-        })
-      });
-    } catch (e) {
-      console.error("Failed to register error cause:", e);
+      await annotateAttempt(qId, attemptId, sessionId, code);
+      if (qId === question?.questionId) setSelectedCausaErro(code);
+      setSessionHistory(prev => prev.map(item => item.attemptId === attemptId ? { ...item, causaErro: code } : item));
+      setAnsweredMap(prev => prev[qId] ? { ...prev, [qId]: { ...prev[qId], selectedCausaErro: code } } : prev);
+    } catch (error) {
+      alert('A anotação não foi salva: ' + (error instanceof Error ? error.message : 'falha de conexão'));
     }
   };
 
@@ -1118,6 +1105,7 @@ const QuestionViewer: React.FC = () => {
                 value={questionCountLimit}
                 onChange={(e) => setQuestionCountLimit(Number(e.target.value))}
               >
+                {![5, 10, 20, 50].includes(questionCountLimit) && <option value={questionCountLimit}>{questionCountLimit} Questões (Preferência pessoal)</option>}
                 <option value={5}>5 Questões (Sessão Rápida)</option>
                 <option value={10}>10 Questões (Padrão)</option>
                 <option value={20}>20 Questões (Aprofundamento)</option>
@@ -1735,7 +1723,7 @@ const QuestionViewer: React.FC = () => {
           </div>
         )}
 
-        <div className="options">
+        <div className="options" role="radiogroup" aria-label="Alternativas da questão">
           {optionsList.map((opt, idx) => {
             const isSelected = selectedOption === opt;
             const letter = isCertoErrado 
@@ -1744,7 +1732,11 @@ const QuestionViewer: React.FC = () => {
             const isUnverifiedGabarito = feedback?.gabaritoStatus === 'AUSENTE' || feedback?.gabaritoStatus === 'SOB_REVISAO';
             return (
               <div 
-                key={idx} 
+                key={idx}
+                role="radio"
+                aria-checked={isSelected}
+                tabIndex={feedback ? -1 : 0}
+                aria-label={`Alternativa ${letter}: ${opt.replace(/^([A-Ea-e])\)?\s*/, '')}`}
                 className={`option-card ${isSelected ? 'selected' : ''} ${feedback && isSelected ? (isUnverifiedGabarito ? 'selected' : (feedback.isCorrect ? 'correct' : 'incorrect')) : ''} ${feedback ? 'disabled' : ''}`}
                 onMouseEnter={() => {
                   if (firstHoverMs === null && !feedback) {
@@ -1752,8 +1744,13 @@ const QuestionViewer: React.FC = () => {
                   }
                 }}
                 onClick={() => handleSelectOption(opt)}
+                onKeyDown={(e) => {
+                  if (!feedback && !pendingAttemptRef.current) {
+                    handleKeyActivate(e, () => handleSelectOption(opt));
+                  }
+                }}
               >
-                <div className="option-marker">{letter}</div>
+                <div className="option-marker" aria-hidden="true">{letter}</div>
                 <div className="option-text">{opt.replace(/^([A-Ea-e])\)?\s*/, '')}</div>
               </div>
             );
@@ -1785,14 +1782,14 @@ const QuestionViewer: React.FC = () => {
         <div className="interaction-bar glass animate-fade-in">
           <div className="confidence-section">
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '4px' }}>
-              <span style={{ fontSize: '0.82rem', color: '#94a3b8', fontWeight: 600 }}>Nível de Certeza:</span>
+              <span id="qw-confidence-label" style={{ fontSize: '0.82rem', color: '#94a3b8', fontWeight: 600 }}>Nível de Certeza:</span>
               {selectedOption && confidence === 0 && (
-                <span style={{ fontSize: '0.75rem', color: '#f59e0b', fontWeight: 600, background: 'rgba(245, 158, 11, 0.1)', padding: '2px 8px', borderRadius: '4px' }}>
+                <span role="status" style={{ fontSize: '0.75rem', color: '#f59e0b', fontWeight: 600, background: 'rgba(245, 158, 11, 0.1)', padding: '2px 8px', borderRadius: '4px' }}>
                   Marque seu nível de certeza para responder
                 </span>
               )}
             </div>
-            <div className="confidence-buttons">
+            <div className="confidence-buttons" role="group" aria-labelledby="qw-confidence-label">
               {[
                 { lvl: 1, label: 'Chute' },
                 { lvl: 2, label: 'Baixa' },
@@ -1803,8 +1800,10 @@ const QuestionViewer: React.FC = () => {
                 <button 
                   key={lvl} 
                   type="button"
+                  aria-pressed={confidence === lvl}
+                  aria-label={`Nível de certeza ${lvl}: ${label}`}
                   className={`conf-btn ${confidence === lvl ? 'active' : ''}`}
-                  onClick={() => setConfidence(lvl)}
+                  onClick={() => !pendingAttemptRef.current && setConfidence(lvl)}
                   title={`Nível ${lvl} — ${label} (tecla ${lvl})`}
                 >
                   <span className="conf-num">{lvl}</span>
@@ -1837,6 +1836,7 @@ const QuestionViewer: React.FC = () => {
             <button 
               className="btn submit-btn" 
               disabled={!selectedOption || confidence === 0 || isSubmitting}
+              aria-busy={isSubmitting}
               onClick={handleSubmit}
               title={
                 !selectedOption 
@@ -1845,10 +1845,12 @@ const QuestionViewer: React.FC = () => {
                     ? 'Indique seu Nível de Confiança (1 a 5) para liberar o botão Responder' 
                     : isSubmitting 
                       ? 'Gravando resposta...' 
-                      : 'Confirmar resposta (Brier Score / Calibração)'
+                      : pendingAttemptRef.current
+                        ? 'Reenviar mesma tentativa para gravação'
+                        : 'Confirmar resposta (Brier Score / Calibração)'
               }
             >
-              {isSubmitting ? 'Gravando...' : 'Responder'}
+              {isSubmitting ? 'Gravando...' : pendingAttemptRef.current ? 'Reenviar tentativa' : 'Responder'}
             </button>
           </div>
         </div>
@@ -2227,15 +2229,18 @@ const QuestionViewer: React.FC = () => {
 
       {/* Modal de Detalhes da Matriz de Mídia */}
       {showMediaModal && mediaPrescription && (
-        <div className="modal-backdrop animate-fade-in" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
-          <div className="glass modal-card" style={{ maxWidth: 520, width: '92%', padding: '1.5rem', borderRadius: 12, background: '#0f172a', border: '1px solid #334155' }}>
+        <div className="modal-backdrop animate-fade-in" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }} onClick={() => setShowMediaModal(false)}>
+          <div className="glass modal-card" role="dialog" aria-modal="true" aria-labelledby="media-modal-title" style={{ maxWidth: 520, width: '92%', padding: '1.5rem', borderRadius: 12, background: '#0f172a', border: '1px solid #334155' }} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-              <h3 style={{ margin: 0, color: '#f8fafc', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span>{mediaPrescription.veiculo === 'VIDEOAULA' ? '🎥' : '📄'}</span>
+              <h3 id="media-modal-title" style={{ margin: 0, color: '#f8fafc', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span aria-hidden="true">{mediaPrescription.veiculo === 'VIDEOAULA' ? '🎥' : '📄'}</span>
                 <span>{mediaPrescription.titulo}</span>
               </h3>
               <button
+                type="button"
                 onClick={() => setShowMediaModal(false)}
+                aria-label="Fechar detalhes da mídia"
+                title="Fechar (Esc)"
                 style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '1.2rem', cursor: 'pointer' }}
               >
                 ✕

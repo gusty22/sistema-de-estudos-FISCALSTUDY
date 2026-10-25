@@ -53,7 +53,7 @@ public class UnifiedCognitiveArchitectureService {
         // =========================================================================
         // COMPONENTE 1: REGISTRO DE EVENTOS (Telemetria Histórica Imutável)
         // =========================================================================
-        List<EventRecord> attemptEvents = eventStoreRepository.getAllEvents("ANSWER_SUBMITTED");
+        List<EventRecord> attemptEvents = com.fiscalstudy.backend.application.LearningEventEligibility.personalEvents(eventStoreRepository.getAllEvents("ANSWER_SUBMITTED"));
         List<EventRecord> allEvents = eventStoreRepository.getAllEvents();
 
         UnifiedCognitiveStateDTO.EventStoreSummary eventSummary = new UnifiedCognitiveStateDTO.EventStoreSummary();

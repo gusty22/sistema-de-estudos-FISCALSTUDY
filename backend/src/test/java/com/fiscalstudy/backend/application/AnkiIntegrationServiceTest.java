@@ -35,6 +35,7 @@ class AnkiIntegrationServiceTest {
 
         jdbcTemplate = new JdbcTemplate(dataSource);
 
+        jdbcTemplate.execute("CREATE TABLE system_settings(setting_key TEXT PRIMARY KEY,setting_value TEXT NOT NULL,updated_at TEXT NOT NULL)");
         // Cria tabelas necessárias em memória
         jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS anki_flashcards (" +
                 "id TEXT PRIMARY KEY, session_id TEXT, concurso_id TEXT, disciplina TEXT NOT NULL, " +
@@ -69,7 +70,7 @@ class AnkiIntegrationServiceTest {
         assertNotNull(status);
         assertFalse(status.isConnected());
         assertEquals("http://127.0.0.1:8765", status.getEndpoint());
-        assertTrue(status.getMessage().contains("Anki não detectado"));
+        assertTrue(status.getMessage().contains("desativada"));
     }
 
     @Test
@@ -115,7 +116,7 @@ class AnkiIntegrationServiceTest {
                     "[\"A) Primeira opção de resposta " + i + "\", \"B) Segunda opção de resposta " + i + "\"]",
                     "A", "Direito Tributário", "Competência");
             jdbcTemplate.update("INSERT INTO event_store (aggregate_id, event_type, session_id, payload_json) VALUES (?, 'ANSWER_SUBMITTED', 'session-end-01', ?)",
-                    qId, "{\"selectedOption\":\"A\",\"isCorrect\":true}");
+                    qId, "{\"selectedOption\":\"A\",\"isCorrect\":true,\"origin\":\"REAL_STUDY\"}");
         }
 
         List<AnkiFlashcardDTO> batch = ankiService.generateSessionBatch15("concurso-araguari", "session-end-01");
@@ -153,14 +154,16 @@ class AnkiIntegrationServiceTest {
     @Test
     @DisplayName("toggleAutoSync e isAutoSyncEnabled devem controlar o estado do daemon de sincronização")
     void testAutoSyncControls() {
-        assertTrue(ankiService.isAutoSyncEnabled(), "Auto-sync deve iniciar ativo por padrão");
+        assertFalse(ankiService.isAutoSyncEnabled(), "Auto-sync inicia desligado sem consentimento");
 
         boolean toggled = ankiService.toggleAutoSync();
-        assertFalse(toggled);
-        assertFalse(ankiService.isAutoSyncEnabled());
+        assertTrue(toggled);
+        assertTrue(ankiService.isAutoSyncEnabled());
 
         ankiService.setAutoSyncEnabled(true);
         assertTrue(ankiService.isAutoSyncEnabled());
+        var restarted=new AnkiIntegrationService(jdbcTemplate,eventStoreRepository,objectMapper);
+        assertTrue(restarted.isAutoSyncEnabled(),"Consentimento persiste após recriar serviço");
     }
 
     @Test
@@ -169,7 +172,7 @@ class AnkiIntegrationServiceTest {
         AnkiConnectStatusDTO status = ankiService.checkConnection();
         assertNotNull(status);
         assertNotNull(status.getEndpoint());
-        assertTrue(status.isAutoSyncActive());
+        assertFalse(status.isAutoSyncActive());
         assertEquals(0, status.getPendingQueueCount());
     }
 

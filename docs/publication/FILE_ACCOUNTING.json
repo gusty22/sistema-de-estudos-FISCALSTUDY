@@ -1,0 +1,842 @@
+{
+  "baseCommit": "c26ee20352fc1b6ace0c58be4f24a41a1092fbf0",
+  "originalFiles": 118,
+  "allOriginalHashesPreserved": true,
+  "entries": [
+    {
+      "file": "analytics-engine/R/export_results.R",
+      "area": "analytics",
+      "sha256": "b46dc0f3341e07e686ed293a5ff7964e6ad558a47c7a07abc90543a669aa393a",
+      "destination": "analytics-engine/R/export_results.R",
+      "publication": "area-branch"
+    },
+    {
+      "file": "analytics-engine/run_analytics.R",
+      "area": "analytics",
+      "sha256": "454ebb908c2f73fec7c0ba8d9856ce18411b772326827c5d911ae21a65f51158",
+      "destination": "analytics-engine/run_analytics.R",
+      "publication": "area-branch"
+    },
+    {
+      "file": "analytics-engine/tests/test_runner.R",
+      "area": "analytics",
+      "sha256": "dfb93035918512d1ec86088427afa409d314e283c45bab743a85fc10a0352331",
+      "destination": "analytics-engine/tests/test_runner.R",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/application/AnalyticsBridgeService.java",
+      "area": "backend",
+      "sha256": "6b6509ca53efefeebfb26e6959ccef190c4e70bbeeedc33779a09e9a91e5adfd",
+      "destination": "backend/src/main/java/com/fiscalstudy/backend/application/AnalyticsBridgeService.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/application/AnalyticsProjectionService.java",
+      "area": "backend",
+      "sha256": "3730f9a0870878e3e816fe4579bada10b4a16464db9c320690b670152e79359c",
+      "destination": "backend/src/main/java/com/fiscalstudy/backend/application/AnalyticsProjectionService.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/application/AnkiIntegrationService.java",
+      "area": "backend",
+      "sha256": "539ed7e413e7af1d25deca397fb6d1015fd5964087073843d46d528bc5167ed0",
+      "destination": "backend/src/main/java/com/fiscalstudy/backend/application/AnkiIntegrationService.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/application/AttemptSubmissionService.java",
+      "area": "backend",
+      "sha256": "55634f6384de4dc5195abe7df7ffe2d6cf659a6b3c25ee86b37a239d4b5c31ab",
+      "destination": "backend/src/main/java/com/fiscalstudy/backend/application/AttemptSubmissionService.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/application/DigitalTwinService.java",
+      "area": "backend",
+      "sha256": "9b20397237a06d05058f2d3cd65d6de58b964e4e044a6f681dadc912fb61887b",
+      "destination": "backend/src/main/java/com/fiscalstudy/backend/application/DigitalTwinService.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/application/PerformanceIntelligenceService.java",
+      "area": "backend",
+      "sha256": "9d6c82453f8269d2d56a25ef0dc81b42a424c4396633868bd7998a613a86d812",
+      "destination": "backend/src/main/java/com/fiscalstudy/backend/application/PerformanceIntelligenceService.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/application/QuestionBankService.java",
+      "area": "backend",
+      "sha256": "fcb0bc2054e440fd3c856a560403d0960c24c684228d1c490283954b954d1181",
+      "destination": "backend/src/main/java/com/fiscalstudy/backend/application/QuestionBankService.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/application/QuestionHistoryService.java",
+      "area": "backend",
+      "sha256": "eda9f05b60c97d34f453551468e3f1541cedb14b3f202e49f5f4ec7bdaae7fdb",
+      "destination": "backend/src/main/java/com/fiscalstudy/backend/application/QuestionHistoryService.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/application/RevisionCalendarService.java",
+      "area": "backend",
+      "sha256": "9eef0581b2a83339c2626f726a27e61101ab19fe6bb261fe4acfacc46216d786",
+      "destination": "backend/src/main/java/com/fiscalstudy/backend/application/RevisionCalendarService.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/application/RobinHoodCycleService.java",
+      "area": "backend",
+      "sha256": "ee5f8c886c17e94bcbb9e8e2300f3c6c7f40eb857c8de3ff746dc3496b451e29",
+      "destination": "backend/src/main/java/com/fiscalstudy/backend/application/RobinHoodCycleService.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/application/StagingDatabaseService.java",
+      "area": "backend",
+      "sha256": "eec18fda969372a9b97671c82fb64f16cdd2d136a2c2fc3a3a38743420492112",
+      "destination": "backend/src/main/java/com/fiscalstudy/backend/application/StagingDatabaseService.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/application/StrategicSimuladoService.java",
+      "area": "backend",
+      "sha256": "a129c542b86fc4002f1a07d0c8e5d78194b5a91ff7d8522b2ae9de4144467a5d",
+      "destination": "backend/src/main/java/com/fiscalstudy/backend/application/StrategicSimuladoService.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/application/StrategicSummaryService.java",
+      "area": "backend",
+      "sha256": "282db7bcfa99745778cf74df099e337b76f60fb5e782b7be4df0351c0e80eb13",
+      "destination": "backend/src/main/java/com/fiscalstudy/backend/application/StrategicSummaryService.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/application/StudentKnowledgeStateService.java",
+      "area": "backend",
+      "sha256": "5f3553a65de0a1b3f1fb2501b280783720252697c655a23a319a6e872966dae0",
+      "destination": "backend/src/main/java/com/fiscalstudy/backend/application/StudentKnowledgeStateService.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/application/StudentRoutineService.java",
+      "area": "backend",
+      "sha256": "22d4bbf2ec54bf6897d937b5e2868733a1b88ba4451b728f6fa2864f9c60e48e",
+      "destination": "backend/src/main/java/com/fiscalstudy/backend/application/StudentRoutineService.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/application/StudyAnomalyDetectionService.java",
+      "area": "backend",
+      "sha256": "18d4715dcedaf1650ba0c49420de51b9eecd0d83fc708b7a520820ae87c71c13",
+      "destination": "backend/src/main/java/com/fiscalstudy/backend/application/StudyAnomalyDetectionService.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/application/StudyMaterialService.java",
+      "area": "backend",
+      "sha256": "8b9db7071559154def285df62d27e5991351ac86920f01c96f6dfed5c28ce835",
+      "destination": "backend/src/main/java/com/fiscalstudy/backend/application/StudyMaterialService.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/application/StudySessionService.java",
+      "area": "backend",
+      "sha256": "aa38fed9ddef3eda8224a6bf72e166dfc9637c7e66a621d93689c06eaf584ce4",
+      "destination": "backend/src/main/java/com/fiscalstudy/backend/application/StudySessionService.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/application/SystemSettingsService.java",
+      "area": "backend",
+      "sha256": "2d3d89306c8278f47cef1672a6d2a5bd1ec581dce97c6d783fba051416eaa598",
+      "destination": "backend/src/main/java/com/fiscalstudy/backend/application/SystemSettingsService.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/application/cognitive/UnifiedCognitiveArchitectureService.java",
+      "area": "backend",
+      "sha256": "74310cb3af4507f8901f90bc90bc524d3e9e98188b736145a2f41b609ac108b1",
+      "destination": "backend/src/main/java/com/fiscalstudy/backend/application/cognitive/UnifiedCognitiveArchitectureService.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/domain/AttemptResult.java",
+      "area": "backend",
+      "sha256": "5a8bc4b7ec1d4c379feca748c69432f3630d30402c3732ef84550184feace9fb",
+      "destination": "backend/src/main/java/com/fiscalstudy/backend/domain/AttemptResult.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/domain/EventStoreRepository.java",
+      "area": "backend",
+      "sha256": "4471ec0c43c8dc1b52d2972cbba7525ece94622d09ffb6842c4ca13d3393f81b",
+      "destination": "backend/src/main/java/com/fiscalstudy/backend/domain/EventStoreRepository.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/domain/cognitive/FsrsEngine.java",
+      "area": "backend",
+      "sha256": "8046dafcbd040821a5ed76bf0c38687070bffcf727d0ebef0c15458c230acce3",
+      "destination": "backend/src/main/java/com/fiscalstudy/backend/domain/cognitive/FsrsEngine.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/domain/cognitive/FsrsParameters.java",
+      "area": "backend",
+      "sha256": "01caba80fb2fe745a8a90cac88b189f46d48d70005640dc72ee2d488fcc104f4",
+      "destination": "backend/src/main/java/com/fiscalstudy/backend/domain/cognitive/FsrsParameters.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/infrastructure/in/web/AnkiController.java",
+      "area": "backend",
+      "sha256": "d1514c5324be9a588837fb00f025c55c72c627b974a25261d537457cf050ea6b",
+      "destination": "backend/src/main/java/com/fiscalstudy/backend/infrastructure/in/web/AnkiController.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/infrastructure/in/web/QuestionController.java",
+      "area": "backend",
+      "sha256": "9e62832ad92c36b1434c25150ab59a3fbd8321d25916416d7e8e291c30533191",
+      "destination": "backend/src/main/java/com/fiscalstudy/backend/infrastructure/in/web/QuestionController.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/infrastructure/in/web/SessionController.java",
+      "area": "backend",
+      "sha256": "6c5c45f4209dd5e332192c12670b874661b1ea0a16b713c4213ac31902d712c2",
+      "destination": "backend/src/main/java/com/fiscalstudy/backend/infrastructure/in/web/SessionController.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/infrastructure/in/web/WebConfig.java",
+      "area": "backend",
+      "sha256": "90b4e912fe1f2a542d0d44c72c83a328585c2a57841da1904ff65e15dcccab2a",
+      "destination": "backend/src/main/java/com/fiscalstudy/backend/infrastructure/in/web/WebConfig.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/infrastructure/out/persistence/EventStoreRepositoryImpl.java",
+      "area": "backend",
+      "sha256": "4d1ee905a337c34c5e0aab8e6607ceaa5f6e9048f504df9d4cf45d77aa50ba90",
+      "destination": "backend/src/main/java/com/fiscalstudy/backend/infrastructure/out/persistence/EventStoreRepositoryImpl.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/infrastructure/out/persistence/QuestionRepositoryImpl.java",
+      "area": "backend",
+      "sha256": "b63a5262a560f03d8aa63b0c9fd33d627429cebdab6e4ed05ce67a8cabe24c36",
+      "destination": "backend/src/main/java/com/fiscalstudy/backend/infrastructure/out/persistence/QuestionRepositoryImpl.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/infrastructure/out/persistence/StudentRoutineRepositoryImpl.java",
+      "area": "backend",
+      "sha256": "9e6c6daf2fc452ef1df6625ff992e4e1bff717fb50308006333a1525a86b437c",
+      "destination": "backend/src/main/java/com/fiscalstudy/backend/infrastructure/out/persistence/StudentRoutineRepositoryImpl.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/main/resources/application.yml",
+      "area": "database",
+      "sha256": "d951307a7f840237ff8ab9bfe90f00344e50c69625f2fb88e69f926c18ee9956",
+      "destination": "backend/src/main/resources/application.yml",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/main/resources/schema.sql",
+      "area": "database",
+      "sha256": "13477fee63fc3cf4e97e870210ae2f7f839029a2f4eb09dc580e1277e601e726",
+      "destination": "backend/src/main/resources/schema.sql",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/test/java/com/fiscalstudy/backend/application/AnkiIntegrationServiceTest.java",
+      "area": "backend",
+      "sha256": "14b98dd8a14240491defe354d4b9e6fa86e3ad8f2edcd851eb6928f525b0563d",
+      "destination": "backend/src/test/java/com/fiscalstudy/backend/application/AnkiIntegrationServiceTest.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/test/java/com/fiscalstudy/backend/application/QuestionHistoryServiceTest.java",
+      "area": "backend",
+      "sha256": "45c960efd8b6ddcadd75278084b7d2bbd36d720c7ce9a01a1f7694422c15b23a",
+      "destination": "backend/src/test/java/com/fiscalstudy/backend/application/QuestionHistoryServiceTest.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/test/java/com/fiscalstudy/backend/application/RevisionCalendarServiceTest.java",
+      "area": "backend",
+      "sha256": "a431ba2d33d496cb7ca713c9ef1b9138f1a9571ff7a1cce4822353203336562d",
+      "destination": "backend/src/test/java/com/fiscalstudy/backend/application/RevisionCalendarServiceTest.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/test/java/com/fiscalstudy/backend/application/StagingDatabaseServiceTest.java",
+      "area": "backend",
+      "sha256": "1dedc477250146281b7c14a40b4cd81e93d47f16ad397f609a5e8d44d632fba4",
+      "destination": "backend/src/test/java/com/fiscalstudy/backend/application/StagingDatabaseServiceTest.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/test/java/com/fiscalstudy/backend/application/StrategicSummaryHybridPipelineTest.java",
+      "area": "backend",
+      "sha256": "79dc1985e27f592ebde4dc79066de550c90f7ed26975338fd6a1d0daf9c6c532",
+      "destination": "backend/src/test/java/com/fiscalstudy/backend/application/StrategicSummaryHybridPipelineTest.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/test/java/com/fiscalstudy/backend/application/StudentKnowledgeStateServiceTest.java",
+      "area": "backend",
+      "sha256": "484be3d316c49fce8b633a517523123a6404a79d72a84189e8172ebffdec1b6f",
+      "destination": "backend/src/test/java/com/fiscalstudy/backend/application/StudentKnowledgeStateServiceTest.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/test/java/com/fiscalstudy/backend/application/StudyAnomalyDetectionServiceTest.java",
+      "area": "backend",
+      "sha256": "461ceff16f5d561a33731a1840a8c81f133fd7979d1e27889692385c44974dfe",
+      "destination": "backend/src/test/java/com/fiscalstudy/backend/application/StudyAnomalyDetectionServiceTest.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/test/java/com/fiscalstudy/backend/application/cognitive/UnifiedCognitiveArchitectureTest.java",
+      "area": "backend",
+      "sha256": "998038c252dc447046dfc7571369e6e909f6ba0d984b563e1780e47d31432bfe",
+      "destination": "backend/src/test/java/com/fiscalstudy/backend/application/cognitive/UnifiedCognitiveArchitectureTest.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/test/java/com/fiscalstudy/backend/infrastructure/in/web/ActiveTimeAndConfidenceIntegrationTest.java",
+      "area": "backend",
+      "sha256": "40e7a99867dae9d121ea85f62f5850db9a41556c0999b81ba5be9e141e15f635",
+      "destination": "backend/src/test/java/com/fiscalstudy/backend/infrastructure/in/web/ActiveTimeAndConfidenceIntegrationTest.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/test/java/com/fiscalstudy/backend/infrastructure/in/web/AnalyticsControllerTest.java",
+      "area": "backend",
+      "sha256": "e3eb7c234740a8313de753bbadb3ef8d373e464660823d1b318e831d8098dd17",
+      "destination": "backend/src/test/java/com/fiscalstudy/backend/infrastructure/in/web/AnalyticsControllerTest.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/test/java/com/fiscalstudy/backend/infrastructure/in/web/AnalyticsExportIntegrationTest.java",
+      "area": "backend",
+      "sha256": "d3dfc15180424e0233388dbbc808137c785dd8c428e1e93d8ca54e1dabc56762",
+      "destination": "backend/src/test/java/com/fiscalstudy/backend/infrastructure/in/web/AnalyticsExportIntegrationTest.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/test/java/com/fiscalstudy/backend/infrastructure/in/web/IngestionControllerTest.java",
+      "area": "backend",
+      "sha256": "5974a1b08cba9a75fa1675399fb5bc406a70a90ca1177b3178ba1040568756ff",
+      "destination": "backend/src/test/java/com/fiscalstudy/backend/infrastructure/in/web/IngestionControllerTest.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/test/java/com/fiscalstudy/backend/infrastructure/in/web/QuestionControllerTest.java",
+      "area": "backend",
+      "sha256": "f684803207ee0848c0567394da9817e8c6cdb98d8a603c6d45f0c89cf27f059e",
+      "destination": "backend/src/test/java/com/fiscalstudy/backend/infrastructure/in/web/QuestionControllerTest.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/test/java/com/fiscalstudy/backend/infrastructure/in/web/RoutineAndStudyIntegrationTest.java",
+      "area": "backend",
+      "sha256": "ce017846bc0afc4eaca23633bfef404d7a84feaa601b56e516251b3e1935d939",
+      "destination": "backend/src/test/java/com/fiscalstudy/backend/infrastructure/in/web/RoutineAndStudyIntegrationTest.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/test/resources/application.yml",
+      "area": "database",
+      "sha256": "2862034543d91dca918ef7a2309dd3a4eed2531e133bf309376e5504a5a84a0c",
+      "destination": "backend/src/test/resources/application.yml",
+      "publication": "area-branch"
+    },
+    {
+      "file": "frontend/package.json",
+      "area": "frontend",
+      "sha256": "00974cf82400b48942540a6bb8a01d0fcd27500dc999967c9124b298417fbf28",
+      "destination": "frontend/package.json",
+      "publication": "area-branch"
+    },
+    {
+      "file": "frontend/src/App.tsx",
+      "area": "frontend",
+      "sha256": "d9d3b0042e8383e9e1a9d95709398e263ce0881e4e8eff4da1998926ae364d49",
+      "destination": "frontend/src/App.tsx",
+      "publication": "area-branch"
+    },
+    {
+      "file": "frontend/src/components/QuestionViewer.tsx",
+      "area": "frontend",
+      "sha256": "425757e3f8294a3565793e6dbb239139fa1ff05bf63eef415937ab6913b9da30",
+      "destination": "frontend/src/components/QuestionViewer.tsx",
+      "publication": "area-branch"
+    },
+    {
+      "file": "frontend/src/components/anki/CuradoriaAnki.tsx",
+      "area": "frontend",
+      "sha256": "6a4eb14da30656e3cdbe2eda2b09d3b123e0a0d48cbf9fcabbcb64726c7470bc",
+      "destination": "frontend/src/components/anki/CuradoriaAnki.tsx",
+      "publication": "area-branch"
+    },
+    {
+      "file": "frontend/src/components/configuracoes/ConfiguracoesAdminView.tsx",
+      "area": "frontend",
+      "sha256": "60afd23ee1b70914944634047bcc37b0917aa6ee3a8853ff76f87848040bf1e9",
+      "destination": "frontend/src/components/configuracoes/ConfiguracoesAdminView.tsx",
+      "publication": "area-branch"
+    },
+    {
+      "file": "frontend/src/components/edital/MotorParetoEditalModal.tsx",
+      "area": "frontend",
+      "sha256": "f12eca57e19cfca874335a6cd7fbe33855e679a89312e62a8e1c4aca6fef1f9c",
+      "destination": "frontend/src/components/edital/MotorParetoEditalModal.tsx",
+      "publication": "area-branch"
+    },
+    {
+      "file": "frontend/src/components/ingestion/AssistenteImportacaoWizard.tsx",
+      "area": "frontend",
+      "sha256": "2a76ededfe7ca99845f56ed2f4fddefcf373641dccf7571632bc6e89cc17956d",
+      "destination": "frontend/src/components/ingestion/AssistenteImportacaoWizard.tsx",
+      "publication": "area-branch"
+    },
+    {
+      "file": "frontend/src/components/ingestion/AuditCockpit.tsx",
+      "area": "frontend",
+      "sha256": "418809619287c8851decbaef6685fa3afd71c319f9cc6c81f9ec3cd23a41e192",
+      "destination": "frontend/src/components/ingestion/AuditCockpit.tsx",
+      "publication": "area-branch"
+    },
+    {
+      "file": "frontend/src/components/ingestion/ImportStudio.tsx",
+      "area": "frontend",
+      "sha256": "5b5e48febf7a0f8d104d0afbf5f05badeaca5069c3d7e1964f724c559879fe14",
+      "destination": "frontend/src/components/ingestion/ImportStudio.tsx",
+      "publication": "area-branch"
+    },
+    {
+      "file": "frontend/src/components/ingestion/QualidadeBancoQuestoes.tsx",
+      "area": "frontend",
+      "sha256": "05823f303cc832edb6e3751b813aa14262c15320c5bfc561bc298aea8cfb1250",
+      "destination": "frontend/src/components/ingestion/QualidadeBancoQuestoes.tsx",
+      "publication": "area-branch"
+    },
+    {
+      "file": "frontend/src/components/onboarding/AssistenteObjetivoWizard.tsx",
+      "area": "frontend",
+      "sha256": "dc5398ba7a69469782664b5e119dd082e8d874f58ed5a6ccc9bac04ee6e2052f",
+      "destination": "frontend/src/components/onboarding/AssistenteObjetivoWizard.tsx",
+      "publication": "area-branch"
+    },
+    {
+      "file": "frontend/src/components/questoes/BancoQuestoes.tsx",
+      "area": "frontend",
+      "sha256": "9232cfd21bb9f5dbe25742d8baab1266365970293c5e10ca9617a2cc95398235",
+      "destination": "frontend/src/components/questoes/BancoQuestoes.tsx",
+      "publication": "area-branch"
+    },
+    {
+      "file": "frontend/src/components/questoes/ResolucaoQuestaoModal.tsx",
+      "area": "frontend",
+      "sha256": "485d8c8c06fcc2ab41fee08eebc424f7fd6e54f68265b97bfb9b60153799c77b",
+      "destination": "frontend/src/components/questoes/ResolucaoQuestaoModal.tsx",
+      "publication": "area-branch"
+    },
+    {
+      "file": "frontend/src/components/timer/StudyTimerFab.tsx",
+      "area": "frontend",
+      "sha256": "298b433a44283d81adf40658a66341acd76d43e79cc057c09e333e1a3c8f1404",
+      "destination": "frontend/src/components/timer/StudyTimerFab.tsx",
+      "publication": "area-branch"
+    },
+    {
+      "file": "frontend/src/index.css",
+      "area": "frontend",
+      "sha256": "287bf4d21009fe5f78cdf59bce8a71783e76344c9563cfc4042d70900c2b56be",
+      "destination": "frontend/src/index.css",
+      "publication": "area-branch"
+    },
+    {
+      "file": "ingestion/src/pipeline/batch_processor.py",
+      "area": "ingestion",
+      "sha256": "03a87d8847e9af16265bf06c348f417314cd65f01906e3fc4009273497d4ff53",
+      "destination": "ingestion/src/pipeline/batch_processor.py",
+      "publication": "area-branch"
+    },
+    {
+      "file": "ingestion/src/pipeline/inventory_manager.py",
+      "area": "ingestion",
+      "sha256": "d60237fb9a9b888c2e6635dcdb473bb567a7dcbc30cb9b5ca9e2cd5f5c8143ca",
+      "destination": "ingestion/src/pipeline/inventory_manager.py",
+      "publication": "area-branch"
+    },
+    {
+      "file": "tests/test_golden_set_q15.py",
+      "area": "ingestion",
+      "sha256": "3664f83e475d899076f0b5f15acad493af8d2b9bda375117a4df3997ce57d138",
+      "destination": "tests/test_golden_set_q15.py",
+      "publication": "area-branch"
+    },
+    {
+      "file": "tests/test_pipeline_resilience.py",
+      "area": "ingestion",
+      "sha256": "ba0f335943d1a0da5d37d3d736e5f360a602ed64848ff1325a8c787ed9df5dd8",
+      "destination": "tests/test_pipeline_resilience.py",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/application/AttemptAnnotationView.java",
+      "area": "backend",
+      "sha256": "841b287c1dfac8780da81b6668526b3bf866ecf59f38914c00084d914b64d955",
+      "destination": "backend/src/main/java/com/fiscalstudy/backend/application/AttemptAnnotationView.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/application/LearningEventEligibility.java",
+      "area": "backend",
+      "sha256": "002f52ddbcd190e43233282ef2a14c37c07b872a022eb33f41da5e6cf23f32df",
+      "destination": "backend/src/main/java/com/fiscalstudy/backend/application/LearningEventEligibility.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/application/LearningEvidenceService.java",
+      "area": "backend",
+      "sha256": "733de15935c2486568b69476198bdd334791e3f864f637e47d09ea4f6ead4bde",
+      "destination": "backend/src/main/java/com/fiscalstudy/backend/application/LearningEvidenceService.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/application/QuestionClassificationService.java",
+      "area": "backend",
+      "sha256": "ecb2d9ca44a273d322959749cf7728b7c217d084c591eae56ece9e5e11d71b2d",
+      "destination": "backend/src/main/java/com/fiscalstudy/backend/application/QuestionClassificationService.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/infrastructure/config/AnalyticsPaths.java",
+      "area": "backend",
+      "sha256": "a1ba727d5903bbf64e4aa981a3ffe4e54d84ff5c19a10f9bdda326c626beb206",
+      "destination": "backend/src/main/java/com/fiscalstudy/backend/infrastructure/config/AnalyticsPaths.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/infrastructure/config/DatabasePaths.java",
+      "area": "database",
+      "sha256": "1c5bb978b2135f1df4dcd2472f3c1a1cdc36b92a57ea9071eb48cdb8aafbc2b4",
+      "destination": "backend/src/main/java/com/fiscalstudy/backend/infrastructure/config/DatabasePaths.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/infrastructure/config/SchemaMigration.java",
+      "area": "database",
+      "sha256": "f5fa3f4a7eefec6cb9650f351a3c703ccbaa7e9cb7c7984fc2a1c3f9863765d0",
+      "destination": "backend/src/main/java/com/fiscalstudy/backend/infrastructure/config/SchemaMigration.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/infrastructure/config/SqlitePersistenceConfiguration.java",
+      "area": "database",
+      "sha256": "de1f488389056104ba4b25ba8c042a444f7e4e6520c8a0a513642d50eb098049",
+      "destination": "backend/src/main/java/com/fiscalstudy/backend/infrastructure/config/SqlitePersistenceConfiguration.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/infrastructure/config/SqliteRecovery.java",
+      "area": "database",
+      "sha256": "3d4c5adebea984dba116130d6161322e4a0c674d0c64421d063d24194e1fbbf7",
+      "destination": "backend/src/main/java/com/fiscalstudy/backend/infrastructure/config/SqliteRecovery.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/infrastructure/config/StagingSchemaMigration.java",
+      "area": "database",
+      "sha256": "9f107b05897f2169af7e41af43a69c635ed2d6225a6125ea4600584ba4963cec",
+      "destination": "backend/src/main/java/com/fiscalstudy/backend/infrastructure/config/StagingSchemaMigration.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/infrastructure/in/web/LocalAccessFilter.java",
+      "area": "backend",
+      "sha256": "e9f4d65feb4f73c90ebe19fafdb590dbef467b0e60f2f74c0fea37578077bf41",
+      "destination": "backend/src/main/java/com/fiscalstudy/backend/infrastructure/in/web/LocalAccessFilter.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/infrastructure/in/web/QuestionClassificationController.java",
+      "area": "backend",
+      "sha256": "ea1244ef6b014a167da8832d80776dfc9f7f594e0c887c2c82a6bd1710ec6ec6",
+      "destination": "backend/src/main/java/com/fiscalstudy/backend/infrastructure/in/web/QuestionClassificationController.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/main/java/com/fiscalstudy/backend/infrastructure/process/BoundedProcess.java",
+      "area": "backend",
+      "sha256": "b52a4457266f1a4c0c295b4b84e5de1fad3e2da8180db884472015f1eab1ffde",
+      "destination": "backend/src/main/java/com/fiscalstudy/backend/infrastructure/process/BoundedProcess.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/main/resources/application-isolated.yml",
+      "area": "database",
+      "sha256": "532b4f8cb2836e19b6a5d2a7f775c2845bf328af165a4c26b8f38a606ae91058",
+      "destination": "backend/src/main/resources/application-isolated.yml",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/main/resources/staging-schema.sql",
+      "area": "database",
+      "sha256": "3d9aa2ef11b6ff5b15fa80dc1fc6ae56b818a2fcb09897c25e661ca2ff094af9",
+      "destination": "backend/src/main/resources/staging-schema.sql",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/test/java/com/fiscalstudy/backend/application/AnkiPrivacyPolicyTest.java",
+      "area": "backend",
+      "sha256": "0ac839b941020a2859e057c4a694bce095dab652b495e88766e5ef7e24380d66",
+      "destination": "backend/src/test/java/com/fiscalstudy/backend/application/AnkiPrivacyPolicyTest.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/test/java/com/fiscalstudy/backend/application/AttemptIdentityRegressionTest.java",
+      "area": "backend",
+      "sha256": "f2cb7ed3eb95be4a3e219709c61f5752c11f92588cd188edbf5d3eb34d4b2b8b",
+      "destination": "backend/src/test/java/com/fiscalstudy/backend/application/AttemptIdentityRegressionTest.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/test/java/com/fiscalstudy/backend/application/LearningEvidenceServiceTest.java",
+      "area": "backend",
+      "sha256": "175a119e458b49ccdddc4a6771a8dd4b4c4abf95e7086670682941ed7bb71efd",
+      "destination": "backend/src/test/java/com/fiscalstudy/backend/application/LearningEvidenceServiceTest.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/test/java/com/fiscalstudy/backend/application/QuestionClassificationServiceTest.java",
+      "area": "backend",
+      "sha256": "7a734a5d609e6eebdd35abe8d5b7d470a5751a09b6ff857048887812b47d8dbc",
+      "destination": "backend/src/test/java/com/fiscalstudy/backend/application/QuestionClassificationServiceTest.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/test/java/com/fiscalstudy/backend/application/RoutineBudgetRegressionTest.java",
+      "area": "backend",
+      "sha256": "cce489e34445a2fe790a9218e491c9ad9bf73560fd9a0357ad0fbbb939bd57af",
+      "destination": "backend/src/test/java/com/fiscalstudy/backend/application/RoutineBudgetRegressionTest.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/test/java/com/fiscalstudy/backend/domain/cognitive/FsrsReferenceConformanceTest.java",
+      "area": "backend",
+      "sha256": "f7e96188577dc816ce4057c72104123e674ad5ae0df2720d64df416ec86f40ce",
+      "destination": "backend/src/test/java/com/fiscalstudy/backend/domain/cognitive/FsrsReferenceConformanceTest.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/test/java/com/fiscalstudy/backend/infrastructure/config/PersistenceContractTest.java",
+      "area": "backend",
+      "sha256": "e172b22a72de0b9b2be8875bab69641e27ddb7681b6fcf9730dde716b5af9041",
+      "destination": "backend/src/test/java/com/fiscalstudy/backend/infrastructure/config/PersistenceContractTest.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/test/java/com/fiscalstudy/backend/infrastructure/config/SchemaBootstrapIntegrationTest.java",
+      "area": "backend",
+      "sha256": "6ccf45a0a255c7132804133b01d5d110cb3a47070faadbc0624d24d62bc2dbcc",
+      "destination": "backend/src/test/java/com/fiscalstudy/backend/infrastructure/config/SchemaBootstrapIntegrationTest.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/test/java/com/fiscalstudy/backend/infrastructure/in/web/LocalAccessFilterTest.java",
+      "area": "backend",
+      "sha256": "362208d39e0675258e356c8ce2d2cc8259290ea9ae9790e77bebf0ccac69eb90",
+      "destination": "backend/src/test/java/com/fiscalstudy/backend/infrastructure/in/web/LocalAccessFilterTest.java",
+      "publication": "area-branch"
+    },
+    {
+      "file": "backend/src/test/resources/fsrs/REFERENCE.md",
+      "area": "backend",
+      "sha256": "38a4bde7f01fc947f819d43d89cd71d71b567ca96fc6f2415ca2baf25f4b2a59",
+      "destination": "backend/src/test/resources/fsrs/REFERENCE.md",
+      "publication": "area-branch"
+    },
+    {
+      "file": "docs/ARCHITECTURE.md",
+      "area": "docs-tooling",
+      "sha256": "2d589331cae22eb73e80f1a9c34da7375c3cc246da26f1c5cd50dadf72fee3da",
+      "destination": "docs/ARCHITECTURE.md",
+      "publication": "area-branch"
+    },
+    {
+      "file": "docs/ARTIFACT_POLICY.md",
+      "area": "docs-tooling",
+      "sha256": "92fe553a64ae8d5a9b342738bdb28c4da4cae65864e5f5db6b52c491ead12ded",
+      "destination": "docs/ARTIFACT_POLICY.md",
+      "publication": "area-branch"
+    },
+    {
+      "file": "docs/CONTENT_CLASSIFICATION.md",
+      "area": "docs-tooling",
+      "sha256": "b203960e6dea1d279dd7a30ccb0109a97dcc07baef50ee219e745a38e01d726a",
+      "destination": "docs/CONTENT_CLASSIFICATION.md",
+      "publication": "area-branch"
+    },
+    {
+      "file": "docs/DECISIONS.md",
+      "area": "docs-tooling",
+      "sha256": "50f25c23add7c050030313efb92e3b2ffcd2b9552e715283a0251adf89d9c5ec",
+      "destination": "docs/DECISIONS.md",
+      "publication": "area-branch"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_PLAN.md",
+      "area": "docs-tooling",
+      "sha256": "3000709bb4c29001aa97ac99e2d993218bd1e40064e734a3fd34e1a4fe8b6a06",
+      "destination": "docs/IMPLEMENTATION_PLAN.md",
+      "publication": "area-branch"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_STATE.json",
+      "area": "docs-tooling",
+      "sha256": "3cfdfe22658936ea395fd5f0d4c1bdd4b4aa48a4894826819660a8874b785a7d",
+      "destination": "docs/IMPLEMENTATION_STATE.json",
+      "publication": "area-branch"
+    },
+    {
+      "file": "docs/REFERENCE_REUSE_POLICY.md",
+      "area": "docs-tooling",
+      "sha256": "7bf307dc114da827b24474014a49cbd53df00e2826817992a7fd00bf044d986c",
+      "destination": "docs/REFERENCE_REUSE_POLICY.md",
+      "publication": "area-branch"
+    },
+    {
+      "file": "docs/VALIDATION_REPORT.md",
+      "area": "docs-tooling",
+      "sha256": "6a1270211a9ccd0306c9d8b5f3be37f9bc5d8e75efa0bccc4f772e6552a49985",
+      "destination": "docs/VALIDATION_REPORT.md",
+      "publication": "area-branch"
+    },
+    {
+      "file": "docs/agent-reports/attempts.md",
+      "area": "docs-tooling",
+      "sha256": "625315e1102015b6b677bec565e9af19c966171026785fd22b517c1e4fbfed02",
+      "destination": "docs/agent-reports/attempts.md",
+      "publication": "area-branch"
+    },
+    {
+      "file": "docs/audit/AUDIT_2026-10-23.md",
+      "area": "docs-tooling",
+      "sha256": "5d7de9d0a3dc6705fd87fee0abee0dbe9331a384c9871e7621dc849f61478335",
+      "destination": "docs/audit/AUDIT_2026-10-23_PUBLIC.md",
+      "publication": "sanitized-public-copy"
+    },
+    {
+      "file": "docs/audit/SOURCE_BASELINE.json",
+      "area": "docs-tooling",
+      "sha256": "b5aa01a1da10954ae16ce23be0ad21b146991eb17bce71adef2ed9ebbf05f7c0",
+      "destination": "docs/audit/SOURCE_BASELINE_PUBLIC.json",
+      "publication": "sanitized-public-copy"
+    },
+    {
+      "file": "frontend/src/components/questoes/QuestionClassificationPanel.tsx",
+      "area": "frontend",
+      "sha256": "68cf4c82c965b902f3a984613e1cd0615e848f6e93ade433c9a514b2a45d503e",
+      "destination": "frontend/src/components/questoes/QuestionClassificationPanel.tsx",
+      "publication": "area-branch"
+    },
+    {
+      "file": "frontend/src/utils/attemptSubmission.ts",
+      "area": "frontend",
+      "sha256": "d6642255dc9c1db7fdbccb2a5cea328d46e76a16f51c80d41dbaa34ffe0dac99",
+      "destination": "frontend/src/utils/attemptSubmission.ts",
+      "publication": "area-branch"
+    },
+    {
+      "file": "frontend/src/utils/ingestionAccess.ts",
+      "area": "frontend",
+      "sha256": "805a7713c23d620a0dbf654f0b725f9c7ae5e2606088bf22ff5fb1a98d324436",
+      "destination": "frontend/src/utils/ingestionAccess.ts",
+      "publication": "area-branch"
+    },
+    {
+      "file": "frontend/src/utils/studyPreferences.ts",
+      "area": "frontend",
+      "sha256": "d3978e5ddcfbf14e73deddfdc2d3aca1e76e2de87b0743eabde055295372120e",
+      "destination": "frontend/src/utils/studyPreferences.ts",
+      "publication": "area-branch"
+    },
+    {
+      "file": "frontend/tests/learning-contracts.test.mjs",
+      "area": "frontend",
+      "sha256": "ca14bdbe91a49b9fd30a144647b9580e3e5373e1d6c576627ca378e2470999c0",
+      "destination": "frontend/tests/learning-contracts.test.mjs",
+      "publication": "area-branch"
+    },
+    {
+      "file": "scripts/start-isolated.ps1",
+      "area": "docs-tooling",
+      "sha256": "e21dfbc9fbda966b9423e34244c9bbe6be0785f62e707bbff147e1ddf835e192",
+      "destination": "scripts/start-isolated.ps1",
+      "publication": "area-branch"
+    },
+    {
+      "file": "scripts/validate-backend.cjs",
+      "area": "docs-tooling",
+      "sha256": "da87262c1565f9a0fa88f16155aca65a6c899f88ed7a66137ab4ad4750a01e78",
+      "destination": "scripts/validate-backend.cjs",
+      "publication": "area-branch"
+    },
+    {
+      "file": "scripts/validate.ps1",
+      "area": "docs-tooling",
+      "sha256": "e5df28f4dccadd4aa1d06a7c5c2d164b3da84d882b14f58159ea034699f7cb45",
+      "destination": "scripts/validate.ps1",
+      "publication": "area-branch"
+    },
+    {
+      "file": "tests/test_inventory_integrity.py",
+      "area": "ingestion",
+      "sha256": "688824a1aa689de0a675a7b264adb319c43de0212a400a0649cde33f2d377d4d",
+      "destination": "tests/test_inventory_integrity.py",
+      "publication": "area-branch"
+    },
+    {
+      "file": "work-persistence.cjs",
+      "area": "local-evidence",
+      "sha256": "e58a0e2e76d54989f8c54e5c441e8b1c84895f466e7be75c6633b4c60b1f05f3",
+      "destination": "LOCAL_ONLY",
+      "publication": "preserved-not-published"
+    },
+    {
+      "file": "docs/GIT_AREA_PLAN.md",
+      "area": "docs-tooling",
+      "sha256": "87346c5efb8c609d21a47907f4ff07990030bed80b7b5196210e8af34abd9ec7",
+      "destination": "docs/GIT_AREA_PLAN.md",
+      "publication": "area-branch"
+    },
+    {
+      "file": "docs/GIT_AREA_INVENTORY.json",
+      "area": "docs-tooling",
+      "sha256": "f4bc715287c43e6ce59279e9299c66481587aba7d42e53fa4ac8cc2e669a4e3a",
+      "destination": "docs/GIT_AREA_INVENTORY.json",
+      "publication": "area-branch"
+    }
+  ],
+  "additionalFiles": [
+    "backend/src/test/java/com/fiscalstudy/backend/infrastructure/config/DatabaseFoundationTest.java",
+    "docs/publication/FILE_ACCOUNTING.json",
+    "docs/publication/REPORT.md"
+  ],
+  "intentionalChanges": [
+    "frontend whitespace-only correction ResolucaoQuestaoModal.tsx",
+    "Public documentation paths sanitized; original snapshots retained"
+  ]
+}

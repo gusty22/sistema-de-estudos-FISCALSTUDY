@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useModalA11y } from '../../utils/accessibility';
 import {
   type DisciplinaConfig,
   type MotorParetoOutput,
@@ -23,6 +24,7 @@ export const MotorParetoEditalModal: React.FC<MotorParetoEditalModalProps> = ({
   concursoNome,
   onSuccessImport,
 }) => {
+  useModalA11y({ isOpen, onClose, closeOnEscape: true, restoreFocus: true });
   const [activeTab, setActiveTab] = useState<'ENTRADA' | 'TABELA' | 'QUARTETO'>('ENTRADA');
 
   // Configuração das Disciplinas (Quadro de Provas)
@@ -49,7 +51,6 @@ export const MotorParetoEditalModal: React.FC<MotorParetoEditalModalProps> = ({
     return executarMotorParetoEdital(rawText, disciplinas);
   }, [rawText, disciplinas]);
 
-  if (!isOpen) return null;
 
   // Handlers para o Quadro de Provas
   const handleUpdateDisciplina = (id: string, field: keyof DisciplinaConfig, value: any) => {
@@ -255,21 +256,28 @@ export const MotorParetoEditalModal: React.FC<MotorParetoEditalModalProps> = ({
     }
   };
 
+  if (!isOpen) return null;
+
   return (
     <div className="motor-pareto-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="motor-pareto-modal" role="dialog" aria-modal="true">
+      <div className="motor-pareto-modal" role="dialog" aria-modal="true" aria-labelledby="motor-pareto-modal-title">
         {/* Header */}
         <div className="motor-pareto-header">
           <div className="motor-pareto-title-group">
-            <div className="motor-pareto-icon">🎯</div>
+            <div className="motor-pareto-icon" aria-hidden="true">🎯</div>
             <div>
-              <h3>Motor de Ingestão e Matriz de Pareto da Área Fiscal</h3>
+              <h3 id="motor-pareto-modal-title">Motor de Ingestão e Matriz de Pareto da Área Fiscal</h3>
               <p>
                 Parseamento estrito de edital bruto, ponderação de pontos e classificação de alta eficiência (Classes A, B e C)
               </p>
             </div>
           </div>
-          <button className="motor-pareto-close-btn" onClick={onClose} title="Fechar">
+          <button
+            className="motor-pareto-close-btn"
+            onClick={onClose}
+            aria-label="Fechar modal do Motor de Pareto"
+            title="Fechar (Esc)"
+          >
             ✕
           </button>
         </div>

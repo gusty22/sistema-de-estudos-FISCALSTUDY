@@ -172,6 +172,9 @@ public class StudentKnowledgeStateService {
 
         Map<String, Object> resumoGlobal = new LinkedHashMap<>();
         resumoGlobal.put("pAtualGlobal", pAtualGlobal);
+        resumoGlobal.put("estimateType", "OBSERVED_WEIGHTED_PERFORMANCE_NOT_RECALL");
+        resumoGlobal.put("memoryAuthority", "LearningEvidenceService/FSRS-6.0");
+        resumoGlobal.put("uncertainty", "Repeated item accuracy does not demonstrate transfer or long-term retention");
         resumoGlobal.put("pBaseGlobal", pBaseGlobal);
         resumoGlobal.put("mediaSimplesGlobal", mediaSimplesGlobal);
         resumoGlobal.put("gapDecaimentoGlobal", gapDecaimentoGlobal);
@@ -183,21 +186,13 @@ public class StudentKnowledgeStateService {
         resumoGlobal.put("topicosVirgens", virgens);
         resumoGlobal.put("topicosComMediaEnganosa", enganososCount);
 
-        if (gapDecaimentoGlobal >= 10.0) {
-            resumoGlobal.put("alertaMetodologico",
-                    String.format(Locale.ROOT,
-                            "⚠️ Atenção Cognitiva: Sua proficiência real média (%.1f%%) está %.1f pontos abaixo da média simples bruta (%.1f%%) devido ao decaimento temporal de Ebbinghaus em conteúdos não revisitados.",
-                            pAtualGlobal, gapDecaimentoGlobal, mediaSimplesGlobal));
-        } else {
-            resumoGlobal.put("alertaMetodologico", "Monitoramento ativo da retenção: memória sináptica em sincronia com os ciclos de revisão.");
-        }
-
+        resumoGlobal.put("alertaMetodologico", "Desempenho observado não mede retenção futura. Estimativas FSRS são calculadas por questão e ainda não calibradas individualmente.");
         Map<String, Object> formula = new LinkedHashMap<>();
-        formula.put("expressaoLatex", "P_{atual}(t) = P_{base} \\cdot e^{-\\frac{\\Delta t}{S}}");
-        formula.put("titulo", "Modelo Matemático do Estado Real de Conhecimento (Student Knowledge State)");
-        formula.put("pBaseDescricao", "Taxa ponderada: Simulado (1.5x) e Reteste Frio (1.2x) vs. Imediato pós-PDF (0.5x).");
-        formula.put("deltaTDescricao", "Dias decorridos desde o último contato/revisão com o tópico.");
-        formula.put("sDescricao", "Força da memória / estabilidade sináptica consolidada por revisões espaçadas bem-sucedidas.");
+        formula.put("expressaoLatex", "");
+        formula.put("titulo", "Desempenho observado por tópico");
+        formula.put("pBaseDescricao", "Taxa de desempenho ponderada pelas condições registradas da tentativa; não é probabilidade de recuperação futura.");
+        formula.put("deltaTDescricao", "Tempo desde a última tentativa, apresentado como contexto.");
+        formula.put("sDescricao", "A estabilidade de memória pertence ao modelo FSRS por questão; não é medida sináptica.");
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("resumoGlobal", resumoGlobal);
@@ -221,7 +216,7 @@ public class StudentKnowledgeStateService {
                     ORDER BY peso DESC, disciplina ASC, assunto ASC
                 """, concursoId);
             }
-            if (topicosRows.isEmpty()) {
+            if (topicosRows.isEmpty() && (concursoId == null || concursoId.isBlank())) {
                 topicosRows = jdbcTemplate.queryForList("""
                     SELECT id, concurso_id, disciplina, assunto, peso
                     FROM edital_topicos
@@ -232,8 +227,8 @@ public class StudentKnowledgeStateService {
             log.warn("Falha ao consultar edital_topicos: {}", e.getMessage());
         }
 
-        // Se ainda vazio, descobrir tópicos das questões do banco
-        if (topicosRows.isEmpty()) {
+        // Descoberta global somente quando não há concurso solicitado.
+        if (topicosRows.isEmpty() && (concursoId == null || concursoId.isBlank())) {
             try {
                 topicosRows = jdbcTemplate.queryForList("""
                     SELECT DISTINCT LOWER(disciplina) || '-' || LOWER(assunto) as id,
@@ -286,7 +281,7 @@ public class StudentKnowledgeStateService {
             List<Map<String, Object>> revs = jdbcTemplate.queryForList("""
                 SELECT disciplina, topico, taxa_acerto_revisao
                 FROM revision_calendar
-                WHERE status = 'CONCLUIDA'
+                WHERE status = 'CONCLUIDA' AND taxa_acerto_revisao >= 0.8
             """);
             for (Map<String, Object> r : revs) {
                 String d = ((String) r.getOrDefault("disciplina", "")).trim().toLowerCase();
@@ -301,13 +296,16 @@ public class StudentKnowledgeStateService {
         List<Map<String, Object>> attemptRows = new ArrayList<>();
         try {
             attemptRows = jdbcTemplate.queryForList("""
-                SELECT e.aggregate_id as question_id, e.session_id, e.occurred_at, e.payload_json,
-                       q.disciplina, q.assunto
-                FROM event_store e
-                JOIN questions q ON e.aggregate_id = q.id
-                WHERE e.event_type = 'ANSWER_SUBMITTED'
-                ORDER BY e.occurred_at ASC
-            """);
+                SELECT e.aggregate_id AS question_id,e.session_id,e.occurred_at,e.payload_json,t.disciplina,t.assunto
+                FROM event_store e JOIN questions q ON e.aggregate_id=q.id
+                JOIN question_topic_classifications c ON c.question_id=q.id AND c.status='CONFIRMED'
+                JOIN edital_topicos t ON t.id=c.topic_id
+                WHERE e.event_type='ANSWER_SUBMITTED' AND json_valid(e.payload_json)
+                  AND json_extract(e.payload_json,'$.origin')='REAL_STUDY'
+                  AND NOT EXISTS(SELECT 1 FROM question_topic_classifications n WHERE n.question_id=c.question_id AND n.topic_id=c.topic_id AND n.rowid>c.rowid)
+                  AND (? IS NULL OR t.concurso_id=?)
+                ORDER BY e.occurred_at,e.event_id
+                """, concursoId,concursoId);
         } catch (Exception e) {
             log.warn("Falha ao consultar ANSWER_SUBMITTED para StudentKnowledgeState: {}", e.getMessage());
         }
@@ -355,7 +353,7 @@ public class StudentKnowledgeStateService {
             if (occurredAt != null) {
                 try { occInstant = Instant.parse(occurredAt); } catch (Exception ignored) {}
             }
-            if (occInstant == null) occInstant = now;
+            if (occInstant == null || occInstant.isAfter(now) || isCorrect == null || usedHelp || confidence == 1) continue;
 
             AttemptEvaluation eval = new AttemptEvaluation(
                     disc, top, isCorrect, gabaritoStatus, confidence,
@@ -501,7 +499,8 @@ public class StudentKnowledgeStateService {
             double forcaMemoriaS = Math.max(0.5, sBase * penalidadeErro);
 
             // Equação Canônica: P_atual(t) = P_base * e^(- \Delta t / S)
-            double pAtual = pBase * Math.exp(-deltaT / forcaMemoriaS);
+            // This legacy API reports demonstrated performance only. Future recall belongs exclusively to LearningEvidenceService/FSRS.
+            double pAtual = pBase;
             pAtual = Math.max(0.0, Math.min(100.0, pAtual));
 
             // Arredondamentos pedagógicos
@@ -514,7 +513,7 @@ public class StudentKnowledgeStateService {
 
             String status;
             if (pAtual >= 80.0 && totalQ >= 4) {
-                status = "CONSOLIDADO";
+                status = "EM_EQUILIBRIO";
             } else if (pAtual >= 65.0) {
                 status = "EM_EQUILIBRIO";
             } else if (pAtual >= 45.0) {
