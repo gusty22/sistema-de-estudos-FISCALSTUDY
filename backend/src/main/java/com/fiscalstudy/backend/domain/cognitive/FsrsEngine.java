@@ -4,8 +4,9 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
 /**
- * Motor Matemático do Algoritmo FSRS (v5).
- * Implementa com precisão científica os cálculos de Estabilidade (S),
+ * Motor Matemático do Algoritmo FSRS (v6 reference core).
+ * Implementa o núcleo matemático de referência; estimativas requerem calibração.
+ * Calcula os cálculos de Estabilidade (S),
  * Dificuldade (D), Recuperabilidade (R) e Intervalo Ótimo de Revisão.
  */
 public class FsrsEngine {
@@ -26,9 +27,10 @@ public class FsrsEngine {
 
     /**
      * Calcula a Recuperabilidade R(t) com base na fórmula exata do FSRS v5:
-     * R(t) = (1 + (19/81) * (t / S)) ^ (-0.5)
+     * R(t) = (1 + factor * (t / S)) ^ (-w20)
      */
     public double calculateRetrievability(double stability, double elapsedDays) {
+        if (!Double.isFinite(stability) || !Double.isFinite(elapsedDays)) throw new IllegalArgumentException("Non-finite FSRS state/time");
         if (stability <= 0.0) {
             return 0.0;
         }
@@ -51,7 +53,8 @@ public class FsrsEngine {
         }
         double factor = FsrsParameters.RETRIEVABILITY_FACTOR;
         double decay = FsrsParameters.RETRIEVABILITY_DECAY;
-        double targetR = Math.min(Math.max(requestRetention, 0.50), 0.99);
+        if (!Double.isFinite(requestRetention) || requestRetention <= 0 || requestRetention > 1) throw new IllegalArgumentException("Invalid retention");
+        double targetR = requestRetention;
         double interval = (stability * (Math.pow(targetR, 1.0 / decay) - 1.0)) / factor;
         return Math.min(Math.max(Math.round(interval), 1.0), params.getMaximumInterval());
     }
@@ -137,7 +140,7 @@ public class FsrsEngine {
      */
     public double initStability(FsrsRating rating) {
         int g = rating.getValue();
-        return Math.max(params.getW(g - 1), FsrsParameters.MIN_STABILITY);
+        return Math.max(params.getW(g - 1), 0.1);
     }
 
     /**
@@ -148,7 +151,7 @@ public class FsrsEngine {
         double deltaD = -params.getW(6) * (g - 3);
         double dampedDelta = (deltaD * (10.0 - currentD)) / 9.0;
         double nextD = currentD + dampedDelta;
-        double initD4 = initDifficulty(FsrsRating.EASY);
+        double initD4 = params.getW(4) - Math.exp(3 * params.getW(5)) + 1.0;
         double meanReverted = params.getW(7) * initD4 + (1.0 - params.getW(7)) * nextD;
         return clamp(meanReverted, 1.0, 10.0);
     }
@@ -182,7 +185,7 @@ public class FsrsEngine {
                 Math.exp((1.0 - r) * params.getW(14));
 
         // Por segurança, a estabilidade após esquecimento não deve ultrapassar a estabilidade anterior
-        nextS = Math.min(nextS, s);
+        nextS = Math.min(nextS, s / Math.exp(params.getW(17) * params.getW(18)));
         return clamp(nextS, FsrsParameters.MIN_STABILITY, params.getMaximumInterval());
     }
 
@@ -190,6 +193,8 @@ public class FsrsEngine {
      * Calcula a transição completa de estado FSRS dado o estado anterior, o rating e o instante atual.
      */
     public FsrsCardState calculateNextState(FsrsCardState current, FsrsRating rating, Instant now) {
+        if (rating == null || now == null) throw new IllegalArgumentException("Rating and review instant are required");
+        if (current != null && (!Double.isFinite(current.getStability()) || !Double.isFinite(current.getDifficulty()))) throw new IllegalArgumentException("Invalid memory state");
         if (current == null || current.getLastReviewedAt() == null || current.getStability() <= 0.0) {
             // Primeiro aprendizado do item
             double initS = initStability(rating);
@@ -201,7 +206,8 @@ public class FsrsEngine {
             return FsrsCardState.of(initS, initD, reps, lapses, now, due);
         }
 
-        double elapsedDays = current.getElapsedDays(now);
+        if (now.isBefore(current.getLastReviewedAt())) throw new IllegalArgumentException("Review predates current state");
+        double elapsedDays = Math.floor(current.getElapsedDays(now));
         double r = calculateRetrievability(current.getStability(), elapsedDays);
         double nextD = nextDifficulty(current.getDifficulty(), rating);
 
@@ -209,11 +215,16 @@ public class FsrsEngine {
         int nextReps = current.getReps();
         int nextLapses = current.getLapses();
 
-        if (rating == FsrsRating.AGAIN) {
-            nextS = nextForgetStability(nextD, current.getStability(), r);
+        if (elapsedDays < 1.0) {
+            double factor = Math.pow(current.getStability(), -params.getW(19)) * Math.exp(params.getW(17) * (rating.getValue() - 3 + params.getW(18)));
+            if (rating != FsrsRating.AGAIN) factor = Math.max(factor, 1.0);
+            nextS = clamp(current.getStability() * factor, FsrsParameters.MIN_STABILITY, 36500.0);
+            if (rating == FsrsRating.AGAIN) nextLapses++; else nextReps++;
+        } else if (rating == FsrsRating.AGAIN) {
+            nextS = nextForgetStability(current.getDifficulty(), current.getStability(), r);
             nextLapses++;
         } else {
-            nextS = nextRecallStability(nextD, current.getStability(), r, rating);
+            nextS = nextRecallStability(current.getDifficulty(), current.getStability(), r, rating);
             nextReps++;
         }
 

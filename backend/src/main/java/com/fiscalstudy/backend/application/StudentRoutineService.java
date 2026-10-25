@@ -95,7 +95,7 @@ public class StudentRoutineService {
         }
 
         if (somaPesosTotal <= 0) somaPesosTotal = 1.0;
-        if (totalHorasSemana <= 0) totalHorasSemana = 24.0;
+        if (!Double.isFinite(totalHorasSemana) || totalHorasSemana <= 0) return Collections.emptyList();
 
         List<Map<String, Object>> ciclo = new ArrayList<>();
         int index = 0;
@@ -103,7 +103,7 @@ public class StudentRoutineService {
             String disc = entry.getKey();
             double pesoDisc = entry.getValue();
             double proporcao = pesoDisc / somaPesosTotal;
-            double horasSugeridas = Math.max(1.0, Math.round(proporcao * totalHorasSemana * 2.0) / 2.0); // múltiplos de 30min
+            double horasSugeridas = Math.floor(proporcao * totalHorasSemana * 60.0) / 60.0; // múltiplos de 30min
 
             Map<String, Object> item = new LinkedHashMap<>();
             item.put("ordem", index + 1);

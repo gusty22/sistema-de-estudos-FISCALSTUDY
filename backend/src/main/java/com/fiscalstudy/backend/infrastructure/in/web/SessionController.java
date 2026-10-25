@@ -63,6 +63,7 @@ public class SessionController {
     public ResponseEntity<SessionSummaryDTO> getSessionSummary(@PathVariable String sessionId) {
         List<String> payloads = eventStoreRepository.getEventPayloads(sessionId, "ANSWER_SUBMITTED");
         ObjectMapper mapper = new ObjectMapper();
+        Map<String,String> annotations=com.fiscalstudy.backend.application.AttemptAnnotationView.latest(eventStoreRepository.getEventPayloads(sessionId,"ATTEMPT_ANNOTATED"));
         
         int totalAnswered = payloads.size();
         if (totalAnswered == 0) {
@@ -87,7 +88,7 @@ public class SessionController {
 
                 totalTimeMs += activeTimeMs;
 
-                String causaErro = node.path("causaErro").asText(null);
+                String causaErro = annotations.getOrDefault(node.path("attemptId").asText(),node.path("causaErro").asText(null));
                 if (causaErro != null && !causaErro.isBlank() && !"null".equalsIgnoreCase(causaErro)) {
                     errorDistribution.put(causaErro, errorDistribution.getOrDefault(causaErro, 0) + 1);
                 }

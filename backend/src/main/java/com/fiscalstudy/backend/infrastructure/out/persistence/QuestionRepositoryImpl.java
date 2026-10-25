@@ -49,7 +49,7 @@ public class QuestionRepositoryImpl implements QuestionRepository {
 
     @Override
     public List<Question> findQuestionBatch(String sessionId, String concursoId, String disciplina, String assunto, Boolean includeAnswered, int limit) {
-        StringBuilder sql = new StringBuilder("SELECT * FROM questions WHERE 1=1 ");
+        StringBuilder sql = new StringBuilder("SELECT * FROM questions q WHERE 1=1 ");
         List<Object> params = new java.util.ArrayList<>();
 
         if (concursoId != null && !concursoId.isBlank()) {
@@ -94,9 +94,10 @@ public class QuestionRepositoryImpl implements QuestionRepository {
         }
 
         if (assunto != null && !assunto.isBlank()) {
-            sql.append("AND (LOWER(assunto) = LOWER(?) OR LOWER(assunto) LIKE ?) ");
-            params.add(assunto.trim());
-            params.add("%" + assunto.trim().toLowerCase() + "%");
+            sql.append("AND EXISTS (SELECT 1 FROM ("+com.fiscalstudy.backend.application.QuestionClassificationService.CURRENT_LINKS+") qc JOIN edital_topicos et ON et.id=qc.topic_id WHERE qc.question_id=q.id AND qc.status='CONFIRMED' AND (et.id=? OR LOWER(et.assunto)=LOWER(?)) ");
+            params.add(assunto.trim()); params.add(assunto.trim());
+            if(concursoId!=null && !concursoId.isBlank()){sql.append(" AND et.concurso_id=? ");params.add(concursoId.trim());}
+            sql.append(") ");
         }
 
         if ((includeAnswered == null || !includeAnswered) && sessionId != null && !sessionId.isBlank()) {

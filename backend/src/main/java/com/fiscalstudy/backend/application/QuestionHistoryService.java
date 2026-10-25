@@ -65,13 +65,14 @@ public class QuestionHistoryService {
 
         sql.append(" ORDER BY e.occurred_at DESC");
 
+        Map<String,String> annotations=AttemptAnnotationView.latest(jdbcTemplate);
         List<QuestionHistoryDTO.Item> allItems = new ArrayList<>();
         Set<String> uniqueQuestions = new HashSet<>();
         int correctCount = 0;
         int incorrectCount = 0;
         int anuladasCount = 0;
 
-        List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql.toString(), params.toArray());
+        List<Map<String, Object>> rows = LearningEventEligibility.query(jdbcTemplate, sql.toString(), params.toArray());
 
         for (Map<String, Object> row : rows) {
             String eventId = (String) row.get("event_id");
@@ -113,7 +114,8 @@ public class QuestionHistoryService {
                     }
                     confidenceLevel = node.path("confidenceLevel").asInt(3);
                     activeTimeMs = node.path("activeTimeMs").asLong(0);
-                    if (node.hasNonNull("causaErro") && !node.path("causaErro").asText().isBlank()) {
+                    causaErro=annotations.get(node.path("attemptId").asText());
+                    if (causaErro==null && node.hasNonNull("causaErro") && !node.path("causaErro").asText().isBlank()) {
                         causaErro = node.path("causaErro").asText();
                     }
                 } catch (Exception ignored) {}
@@ -184,7 +186,7 @@ public class QuestionHistoryService {
             ORDER BY e.occurred_at ASC
         """;
 
-        List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql);
+        List<Map<String, Object>> rows = LearningEventEligibility.query(jdbcTemplate, sql);
 
         PerformanceXRayDTO xray = new PerformanceXRayDTO();
         int totalAttempts = rows.size();
@@ -328,7 +330,7 @@ public class QuestionHistoryService {
         // Total questions in bank & unanswered count
         int totalQuestionsInBank = 0;
         try {
-            List<Map<String, Object>> countRow = jdbcTemplate.queryForList("SELECT COUNT(*) as c FROM questions");
+            List<Map<String, Object>> countRow = LearningEventEligibility.query(jdbcTemplate, "SELECT COUNT(*) as c FROM questions");
             if (!countRow.isEmpty() && countRow.get(0).get("c") != null) {
                 totalQuestionsInBank = ((Number) countRow.get(0).get("c")).intValue();
             }

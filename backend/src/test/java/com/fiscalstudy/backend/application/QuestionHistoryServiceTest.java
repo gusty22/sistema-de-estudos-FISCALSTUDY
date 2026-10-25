@@ -70,7 +70,7 @@ class QuestionHistoryServiceTest {
         row2.put("attempt_number", 2);
         row2.put("total_attempts_for_question", 2);
 
-        when(jdbcTemplate.queryForList(anyString(), any(Object[].class))).thenReturn(List.of(row1, row2));
+        when(jdbcTemplate.queryForList(contains("json_valid(payload_json)"))).thenReturn(List.of(row1, row2));
 
         QuestionHistoryDTO.Response res = service.getQuestionHistory(null, null, null, "ALL", "ALL", 10, 0);
 
@@ -110,7 +110,7 @@ class QuestionHistoryServiceTest {
         r2.put("assunto", "DRE");
         r2.put("gabarito_status", "DEFINITIVO");
 
-        when(jdbcTemplate.queryForList(contains("FROM event_store e"))).thenReturn(List.of(r1, r2));
+        when(jdbcTemplate.queryForList(contains("json_valid(payload_json)"))).thenReturn(List.of(r1, r2));
         when(jdbcTemplate.queryForList(contains("FROM questions"))).thenReturn(List.of(Map.of("c", 100)));
 
         PerformanceXRayDTO xray = service.getPerformanceXRay("concurso-1");

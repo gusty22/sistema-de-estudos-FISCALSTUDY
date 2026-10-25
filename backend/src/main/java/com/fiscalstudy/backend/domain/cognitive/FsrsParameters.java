@@ -3,19 +3,19 @@ package com.fiscalstudy.backend.domain.cognitive;
 import java.util.Arrays;
 
 /**
- * Parâmetros padrão do algoritmo FSRS (v5).
- * Vetor w com 19 coeficientes matemáticos otimizados.
+ * Parâmetros padrão do algoritmo FSRS (v6).
+ * Vetor w com 21 coeficientes matemáticos otimizados.
  */
 public class FsrsParameters {
 
-    public static final double RETRIEVABILITY_DECAY = -0.5;
-    public static final double RETRIEVABILITY_FACTOR = 19.0 / 81.0; // ~0.2345679
+    public static final double RETRIEVABILITY_DECAY = -0.1542;
+    public static final double RETRIEVABILITY_FACTOR = Math.round((Math.pow(0.9, 1.0 / RETRIEVABILITY_DECAY) - 1) * 1e8) / 1e8;
     public static final double DEFAULT_REQUEST_RETENTION = 0.90;
     public static final double REVIEW_RETENTION_THRESHOLD = 0.88; // R < 0.88 dispara revisão
     public static final double MAX_INTERVAL_DAYS = 36500.0;
-    public static final double MIN_STABILITY = 0.1;
+    public static final double MIN_STABILITY = 0.001;
 
-    // Coeficientes padrão do FSRS v5
+    // Coeficientes padrão do FSRS v6
     private final double[] w;
     private final double requestRetention;
     private final double maximumInterval;
@@ -40,14 +40,19 @@ public class FsrsParameters {
                 0.6014,  // w[15] hard penalty
                 1.8729,  // w[16] easy bonus
                 0.5425,  // w[17] short term factor
-                0.0912   // w[18] short term offset
+                0.0912,  // w[18] short term offset
+                0.0658,  // w[19] short term stability exponent
+                0.1542   // w[20] decay
         }, DEFAULT_REQUEST_RETENTION, MAX_INTERVAL_DAYS);
     }
 
     public FsrsParameters(double[] w, double requestRetention, double maximumInterval) {
-        if (w == null || w.length < 19) {
-            throw new IllegalArgumentException("Vetor de pesos FSRS deve conter ao menos 19 coeficientes");
+        if (w == null || w.length != 21) {
+            throw new IllegalArgumentException("Vetor de pesos FSRS deve conter exatamente 21 coeficientes");
         }
+        for (double weight : w) if (!Double.isFinite(weight)) throw new IllegalArgumentException("FSRS weights must be finite");
+        if (!Double.isFinite(requestRetention) || requestRetention <= 0 || requestRetention >= 1 || !Double.isFinite(maximumInterval) || maximumInterval < 1) throw new IllegalArgumentException("Invalid FSRS retention/interval");
+        if (w[20] != 0.1542) throw new IllegalArgumentException("This reference profile requires FSRS6 default decay 0.1542");
         this.w = Arrays.copyOf(w, w.length);
         this.requestRetention = requestRetention;
         this.maximumInterval = maximumInterval;

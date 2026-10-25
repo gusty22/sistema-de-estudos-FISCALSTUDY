@@ -17,10 +17,35 @@ class StagingDatabaseServiceTest {
 
     private StagingDatabaseService stagingService;
 
+    @org.junit.jupiter.api.io.TempDir java.nio.file.Path temp;
+
     @BeforeEach
-    void setUp() {
-        JdbcTemplate mockJdbc = mock(JdbcTemplate.class);
-        stagingService = new StagingDatabaseService(mockJdbc);
+    void setUp() throws Exception {
+        var env=new org.springframework.mock.env.MockEnvironment()
+                .withProperty("spring.datasource.url","jdbc:sqlite:"+temp.resolve("main.db"))
+                .withProperty("fiscalstudy.staging-db",temp.resolve("staging.db").toString())
+                .withProperty("fiscalstudy.acervo-root",temp.resolve("materials").toString());
+        var paths=new com.fiscalstudy.backend.infrastructure.config.DatabasePaths(env);
+        paths.createDirectories();
+        com.fiscalstudy.backend.infrastructure.config.StagingSchemaMigration.migrate(paths.stagingDatabase());
+        try(var c=java.sql.DriverManager.getConnection("jdbc:sqlite:"+paths.stagingDatabase());var stmt=c.createStatement()) {
+            stmt.execute("PRAGMA foreign_keys=ON");
+            stmt.execute("INSERT INTO staging_files(id,rel_path,filename,file_size_bytes,sha256,total_pages) VALUES('file1','fixture.pdf','fixture.pdf',1,'fixture-hash',1)");
+            stmt.execute("INSERT INTO staging_documents(id,file_id,doc_role,page_start,page_end) VALUES('doc1','file1','PROVA',1,1)");
+            stmt.execute("INSERT INTO staging_questions(id,document_id,numero_original,statement,options_json,correct_option,pages_json) VALUES('q1','doc1',1,'Questão fixture','[\"A\",\"B\"]','A','[1]')");
+            stmt.execute("INSERT INTO staging_support_materials(id,document_id,tipo,conteudo_texto) VALUES('mat1','doc1','TEXTO_BASE','Texto de apoio')");
+            stmt.execute("INSERT INTO staging_question_support_materials VALUES('q1','mat1')");
+        }
+        stagingService=new StagingDatabaseService(mock(JdbcTemplate.class),paths);
+    }
+
+    @Test
+    void deletingFilePreservesReferentialIntegrity() throws Exception {
+        stagingService.deleteStagingFile("file1");
+        try(var c=java.sql.DriverManager.getConnection("jdbc:sqlite:"+temp.resolve("staging.db"));var stmt=c.createStatement()) {
+            try(var r=stmt.executeQuery("PRAGMA foreign_key_check")){assertFalse(r.next());}
+            try(var r=stmt.executeQuery("SELECT count(*) FROM staging_support_materials")){assertTrue(r.next());assertEquals(0,r.getInt(1));}
+        }
     }
 
     @Test

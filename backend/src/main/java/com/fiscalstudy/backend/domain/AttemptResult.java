@@ -1,6 +1,9 @@
 package com.fiscalstudy.backend.domain;
 
 public class AttemptResult {
+    private String attemptId;
+    public String getAttemptId(){ return attemptId; }
+    public void setAttemptId(String value){ attemptId=value; }
     private final Boolean isCorrect;
     private final GabaritoStatus gabaritoStatus;
     private final Integer concursoPoint;

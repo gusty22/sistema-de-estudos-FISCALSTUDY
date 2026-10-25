@@ -15,7 +15,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
+@SpringBootTest(properties = {"fiscalstudy.event-origin=REAL_STUDY", "fiscalstudy.anki.network-allowed=false"})
 @AutoConfigureMockMvc
 public class ActiveTimeAndConfidenceIntegrationTest {
 
@@ -44,7 +44,7 @@ public class ActiveTimeAndConfidenceIntegrationTest {
         // Inserir tentativa de resposta com tempo ativo de 45 segundos e confiança 5
         String sql = "INSERT INTO event_store (event_id, event_type, aggregate_type, aggregate_id, session_id, occurred_at, recorded_at, event_version, schema_version, payload_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         jdbcTemplate.update(sql, "e1", "ANSWER_SUBMITTED", "QUESTION", "q1", sessId, "2026-10-20T00:00:00Z", "2026-10-20T00:00:00Z", 1, "v1",
-                "{\"questionId\":\"q1\",\"selectedOption\":\"A\",\"isCorrect\":true,\"confidenceLevel\":5,\"activeTimeMs\":45000}");
+                "{\"origin\":\"REAL_STUDY\",\"questionId\":\"q1\",\"selectedOption\":\"A\",\"isCorrect\":true,\"confidenceLevel\":5,\"activeTimeMs\":45000}");
 
         // Gravar sessão com durationSeconds zerado
         String recordPayload = String.format("{\"sessionId\":\"%s\",\"concursoId\":\"c1\",\"tipo\":\"QUESTOES\",\"titulo\":\"Sessão Enriquecida\",\"durationSeconds\":0,\"questoesFeitas\":0,\"acertos\":0}", sessId);
@@ -77,7 +77,7 @@ public class ActiveTimeAndConfidenceIntegrationTest {
         // Resposta submetida sem chamada de record posterior
         String sql = "INSERT INTO event_store (event_id, event_type, aggregate_type, aggregate_id, session_id, occurred_at, recorded_at, event_version, schema_version, payload_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         jdbcTemplate.update(sql, "e2", "ANSWER_SUBMITTED", "QUESTION", "q2", sessId, "2026-10-20T00:05:00Z", "2026-10-20T00:05:00Z", 1, "v1",
-                "{\"questionId\":\"q2\",\"selectedOption\":\"C\",\"isCorrect\":false,\"confidenceLevel\":3,\"activeTimeMs\":15000}");
+                "{\"origin\":\"REAL_STUDY\",\"questionId\":\"q2\",\"selectedOption\":\"C\",\"isCorrect\":false,\"confidenceLevel\":3,\"activeTimeMs\":15000}");
 
         mockMvc.perform(get("/api/v1/study-sessions"))
                 .andExpect(status().isOk())
@@ -95,11 +95,11 @@ public class ActiveTimeAndConfidenceIntegrationTest {
 
         // 1. Acerto com Alta Confiança (5) e 45s (45000ms)
         jdbcTemplate.update(sql, "e1", "ANSWER_SUBMITTED", "QUESTION", "q1", sessId, "2026-10-20T01:00:00Z", "2026-10-20T01:00:00Z", 1, "v1",
-                "{\"questionId\":\"q1\",\"selectedOption\":\"A\",\"isCorrect\":true,\"confidenceLevel\":5,\"activeTimeMs\":45000}");
+                "{\"origin\":\"REAL_STUDY\",\"questionId\":\"q1\",\"selectedOption\":\"A\",\"isCorrect\":true,\"confidenceLevel\":5,\"activeTimeMs\":45000}");
 
         // 2. Erro com Baixa Confiança (1) e 15s (15000ms) - Lacuna Consciente
         jdbcTemplate.update(sql, "e2", "ANSWER_SUBMITTED", "QUESTION", "q2", sessId, "2026-10-20T01:01:00Z", "2026-10-20T01:01:00Z", 1, "v1",
-                "{\"questionId\":\"q2\",\"selectedOption\":\"A\",\"isCorrect\":false,\"confidenceLevel\":1,\"activeTimeMs\":15000}");
+                "{\"origin\":\"REAL_STUDY\",\"questionId\":\"q2\",\"selectedOption\":\"A\",\"isCorrect\":false,\"confidenceLevel\":1,\"activeTimeMs\":15000}");
 
         // Dashboard de Desempenho
         mockMvc.perform(get("/api/v1/analytics/dashboard"))
@@ -118,5 +118,15 @@ public class ActiveTimeAndConfidenceIntegrationTest {
                 .andExpect(jsonPath("$.abaA_confianca.matriz.altaConfiancaAcerto").value(1))
                 .andExpect(jsonPath("$.abaA_confianca.matriz.baixaConfiancaErro").value(1))
                 .andExpect(jsonPath("$.abaA_confianca.brierScore").isNumber());
+    }
+    @Test
+    void automatedAndUnknownAnswersDoNotCreatePersonalSessions() throws Exception {
+        jdbcTemplate.update("INSERT INTO event_store(event_id,event_type,aggregate_type,aggregate_id,session_id,occurred_at,recorded_at,event_version,schema_version,payload_json) VALUES(?,?,?,?,?,?,?,1,'v1',?)",
+            "excluded-test", "ANSWER_SUBMITTED", "QUESTION", "q1", "test-fixture", "2026-10-20T00:00:00Z", "2026-10-20T00:00:00Z",
+            "{\"origin\":\"AUTOMATED_TEST\",\"activeTimeMs\":45000,\"isCorrect\":true}");
+        jdbcTemplate.update("INSERT INTO event_store(event_id,event_type,aggregate_type,aggregate_id,session_id,occurred_at,recorded_at,event_version,schema_version,payload_json) VALUES(?,?,?,?,?,?,?,1,'v1',?)",
+            "excluded-unknown", "ANSWER_SUBMITTED", "QUESTION", "q2", "unknown-fixture", "2026-10-20T00:00:00Z", "2026-10-20T00:00:00Z", "{}");
+        mockMvc.perform(get("/api/v1/study-sessions"))
+            .andExpect(status().isOk()).andExpect(jsonPath("$", hasSize(0)));
     }
 }

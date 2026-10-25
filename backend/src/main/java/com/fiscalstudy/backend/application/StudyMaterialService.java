@@ -71,12 +71,15 @@ public class StudyMaterialService {
         materialRepository.deleteLink(id);
     }
 
+    @org.springframework.transaction.annotation.Transactional
     public TopicMaterialLink updateProgress(String linkId, int paginasLidas, String status) {
-        TopicMaterialLink link = new TopicMaterialLink();
-        link.setId(linkId);
-        link.setPaginasLidas(paginasLidas);
-        link.setStatus(status != null ? status : (paginasLidas > 0 ? "EM_ANDAMENTO" : "NAO_INICIADO"));
-        return materialRepository.saveLink(link);
+        if (paginasLidas < 0) throw new IllegalArgumentException("Progresso não pode ser negativo");
+        String resolvedStatus = status != null ? status : (paginasLidas > 0 ? "EM_ANDAMENTO" : "NAO_INICIADO");
+        if (!Set.of("NAO_INICIADO","EM_ANDAMENTO","CONCLUIDO").contains(resolvedStatus)) throw new IllegalArgumentException("Status de progresso inválido");
+        int changed = jdbcTemplate.update("UPDATE topic_material_links SET paginas_lidas = ?, status = ? WHERE id = ?", paginasLidas, resolvedStatus, linkId);
+        if (changed != 1) throw new IllegalArgumentException("Vínculo de material não encontrado");
+        return materialRepository.findLinksByTopicoId(jdbcTemplate.queryForObject("SELECT topico_id FROM topic_material_links WHERE id = ?", String.class, linkId)).stream()
+                .filter(link -> linkId.equals(link.getId())).findFirst().orElseThrow(() -> new IllegalStateException("Vínculo atualizado não recuperável"));
     }
 
     public Optional<StudyMaterial> updateMaterialProgress(String id, int paginaAtual) {

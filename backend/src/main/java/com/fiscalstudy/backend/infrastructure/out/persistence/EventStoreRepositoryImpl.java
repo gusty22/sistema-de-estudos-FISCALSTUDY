@@ -28,6 +28,18 @@ public class EventStoreRepositoryImpl implements EventStoreRepository {
     }
 
     @Override
+    public boolean appendEventOnce(String eventId, String eventType, String aggregateType, String aggregateId, String sessionId, String occurredAt, String payloadJson) {
+        return jdbcTemplate.update("INSERT INTO event_store (event_id,event_type,aggregate_type,aggregate_id,session_id,occurred_at,recorded_at,event_version,schema_version,payload_json) VALUES (?,?,?,?,?,?,?,2,'v2',?) ON CONFLICT(event_id) DO NOTHING",
+                eventId,eventType,aggregateType,aggregateId,sessionId,occurredAt,Instant.now().toString(),payloadJson)==1;
+    }
+
+    @Override
+    public java.util.Optional<com.fiscalstudy.backend.domain.EventRecord> findByEventId(String eventId) {
+        var rows=jdbcTemplate.query("SELECT * FROM event_store WHERE event_id=?", (rs,n)->new com.fiscalstudy.backend.domain.EventRecord(rs.getString("event_id"),rs.getString("event_type"),rs.getString("aggregate_type"),rs.getString("aggregate_id"),rs.getString("session_id"),rs.getString("occurred_at"),rs.getString("recorded_at"),rs.getInt("event_version"),rs.getString("schema_version"),rs.getString("payload_json")),eventId);
+        return rows.stream().findFirst();
+    }
+
+    @Override
     public boolean hasRecentEvent(String eventType, String aggregateId, String sessionId, int minutes) {
         return hasRecentEventSeconds(eventType, aggregateId, sessionId, minutes * 60);
     }
@@ -59,7 +71,7 @@ public class EventStoreRepositoryImpl implements EventStoreRepository {
 
     @Override
     public java.util.List<String> getEventPayloads(String sessionId, String eventType) {
-        String sql = "SELECT payload_json FROM event_store WHERE session_id = ? AND event_type = ?";
+        String sql = "SELECT payload_json FROM event_store WHERE session_id = ? AND event_type = ? ORDER BY occurred_at,rowid";
         return jdbcTemplate.queryForList(sql, String.class, sessionId, eventType);
     }
 
@@ -119,7 +131,7 @@ public class EventStoreRepositoryImpl implements EventStoreRepository {
     @Override
     public int countPreviousAttempts(String questionId) {
         if (questionId == null || questionId.isBlank()) return 0;
-        String sql = "SELECT COUNT(*) FROM event_store WHERE event_type = 'ANSWER_SUBMITTED' AND aggregate_id = ?";
+        String sql = "SELECT COUNT(*) FROM event_store WHERE event_type = 'ANSWER_SUBMITTED' AND aggregate_id = ? AND json_valid(payload_json) AND json_extract(payload_json,'$.origin')='REAL_STUDY'";
         Integer count = jdbcTemplate.queryForObject(sql, Integer.class, questionId);
         return count != null ? count : 0;
     }
@@ -128,7 +140,7 @@ public class EventStoreRepositoryImpl implements EventStoreRepository {
     public java.util.Optional<com.fiscalstudy.backend.domain.EventRecord> findLatestAttempt(String questionId) {
         if (questionId == null || questionId.isBlank()) return java.util.Optional.empty();
         String sql = "SELECT event_id, event_type, aggregate_type, aggregate_id, session_id, occurred_at, recorded_at, event_version, schema_version, payload_json " +
-                     "FROM event_store WHERE event_type = 'ANSWER_SUBMITTED' AND aggregate_id = ? ORDER BY occurred_at DESC, rowid DESC LIMIT 1";
+                     "FROM event_store WHERE event_type = 'ANSWER_SUBMITTED' AND aggregate_id = ? AND json_valid(payload_json) AND json_extract(payload_json,'$.origin')='REAL_STUDY' ORDER BY occurred_at DESC, rowid DESC LIMIT 1";
         java.util.List<com.fiscalstudy.backend.domain.EventRecord> list = jdbcTemplate.query(sql, (rs, rowNum) -> new com.fiscalstudy.backend.domain.EventRecord(
                 rs.getString("event_id"),
                 rs.getString("event_type"),
