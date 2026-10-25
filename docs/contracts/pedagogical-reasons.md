@@ -16,8 +16,12 @@ A primeira tentativa foi interrompida após falha de autoattach ByteBuddy em nam
 
 ## Limitação e próximo contrato
 
-O comportamento histórico para `isCorrect=null` ainda segue o ramo de acerto. Isso exige correção independente, com definição de elegibilidade e regressão; não foi alterado nesta mudança textual. Também não se declara homologação visual ou eficácia pedagógica com estes testes técnicos.
+A mudança textual original preservou o comportamento histórico de `isCorrect=null`. A correção independente subsequente passou a ignorar resultados não avaliáveis antes de qualquer consulta, gravação ou evento, seguindo a elegibilidade já aplicada em `AttemptSubmissionService` e `LearningEvidenceService`. A tentativa não avaliável continua válida e preservada pelo serviço de submissão; apenas não sustenta agendamento baseado em resultado. Não se declara homologação visual ou eficácia pedagógica com estes testes técnicos.
 
 ## Recuperação
 
 Mudança sem migração: reverter o commit restaura as mensagens anteriores. Histórico de respostas e revisões persistidas não foi reescrito. Nenhum merge na main está autorizado nesta entrega.
+
+## Regressão de resultados não avaliáveis
+
+Após a guarda de resultado nulo, executados novamente `test-compile` e quatro suítes (UngradedRevisionRegressionTest, PedagogicalReasonRegressionTest, ErrorTaxonomyRegressionTest, RevisionCalendarServiceTest): **19 testes, zero falhas, erros ou ignorados**, em 46,834 s. Os dois cenários novos verificam agenda vazia e revisão existente integralmente preservada, com ausência de eventos, apesar de confiança alta, causa relatada, chute e fricção. Log local: C:/workspace/ungraded-revision-tests.log. Sem migração ou alterações de dados históricos.
