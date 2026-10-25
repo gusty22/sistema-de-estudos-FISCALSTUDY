@@ -1,31 +1,49 @@
+server:
+  address: ${FISCALSTUDY_BIND:127.0.0.1}
+  port: ${FISCALSTUDY_PORT:8080}
 spring:
   datasource:
-    url: jdbc:sqlite:../db/fiscalstudy.db
+    url: "jdbc:sqlite:${fiscalstudy.data-dir}/fiscalstudy.db"
     driver-class-name: org.sqlite.JDBC
     hikari:
-      connection-init-sql: "PRAGMA journal_mode = WAL; PRAGMA synchronous = NORMAL; PRAGMA foreign_keys = ON;"
+      maximum-pool-size: 4
+      connection-timeout: 10000
+      data-source-properties:
+        foreign_keys: true
+        journal_mode: WAL
+        synchronous: NORMAL
+        busy_timeout: 10000
   jpa:
     database-platform: org.hibernate.community.dialect.SQLiteDialect
     hibernate:
       ddl-auto: none
-    show-sql: true
-    properties:
-      hibernate:
-        format_sql: true
-
+    show-sql: false
   sql:
     init:
-      mode: always
+      mode: never
       schema-locations: classpath:schema.sql
-
   servlet:
     multipart:
       enabled: true
       max-file-size: 50MB
       max-request-size: 100MB
-
 fiscalstudy:
-  # Origem atribuida pelo servidor a toda tentativa gravada por esta instancia.
-  # O cliente nao pode promover eventos a REAL_STUDY.
+  project-root: ${FISCALSTUDY_PROJECT_ROOT:..}
+  data-dir: ${FISCALSTUDY_DATA_DIR:${fiscalstudy.project-root}/db}
+  staging-db: ${FISCALSTUDY_STAGING_DB:${fiscalstudy.data-dir}/staging.db}
+  analytics-dir: ${FISCALSTUDY_ANALYTICS_DIR:${fiscalstudy.data-dir}/analytics}
+  analytics-engine-dir: ${FISCALSTUDY_ANALYTICS_ENGINE_DIR:${fiscalstudy.project-root}/analytics-engine}
+  acervo-root: ${FISCALSTUDY_ACERVO_ROOT:${fiscalstudy.data-dir}/materials}
+  python-executable: ${FISCALSTUDY_PYTHON:python}
+  rscript-executable: ${FISCALSTUDY_RSCRIPT:Rscript}
+  zone: ${FISCALSTUDY_ZONE:America/Sao_Paulo}
   event-origin: REAL_STUDY
+  anki:
+    network-allowed: ${FISCALSTUDY_ANKI_NETWORK_ALLOWED:true}
+    enabled: false
+    auto-sync-enabled: false
+    cloud-sync-enabled: false
 
+  security:
+    admin-token: ${FISCALSTUDY_ADMIN_TOKEN:}
+    allowed-origins: ${FISCALSTUDY_ALLOWED_ORIGINS:http://localhost:5173,http://127.0.0.1:5173}
