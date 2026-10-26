@@ -246,3 +246,20 @@ unlink(path)
   
   unlink(tmp_sha_test)
 }
+
+
+# Independent SHA-256 known-answer vectors, including the bounded connection path.
+hash_vector_file <- tempfile(fileext = ".bin")
+writeBin(charToRaw("abc"), hash_vector_file)
+assert_equal(compute_buffered_file_sha256(hash_vector_file),
+             "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+             "Buffered connection SHA-256 matches the independent abc vector")
+assert_true(is.na(compute_buffered_file_sha256(hash_vector_file, max_bytes = 2)),
+            "Buffered fallback refuses files exceeding its explicit memory cap")
+writeBin(raw(0), hash_vector_file)
+assert_equal(compute_buffered_file_sha256(hash_vector_file),
+             "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+             "Empty-file SHA-256 matches the independent known-answer vector")
+assert_true(is.na(compute_buffered_file_sha256(paste0(hash_vector_file, ".missing"))),
+            "Missing file never receives an invented hash")
+unlink(hash_vector_file)
