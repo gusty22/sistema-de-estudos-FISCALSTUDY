@@ -97,6 +97,11 @@ public class RobinHoodCycleService {
     }
 
     public synchronized void injectWeights(RobinHoodWeightsDTO weights) {
+        if (weights != null && !weights.supportsAutomaticPlanning()) {
+            this.activeWeights = null;
+            logger.warn("Analytical payload is observational only; no planning weights applied.");
+            return;
+        }
         this.activeWeights = weights;
         logger.info("Robin Hood Weights injetados com sucesso. Modelo fonte: {}, Tópicos críticos: {}",
                 weights != null ? weights.sourceModel() : "null",
@@ -120,7 +125,7 @@ public class RobinHoodCycleService {
             if(!run.startsWith(analyticsPaths.output().resolve("runs")))throw new IllegalStateException("Invalid run path");
             Path file=run.resolve("metrics/robin_hood_weights.json");
             if(customPath!=null && !Path.of(customPath).toAbsolutePath().normalize().equals(file))throw new IllegalArgumentException("Only current run artifacts can be loaded");
-            activeWeights=objectMapper.readValue(Files.readString(file),RobinHoodWeightsDTO.class);
+            injectWeights(objectMapper.readValue(Files.readString(file),RobinHoodWeightsDTO.class));
             return activeWeights;
         }catch(java.nio.file.NoSuchFileException e){return activeWeights;}
         catch(Exception e){throw new IllegalStateException("Cannot load current analytical weights",e);}

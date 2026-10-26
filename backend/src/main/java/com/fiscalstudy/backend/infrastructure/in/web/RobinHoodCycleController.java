@@ -37,6 +37,10 @@ public class RobinHoodCycleController {
     public ResponseEntity<com.fiscalstudy.backend.infrastructure.in.web.dto.RobinHoodWeightsDTO> injectWeights(
             @RequestBody com.fiscalstudy.backend.infrastructure.in.web.dto.RobinHoodWeightsDTO weights
     ) {
+        if (weights == null || !weights.supportsAutomaticPlanning()) {
+            return ResponseEntity.unprocessableEntity()
+                    .header("X-FiscalStudy-Analytics-Status", "OBSERVATIONAL_ONLY").build();
+        }
         robinHoodCycleService.injectWeights(weights);
         return ResponseEntity.ok(robinHoodCycleService.getActiveWeights());
     }
@@ -46,6 +50,10 @@ public class RobinHoodCycleController {
             @RequestParam(required = false) String path
     ) {
         com.fiscalstudy.backend.infrastructure.in.web.dto.RobinHoodWeightsDTO weights = robinHoodCycleService.syncWeightsFromFile(path);
+        if (weights == null || !weights.supportsAutomaticPlanning()) {
+            return ResponseEntity.unprocessableEntity()
+                    .header("X-FiscalStudy-Analytics-Status", "NO_APPLICABLE_ANALYTICS").build();
+        }
         return ResponseEntity.ok(weights);
     }
 
