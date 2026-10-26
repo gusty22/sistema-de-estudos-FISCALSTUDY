@@ -227,30 +227,35 @@ evaluate_model_vs_baseline <- function(y_true, y_pred_model, y_pred_baseline) {
       brier_baseline = NA_real_,
       brier_skill_score = NA_real_,
       is_superior_to_baseline = FALSE,
+      can_apply = FALSE,
       methodological_caution = "Comprimentos vetoriais incompativeis ou vazios."
     ))
   }
   
-  # Clipping para cálculo estável de log loss
-  eps <- 1e-6
-  clip_prob <- function(p) pmin(pmax(p, eps), 1 - eps)
-  
-  y_num <- as.numeric(y_true == 1 | y_true == TRUE)
-  p_m <- clip_prob(as.numeric(y_pred_model))
-  p_b <- clip_prob(as.numeric(y_pred_baseline))
-  
-  # Brier Score (MSE probabilístico)
-  bs_model <- mean((p_m - y_num)^2)
-  bs_base <- mean((p_b - y_num)^2)
-  
-  # Brier Skill Score: BSS = 1 - (BS_model / BS_baseline)
-  # BSS > 0 indica superação do baseline de referência
-  bss <- if (bs_base > 0) 1 - (bs_model / bs_base) else 0
-  
-  # Log Loss (Cross-Entropy)
-  logloss_model <- -mean(y_num * log(p_m) + (1 - y_num) * log(1 - p_m))
-  logloss_base  <- -mean(y_num * log(p_b) + (1 - y_num) * log(1 - p_b))
-  
+  # Invalid probabilities are data errors, not values to silently repair.
+  outcome_text <- toupper(trimws(as.character(y_true)))
+  y_num <- rep(NA_real_, n)
+  y_num[outcome_text %in% c("TRUE", "1")] <- 1
+  y_num[outcome_text %in% c("FALSE", "0")] <- 0
+  p_model <- suppressWarnings(as.numeric(y_pred_model))
+  p_baseline <- suppressWarnings(as.numeric(y_pred_baseline))
+  if (anyNA(y_num) || any(!is.finite(p_model)) || any(!is.finite(p_baseline)) ||
+      any(p_model < 0 | p_model > 1) || any(p_baseline < 0 | p_baseline > 1)) {
+    return(list(status = "INVALID_PROBABILITY_OR_OUTCOME", n_observations = as.integer(n),
+      brier_model = NA_real_, brier_baseline = NA_real_, brier_skill_score = NA_real_,
+      is_superior_to_baseline = FALSE, can_apply = FALSE,
+      methodological_caution = "Binary outcomes and finite probabilities in [0,1] are required; invalid values were not clipped."))
+  }
+  # Brier uses raw probabilities, including valid endpoints; clipping is for logs only.
+  bs_model <- mean((p_model - y_num)^2)
+  bs_base <- mean((p_baseline - y_num)^2)
+  bss <- if (bs_base > 0) 1 - bs_model / bs_base else NA_real_
+  eps <- 1e-15
+  p_m <- pmin(pmax(p_model, eps), 1 - eps)
+  p_b <- pmin(pmax(p_baseline, eps), 1 - eps)
+  logloss_model <- -mean(y_num * log(p_m) + (1 - y_num) * log1p(-p_m))
+  logloss_base <- -mean(y_num * log(p_b) + (1 - y_num) * log1p(-p_b))
+
   cautions <- c(
     "1. Brier Skill Score (BSS > 0) quantifica o ganho relativo em relacao a probabilidade base historica.",
     "2. Este helper recebe vetores sem desenho de validacao; nao demonstra desempenho fora da amostra.",
@@ -271,7 +276,7 @@ evaluate_model_vs_baseline <- function(y_true, y_pred_model, y_pred_baseline) {
     brier_skill_score = round(bss, 4),
     logloss_model = round(logloss_model, 4),
     logloss_baseline = round(logloss_base, 4),
-    is_superior_to_baseline = (bss > 0),
+    is_superior_to_baseline = is.finite(bss) && bss > 0,
     methodological_cautions = cautions
   )
 }
@@ -420,22 +425,7 @@ evaluate_baselines_temporally <- function(attempts_df,
     return(empty_result("DUPLICATE_EVENT_ID", nrow(attempts_df), duplicate_event_ids = duplicate_ids))
   }
 
-  parse_time <- function(x) {
-    if (inherits(x, "POSIXt")) return(as.POSIXct(x, tz = "UTC"))
-    x <- as.character(x)
-    parsed <- suppressWarnings(as.POSIXct(x, format = "%Y-%m-%dT%H:%M:%OSZ", tz = "UTC"))
-    needs_offset <- is.na(parsed)
-    if (any(needs_offset)) {
-      parsed[needs_offset] <- suppressWarnings(as.POSIXct(x[needs_offset],
-        format = "%Y-%m-%dT%H:%M:%OS%z", tz = "UTC"))
-    }
-    needs_space <- is.na(parsed)
-    if (any(needs_space)) {
-      parsed[needs_space] <- suppressWarnings(as.POSIXct(x[needs_space],
-        format = "%Y-%m-%d %H:%M:%OS", tz = "UTC"))
-    }
-    parsed
-  }
+  parse_time <- parse_evidence_timestamp
 
   raw_outcome <- toupper(trimws(as.character(attempts_df$is_correct)))
   outcome <- rep(NA_integer_, nrow(attempts_df))

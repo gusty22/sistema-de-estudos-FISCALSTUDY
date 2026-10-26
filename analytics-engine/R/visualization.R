@@ -68,7 +68,7 @@ plot_response_time_distribution <- function(attempts_df, output_path = NULL) {
   }
   
   raw_times <- suppressWarnings(as.numeric(attempts_df$active_time_ms))
-  times_sec <- raw_times[!is.na(raw_times) & raw_times >= 0] / 1000.0
+  times_sec <- raw_times[is.finite(raw_times) & raw_times >= 0] / 1000.0
   n <- length(times_sec)
   if (n == 0) return(invisible(NULL))
   
@@ -86,7 +86,7 @@ plot_response_time_distribution <- function(attempts_df, output_path = NULL) {
   
   h <- graphics::hist(
     times_sec,
-    breaks = "FD",
+    breaks = if (n < 2L || length(unique(times_sec)) < 2L) 1L else "FD",
     col = "#DBEAFE",
     border = "#3B82F6",
     main = "Histograma de Tempos",

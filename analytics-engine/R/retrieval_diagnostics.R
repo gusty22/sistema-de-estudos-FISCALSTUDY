@@ -2,15 +2,7 @@
 # Pre-update FSRS outcome audit. This module never schedules or diagnoses a cause.
 # FSRS remains the sole authority for memory state and review scheduling.
 
-parse_fsrs_evidence_time <- function(x) {
-  x <- as.character(x)
-  parsed <- suppressWarnings(as.POSIXct(x, format = "%Y-%m-%dT%H:%M:%OSZ", tz = "UTC"))
-  missing <- is.na(parsed)
-  if (any(missing)) {
-    parsed[missing] <- suppressWarnings(as.POSIXct(x[missing], format = "%Y-%m-%d %H:%M:%OS", tz = "UTC"))
-  }
-  parsed
-}
+parse_fsrs_evidence_time <- function(x) parse_evidence_timestamp(x)
 
 calculate_retrieval_surprise <- function(attempts_df = NULL,
                                          low_retrievability_threshold = 0.50,
@@ -44,6 +36,7 @@ calculate_retrieval_surprise <- function(attempts_df = NULL,
     "Question ambiguity, changed item difficulty, content classification, guessing, interruption, and grading remain alternative explanations.",
     "The pre-update FSRS state is sampled during answer submission, before the outcome updates that state; it is not a measurement taken before the student first saw the question.",
     "This analysis does not update FSRS state, change review dates, diagnose personality, or select an intervention.",
+    "Missing or duplicate event identities are not scored; naive timestamps without a timezone are not treated as UTC.",
     "Threshold bands are configurable operational triage rules; their values are not validated decision boundaries."
   )
 
@@ -57,7 +50,7 @@ calculate_retrieval_surprise <- function(attempts_df = NULL,
   )
   if (is.null(attempts_df) || nrow(attempts_df) == 0L) {
     return(list(
-      status = "NO_DATA", analysis_version = "1.0.0",
+      status = "NO_DATA", analysis_version = "1.1.0",
       input_attempt_count = 0L, evaluable_attempt_count = 0L,
       valid_preupdate_snapshot_count = 0L, excluded_snapshot_count = 0L,
       classification_counts = list(), prediction_metrics = list(status = "NOT_CALCULATED"),
@@ -72,7 +65,7 @@ calculate_retrieval_surprise <- function(attempts_df = NULL,
   missing_fields <- setdiff(required, names(attempts_df))
   if (length(missing_fields) > 0L) {
     return(list(
-      status = "MODEL_INPUTS_MISSING", analysis_version = "1.0.0",
+      status = "MODEL_INPUTS_MISSING", analysis_version = "1.1.0",
       input_attempt_count = as.integer(nrow(attempts_df)),
       evaluable_attempt_count = NA_integer_, valid_preupdate_snapshot_count = 0L,
       excluded_snapshot_count = as.integer(nrow(attempts_df)),
@@ -99,7 +92,7 @@ calculate_retrieval_surprise <- function(attempts_df = NULL,
   n <- nrow(evaluable)
   if (n == 0L) {
     return(list(
-      status = "NO_EVALUABLE_ATTEMPTS", analysis_version = "1.0.0",
+      status = "NO_EVALUABLE_ATTEMPTS", analysis_version = "1.1.0",
       input_attempt_count = as.integer(nrow(attempts_df)), evaluable_attempt_count = 0L,
       valid_preupdate_snapshot_count = 0L, excluded_snapshot_count = as.integer(nrow(attempts_df)),
       classification_counts = list(NOT_EVALUABLE = as.integer(nrow(attempts_df))),
@@ -128,7 +121,14 @@ calculate_retrieval_surprise <- function(attempts_df = NULL,
   snapshot_status[evidence_valid & !p_valid] <- "RETRIEVABILITY_MISSING_OR_OUT_OF_RANGE"
   snapshot_status[evidence_valid & p_valid & !time_valid] <- "FSRS_STATE_NOT_PROVEN_PREUPDATE"
   snapshot_status[evidence_valid & p_valid & time_valid & !version_valid] <- "FSRS_MODEL_VERSION_MISSING"
-  valid_snapshot <- evidence_valid & p_valid & time_valid & version_valid
+  event_ids <- if ("event_id" %in% names(evaluable)) trimws(as.character(evaluable$event_id)) else rep(NA_character_, n)
+  question_ids <- if ("question_id" %in% names(evaluable)) trimws(as.character(evaluable$question_id)) else rep(NA_character_, n)
+  identity_known <- !is.na(event_ids) & nzchar(event_ids) & !is.na(question_ids) & nzchar(question_ids)
+  duplicate_event <- duplicated(event_ids) | duplicated(event_ids, fromLast = TRUE)
+  identity_valid <- identity_known & !duplicate_event
+  snapshot_status[!identity_known] <- "EVENT_OR_ITEM_IDENTITY_MISSING"
+  snapshot_status[identity_known & duplicate_event] <- "DUPLICATE_EVENT_ID"
+  valid_snapshot <- evidence_valid & p_valid & time_valid & version_valid & identity_valid
   classification <- ifelse(!is.na(outcome), "MEMORY_ESTIMATE_UNAVAILABLE", "NOT_EVALUABLE")
   classification[valid_snapshot & outcome] <- "RETRIEVAL_SUCCESS"
   classification[valid_snapshot & outcome & raw_p <= low_retrievability_threshold] <- "SUCCESS_WITH_LOW_PREDICTED_RETRIEVAL"
@@ -203,6 +203,7 @@ calculate_retrieval_surprise <- function(attempts_df = NULL,
       label_topic <- topic[idx[1]]
       high_errors <- sum(group_class == "ERROR_WITH_HIGH_PREDICTED_RETRIEVAL")
       low_errors <- sum(group_class == "ERROR_WITH_LOW_PREDICTED_RETRIEVAL")
+      high_predictions <- sum(raw_p[idx] >= high_retrievability_threshold)
       by_topic[[key]] <- list(
         discipline = label_discipline,
         topic = label_topic,
@@ -210,6 +211,9 @@ calculate_retrieval_surprise <- function(attempts_df = NULL,
         high_predicted_retrieval_errors = as.integer(high_errors),
         low_predicted_retrieval_errors = as.integer(low_errors),
         high_predicted_error_rate = high_errors / n_group,
+        high_predicted_error_rate_denominator = "ALL_VALID_TOPIC_SNAPSHOTS",
+        high_prediction_attempt_count = as.integer(high_predictions),
+        error_rate_among_high_predictions = if (high_predictions > 0L) high_errors / high_predictions else NA_real_,
         support_status = if (n_group >= 5L) "OBSERVED_PATTERN_REVIEW" else "LOW_SUPPORT",
         interpretation = "Observed memory-prediction/outcome discrepancy; not topic mastery or a diagnosed cause."
       )
@@ -221,7 +225,7 @@ calculate_retrieval_surprise <- function(attempts_df = NULL,
   overall_status <- if (valid_n == 0L) "NO_VALID_PREUPDATE_SNAPSHOTS" else if (valid_n < minimum_observations_for_descriptive_review) "INSUFFICIENT_EVIDENCE" else "DESCRIPTIVE_UNVALIDATED"
   list(
     status = overall_status,
-    analysis_version = "1.0.0",
+    analysis_version = "1.1.0",
     input_attempt_count = as.integer(nrow(attempts_df)),
     evaluable_attempt_count = as.integer(n),
     valid_preupdate_snapshot_count = as.integer(valid_n),

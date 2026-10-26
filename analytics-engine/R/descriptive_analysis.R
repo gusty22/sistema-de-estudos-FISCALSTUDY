@@ -2,6 +2,30 @@
 # Módulo de Análise Estatística Descritiva e Calibração
 # Projeto: FiscalStudy Analytics (R >= 4.0.0)
 
+
+# Absolute instants only: never silently assign UTC to an unknown local timestamp.
+parse_evidence_timestamp <- function(values) {
+  if (inherits(values, "POSIXt")) return(as.POSIXct(values, tz = "UTC"))
+  text <- as.character(values)
+  shape <- !is.na(text) & grepl(
+    "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}([.][0-9]+)?(Z|[+-]([01][0-9]|2[0-3]):?[0-5][0-9])$", text)
+  wall <- sub("(Z|[+-][0-9]{2}:?[0-9]{2})$", "", text)
+  parsed <- suppressWarnings(as.POSIXct(wall, format = "%Y-%m-%dT%H:%M:%OS", tz = "UTC"))
+  roundtrip <- format(parsed, "%Y-%m-%dT%H:%M:%S", tz = "UTC")
+  valid <- shape & !is.na(parsed) & !is.na(roundtrip) & roundtrip == substr(text, 1L, 19L)
+  zone <- sub("^.*(Z|[+-][0-9]{2}:?[0-9]{2})$", "\\1", text)
+  offset_rows <- which(valid & zone != "Z")
+  if (length(offset_rows) > 0L) {
+    offset <- gsub(":", "", zone[offset_rows], fixed = TRUE)
+    sign <- ifelse(substr(offset, 1L, 1L) == "-", -1, 1)
+    seconds <- sign * (as.numeric(substr(offset, 2L, 3L)) * 3600 +
+                         as.numeric(substr(offset, 4L, 5L)) * 60)
+    parsed[offset_rows] <- parsed[offset_rows] - seconds
+  }
+  parsed[!valid | is.na(valid)] <- NA
+  parsed
+}
+
 # Preserve event cardinality and recorded metadata; fill missing values from the catalog.
 # Conflicting catalog definitions are explicit errors, never multiplied observations.
 join_question_metadata <- function(attempts_df, questions_df, fields = c("disciplina", "assunto")) {

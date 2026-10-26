@@ -54,5 +54,20 @@ fig5 <- file.path(test_fig_dir, "test_evidence.png")
 plot_evidence_volume(perf_disc, output_path = fig5)
 assert_true(file.exists(fig5) && file.info(fig5)$size > 1000, "plot_evidence_volume gera arquivo PNG valido")
 
+
+# Single/constant observations must not make nclass.FD abort the whole pipeline.
+singleton_png <- file.path(test_fig_dir, "singleton.png")
+plot_response_time_distribution(data.frame(active_time_ms = 12345), singleton_png)
+assert_true(file.exists(singleton_png) && file.info(singleton_png)$size > 1000,
+            "One attempt produces a valid descriptive time figure")
+constant_png <- file.path(test_fig_dir, "constant.png")
+plot_response_time_distribution(data.frame(active_time_ms = rep(10000, 3)), constant_png)
+assert_true(file.exists(constant_png) && file.info(constant_png)$size > 1000,
+            "Constant response times do not trigger an undefined histogram rule")
+nonfinite_png <- file.path(test_fig_dir, "nonfinite.png")
+assert_equal(plot_response_time_distribution(data.frame(active_time_ms = c(Inf, NA)), nonfinite_png),
+             NULL, "Nonfinite times do not form a fabricated distribution")
+assert_false(file.exists(nonfinite_png), "No valid times means no figure is manufactured")
+
 # Limpeza de arquivos de teste
 unlink(test_fig_dir, recursive = TRUE)

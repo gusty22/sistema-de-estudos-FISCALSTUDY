@@ -87,3 +87,15 @@ A lacuna mais concreta no módulo R era que `evaluate_model_vs_baseline` recebia
 O backtest é uma ferramenta de avaliação do próprio baseline, ainda não uma previsão de domínio cognitivo validada nem uma saída executável. Para um estudante único, dependência entre tentativas e repetição de itens impede interpretar N de tentativas como N de evidências conceituais independentes. A classificação curricular usada pelo baseline deve permanecer rastreável e válida no instante do evento.
 
 FSRS continua sendo a única autoridade de estados mnemônicos e agenda. Este incremento não ajusta uma segunda curva de esquecimento, não muda o planejador, não faz inferência causal e não afirma eficácia pedagógica. A validação automatizada e a avaliação empírica permanecem gates separados.
+
+
+## Retomada após auditoria — 26/10/2026
+
+A referência atual é main 4ec0343100baf389ceb615c2307354a64f99c296, já com #22. A matriz factual R01–R22 e as quatro dimensões estão em LEARNER_MODEL_VALIDATION.md; não substituem nem encerram os F01–F36.
+
+Entregas: validação de scores, instantes explícitos, identidade no diagnóstico FSRS, conferência de desfechos pós-intervenção e remoção de contagens inventadas. Saída de avaliação de intervenções 1.1.0 distingue declarado/verificado; nenhum banco é migrado.
+
+Manifesto do Bridge é frente separada fix/analytics-bridge-provenance, reutilizando o pacote existente. Próximo gate é o transporte/consumo isolado e, depois, completar condições da resposta/classificação. Não adicionar IRT, bandits ou curva paralela para compensar falta de dados.
+
+
+Fechamento: R 574/0; Java 22/0/0/0, incluindo transporte real, bloqueio de aplicação/recarga e respostas HTTP explícitas. Novas observações R21/R22 estão registradas. Próximos trabalhos permanecem dados curriculares/condições da resposta e consumidores cognitivos Java concorrentes, não algoritmos mais complexos.

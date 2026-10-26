@@ -14,20 +14,40 @@ DATA_PROVENANCE_TYPES <- c(
 #' Prioriza digest::digest (se disponivel); recorre a tools::sha256sum (Base R nativo).
 #' Retorna NA_character_ em caso de erro, modulo indisponivel ou arquivo inacessivel (fail-closed).
 #' NUNCA substitui SHA-256 por MD5.
-compute_file_sha256 <- function(file_path) {
-  if (is.null(file_path) || !is.character(file_path) || length(file_path) != 1 || !file.exists(file_path)) {
-    return(NA_character_)
-  }
+# SHA-256 over actual bytes, bounded for platforms where file.access/native checks
+# report unreadable even though a normal R read connection is permitted.
+compute_buffered_file_sha256 <- function(file_path, max_bytes = 64 * 1024^2) {
+  if (length(max_bytes) != 1L || is.na(max_bytes) || !is.finite(max_bytes) ||
+      max_bytes < 0 || max_bytes > .Machine$integer.max - 1) return(NA_character_)
+  if (!requireNamespace("digest", quietly = TRUE)) return(NA_character_)
   tryCatch({
+    info <- file.info(file_path)
+    size <- info$size
+    if (length(size) != 1L || is.na(size) || !is.finite(size) ||
+        isTRUE(info$isdir) || size < 0 || size > max_bytes) return(NA_character_)
+    connection <- file(file_path, open = "rb")
+    on.exit(close(connection), add = TRUE)
+    bytes <- readBin(connection, what = "raw", n = as.integer(size) + 1L)
+    if (length(bytes) != size) return(NA_character_)
+    tolower(as.character(digest::digest(bytes, algo = "sha256", serialize = FALSE)))
+  }, error = function(e) NA_character_)
+}
+
+compute_file_sha256 <- function(file_path) {
+  if (is.null(file_path) || !is.character(file_path) || length(file_path) != 1 ||
+      is.na(file_path) || !file.exists(file_path)) return(NA_character_)
+  native <- tryCatch({
     if (requireNamespace("digest", quietly = TRUE)) {
       tolower(as.character(digest::digest(file_path, algo = "sha256", file = TRUE)))
     } else if (requireNamespace("tools", quietly = TRUE) && exists("sha256sum", envir = asNamespace("tools"))) {
       res <- unname(as.character(tools::sha256sum(file_path)))
       if (is.na(res) || !nzchar(res)) NA_character_ else tolower(res)
-    } else {
-      NA_character_
-    }
+    } else NA_character_
   }, error = function(e) NA_character_)
+  if (!is.na(native) && nzchar(native)) return(native)
+  # No permission assumptions, alternate source or weaker hash: read the same file,
+  # or fail closed. Large files cannot use the bounded in-memory fallback.
+  compute_buffered_file_sha256(file_path)
 }
 
 #' Audita e Verifica a ProcedÃÂªncia de um Conjunto de Dados

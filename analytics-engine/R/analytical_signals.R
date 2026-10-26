@@ -85,8 +85,12 @@ detect_analytical_signals <- function(profile, attempts_df = NULL, questions_df 
       length(profile$error_patterns$recurrent_error_questions) > 0) {
     for (qid in profile$error_patterns$recurrent_error_questions) {
       q_sub <- if (!is.null(attempts_df)) attempts_df[attempts_df$question_id == qid, ] else NULL
-      n_q <- if (!is.null(q_sub)) nrow(q_sub) else 2L
-      k_q <- if (!is.null(q_sub)) sum(q_sub$is_correct == TRUE) else 0L
+      # A profile label cannot manufacture two error observations when rows are absent.
+      if (is.null(q_sub) || nrow(q_sub) == 0L || !"is_correct" %in% names(q_sub)) next
+      q_sub <- q_sub[!is.na(q_sub$is_correct), , drop = FALSE]
+      n_q <- nrow(q_sub)
+      if (n_q == 0L) next
+      k_q <- sum(q_sub$is_correct == TRUE)
       err_q <- n_q - k_q
       
       if (err_q >= cfg$min_recurrent_errors) {
