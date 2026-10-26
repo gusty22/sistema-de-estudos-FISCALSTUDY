@@ -229,4 +229,100 @@ public class TopicKnowledgeSecurityAndIntegrityTest {
             assertNotNull(response.getBody().getExecutionId());
         }
     }
+
+    @Test
+    @DisplayName("Integridade 10: Reconstrução transacional — Falha no replaceAll deve dar rollback e manter projeção anterior intacta")
+    void testReplaceAllRollbackPreservesExistingProjectionsOnFailure() {
+        // 1. Criar e salvar uma projeção prévia conhecida
+        TopicKnowledgeProjection initialProj = new TopicKnowledgeProjection("top-persistente-transacional", "DIR_TRIBUTARIO", "Imunidades Constitucionais");
+        initialProj.setTotalAttempts(8);
+        initialProj.setCorrectAttempts(7);
+        initialProj.setErrorAttempts(1);
+        initialProj.setEvidenceStatus("PRELIMINAR");
+        initialProj.setAccuracyDenominatorText("7/8");
+        topicKnowledgeRepository.saveOrUpdate(initialProj);
+
+        assertTrue(topicKnowledgeRepository.findByTopicId("top-persistente-transacional").isPresent(),
+                "A projeção inicial deve existir antes da tentativa de substituição.");
+
+        // 2. Preparar batch com uma projeção válida e uma que viola chave primária (duplicada) no SQLite
+        TopicKnowledgeProjection validProj1 = new TopicKnowledgeProjection("top-chave-duplicada", "DIR_CONSTITUCIONAL", "Direitos Fundamentais");
+        TopicKnowledgeProjection validProj2 = new TopicKnowledgeProjection("top-chave-duplicada", "DIR_ADMINISTRATIVO", "Atos Administrativos");
+
+        // 3. Executar replaceAll esperando falha de persistência no SQLite
+        assertThrows(Exception.class, () -> {
+            topicKnowledgeRepository.replaceAll(List.of(validProj1, validProj2));
+        });
+
+        // 4. Confirmar que a projeção anterior permanece 100% preservada (rollback efetivo do DELETE)
+        Optional<TopicKnowledgeProjection> preservedOpt = topicKnowledgeRepository.findByTopicId("top-persistente-transacional");
+        assertTrue(preservedOpt.isPresent(), "Rollback transacional DEVE restaurar a projeção anterior intacta.");
+        assertEquals("top-persistente-transacional", preservedOpt.get().getTopicId());
+        assertEquals(8, preservedOpt.get().getTotalAttempts());
+        assertEquals("7/8", preservedOpt.get().getAccuracyDenominatorText());
+
+        // 5. Confirmar que as projeções do batch com falha NÃO foram commitadas
+        Optional<TopicKnowledgeProjection> notInsertedOpt = topicKnowledgeRepository.findByTopicId("top-chave-duplicada");
+        assertTrue(notInsertedOpt.isEmpty(), "Inserções parciais de batch com falha NÃO devem ser persistidas.");
+    }
+
+    @Test
+    @DisplayName("Segurança 11: Proteção de endpoint local — Rebuild bloqueia Origin externa, Sec-Fetch-Site cross-site e Referer malicioso")
+    void testExternalWebPageAccessToRebuildIsStrictlyForbidden() throws Exception {
+        // 1. Origin externa
+        mockMvc.perform(post("/api/v1/knowledge/rebuild")
+                        .header("Origin", "https://malicious-external-site.com")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error", containsString("Origin not allowed")));
+
+        // 2. Sec-Fetch-Site cross-site (disparado por páginas externas abertas no navegador)
+        mockMvc.perform(post("/api/v1/knowledge/rebuild")
+                        .header("Origin", "http://localhost:5173")
+                        .header("Sec-Fetch-Site", "cross-site")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error", containsString("Cross-site request forbidden")));
+
+        // 3. Referer malicioso externo
+        mockMvc.perform(post("/api/v1/knowledge/rebuild")
+                        .header("Referer", "https://malicious-external-site.com/exploit.html")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error", containsString("Referer origin not allowed")));
+    }
+
+    @Test
+    @DisplayName("Integridade 12: Legitimidade — Simulado real (REAL_STUDY) é preservado; sessões de teste e sintéticas são descartadas")
+    void testRealStudySimuladoPreservedAndSyntheticSessionsDiscarded() {
+        EventStoreRepository mockStore = mock(EventStoreRepository.class);
+        TopicKnowledgeRepository mockRepo = mock(TopicKnowledgeRepository.class);
+
+        TopicKnowledgeAggregatorService service = new TopicKnowledgeAggregatorService(
+                mockStore, mockRepo, jdbcTemplate
+        );
+
+        List<EventRecord> events = List.of(
+                // 1. Simulado real feito pelo estudante (origin = REAL_STUDY, interventionType = SIMULADO)
+                new EventRecord("real-sim-1", "ANSWER_SUBMITTED", "QUESTION", "q-1", "sess-simulado-oficial-1",
+                        Instant.now().toString(), Instant.now().toString(), 1, "v1",
+                        "{\"questionId\":\"q-1\",\"isCorrect\":true,\"confidenceLevel\":4,\"activeTimeMs\":45000,\"origin\":\"REAL_STUDY\",\"interventionType\":\"SIMULADO\"}"),
+                // 2. Sessão sintética de teste com prefixo test- (mesmo tentando forjar origin REAL_STUDY)
+                new EventRecord("fake-1", "ANSWER_SUBMITTED", "QUESTION", "q-1", "test-session-mock-42",
+                        Instant.now().toString(), Instant.now().toString(), 1, "v1",
+                        "{\"questionId\":\"q-1\",\"isCorrect\":false,\"confidenceLevel\":1,\"activeTimeMs\":1000,\"origin\":\"REAL_STUDY\"}"),
+                // 3. Evento sem declaração de origin
+                new EventRecord("no-origin-1", "ANSWER_SUBMITTED", "QUESTION", "q-1", "s-legacy",
+                        Instant.now().toString(), Instant.now().toString(), 1, "v1",
+                        "{\"questionId\":\"q-1\",\"isCorrect\":true,\"confidenceLevel\":5,\"activeTimeMs\":15000}")
+        );
+
+        when(mockStore.getAllEvents("ANSWER_SUBMITTED")).thenReturn(events);
+
+        TopicKnowledgeAggregatorService.RebuildResult result = service.rebuildAll();
+
+        assertNotNull(result);
+        assertEquals(1, result.totalAttempts(),
+                "Apenas o simulado real legítimo deve ser computado; sessões com prefixo test- ou sem origin devem ser descartadas.");
+    }
 }

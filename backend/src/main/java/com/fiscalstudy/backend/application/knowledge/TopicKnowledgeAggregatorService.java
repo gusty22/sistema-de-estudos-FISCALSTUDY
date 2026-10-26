@@ -326,8 +326,12 @@ public class TopicKnowledgeAggregatorService {
     ) {
         try {
             JsonNode payload = objectMapper.readTree(event.getPayloadJson());
-            String origin = payload.path("origin").asText("REAL_STUDY");
-            boolean isReal = "REAL_STUDY".equalsIgnoreCase(origin);
+            String origin = payload.hasNonNull("origin") ? payload.path("origin").asText().trim() : null;
+            String sessionId = event.getSessionId();
+            String lowerSession = (sessionId != null) ? sessionId.toLowerCase().trim() : "";
+            boolean isSyntheticSession = lowerSession.startsWith("test-") || lowerSession.startsWith("mock-") || lowerSession.startsWith("e2e-") || lowerSession.startsWith("demo-") || lowerSession.startsWith("sample-");
+
+            boolean isReal = "REAL_STUDY".equalsIgnoreCase(origin) && !isSyntheticSession;
 
             String questionId = payload.path("questionId").asText(event.getAggregateId());
             boolean isCorrect = payload.path("isCorrect").asBoolean(false);

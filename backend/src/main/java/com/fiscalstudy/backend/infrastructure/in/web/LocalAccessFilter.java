@@ -27,6 +27,25 @@ public class LocalAccessFilter extends OncePerRequestFilter {
     @Override protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain chain) throws ServletException, IOException {
         String origin = req.getHeader("Origin");
         if (origin != null && !origins.contains(origin)) { deny(res,403,"Origin not allowed"); return; }
+        String secFetchSite = req.getHeader("Sec-Fetch-Site");
+        if (secFetchSite != null && "cross-site".equalsIgnoreCase(secFetchSite)) {
+            deny(res, 403, "Cross-site request forbidden");
+            return;
+        }
+        String referer = req.getHeader("Referer");
+        if (referer != null && !referer.isBlank()) {
+            boolean allowedReferer = false;
+            for (String allowed : origins) {
+                if (referer.startsWith(allowed)) {
+                    allowedReferer = true;
+                    break;
+                }
+            }
+            if (!allowedReferer) {
+                deny(res, 403, "Referer origin not allowed");
+                return;
+            }
+        }
         String uri=req.getRequestURI();
         boolean admin=uri.startsWith("/api/v1/system/backup") || uri.startsWith("/api/v1/system/audit") || uri.startsWith("/api/v1/ingestion");
         if (admin && !"OPTIONS".equals(req.getMethod())) {
