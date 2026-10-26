@@ -151,7 +151,11 @@ shuffled_result <- evaluate_baselines_temporally(
   temporal_fixture[rev(seq_len(nrow(temporal_fixture))), ],
   initial_training_observations = 3L, prior_weight = 2
 )
-key_temporal <- function(x) x[order(x$event_id, x$model_name), c("event_id", "model_name", "predicted_probability")]
+key_temporal <- function(x) {
+  out <- x[order(x$event_id, x$model_name), c("event_id", "model_name", "predicted_probability")]
+  rownames(out) <- NULL
+  out
+}
 assert_equal(key_temporal(shuffled_result$predictions), key_temporal(temporal_result$predictions),
              "Backtest temporal e invariante a ordem de entrada")
 future_changed <- temporal_fixture
