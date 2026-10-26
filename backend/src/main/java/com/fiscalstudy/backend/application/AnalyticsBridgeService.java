@@ -81,9 +81,12 @@ public class AnalyticsBridgeService {
    try {
      Path run=paths.output().resolve("runs").resolve(id);Files.createDirectories(run);
      writeManifest(id,"RUNNING",start,null);
-     Path input=run.resolve("input.csv");Files.copy(exportCanonicalCsv(),input);
+     // One snapshot produces both bytes and the matching provenance manifest.
+     var exported=projection.exportPackageToDirectory(run,"REAL_STUDY");
+     Path input=run.resolve("input.csv");Files.copy(exported.getCsvPath(),input);
      Path script=paths.engine().resolve("run_analytics.R");if(!Files.isRegularFile(script))throw new IllegalStateException("Analytics engine script missing: "+script);
      Map<String,String> env=new HashMap<>();env.put("FISCALSTUDY_ANALYTICS_OUTPUT",run.toString());env.put("FISCALSTUDY_RUN_ID",id);
+     env.put("FISCALSTUDY_EXPORT_MANIFEST",exported.getManifestPath().toString());
      String resolvedLibs = resolveRLibs();
      if(!resolvedLibs.isBlank())env.put("FISCALSTUDY_R_LIBS",resolvedLibs);
      String resolvedExec = resolveExecutable();

@@ -49,6 +49,8 @@ public class RobinHoodCycleEngine {
             Map<String, String> lastHandoffPerDiscipline,
             com.fiscalstudy.backend.infrastructure.in.web.dto.RobinHoodWeightsDTO injectedWeights
     ) {
+        // Keep observations readable, but never use the legacy DTO as decision authority.
+        if (injectedWeights != null && !injectedWeights.supportsAutomaticPlanning()) injectedWeights = null;
         if (profiles == null || profiles.isEmpty()) {
             return new RobinHoodCycleResult(
                     concursoId,

@@ -20,6 +20,14 @@ public record RobinHoodWeightsDTO(
         @JsonProperty("hyper_consolidated_disciplines") List<HyperConsolidatedDTO> hyperConsolidatedDisciplines,
         @JsonProperty("redistribution_plan") RedistributionPlanDTO redistributionPlan
 ) {
+    /**
+     * This legacy observational contract carries no homologated decision authority.
+     * Populated weights or unknown JSON flags cannot authorize automatic interventions.
+     * A future actionable contract requires explicit review and independent validation.
+     */
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    public boolean supportsAutomaticPlanning() { return false; }
+
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record DisciplineWeightDTO(
             @JsonProperty("discipline") String discipline,
