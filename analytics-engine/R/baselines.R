@@ -253,14 +253,18 @@ evaluate_model_vs_baseline <- function(y_true, y_pred_model, y_pred_baseline) {
   
   cautions <- c(
     "1. Brier Skill Score (BSS > 0) quantifica o ganho relativo em relacao a probabilidade base historica.",
-    "2. Qualquer modelo complexo deve provar superacao fora da amostra (out-of-sample) sobre a media historica."
+    "2. Este helper recebe vetores sem desenho de validacao; nao demonstra desempenho fora da amostra.",
+    "3. Qualquer modelo complexo deve provar superacao temporal fora da amostra sobre baselines simples."
   )
   if (n < 20) {
     cautions <- c(cautions, sprintf("3. Amostra de avaliacao muito reduzida (N = %d < 20); BSS altamente instavel.", n))
   }
   
   list(
-    status = if (n >= 20) "VALID_COMPARISON" else "INSUFFICIENT_SAMPLE_CAUTION",
+    status = "DESCRIPTIVE_SCORE_ONLY",
+    sample_size_status = if (n >= 20) "DESCRIPTIVE_SAMPLE_SIZE_REACHED" else "SMALL_SAMPLE_CAUTION",
+    is_out_of_sample = NA,
+    can_apply = FALSE,
     n_observations = n,
     brier_model = round(bs_model, 4),
     brier_baseline = round(bs_base, 4),
@@ -345,5 +349,280 @@ assess_advanced_model_viability <- function(model_family, n_attempts, n_items, n
     recommended_baseline = "Média Histórica Global",
     barriers = c("Familia de modelos nao catalogada."),
     scientific_rationale = "Adotar baselines simples ate especificacao formal."
+  )
+}
+
+
+#' Avalia baselines por origem temporal expansiva sem vazamento do resultado futuro
+#' @param attempts_df Tentativas com event_id unico, occurred_at UTC e is_correct
+#' @param initial_training_observations Numero operacional de observacoes anteriores exigidas
+#' @param prior_weight Forca de suavizacao topic-level; parametro operacional, nao psicologico
+#' @return Backtest temporal descritivo, sempre nao validado e nao executavel
+evaluate_baselines_temporally <- function(attempts_df,
+                                          initial_training_observations = 10L,
+                                          prior_weight = 2.0) {
+  empty_predictions <- data.frame(
+    event_id = character(0), question_id = character(0), occurred_at = character(0),
+    model_name = character(0), predicted_probability = numeric(0),
+    observed_correct = integer(0), training_observations = integer(0),
+    topic_training_observations = integer(0), item_exposure = character(0),
+    prediction_basis = character(0), stringsAsFactors = FALSE
+  )
+  empty_result <- function(status, input_count = 0L, evaluable_count = 0L, excluded_count = 0L,
+                           duplicate_event_ids = 0L) {
+    list(
+      status = status,
+      evaluation_version = "temporal_baseline_backtest_v1",
+      evaluation_design = "EXPANDING_WINDOW_STRICTLY_EARLIER_TIMESTAMP_BATCHES",
+      input_attempt_count = as.integer(input_count),
+      evaluable_attempt_count = as.integer(evaluable_count),
+      excluded_attempt_count = as.integer(excluded_count),
+      duplicate_event_id_count = as.integer(duplicate_event_ids),
+      prediction_count = 0L,
+      predictions = empty_predictions,
+      metrics = list(),
+      is_validated = FALSE,
+      is_out_of_sample = FALSE,
+      can_apply = FALSE,
+      methodological_cautions = c(
+        "Backtest de baseline e evidencia descritiva; nao demonstra dominio conceitual, transferencia ou efeito causal.",
+        "Tentativas do mesmo estudante/item sao dependentes; contagens nao equivalem a observacoes independentes.",
+        "Rotulos curriculares devem ser os registrados no evento; classificacao historica nao e verificada por este helper.",
+        "O resultado nunca altera FSRS, agenda de revisao ou plano de estudo."
+      )
+    )
+  }
+
+  if (is.null(attempts_df) || !is.data.frame(attempts_df) || nrow(attempts_df) == 0L) {
+    return(empty_result("NO_DATA", if (is.data.frame(attempts_df)) nrow(attempts_df) else 0L))
+  }
+  if (length(initial_training_observations) != 1L ||
+      is.na(initial_training_observations) || !is.finite(initial_training_observations) ||
+      initial_training_observations < 1 || initial_training_observations != as.integer(initial_training_observations)) {
+    stop("initial_training_observations must be a positive integer.")
+  }
+  if (length(prior_weight) != 1L || is.na(prior_weight) || !is.finite(prior_weight) || prior_weight < 0) {
+    stop("prior_weight must be one finite non-negative value.")
+  }
+
+  required <- c("event_id", "occurred_at", "is_correct")
+  missing <- setdiff(required, names(attempts_df))
+  if (length(missing) > 0L) {
+    result <- empty_result("REQUIRED_FIELDS_MISSING", nrow(attempts_df), excluded_count = nrow(attempts_df))
+    result$missing_fields <- as.list(missing)
+    return(result)
+  }
+
+  event_ids <- trimws(as.character(attempts_df$event_id))
+  known_ids <- !is.na(event_ids) & nzchar(event_ids)
+  duplicate_ids <- sum(known_ids & (duplicated(event_ids) | duplicated(event_ids, fromLast = TRUE)))
+  if (duplicate_ids > 0L) {
+    return(empty_result("DUPLICATE_EVENT_ID", nrow(attempts_df), duplicate_event_ids = duplicate_ids))
+  }
+
+  parse_time <- function(x) {
+    if (inherits(x, "POSIXt")) return(as.POSIXct(x, tz = "UTC"))
+    x <- as.character(x)
+    parsed <- suppressWarnings(as.POSIXct(x, format = "%Y-%m-%dT%H:%M:%OSZ", tz = "UTC"))
+    needs_offset <- is.na(parsed)
+    if (any(needs_offset)) {
+      parsed[needs_offset] <- suppressWarnings(as.POSIXct(x[needs_offset],
+        format = "%Y-%m-%dT%H:%M:%OS%z", tz = "UTC"))
+    }
+    needs_space <- is.na(parsed)
+    if (any(needs_space)) {
+      parsed[needs_space] <- suppressWarnings(as.POSIXct(x[needs_space],
+        format = "%Y-%m-%d %H:%M:%OS", tz = "UTC"))
+    }
+    parsed
+  }
+
+  raw_outcome <- toupper(trimws(as.character(attempts_df$is_correct)))
+  outcome <- rep(NA_integer_, nrow(attempts_df))
+  outcome[raw_outcome %in% c("TRUE", "1")] <- 1L
+  outcome[raw_outcome %in% c("FALSE", "0")] <- 0L
+  evaluable <- !is.na(outcome) & known_ids
+
+  blocked <- c("ANULADA", "AUSENTE", "SOB_REVISAO")
+  for (column in intersect(c("gabarito_status", "correct_option"), names(attempts_df))) {
+    evaluable <- evaluable & !toupper(trimws(as.character(attempts_df[[column]]))) %in% blocked
+  }
+  if ("is_annulled" %in% names(attempts_df)) {
+    evaluable <- evaluable & !toupper(trimws(as.character(attempts_df$is_annulled))) %in% c("TRUE", "1")
+  }
+  event_time <- parse_time(attempts_df$occurred_at)
+  evaluable <- evaluable & !is.na(event_time)
+
+  rows <- which(evaluable)
+  excluded_count <- nrow(attempts_df) - length(rows)
+  if (length(rows) == 0L) {
+    return(empty_result("NO_EVALUABLE_TEMPORAL_ATTEMPTS", nrow(attempts_df), 0L, excluded_count))
+  }
+
+  data <- attempts_df[rows, , drop = FALSE]
+  data$.outcome <- outcome[rows]
+  data$.time <- event_time[rows]
+  data$.event_id <- event_ids[rows]
+  question_col <- intersect(c("question_id", "item_id"), names(data))
+  data$.question <- if (length(question_col) > 0L) trimws(as.character(data[[question_col[1]]])) else rep(NA_character_, nrow(data))
+  data$.question[is.na(data$.question) | !nzchar(data$.question)] <- NA_character_
+
+  discipline_col <- intersect(c("discipline_at_attempt", "disciplina", "discipline"), names(data))
+  topic_col <- intersect(c("topic_at_attempt", "assunto", "topic"), names(data))
+  has_topic_labels <- length(discipline_col) > 0L && length(topic_col) > 0L
+  if (has_topic_labels) {
+    discipline <- trimws(as.character(data[[discipline_col[1]]]))
+    topic <- trimws(as.character(data[[topic_col[1]]]))
+    topic_ok <- !is.na(discipline) & nzchar(discipline) & !is.na(topic) & nzchar(topic)
+    data$.topic_key <- ifelse(topic_ok,
+      paste0(nchar(discipline), ":", discipline, nchar(topic), ":", topic), NA_character_)
+  } else {
+    data$.topic_key <- NA_character_
+  }
+
+  order_idx <- order(as.numeric(data$.time), data$.event_id, method = "radix")
+  data <- data[order_idx, , drop = FALSE]
+  unique_times <- unique(as.numeric(data$.time))
+  global_n <- 0L
+  global_correct <- 0L
+  topic_n <- integer(0)
+  topic_correct <- integer(0)
+  seen_questions <- character(0)
+  prediction_rows <- list()
+
+  for (time_value in unique_times) {
+    batch_idx <- which(as.numeric(data$.time) == time_value)
+    batch <- data[batch_idx, , drop = FALSE]
+
+    if (global_n >= as.integer(initial_training_observations)) {
+      global_probability <- global_correct / global_n
+      batch_predictions <- vector("list", nrow(batch) * 2L)
+      position <- 1L
+      for (i in seq_len(nrow(batch))) {
+        qid <- batch$.question[i]
+        exposure <- if (is.na(qid)) "ITEM_IDENTITY_UNKNOWN" else if (qid %in% seen_questions) "REPEATED_ITEM" else "FIRST_SEEN_ITEM"
+
+        batch_predictions[[position]] <- data.frame(
+          event_id = batch$.event_id[i], question_id = qid,
+          occurred_at = format(batch$.time[i], "%Y-%m-%dT%H:%M:%OSZ", tz = "UTC"),
+          model_name = "GLOBAL_HISTORICAL_MEAN",
+          predicted_probability = global_probability, observed_correct = batch$.outcome[i],
+          training_observations = global_n, topic_training_observations = 0L,
+          item_exposure = exposure, prediction_basis = "GLOBAL_HISTORY",
+          stringsAsFactors = FALSE
+        )
+        position <- position + 1L
+
+        key <- batch$.topic_key[i]
+        topic_count <- if (!is.na(key) && key %in% names(topic_n)) unname(topic_n[key]) else 0L
+        topic_success <- if (!is.na(key) && key %in% names(topic_correct)) unname(topic_correct[key]) else 0L
+        if (!is.na(key) && topic_count > 0L) {
+          topic_probability <- if (prior_weight == 0) topic_success / topic_count else
+            (topic_success + prior_weight * global_probability) / (topic_count + prior_weight)
+          prediction_basis <- "SMOOTHED_TOPIC_HISTORY"
+        } else {
+          topic_probability <- global_probability
+          prediction_basis <- if (is.na(key)) "GLOBAL_FALLBACK_NO_EVENT_TIME_CLASSIFICATION" else "GLOBAL_FALLBACK_UNSEEN_TOPIC"
+        }
+        batch_predictions[[position]] <- data.frame(
+          event_id = batch$.event_id[i], question_id = qid,
+          occurred_at = format(batch$.time[i], "%Y-%m-%dT%H:%M:%OSZ", tz = "UTC"),
+          model_name = "SMOOTHED_TOPIC_MEAN",
+          predicted_probability = topic_probability, observed_correct = batch$.outcome[i],
+          training_observations = global_n, topic_training_observations = topic_count,
+          item_exposure = exposure, prediction_basis = prediction_basis,
+          stringsAsFactors = FALSE
+        )
+        position <- position + 1L
+      }
+      prediction_rows[[length(prediction_rows) + 1L]] <- do.call(rbind, batch_predictions)
+    }
+
+    # Outcomes at the same timestamp enter training only after every prediction in that batch.
+    for (i in seq_len(nrow(batch))) {
+      global_n <- global_n + 1L
+      global_correct <- global_correct + batch$.outcome[i]
+      key <- batch$.topic_key[i]
+      if (!is.na(key)) {
+        if (!(key %in% names(topic_n))) {
+          topic_n[key] <- 0L
+          topic_correct[key] <- 0L
+        }
+        topic_n[key] <- topic_n[key] + 1L
+        topic_correct[key] <- topic_correct[key] + batch$.outcome[i]
+      }
+      if (!is.na(batch$.question[i])) seen_questions <- c(seen_questions, batch$.question[i])
+    }
+  }
+
+  if (length(prediction_rows) == 0L) {
+    result <- empty_result("INSUFFICIENT_HISTORY", nrow(attempts_df), length(rows), excluded_count)
+    result$training_observations_available <- as.integer(length(rows))
+    result$initial_training_observations <- as.integer(initial_training_observations)
+    result$classification_metadata_status <- if (has_topic_labels) "EVENT_TIME_COLUMNS_PRESENT_UNVERIFIED" else "MISSING_GLOBAL_ONLY_FALLBACK"
+    return(result)
+  }
+
+  predictions <- do.call(rbind, prediction_rows)
+  rownames(predictions) <- NULL
+  score <- function(model_rows) {
+    p <- as.numeric(model_rows$predicted_probability)
+    y <- as.numeric(model_rows$observed_correct)
+    valid <- is.finite(p) & p >= 0 & p <= 1 & !is.na(y)
+    if (!any(valid)) return(list(n_observations = 0L, n_unique_questions = 0L, brier_score = NA_real_, log_loss = NA_real_))
+    p <- p[valid]
+    y <- y[valid]
+    q <- model_rows$question_id[valid]
+    clipped <- pmin(pmax(p, 1e-15), 1 - 1e-15)
+    list(
+      n_observations = as.integer(length(y)),
+      n_unique_questions = as.integer(length(unique(q[!is.na(q)]))),
+      brier_score = mean((p - y)^2),
+      log_loss = mean(-(y * log(clipped) + (1 - y) * log1p(-clipped)))
+    )
+  }
+  global_rows <- predictions[predictions$model_name == "GLOBAL_HISTORICAL_MEAN", , drop = FALSE]
+  global_score <- score(global_rows)
+  metrics <- lapply(unique(predictions$model_name), function(model) {
+    model_rows <- predictions[predictions$model_name == model, , drop = FALSE]
+    result <- score(model_rows)
+    bss <- if (global_score$brier_score > 0 && is.finite(global_score$brier_score))
+      1 - result$brier_score / global_score$brier_score else NA_real_
+    c(result, list(
+      brier_skill_vs_global_baseline = bss,
+      comparison_status = "DESCRIPTIVE_ONLY",
+      repeated_attempts_may_not_be_independent = TRUE
+    ))
+  })
+  names(metrics) <- unique(predictions$model_name)
+
+  list(
+    status = "DESCRIPTIVE_TEMPORAL_BACKTEST",
+    evaluation_version = "temporal_baseline_backtest_v1",
+    evaluation_design = "EXPANDING_WINDOW_STRICTLY_EARLIER_TIMESTAMP_BATCHES",
+    input_attempt_count = as.integer(nrow(attempts_df)),
+    evaluable_attempt_count = as.integer(length(rows)),
+    excluded_attempt_count = as.integer(excluded_count),
+    duplicate_event_id_count = 0L,
+    initial_training_observations = as.integer(initial_training_observations),
+    training_window = "EXPANDING",
+    prediction_count = as.integer(nrow(predictions)),
+    unique_test_event_count = as.integer(length(unique(predictions$event_id))),
+    unique_test_item_count = as.integer(length(unique(predictions$question_id[!is.na(predictions$question_id)]))),
+    classification_metadata_status = if (has_topic_labels) "EVENT_TIME_COLUMNS_PRESENT_UNVERIFIED" else "MISSING_GLOBAL_ONLY_FALLBACK",
+    metrics = metrics,
+    predictions = predictions,
+    is_validated = FALSE,
+    is_out_of_sample = TRUE,
+    can_apply = FALSE,
+    methodological_cautions = c(
+      "Predictions use only outcomes with timestamps strictly earlier than the predicted timestamp; equal-timestamp events are held out as one batch.",
+      "The rolling-origin scores are descriptive for this history, not a proof of future calibration or learning efficacy.",
+      "Repeated attempts from the same student/item are dependent; uncertainty intervals and significance claims are not produced.",
+      "First-seen item means only unseen question_id in the recorded history; it is not evidence of conceptual transfer.",
+      "Topic predictions use only the topic labels present on each attempt row; historical classification provenance is not validated here.",
+      "Baseline prior_weight is a technical smoothing knob, not a psychological trait or latent mastery parameter.",
+      "This output cannot schedule FSRS reviews or drive planner decisions."
+    )
   )
 }
