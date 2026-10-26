@@ -91,7 +91,7 @@ FSRS continua sendo a única autoridade de estados mnemônicos e agenda. Este in
 
 ## Retomada após auditoria — 26/10/2026
 
-A referência atual é main 4ec0343100baf389ceb615c2307354a64f99c296, já com #22. A matriz factual R01–R19 e as quatro dimensões estão em LEARNER_MODEL_VALIDATION.md; não substituem nem encerram os F01–F36.
+A referência atual é main 4ec0343100baf389ceb615c2307354a64f99c296, já com #22. A matriz factual R01–R20 e as quatro dimensões estão em LEARNER_MODEL_VALIDATION.md; não substituem nem encerram os F01–F36.
 
 Entregas: validação de scores, instantes explícitos, identidade no diagnóstico FSRS, conferência de desfechos pós-intervenção e remoção de contagens inventadas. Saída de avaliação de intervenções 1.1.0 distingue declarado/verificado; nenhum banco é migrado.
 

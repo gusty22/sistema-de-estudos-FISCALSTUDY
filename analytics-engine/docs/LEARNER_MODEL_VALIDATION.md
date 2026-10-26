@@ -109,6 +109,9 @@ O motor é uma camada descritiva com backtest temporal de baselines e auditoria 
 | R17 | Média | Configuração de analytical_signals pode divergir dos contadores prontos do perfil | PENDENTE: calcular com a configuração efetiva ou restringir parâmetros não suportados. |
 | R18 | Média | DEVELOPMENT_STATUS/contexto antigo afirmam conclusão ampla e citam digital_twin_engine.R ausente | Este registro atualiza o estado, preservando histórico. Especificação N-de-1 não é implementação. |
 | R19 | Média | Backtest varre timestamps por lote; manifesto Java hasheia entrypoint, não todos os módulos | PENDENTE: medir custo antes de otimizar e versionar/hash do conjunto completo. Não há benchmark de desempenho nesta rodada. |
+| R20 | Alta | RobinHoodWeightsDTO ignorava can_apply/is_validated; injectWeights, recarga de arquivo e generateCycle podiam aceitar pesos exploratórios | CORREÇÃO em fix/analytics-bridge-provenance: o contrato legado permanece observacional, sem autoridade de alocação; novos testes protegem injeção, recarga e consumo direto. Uma versão executável futura exige homologação explícita. |
+
+O achado R20 foi identificado ao rastrear o consumidor após a primeira publicação da auditoria. O bloqueio preserva o cálculo do ciclo configurado e FSRS, mas impede que DTOs analíticos legados alterem pesos ou criem blocos emergenciais. Não é suficiente confiar em flags desconhecidas descartadas pelo deserializador.
 
 ### Equações e fronteiras verificadas
 
