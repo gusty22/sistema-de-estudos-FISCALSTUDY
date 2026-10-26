@@ -7,6 +7,8 @@ public class AdaptiveRevisionDecisionDTO {
     private String concursoId;
     private int tempoDisponivelMinutos;
     private String estrategiaGlobal;
+    private String status;
+    private boolean canApply;
     private List<TopicRevisionDecision> decisoes = new ArrayList<>();
     private DecisionStatistics estatisticas = new DecisionStatistics();
 
@@ -90,6 +92,10 @@ public class AdaptiveRevisionDecisionDTO {
     public void setTempoDisponivelMinutos(int tempoDisponivelMinutos) { this.tempoDisponivelMinutos = tempoDisponivelMinutos; }
     public String getEstrategiaGlobal() { return estrategiaGlobal; }
     public void setEstrategiaGlobal(String estrategiaGlobal) { this.estrategiaGlobal = estrategiaGlobal; }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
+    public boolean isCanApply() { return canApply; }
+    public void setCanApply(boolean canApply) { this.canApply = canApply; }
     public List<TopicRevisionDecision> getDecisoes() { return decisoes; }
     public void setDecisoes(List<TopicRevisionDecision> decisoes) { this.decisoes = decisoes; }
     public DecisionStatistics getEstatisticas() { return estatisticas; }

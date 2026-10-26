@@ -1,169 +1,118 @@
 package com.fiscalstudy.backend.application.review;
 
-import com.fiscalstudy.backend.application.cognitive.UnifiedCognitiveArchitectureService;
-import com.fiscalstudy.backend.application.cognitive.UnifiedCognitiveStateDTO;
 import com.fiscalstudy.backend.domain.EventStoreRepository;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import org.springframework.jdbc.core.JdbcTemplate;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 class AdaptiveReviewDecisionEngineTest {
 
-    private UnifiedCognitiveArchitectureService cognitiveService;
     private EventStoreRepository eventStoreRepository;
-    private JdbcTemplate jdbcTemplate;
     private AdaptiveReviewDecisionEngine engine;
 
     @BeforeEach
     void setUp() {
-        cognitiveService = Mockito.mock(UnifiedCognitiveArchitectureService.class);
         eventStoreRepository = Mockito.mock(EventStoreRepository.class);
-        jdbcTemplate = Mockito.mock(JdbcTemplate.class);
-        engine = new AdaptiveReviewDecisionEngine(cognitiveService, eventStoreRepository, jdbcTemplate);
+        engine = new AdaptiveReviewDecisionEngine(eventStoreRepository);
     }
 
     @Test
-    @DisplayName("Deve replicar a tomada de decisão adaptativa dos 3 cenários: Morfologia, Concordância e Regência")
-    void testAdaptiveDecisionsTriad() {
-        // Mock do estado cognitivo com os 3 tópicos do exemplo conceitual
-        UnifiedCognitiveStateDTO mockState = new UnifiedCognitiveStateDTO();
-        List<UnifiedCognitiveStateDTO.TopicKnowledgeEstimate> list = new ArrayList<>();
+    void unvalidatedTopicModelCannotEmitExecutableReviewDecisions() {
+        AdaptiveRevisionDecisionDTO result = engine.evaluateDecisions("contest-1", 45);
 
-        // 1. Morfologia: Domínio Alto (85%), Recuperabilidade Alta (88%), Importância Média (peso 1.8)
-        UnifiedCognitiveStateDTO.TopicKnowledgeEstimate morfologia = new UnifiedCognitiveStateDTO.TopicKnowledgeEstimate();
-        morfologia.setTopicId("top-morfologia");
-        morfologia.setDisciplina("Língua Portuguesa");
-        morfologia.setAssunto("Morfologia");
-        morfologia.setDominioEstimadoPct(85.0);
-        morfologia.setRetencaoAtualPct(88.0);
-        morfologia.setIncertezaSigma(0.25);
-        morfologia.setPesoEdital(1.8);
-        morfologia.setEvidenciasValidasCount(8);
-        list.add(morfologia);
-
-        // 2. Concordância Verbal: Domínio Médio (58%), Recuperabilidade Baixa (52%), Importância Alta (peso 3.0)
-        UnifiedCognitiveStateDTO.TopicKnowledgeEstimate concordancia = new UnifiedCognitiveStateDTO.TopicKnowledgeEstimate();
-        concordancia.setTopicId("top-concordancia");
-        concordancia.setDisciplina("Língua Portuguesa");
-        concordancia.setAssunto("Concordância Verbal");
-        concordancia.setDominioEstimadoPct(58.0);
-        concordancia.setRetencaoAtualPct(52.0);
-        concordancia.setIncertezaSigma(0.35);
-        concordancia.setPesoEdital(3.0);
-        concordancia.setEvidenciasValidasCount(5);
-        list.add(concordancia);
-
-        // 3. Regência: Domínio Baixo (20%), Recuperabilidade Incerta (0%), Incerteza Alta (σ = 0.95, N=0), Importância Alta (peso 2.8)
-        UnifiedCognitiveStateDTO.TopicKnowledgeEstimate regencia = new UnifiedCognitiveStateDTO.TopicKnowledgeEstimate();
-        regencia.setTopicId("top-regencia");
-        regencia.setDisciplina("Língua Portuguesa");
-        regencia.setAssunto("Regência Verbal e Nominal");
-        regencia.setDominioEstimadoPct(20.0);
-        regencia.setRetencaoAtualPct(0.0);
-        regencia.setIncertezaSigma(0.95);
-        regencia.setPesoEdital(2.8);
-        regencia.setEvidenciasValidasCount(0);
-        list.add(regencia);
-
-        mockState.setKnowledgeModel(list);
-        when(cognitiveService.computeUnifiedState(any(), anyInt())).thenReturn(mockState);
-
-        AdaptiveRevisionDecisionDTO result = engine.evaluateDecisions("concurso-teste", 60);
-
-        assertNotNull(result);
-        assertEquals(3, result.getDecisoes().size());
-
-        // Aferir Morfologia -> ADIAR_REVISAO
-        AdaptiveRevisionDecisionDTO.TopicRevisionDecision decMorfologia = result.getDecisoes().stream()
-                .filter(d -> "top-morfologia".equals(d.getTopicId())).findFirst().orElseThrow();
-        assertEquals("ADIAR_REVISAO", decMorfologia.getDecisao());
-        assertEquals(0, decMorfologia.getDuracaoSugeridaMinutos());
-
-        // Aferir Concordância -> PRIORIZAR_REVISAO_ATIVA
-        AdaptiveRevisionDecisionDTO.TopicRevisionDecision decConcordancia = result.getDecisoes().stream()
-                .filter(d -> "top-concordancia".equals(d.getTopicId())).findFirst().orElseThrow();
-        assertEquals("PRIORIZAR_REVISAO_ATIVA", decConcordancia.getDecisao());
-        assertTrue(decConcordancia.getDuracaoSugeridaMinutos() > 0);
-
-        // Aferir Regência -> DIAGNOSTICO_DIRECIONADO (Active Information Gathering)
-        AdaptiveRevisionDecisionDTO.TopicRevisionDecision decRegencia = result.getDecisoes().stream()
-                .filter(d -> "top-regencia".equals(d.getTopicId())).findFirst().orElseThrow();
-        assertEquals("DIAGNOSTICO_DIRECIONADO", decRegencia.getDecisao());
-        assertTrue(decRegencia.isActiveInformationGathering());
-        assertTrue(decRegencia.getJustificativa().contains("não inventa probabilidades"));
-
-        // Aferir Estatísticas Globais
-        assertEquals(1, result.getEstatisticas().getAdiadasCount());
-        assertEquals(1, result.getEstatisticas().getAtivasPrioritariasCount());
-        assertEquals(1, result.getEstatisticas().getDiagnosticosCount());
+        assertEquals("BLOCKED_UNVALIDATED_MODEL", result.getStatus());
+        assertFalse(result.isCanApply());
+        assertTrue(result.getDecisoes().isEmpty());
+        assertEquals(0, result.getEstatisticas().getTotalAnalisados());
+        assertEquals(0, result.getEstatisticas().getTempoTotalAlocadoMinutos());
+        assertTrue(result.getEstrategiaGlobal().contains("fila canônica de revisões FSRS"));
+        verifyNoInteractions(eventStoreRepository);
     }
 
     @Test
-    @DisplayName("Falha em revisão após intervalo longo (Δt >= 14 dias) deve diagnosticar ACESSIBILIDADE_TEMPORAL e NÃO zerar domínio")
-    void testReviewFailureLongInterval() {
-        ReviewFailureRequestDTO req = new ReviewFailureRequestDTO();
-        req.setQuestionId("q-long");
-        req.setDisciplina("Direito Tributário");
-        req.setTopico("Decadência");
-        req.setDiasDesdeUltimaTentativa(22.0);
-        req.setDominioAnteriorPct(80.0);
-        req.setConfidenceLevel(3);
+    void failureContextIsRecordedWithoutClaimingItsCauseOrChangingModelState() {
+        ReviewFailureRequestDTO[] contexts = new ReviewFailureRequestDTO[4];
 
-        ReviewFailureDiagnosisDTO diag = engine.handleReviewFailure(req);
+        contexts[0] = request(22.0, 3, false, false, "não vi");
+        contexts[1] = request(1.0, 2, false, false, "confundi");
+        contexts[2] = request(6.0, 5, true, false, "prazo");
+        contexts[3] = request(3.0, 4, false, true, "interpretei");
 
-        assertNotNull(diag);
-        assertFalse(diag.isDominioZerado(), "Domínio NUNCA pode ser zerado por regra inegociável");
-        assertEquals("ACESSIBILIDADE_TEMPORAL", diag.getTipoFalha());
-        assertEquals("MICRO_REATIVACAO_ESPACADA", diag.getIntervencaoPrescrita());
-        assertTrue(diag.getNovoDominioAjustadoPct() > 0.0);
-        assertTrue(diag.getNovoDominioAjustadoPct() < 80.0);
+        for (ReviewFailureRequestDTO context : contexts) {
+            ReviewFailureDiagnosisDTO result = engine.handleReviewFailure(context);
+
+            assertEquals("INVESTIGATION_CANDIDATE", result.getTipoFalha());
+            assertEquals("CAUSE_UNRESOLVED", result.getStatus());
+            assertFalse(result.isCauseResolved());
+            assertFalse(result.isCanApply());
+            assertNull(result.getDominioAnteriorPct());
+            assertNull(result.getNovoDominioAjustadoPct());
+            assertNull(result.getNovaEstabilidadeDias());
+            assertEquals("NOT_ASSESSED", result.getStatusPrerequisitos());
+            assertEquals("DIAGNOSTIC_FOLLOW_UP_CANDIDATE", result.getIntervencaoPrescrita());
+            assertEquals("PERSISTED", result.getPersistenceStatus());
+            assertFalse(result.isDominioZerado());
+        }
+
+        verify(eventStoreRepository, times(contexts.length)).appendEvent(
+                eq("REVISION_FAILURE_INVESTIGATION_REQUESTED"),
+                eq("REVISION"),
+                anyString(),
+                anyString(),
+                eq(1),
+                eq("investigation-candidate-v1"),
+                anyString()
+        );
     }
 
     @Test
-    @DisplayName("Falha logo após explicação (Δt <= 2 dias) deve diagnosticar COMPREENSAO_ESTRUTURAL e prescrever Feynman")
-    void testReviewFailureShortInterval() {
-        ReviewFailureRequestDTO req = new ReviewFailureRequestDTO();
-        req.setQuestionId("q-short");
-        req.setDisciplina("Contabilidade Geral");
-        req.setTopico("DFC Método Indireto");
-        req.setDiasDesdeUltimaTentativa(1.0);
-        req.setDominioAnteriorPct(60.0);
-        req.setConfidenceLevel(2);
-        req.setIsQuestionInedita(false);
+    void missingContextStaysMissingInsteadOfBecomingAZeroOrDefaultEstimate() {
+        ReviewFailureRequestDTO request = request(null, null, null, null, null);
+        request.setDominioAnteriorPct(null);
 
-        ReviewFailureDiagnosisDTO diag = engine.handleReviewFailure(req);
+        ReviewFailureDiagnosisDTO result = engine.handleReviewFailure(request);
 
-        assertNotNull(diag);
-        assertFalse(diag.isDominioZerado());
-        assertEquals("COMPREENSAO_ESTRUTURAL", diag.getTipoFalha());
-        assertEquals("DESCONSTRUCAO_FEYNMAN", diag.getIntervencaoPrescrita());
+        assertNull(result.getDominioAnteriorPct());
+        assertNull(result.getNovoDominioAjustadoPct());
+        assertNull(result.getNovaEstabilidadeDias());
+        assertEquals("CAUSE_UNRESOLVED", result.getStatus());
+        assertFalse(result.isCanApply());
+        assertEquals("PERSISTED", result.getPersistenceStatus());
     }
 
     @Test
-    @DisplayName("Falha com confiança máxima (5/5) deve diagnosticar OVERCONFIDENCE_PEGADINHA")
-    void testReviewFailureOverconfidence() {
-        ReviewFailureRequestDTO req = new ReviewFailureRequestDTO();
-        req.setQuestionId("q-overconf");
-        req.setDisciplina("Legislação Tributária Municipal");
-        req.setTopico("ISS - Local da Prestação e Exceções");
-        req.setDiasDesdeUltimaTentativa(6.0);
-        req.setDominioAnteriorPct(75.0);
-        req.setConfidenceLevel(5); // Certeza Absoluta
+    void persistenceFailureIsExplicitAndDoesNotClaimTheCandidateWasRecorded() {
+        doThrow(new IllegalStateException("store unavailable"))
+                .when(eventStoreRepository)
+                .appendEvent(anyString(), anyString(), anyString(), anyString(), anyInt(), anyString(), anyString());
 
-        ReviewFailureDiagnosisDTO diag = engine.handleReviewFailure(req);
+        ReviewFailureDiagnosisDTO result = engine.handleReviewFailure(request(2.0, 4, false, false, null));
 
-        assertNotNull(diag);
-        assertFalse(diag.isDominioZerado());
-        assertEquals("OVERCONFIDENCE_PEGADINHA", diag.getTipoFalha());
-        assertEquals("AUDITORIA_PEGADINHA_ARMADILHA", diag.getIntervencaoPrescrita());
+        assertEquals("CAUSE_UNRESOLVED", result.getStatus());
+        assertEquals("FAILED", result.getPersistenceStatus());
+        assertFalse(result.isCanApply());
+        assertTrue(result.getExplicacaoPedagogica().contains("não foi persistido"));
+        assertNull(result.getNovoDominioAjustadoPct());
+        assertNull(result.getNovaEstabilidadeDias());
+    }
+
+    private ReviewFailureRequestDTO request(Double days, Integer confidence, Boolean isNew,
+                                             Boolean usedHelp, String reportedCause) {
+        ReviewFailureRequestDTO request = new ReviewFailureRequestDTO();
+        request.setQuestionId("question-1");
+        request.setSessionId("session-1");
+        request.setDisciplina("Direito Tributário");
+        request.setTopico("Decadência");
+        request.setDiasDesdeUltimaTentativa(days);
+        request.setDominioAnteriorPct(80.0);
+        request.setConfidenceLevel(confidence);
+        request.setIsQuestionInedita(isNew);
+        request.setUsedHelp(usedHelp);
+        request.setCausaErro(reportedCause);
+        return request;
     }
 }
