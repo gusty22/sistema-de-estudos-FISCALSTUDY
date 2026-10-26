@@ -114,13 +114,13 @@ public class AnalyticsExportIntegrationTest {
         mockMvc.perform(get("/api/v1/analytics/export"))
                 .andExpect(status().isOk())
                 .andExpect(header().string("Content-Disposition", containsString("fiscalstudy_attempts.csv")))
-                .andExpect(content().string(startsWith("question_id,selected_option,is_correct,gabarito_status,confidence_level,active_time_ms,discipline,board,year,topic,assunto,orgao,cargo,event_id,session_id,occurred_at,origin_type,concurso_point\n")))
+                .andExpect(content().string(startsWith("question_id,selected_option,is_correct,gabarito_status,confidence_level,active_time_ms,discipline,board,year,topic,assunto,orgao,cargo,event_id,session_id,occurred_at,origin_type,concurso_point,fsrs_retrievability_pre_update,fsrs_prediction_timestamp,fsrs_model_version,fsrs_evidence_status\n")))
                 .andExpect(content().string(not(containsString("\"q1\""))));
 
         mockMvc.perform(get("/api/v1/analytics/export/manifest"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.manifest_version").value("1.0.0"))
-                .andExpect(jsonPath("$.contract_version").value("1.0.0"))
+                .andExpect(jsonPath("$.manifest_version").value("1.1.0"))
+                .andExpect(jsonPath("$.contract_version").value("1.1.0"))
                 .andExpect(jsonPath("$.total_records").value(0))
                 .andExpect(jsonPath("$.evaluable_records").value(0))
                 .andExpect(jsonPath("$.non_evaluable_records").value(0))
@@ -132,11 +132,11 @@ public class AnalyticsExportIntegrationTest {
     void export_RealStudyRecords_IdentifiedAndExportedWithFullAuditTrail() throws Exception {
         jdbcTemplate.update("INSERT INTO event_store (event_id, event_type, aggregate_type, aggregate_id, session_id, occurred_at, recorded_at, event_version, schema_version, payload_json) " +
                 "VALUES ('evt-real-1', 'ANSWER_SUBMITTED', 'QUESTION', 'q1', 'sess-real-101', '2026-10-13T10:15:30Z', '2026-10-13T10:15:30Z', 1, 'v1', " +
-                "'{\"questionId\":\"q1\",\"selectedOption\":\"A\",\"isCorrect\":true,\"concursoPoint\":1,\"gabaritoStatus\":\"DEFINITIVO\",\"confidenceLevel\":5,\"activeTimeMs\":14500,\"origin\":\"REAL_STUDY\"}')");
+                "'{\"questionId\":\"q1\",\"selectedOption\":\"A\",\"isCorrect\":true,\"concursoPoint\":1,\"gabaritoStatus\":\"DEFINITIVO\",\"confidenceLevel\":5,\"activeTimeMs\":14500,\"origin\":\"REAL_STUDY\",\"memoryPrediction\":{\"recallBefore\":0.91,\"modelVersion\":\"FSRS-6.0-default-core-no-fuzz\",\"evidenceStatus\":\"UNCALIBRATED_ITEM_ESTIMATE\",\"predictedAt\":\"2026-10-13T10:15:29.900Z\"}}')");
 
         mockMvc.perform(get("/api/v1/analytics/export?origin=REAL_STUDY"))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("\"q1\",\"A\",true,\"DEFINITIVO\",5,14500,\"Direito Tributário\",\"IBGP\",2023,\"Imunidades\",\"Imunidades\",\"Prefeitura de Araguari\",\"Auditor Fiscal\",\"evt-real-1\",\"sess-real-101\",\"2026-10-13T10:15:30Z\",\"REAL_STUDY\",1")));
+                .andExpect(content().string(containsString("\"q1\",\"A\",true,\"DEFINITIVO\",5,14500,\"Direito Tributário\",\"IBGP\",2023,\"Imunidades\",\"Imunidades\",\"Prefeitura de Araguari\",\"Auditor Fiscal\",\"evt-real-1\",\"sess-real-101\",\"2026-10-13T10:15:30Z\",\"REAL_STUDY\",1,0.91,\"2026-10-13T10:15:29.900Z\",\"FSRS-6.0-default-core-no-fuzz\",\"UNCALIBRATED_ITEM_ESTIMATE\"")));
 
         mockMvc.perform(get("/api/v1/analytics/export/manifest?origin=REAL_STUDY"))
                 .andExpect(status().isOk())

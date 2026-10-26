@@ -226,8 +226,8 @@ public class AttemptSubmissionService {
         String helpTypeVal = (helpType != null && !helpType.isBlank()) ? helpType.trim() : (usedHelpVal ? "MATERIAL_APOIO" : "NENHUM");
         String interventionVal = (interventionType != null && !interventionType.isBlank()) ? interventionType.trim() : "REGULAR";
 
-        java.time.Instant occurredAt=java.time.Instant.now();
         java.util.Map<String,Object> prediction=learningEvidenceService==null ? java.util.Map.of("evidenceStatus","UNAVAILABLE") : learningEvidenceService.preview(questionId);
+        java.time.Instant occurredAt=java.time.Instant.now();
         java.util.Map<String,Object> fields=new java.util.LinkedHashMap<>();
         fields.put("attemptId",attemptId); fields.put("questionId",questionId); fields.put("selectedOption",optionLetter);
         fields.put("correctOption",question.getCorrectOption()); fields.put("isCorrect",isCorrect); fields.put("concursoPoint",concursoPoint);
