@@ -1,11 +1,9 @@
 package com.fiscalstudy.backend.application.review;
 
-import com.fiscalstudy.backend.application.cognitive.UnifiedCognitiveArchitectureService;
 import com.fiscalstudy.backend.domain.EventStoreRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import org.springframework.jdbc.core.JdbcTemplate;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -13,17 +11,13 @@ import static org.mockito.Mockito.*;
 
 class AdaptiveReviewDecisionEngineTest {
 
-    private UnifiedCognitiveArchitectureService cognitiveService;
     private EventStoreRepository eventStoreRepository;
-    private JdbcTemplate jdbcTemplate;
     private AdaptiveReviewDecisionEngine engine;
 
     @BeforeEach
     void setUp() {
-        cognitiveService = Mockito.mock(UnifiedCognitiveArchitectureService.class);
         eventStoreRepository = Mockito.mock(EventStoreRepository.class);
-        jdbcTemplate = Mockito.mock(JdbcTemplate.class);
-        engine = new AdaptiveReviewDecisionEngine(cognitiveService, eventStoreRepository, jdbcTemplate);
+        engine = new AdaptiveReviewDecisionEngine(eventStoreRepository);
     }
 
     @Test
@@ -36,7 +30,7 @@ class AdaptiveReviewDecisionEngineTest {
         assertEquals(0, result.getEstatisticas().getTotalAnalisados());
         assertEquals(0, result.getEstatisticas().getTempoTotalAlocadoMinutos());
         assertTrue(result.getEstrategiaGlobal().contains("fila canônica de revisões FSRS"));
-        verifyNoInteractions(cognitiveService);
+        verifyNoInteractions(eventStoreRepository);
     }
 
     @Test
