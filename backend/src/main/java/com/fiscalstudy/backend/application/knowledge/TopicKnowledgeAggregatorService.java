@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Agregador determinístico do Modelo Individual de Conhecimento (EPIC 02).
@@ -30,6 +31,7 @@ public class TopicKnowledgeAggregatorService {
     private final TopicKnowledgeRepository topicKnowledgeRepository;
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
+    private final AtomicBoolean isRebuilding = new AtomicBoolean(false);
 
     public TopicKnowledgeAggregatorService(
             EventStoreRepository eventStoreRepository,
@@ -40,6 +42,10 @@ public class TopicKnowledgeAggregatorService {
         this.topicKnowledgeRepository = topicKnowledgeRepository;
         this.jdbcTemplate = jdbcTemplate;
         this.objectMapper = new ObjectMapper();
+    }
+
+    public boolean isRebuilding() {
+        return isRebuilding.get();
     }
 
     /**
@@ -57,91 +63,110 @@ public class TopicKnowledgeAggregatorService {
     /**
      * Reconstrução completa, idempotente e determinística de todos os tópicos a partir do event_store.
      */
-    public synchronized RebuildResult rebuildAll() {
-        log.info("Iniciando reconstrução determinística do Modelo Individual de Conhecimento...");
+    public RebuildResult rebuildAll() {
+        if (!isRebuilding.compareAndSet(false, true)) {
+            throw new IllegalStateException("Reconstrução já em andamento. Aguarde a conclusão da execução atual.");
+        }
+        try {
+            log.info("Iniciando reconstrução determinística do Modelo Individual de Conhecimento...");
 
-        // 1. Carregar mapeamento de todas as questões
-        Map<String, QuestionMetadata> questionMap = loadQuestionMetadata();
+            // 1. Carregar mapeamento de todas as questões
+            Map<String, QuestionMetadata> questionMap = loadQuestionMetadata();
 
-        // 2. Carregar famílias de variantes identificadas confiavelmente
-        Map<String, String> familyMap = loadQuestionFamilies();
+            // 2. Carregar famílias de variantes identificadas confiavelmente
+            Map<String, String> familyMap = loadQuestionFamilies();
 
-        // 3. Carregar estimativas temporais de memória FSRS pura
-        Map<String, MemoryState> memoryMap = loadMemoryStates();
+            // 3. Carregar anotações mais recentes por tentativa (ATTEMPT_ANNOTATED)
+            Map<String, String> latestAnnotations = loadLatestAnnotations();
 
-        // 4. Carregar todos os tópicos canônicos do edital verticalizado
-        Map<String, TopicInfo> canonicalTopics = loadCanonicalTopics();
+            // 4. Carregar estimativas temporais de memória FSRS pura
+            Map<String, MemoryState> memoryMap = loadMemoryStates();
 
-        // 5. Carregar todos os eventos ANSWER_SUBMITTED legítimos
-        List<EventRecord> answerEvents = eventStoreRepository.getAllEvents("ANSWER_SUBMITTED");
+            // 5. Carregar todos os tópicos canônicos do edital verticalizado
+            Map<String, TopicInfo> canonicalTopics = loadCanonicalTopics();
 
-        // 6. Agrupar eventos por topicId/assunto
-        Map<String, List<ParsedAttempt>> attemptsByTopic = new HashMap<>();
+            // 6. Carregar todos os eventos ANSWER_SUBMITTED legítimos
+            List<EventRecord> answerEvents = eventStoreRepository.getAllEvents("ANSWER_SUBMITTED");
 
-        for (EventRecord event : answerEvents) {
-            ParsedAttempt attempt = parseAttempt(event, questionMap, familyMap);
-            if (attempt == null || !attempt.isRealStudy()) {
-                continue; // Descarta testes sintéticos ou sem tópico
+            // 7. Deduplicar eventos e agrupar por topicId/assunto
+            Set<String> seenEventIds = new HashSet<>();
+            Map<String, List<ParsedAttempt>> attemptsByTopic = new HashMap<>();
+
+            for (EventRecord event : answerEvents) {
+                if (event.getEventId() != null && !seenEventIds.add(event.getEventId())) {
+                    log.debug("Ignorando evento duplicado no event_store: {}", event.getEventId());
+                    continue;
+                }
+                ParsedAttempt attempt = parseAttempt(event, questionMap, familyMap, latestAnnotations);
+                if (attempt == null || !attempt.isRealStudy()) {
+                    continue; // Descarta testes sintéticos ou sem tópico
+                }
+                attemptsByTopic.computeIfAbsent(attempt.topicId(), k -> new ArrayList<>()).add(attempt);
             }
-            attemptsByTopic.computeIfAbsent(attempt.topicId(), k -> new ArrayList<>()).add(attempt);
+
+            // Ordenar tentativas de cada tópico cronologicamente
+            for (List<ParsedAttempt> list : attemptsByTopic.values()) {
+                list.sort(Comparator.comparing(
+                        a -> a.occurredAt() != null ? a.occurredAt() : Instant.EPOCH
+                ));
+            }
+
+            List<TopicKnowledgeProjection> allProjections = new ArrayList<>();
+            int totalLegitimateAttempts = 0;
+            Set<String> processedTopicKeys = new HashSet<>();
+
+            // 8. Processar todos os tópicos canônicos (mesmo os com 0 tentativas -> SEM_EVIDENCIAS)
+            for (Map.Entry<String, TopicInfo> entry : canonicalTopics.entrySet()) {
+                String topicKey = entry.getKey();
+                TopicInfo info = entry.getValue();
+                processedTopicKeys.add(topicKey);
+
+                List<ParsedAttempt> attempts = attemptsByTopic.getOrDefault(topicKey, Collections.emptyList());
+                MemoryState memory = memoryMap.get(topicKey);
+
+                TopicKnowledgeProjection projection = buildProjection(
+                        topicKey,
+                        info.discipline(),
+                        info.topicName(),
+                        attempts,
+                        memory
+                );
+
+                allProjections.add(projection);
+                totalLegitimateAttempts += attempts.size();
+            }
+
+            // 9. Processar tópicos que porventura existam em questões mas não estejam em edital_topicos
+            for (Map.Entry<String, List<ParsedAttempt>> entry : attemptsByTopic.entrySet()) {
+                String topicKey = entry.getKey();
+                if (processedTopicKeys.contains(topicKey)) continue;
+
+                List<ParsedAttempt> attempts = entry.getValue();
+                String discipline = attempts.isEmpty() ? "GERAL" : attempts.get(0).discipline();
+                MemoryState memory = memoryMap.get(topicKey);
+
+                TopicKnowledgeProjection projection = buildProjection(
+                        topicKey,
+                        discipline,
+                        topicKey,
+                        attempts,
+                        memory
+                );
+
+                allProjections.add(projection);
+                totalLegitimateAttempts += attempts.size();
+            }
+
+            // 10. Atualização atômica transacional de todas as projeções
+            topicKnowledgeRepository.replaceAll(allProjections);
+
+            log.info("Reconstrução concluída com sucesso: {} tópicos processados, {} tentativas legítimas agregadas.",
+                    allProjections.size(), totalLegitimateAttempts);
+
+            return new RebuildResult(allProjections.size(), totalLegitimateAttempts, Instant.now());
+        } finally {
+            isRebuilding.set(false);
         }
-
-        // 7. Limpar projeções antigas para garantir pureza da reconstrução idempotente
-        topicKnowledgeRepository.deleteAll();
-
-        int topicsRebuilt = 0;
-        int totalLegitimateAttempts = 0;
-
-        // 8. Processar todos os tópicos canônicos (mesmo os com 0 tentativas -> SEM_EVIDENCIAS)
-        Set<String> processedTopicKeys = new HashSet<>();
-
-        for (Map.Entry<String, TopicInfo> entry : canonicalTopics.entrySet()) {
-            String topicKey = entry.getKey();
-            TopicInfo info = entry.getValue();
-            processedTopicKeys.add(topicKey);
-
-            List<ParsedAttempt> attempts = attemptsByTopic.getOrDefault(topicKey, Collections.emptyList());
-            MemoryState memory = memoryMap.get(topicKey);
-
-            TopicKnowledgeProjection projection = buildProjection(
-                    topicKey,
-                    info.discipline(),
-                    info.topicName(),
-                    attempts,
-                    memory
-            );
-
-            topicKnowledgeRepository.saveOrUpdate(projection);
-            topicsRebuilt++;
-            totalLegitimateAttempts += attempts.size();
-        }
-
-        // 9. Processar tópicos que porventura existam em questões mas não estejam em edital_topicos
-        for (Map.Entry<String, List<ParsedAttempt>> entry : attemptsByTopic.entrySet()) {
-            String topicKey = entry.getKey();
-            if (processedTopicKeys.contains(topicKey)) continue;
-
-            List<ParsedAttempt> attempts = entry.getValue();
-            String discipline = attempts.isEmpty() ? "GERAL" : attempts.get(0).discipline();
-            MemoryState memory = memoryMap.get(topicKey);
-
-            TopicKnowledgeProjection projection = buildProjection(
-                    topicKey,
-                    discipline,
-                    topicKey,
-                    attempts,
-                    memory
-            );
-
-            topicKnowledgeRepository.saveOrUpdate(projection);
-            topicsRebuilt++;
-            totalLegitimateAttempts += attempts.size();
-        }
-
-        log.info("Reconstrução concluída com sucesso: {} tópicos processados, {} tentativas legítimas agregadas.",
-                topicsRebuilt, totalLegitimateAttempts);
-
-        return new RebuildResult(topicsRebuilt, totalLegitimateAttempts, Instant.now());
     }
 
     /**
@@ -290,6 +315,15 @@ public class TopicKnowledgeAggregatorService {
             Map<String, QuestionMetadata> questionMap,
             Map<String, String> familyMap
     ) {
+        return parseAttempt(event, questionMap, familyMap, Collections.emptyMap());
+    }
+
+    private ParsedAttempt parseAttempt(
+            EventRecord event,
+            Map<String, QuestionMetadata> questionMap,
+            Map<String, String> familyMap,
+            Map<String, String> latestAnnotations
+    ) {
         try {
             JsonNode payload = objectMapper.readTree(event.getPayloadJson());
             String origin = payload.path("origin").asText("REAL_STUDY");
@@ -300,7 +334,23 @@ public class TopicKnowledgeAggregatorService {
             int confidenceLevel = payload.path("confidenceLevel").asInt(3);
             long activeTimeMs = payload.path("activeTimeMs").asLong(0);
             int exposicao = payload.path("exposicaoAnteriorCount").asInt(0);
+
+            // Resolução precisa do attemptId e associação de anotações legítimas (ATTEMPT_ANNOTATED)
+            String attemptId = payload.path("attemptId").asText(null);
+            if (attemptId == null || attemptId.isBlank()) {
+                String eventId = event.getEventId();
+                if (eventId != null && eventId.startsWith("attempt:")) {
+                    attemptId = eventId.substring("attempt:".length());
+                } else {
+                    attemptId = event.getAggregateId();
+                }
+            }
+
             String causaErro = payload.path("causaErro").asText(null);
+            if (attemptId != null && latestAnnotations != null && latestAnnotations.containsKey(attemptId)) {
+                causaErro = latestAnnotations.get(attemptId);
+            }
+
             String intervention = payload.path("interventionType").asText("REGULAR");
 
             Instant occurredAt = null;
@@ -335,6 +385,15 @@ public class TopicKnowledgeAggregatorService {
         } catch (Exception e) {
             log.warn("Erro ao fazer parse do evento {}: {}", event.getEventId(), e.getMessage());
             return null;
+        }
+    }
+
+    private Map<String, String> loadLatestAnnotations() {
+        try {
+            return com.fiscalstudy.backend.application.AttemptAnnotationView.latest(jdbcTemplate);
+        } catch (Exception e) {
+            log.warn("Falha ao carregar anotações de erro (ATTEMPT_ANNOTATED): {}", e.getMessage());
+            return Collections.emptyMap();
         }
     }
 

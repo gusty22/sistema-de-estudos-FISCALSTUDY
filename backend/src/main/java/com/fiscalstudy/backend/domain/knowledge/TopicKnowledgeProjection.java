@@ -47,7 +47,7 @@ public class TopicKnowledgeProjection {
     private Double fsrsRetrievalRate;
 
     // 6. Governança Epistêmica e Hipóteses
-    private String evidenceStatus;             // SEM_EVIDENCIAS, PRELIMINAR, EM_CONSTRUCAO, CONSOLIDADA
+    private String evidenceStatus;             // SEM_EVIDENCIAS, PRELIMINAR, EM_CONSTRUCAO, SUFICIENTE_OPERACIONAL
     private String epistemicLimitationsJson;   // Limitações científicas transparentes da amostra
     private String pedagogicalHypothesesJson;  // Hipóteses pedagógicas (não fatos dogmáticos)
 

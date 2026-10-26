@@ -186,4 +186,74 @@ public class TopicKnowledgeRepositoryImpl implements TopicKnowledgeRepository {
     public void deleteAll() {
         jdbcTemplate.update("DELETE FROM topic_knowledge_projections");
     }
+
+    @Override
+    @org.springframework.transaction.annotation.Transactional(rollbackFor = Exception.class)
+    public void replaceAll(List<TopicKnowledgeProjection> projections) {
+        jdbcTemplate.update("DELETE FROM topic_knowledge_projections");
+        if (projections == null || projections.isEmpty()) {
+            return;
+        }
+        String sql = """
+            INSERT INTO topic_knowledge_projections (
+                topic_id, discipline_id, topic_name, total_attempts, correct_attempts, error_attempts,
+                accuracy_rate, accuracy_denominator_text, total_active_time_ms, average_active_time_ms,
+                last_attempt_at, unique_questions_count, new_questions_attempts, repeated_questions_attempts,
+                variant_questions_attempts, avg_confidence_ordinal, low_confidence_successes,
+                high_confidence_errors, confidence_distribution_json, context_distribution_json,
+                error_causes_distribution_json, fsrs_stability_days, fsrs_retrieval_rate, evidence_status,
+                epistemic_limitations_json, pedagogical_hypotheses_json, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """;
+        jdbcTemplate.batchUpdate(sql, new org.springframework.jdbc.core.BatchPreparedStatementSetter() {
+            @Override
+            public void setValues(java.sql.PreparedStatement ps, int i) throws SQLException {
+                TopicKnowledgeProjection p = projections.get(i);
+                ps.setString(1, p.getTopicId());
+                ps.setString(2, p.getDisciplineId());
+                ps.setString(3, p.getTopicName());
+                ps.setInt(4, p.getTotalAttempts());
+                ps.setInt(5, p.getCorrectAttempts());
+                ps.setInt(6, p.getErrorAttempts());
+                ps.setDouble(7, p.getAccuracyRate());
+                ps.setString(8, p.getAccuracyDenominatorText());
+                ps.setLong(9, p.getTotalActiveTimeMs());
+                ps.setLong(10, p.getAverageActiveTimeMs());
+                ps.setString(11, p.getLastAttemptAt() != null ? p.getLastAttemptAt().toString() : null);
+                ps.setInt(12, p.getUniqueQuestionsCount());
+                ps.setInt(13, p.getNewQuestionsAttempts());
+                ps.setInt(14, p.getRepeatedQuestionsAttempts());
+                ps.setInt(15, p.getVariantQuestionsAttempts());
+                if (p.getAvgConfidenceOrdinal() != null) {
+                    ps.setDouble(16, p.getAvgConfidenceOrdinal());
+                } else {
+                    ps.setNull(16, java.sql.Types.REAL);
+                }
+                ps.setInt(17, p.getLowConfidenceSuccesses());
+                ps.setInt(18, p.getHighConfidenceErrors());
+                ps.setString(19, p.getConfidenceDistributionJson());
+                ps.setString(20, p.getContextDistributionJson());
+                ps.setString(21, p.getErrorCausesDistributionJson());
+                if (p.getFsrsStabilityDays() != null) {
+                    ps.setDouble(22, p.getFsrsStabilityDays());
+                } else {
+                    ps.setNull(22, java.sql.Types.REAL);
+                }
+                if (p.getFsrsRetrievalRate() != null) {
+                    ps.setDouble(23, p.getFsrsRetrievalRate());
+                } else {
+                    ps.setNull(23, java.sql.Types.REAL);
+                }
+                ps.setString(24, p.getEvidenceStatus());
+                ps.setString(25, p.getEpistemicLimitationsJson());
+                ps.setString(26, p.getPedagogicalHypothesesJson());
+                ps.setString(27, (p.getUpdatedAt() != null ? p.getUpdatedAt() : Instant.now()).toString());
+            }
+
+            @Override
+            public int getBatchSize() {
+                return projections.size();
+            }
+        });
+    }
 }

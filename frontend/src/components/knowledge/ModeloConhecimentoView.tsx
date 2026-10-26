@@ -36,7 +36,7 @@ export interface TopicKnowledge {
   errorCausesDistributionJson?: string;
   fsrsStabilityDays?: number;
   fsrsRetrievalRate?: number;
-  evidenceStatus: 'SEM_EVIDENCIAS' | 'PRELIMINAR' | 'EM_CONSTRUCAO' | 'CONSOLIDADA' | string;
+  evidenceStatus: 'SEM_EVIDENCIAS' | 'PRELIMINAR' | 'EM_CONSTRUCAO' | 'SUFICIENTE_OPERACIONAL' | 'CONSOLIDADA' | string;
   epistemicLimitationsJson?: string;
   pedagogicalHypothesesJson?: string;
   updatedAt: string;
@@ -95,7 +95,13 @@ export const ModeloConhecimentoView: React.FC = () => {
 
   const filteredTopics = topics.filter(t => {
     if (filterDiscipline !== 'TODAS' && t.disciplineId !== filterDiscipline) return false;
-    if (filterStatus !== 'TODOS' && t.evidenceStatus !== filterStatus) return false;
+    if (filterStatus !== 'TODOS') {
+      if (filterStatus === 'SUFICIENTE_OPERACIONAL' || filterStatus === 'CONSOLIDADA') {
+        if (t.evidenceStatus !== 'SUFICIENTE_OPERACIONAL' && t.evidenceStatus !== 'CONSOLIDADA') return false;
+      } else if (t.evidenceStatus !== filterStatus) {
+        return false;
+      }
+    }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       const name = (t.topicName || t.topicId).toLowerCase();
@@ -128,8 +134,9 @@ export const ModeloConhecimentoView: React.FC = () => {
         return <span className="status-badge preliminar">⚠️ PRELIMINAR (N={totalAttempts})</span>;
       case 'EM_CONSTRUCAO':
         return <span className="status-badge em-construcao">EM CONSTRUÇÃO (N={totalAttempts})</span>;
+      case 'SUFICIENTE_OPERACIONAL':
       case 'CONSOLIDADA':
-        return <span className="status-badge consolidada">CONSOLIDADA (N={totalAttempts})</span>;
+        return <span className="status-badge consolidada">SUFICIENTE OPERACIONAL (N={totalAttempts})</span>;
       default:
         return <span className="status-badge">{status}</span>;
     }
@@ -286,7 +293,7 @@ export const ModeloConhecimentoView: React.FC = () => {
               <option value="SEM_EVIDENCIAS">Sem Evidências</option>
               <option value="PRELIMINAR">Preliminar (N &lt; 10)</option>
               <option value="EM_CONSTRUCAO">Em Construção (10-24)</option>
-              <option value="CONSOLIDADA">Consolidada (N &ge; 25)</option>
+              <option value="SUFICIENTE_OPERACIONAL">Suficiente Operacional (N &ge; 25)</option>
             </select>
           </div>
         </div>

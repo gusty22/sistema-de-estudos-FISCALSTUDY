@@ -38,6 +38,23 @@ public class LocalAccessFilter extends OncePerRequestFilter {
                 deny(res,403,"Administrative operation requires loopback access and configured admin token"); return;
             }
         }
+        boolean isKnowledgeRebuild = uri.startsWith("/api/v1/knowledge/rebuild") && !"OPTIONS".equals(req.getMethod());
+        if (isKnowledgeRebuild) {
+            boolean local;
+            try { local = InetAddress.getByName(req.getRemoteAddr()).isLoopbackAddress(); }
+            catch(Exception e){ local = false; }
+            if (!local) {
+                deny(res, 403, "Rebuild operation is strictly restricted to local loopback interface");
+                return;
+            }
+            if (!adminToken.isBlank()) {
+                String supplied = req.getHeader("X-FiscalStudy-Admin-Token");
+                if (supplied == null || !MessageDigest.isEqual(adminToken.getBytes(StandardCharsets.UTF_8), supplied.getBytes(StandardCharsets.UTF_8))) {
+                    deny(res, 403, "Administrative rebuild requires configured admin token");
+                    return;
+                }
+            }
+        }
         chain.doFilter(req,res);
     }
     private static void deny(HttpServletResponse res,int code,String message)throws IOException {

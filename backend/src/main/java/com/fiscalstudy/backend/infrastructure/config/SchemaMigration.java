@@ -20,7 +20,7 @@ public final class SchemaMigration {
         try(Statement s=c.createStatement();ResultSet r=s.executeQuery("SELECT count(*) FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")){populated=r.next()&&r.getInt(1)>0;}
         if(!populated)return;
         boolean current=false;
-        try(Statement s=c.createStatement();ResultSet r=s.executeQuery("SELECT 1 FROM schema_migrations WHERE version=3")){current=r.next();}catch(SQLException missingVersionTable){/* legacy baseline */}
+        try(Statement s=c.createStatement();ResultSet r=s.executeQuery("SELECT 1 FROM schema_migrations WHERE version=4")){current=r.next();}catch(SQLException missingVersionTable){/* legacy baseline */}
         if(current)return;
         java.nio.file.Path backup=paths.backupDirectory().resolve("before_migration_"+Instant.now().toEpochMilli()+"_"+UUID.randomUUID()+".db");
         int code=c.unwrap(org.sqlite.SQLiteConnection.class).getDatabase().backup("main",backup.toString(),null);

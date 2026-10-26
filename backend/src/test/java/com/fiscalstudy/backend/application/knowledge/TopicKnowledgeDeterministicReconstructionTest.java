@@ -41,6 +41,11 @@ public class TopicKnowledgeDeterministicReconstructionTest {
             return null;
         }).when(topicKnowledgeRepository).saveOrUpdate(any());
 
+        doAnswer(invocation -> {
+            savedProjections.addAll(invocation.getArgument(0));
+            return null;
+        }).when(topicKnowledgeRepository).replaceAll(any());
+
         aggregatorService = new TopicKnowledgeAggregatorService(
                 eventStoreRepository,
                 topicKnowledgeRepository,
@@ -172,7 +177,7 @@ public class TopicKnowledgeDeterministicReconstructionTest {
         assertNotNull(result);
         assertEquals(2, result.totalAttempts()); // Descartou o AUTOMATED_TEST
 
-        verify(topicKnowledgeRepository, times(1)).deleteAll();
+        verify(topicKnowledgeRepository, times(1)).replaceAll(anyList());
         assertTrue(savedProjections.size() >= 1);
 
         TopicKnowledgeProjection proj = savedProjections.get(0);

@@ -6,7 +6,7 @@ test('EPIC 02 Contrato 1: Tratamento de insuficiência de evidências (SEM_EVIDE
     if (total <= 0) return 'SEM_EVIDENCIAS';
     if (total < 10 || unique < 5) return 'PRELIMINAR';
     if (total < 25 || unique < 10) return 'EM_CONSTRUCAO';
-    return 'CONSOLIDADA';
+    return 'SUFICIENTE_OPERACIONAL';
   };
 
   assert.equal(classifyStatus(0, 0), 'SEM_EVIDENCIAS');
@@ -14,7 +14,7 @@ test('EPIC 02 Contrato 1: Tratamento de insuficiência de evidências (SEM_EVIDE
   assert.equal(classifyStatus(5, 5), 'PRELIMINAR');
   assert.equal(classifyStatus(9, 5), 'PRELIMINAR');
   assert.equal(classifyStatus(12, 6), 'EM_CONSTRUCAO');
-  assert.equal(classifyStatus(30, 15), 'CONSOLIDADA');
+  assert.equal(classifyStatus(30, 15), 'SUFICIENTE_OPERACIONAL');
 });
 
 test('EPIC 02 Contrato 2: Denominador auditado explícito sem nota percentual cega', () => {

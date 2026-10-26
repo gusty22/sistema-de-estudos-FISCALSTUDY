@@ -60,7 +60,7 @@ public class GlobalExceptionHandler {
         logger.error("[{}] Internal server error: {}", execId, ex.getMessage(), ex);
         ApiErrorResponseDTO error = new ApiErrorResponseDTO(
                 "INTERNAL_SERVER_ERROR",
-                "Erro interno no processamento: " + ex.getMessage(),
+                "Ocorreu um erro interno no servidor. A ocorrência foi registrada para auditoria.",
                 execId
         );
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);

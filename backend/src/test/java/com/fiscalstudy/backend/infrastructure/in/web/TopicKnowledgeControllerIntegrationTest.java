@@ -27,7 +27,7 @@ public class TopicKnowledgeControllerIntegrationTest {
         mockMvc.perform(get("/api/v1/knowledge/epistemic-contract")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.version", is("2.0-scientific-refinement")))
+                .andExpect(jsonPath("$.version", is("2.1-security-and-scientific-refinement")))
                 .andExpect(jsonPath("$.epistemicPrinciples", hasSize(greaterThanOrEqualTo(5))))
                 .andExpect(jsonPath("$.observableIndicators", hasItem("accuracyDenominatorText")))
                 .andExpect(jsonPath("$.observableIndicators", hasItem("avgConfidenceOrdinal")))

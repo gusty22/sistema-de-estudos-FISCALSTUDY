@@ -17,4 +17,5 @@ public interface TopicKnowledgeRepository {
     List<TopicKnowledgeProjection> findAll();
 
     void deleteAll();
+    void replaceAll(List<TopicKnowledgeProjection> projections);
 }

@@ -29,7 +29,7 @@ public final class CognitiveMetricsCalculator {
         if (totalAttempts < 25 || uniqueQuestionsCount < 10) {
             return "EM_CONSTRUCAO";
         }
-        return "CONSOLIDADA";
+        return "SUFICIENTE_OPERACIONAL";
     }
 
     /**
@@ -94,6 +94,7 @@ public final class CognitiveMetricsCalculator {
         limitations.add("Escala de confiança 1-5 tratada como puramente ordinal; Brier Score desativado por ausência de calibração empírica probabilística.");
         limitations.add("Estimativas temporais de memória (FSRS) desvinculadas de nota de domínio conceitual.");
         limitations.add("Tentativas em simulados e retestes registradas como metadado contextual, sem pesos multiplicadores arbitrários.");
+        limitations.add("Limiares amostrais (N=10, N=25) são convenções heurísticas operacionais da plataforma, e não validação estatística de domínio pleno.");
 
         if ("SEM_EVIDENCIAS".equals(evidenceStatus)) {
             limitations.add("Ausência total de tentativas legítimas no tópico. Nenhuma inferência de domínio permitida.");
