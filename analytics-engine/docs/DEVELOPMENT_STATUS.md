@@ -7,10 +7,11 @@ SHA-256 verifies file integrity, not authorship or the truth of a production/ori
 Regression tests cover an otherwise valid matching-checksum manifest with nonpersonal/missing origins and preserve the positive REAL_STUDY case. The checksum-mismatch regression uses a temporary fixture so it does not depend on native file-access checks for repository-managed files. Validation: Rscript 4.5.1 `tests/test_runner.R`, 336 passed, 0 failed, exit 0; elapsed suite time 8.211 seconds. Libraries were configured through FISCALSTUDY_R_LIBS; none installed. Log: analytics-origin-final2.log (local execution evidence, not published).
 
 # FiscalStudy Analytics — Estado de Desenvolvimento e Registro de Execução
+> **Retificação vigente em 26/10/2026:** a suíte atual executou 487 verificações, com 0 falhas (R 4.5.1; exit 0; 10.425 s; QA independente: 11.735 s). Este resultado substitui as contagens históricas abaixo. Os status antigos descrevem uma fotografia anterior do código e não são validação científica ou pedagógica. O modelo de decaimento e os pesos de redistribuição anteriores foram retirados como mecanismos acionáveis: o ajuste atual é exploratório, não estima uma curva individual calibrada, não agenda revisões e não altera pesos do backend. Consulte [LEARNER_MODEL_VALIDATION.md](LEARNER_MODEL_VALIDATION.md) para evidências atuais e limites.
 
-> **Data de Atualização:** 2026-10-12  
+> **Data da fotografia histórica:** 2026-10-12
 > **Linguagem Principal:** R 4.5.1 (Windows x64)  
-> **Status Geral:** Sistema Analítico Consolidado, Auditoria de Procedência Integrada, Salvaguardas Epistêmicas Ativas e Testes Homologados (297 Testes Aprovados, 100% PASS)
+> **Status desta fotografia histórica:** rótulos de “consolidado/homologado” e contagens listados abaixo eram do registro antigo. Consulte a retificação vigente no início deste arquivo; aprovação de testes não valida o modelo cientificamente.
 
 ---
 
@@ -35,7 +36,7 @@ Regression tests cover an otherwise valid matching-checksum manifest with nonper
 | **Avaliação de Amostras de Contrato** | Sim | Sim | Sim | CONCLUÍDO | `R/evaluate_operational.R` executado sobre amostra demonstrativa de contrato (`operational_export_v1.csv` / `sample_export_v1.csv`) |
 | **Suíte de Testes Automatizados** | Sim | Sim | Sim | CONCLUÍDO | `tests/test_runner.R` executado com código 0: **325 testes aprovados**, 0 falhas (100% PASS) |
 | **Pipeline Analítico Integrado** | Sim | Sim | Sim | CONCLUÍDO | `run_analytics.R` compatível com exportação operacional e fixtures de transporte |
-| **Modelo Empírico de Decaimento e Ponto Crítico (Tópico 4)** | Sim | Sim | Sim | CONCLUÍDO | `R/retention_analysis.R` (`fit_empirical_decay_model`, `project_critical_intervention_point`, `calculate_robin_hood_weights`, artefato `output/metrics/robin_hood_weights.json`) |
+| **Modelo Empírico de Decaimento e Ponto Crítico (legado)** | Substituído | Não aplicável | Não validado | DESATIVADO PARA DECISÕES | A implementação anterior usava projeções/pesos não sustentados pelos dados. A versão atual em `R/retention_analysis.R` é exploratória e bloqueia agendamento/redistribuição; o FSRS permanece responsável pela memória operacional. |
 
 ---
 
@@ -128,3 +129,13 @@ Relatório Estruturado:  output/metrics/operational_data_evaluation_v1.json
    - Todos os cálculos de Brier Score e ECE explicitam que a escala Likert [1..5] é convertida para probabilidades discretas $\{0.20, 0.40, 0.60, 0.80, 0.95\}$ via hipótese teórica assumida, e não via observação contínua de crenças subjetivas.
 3. **Isolamento de Produção Preservado:**
    - O banco `db/fiscalstudy.db` permaneceu estritamente isolado sem nenhuma escrita ou alteração concorrente.
+
+## Rodada do modelo individual — 26/10/2026
+
+A base remota desta rodada é `90c26af0c67e5745e84080792d687dad200b4f49`. As afirmações históricas acima descrevem marcos anteriores e não significam que todos os componentes ou modelos estejam validados no uso pessoal.
+
+Foram iniciadas correções coordenadas do perfil avaliável/proveniência, preservação do histórico operacional no adaptador, classificação de exposição e modelos exploratórios sem parâmetros inventados. O FSRS continua responsável pela memória operacional; o R não atribui causa conceitual automaticamente nem trata ausência de dados como incompetência.
+
+Linha de base executada no Windows: R 4.5.1, 342 verificações aprovadas, zero falhas, exit 0, 2.623 segundos (`r-evidence-baseline.log`). A execução final das alterações permanece em andamento; esse resultado não é atribuído ao código novo.
+
+Plano, responsabilidades, critérios e lacunas: [LEARNER_MODEL_EXECUTION_PLAN.md](LEARNER_MODEL_EXECUTION_PLAN.md). Evidências e limites: [LEARNER_MODEL_VALIDATION.md](LEARNER_MODEL_VALIDATION.md).
