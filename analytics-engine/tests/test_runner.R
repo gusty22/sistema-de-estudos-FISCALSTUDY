@@ -99,21 +99,30 @@ run_all_tests <- function() {
     "tests/test_interventions.R",
     "tests/test_adapter.R",
     "tests/test_baselines_and_rigor.R",
-    "tests/test_provenance.R"
+    "tests/test_provenance.R",
+    "tests/test_pipeline_evidence.R",
+    "tests/test_learner_contract_integration.R"
   )
   
   start_time <- Sys.time()
   
   for (tf in test_files) {
-    if (file.exists(tf)) {
-      cat(sprintf("\n--- Executando modulo: %s ---\n", tf))
-      tryCatch({
-        source(tf, local = TRUE)
-      }, error = function(e) {
-        test_env$failed_count <- test_env$failed_count + 1L
-        cat(sprintf("  [ERROR DE EXECUCAO NO ARQUIVO %s]: %s\n", tf, e$message))
-      })
+    if (!file.exists(tf)) {
+      message <- sprintf("Arquivo de teste obrigatorio ausente: %s", tf)
+      test_env$failed_count <- test_env$failed_count + 1L
+      test_env$failures[[length(test_env$failures) + 1L]] <- message
+      cat(sprintf("  [FAIL] %s\n", message))
+      next
     }
+    cat(sprintf("\n--- Executando modulo: %s ---\n", tf))
+    tryCatch({
+      source(tf, local = TRUE)
+    }, error = function(e) {
+      message <- sprintf("Erro ao executar %s: %s", tf, conditionMessage(e))
+      test_env$failed_count <- test_env$failed_count + 1L
+      test_env$failures[[length(test_env$failures) + 1L]] <- message
+      cat(sprintf("  [FAIL] %s\n", message))
+    })
   }
   
   elapsed <- round(as.numeric(difftime(Sys.time(), start_time, units = "secs")), 3)

@@ -2,6 +2,30 @@
 # Módulo de Análise Estatística Descritiva e Calibração
 # Projeto: FiscalStudy Analytics (R >= 4.0.0)
 
+# Preserve event cardinality and recorded metadata; fill missing values from the catalog.
+# Conflicting catalog definitions are explicit errors, never multiplied observations.
+join_question_metadata <- function(attempts_df, questions_df, fields = c("disciplina", "assunto")) {
+  result <- attempts_df
+  if (!"question_id" %in% names(result)) stop("Question metadata join requires question_id")
+  if (!is.null(questions_df) && "question_id" %in% names(questions_df)) {
+    catalog_fields <- intersect(c("question_id", fields), names(questions_df))
+    metadata <- unique(questions_df[, catalog_fields, drop = FALSE])
+    metadata <- metadata[!is.na(metadata$question_id), , drop = FALSE]
+    if (anyDuplicated(as.character(metadata$question_id))) stop("Conflicting question metadata for repeated question_id")
+    match_index <- match(as.character(result$question_id), as.character(metadata$question_id))
+    for (field in fields) {
+      if (!field %in% names(result)) result[[field]] <- rep(NA_character_, nrow(result))
+      result[[field]] <- as.character(result[[field]])
+      if (field %in% names(metadata)) {
+        missing_value <- is.na(result[[field]]) | !nzchar(trimws(result[[field]]))
+        result[[field]][missing_value] <- as.character(metadata[[field]][match_index[missing_value]])
+      }
+    }
+  }
+  for (field in fields) if (!field %in% names(result)) result[[field]] <- rep(NA_character_, nrow(result))
+  result
+}
+
 #' Calcula Intervalo de Confiança de Wilson para Proporções Binomiais
 #' @param k Quantidade de sucessos (acertos)
 #' @param n Tamanho total da amostra (tentativas válidas)
@@ -98,17 +122,7 @@ calculate_performance_by_discipline <- function(attempts_df, questions_df) {
   }
   
   att_sub <- attempts_df[!is.na(attempts_df$is_correct), ]
-  cols_q <- intersect(c("question_id", "disciplina"), names(questions_df))
-  if ("disciplina" %in% names(att_sub) && "disciplina" %in% cols_q) {
-    att_sub <- att_sub[, setdiff(names(att_sub), "disciplina"), drop = FALSE]
-  }
-  
-  merged <- merge(
-    att_sub,
-    questions_df[, cols_q, drop = FALSE],
-    by = "question_id",
-    all.x = TRUE
-  )
+  merged <- join_question_metadata(att_sub, questions_df, "disciplina")
   
   merged$disciplina[is.na(merged$disciplina) | trimws(merged$disciplina) == ""] <- "Não Especificada"
   disciplines <- sort(unique(merged$disciplina))
@@ -475,17 +489,7 @@ calculate_performance_by_topic <- function(attempts_df, questions_df, min_sample
   }
   
   att_sub <- attempts_df[!is.na(attempts_df$is_correct), ]
-  cols_to_drop <- intersect(names(att_sub), cols_to_merge[-1])
-  if (length(cols_to_drop) > 0) {
-    att_sub <- att_sub[, setdiff(names(att_sub), cols_to_drop), drop = FALSE]
-  }
-  
-  merged <- merge(
-    att_sub,
-    questions_df[, cols_to_merge, drop = FALSE],
-    by = "question_id",
-    all.x = TRUE
-  )
+  merged <- join_question_metadata(att_sub, questions_df, cols_to_merge[-1])
   
   merged$assunto_clean <- as.character(merged[[topic_col]])
   merged$assunto_clean[is.na(merged$assunto_clean) | trimws(merged$assunto_clean) == ""] <- "Tópico Não Especificado"

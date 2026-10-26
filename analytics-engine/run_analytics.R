@@ -41,6 +41,20 @@ main <- function() {
   is_operational_adapted <- FALSE
   data_prov_type <- "UNVERIFIED_SOURCE"
   is_real_data <- FALSE
+  provenance_audit <- NULL
+  run_id <- Sys.getenv("FISCALSTUDY_RUN_ID", "")
+  if (!nzchar(run_id)) run_id <- paste0("manual-", format(Sys.time(), "%Y%m%dT%H%M%OS6", tz = "UTC"), "-", Sys.getpid())
+  envelope <- function(value, status = NULL, can_apply = FALSE) {
+    value$run_id <- run_id
+    value$data_provenance <- data_prov_type
+    value$is_real_student_data <- isTRUE(is_real_data)
+    value$can_apply <- isTRUE(can_apply)
+    value$provenance_audit <- provenance_audit
+    value$validation_scope <- if (is_operational_adapted) adapted$metadata$validation_scope else "CANONICAL_EVENT_AND_QUESTION_SCHEMA"
+    if (is_operational_adapted) value$catalog_source_verified <- adapted$metadata$catalog_source_verified
+    if (!is.null(status)) value$status <- status
+    value
+  }
   
   # Processamento de argumentos de linha de comando
   if (length(args) == 1 && file.exists(args[1])) {
@@ -50,13 +64,29 @@ main <- function() {
       cat(sprintf(">>> Detectada exportacao operacional do FiscalStudy: %s\n", args[1]))
       cat(">>> Auditando procedencia e adaptando esquema via R/adapter.R...\n")
       op_raw <- utils::read.csv(args[1], stringsAsFactors = FALSE)
-      adapted <- adapt_operational_attempts(op_raw, file_path = args[1])
+      manifest_path <- Sys.getenv("FISCALSTUDY_EXPORT_MANIFEST", "")
+      explicit_manifest <- nzchar(manifest_path)
+      if (!explicit_manifest) manifest_path <- file.path(dirname(args[1]), "export_manifest.json")
+      export_manifest <- NULL
+      declared_origin <- NULL
+      if (file.exists(manifest_path)) {
+        export_manifest <- tryCatch(jsonlite::fromJSON(manifest_path, simplifyVector = FALSE),
+          error = function(e) stop("Export manifest is not valid JSON: ", conditionMessage(e)))
+        if (!is.list(export_manifest) || is.null(names(export_manifest))) stop("Export manifest must be a JSON object")
+        declared_origin <- export_manifest$declared_origin
+        # REAL_STUDY is a claim to audit, not a substitute for checksum verification.
+        if (identical(declared_origin, "REAL_STUDY")) declared_origin <- "PROVEN_OPERATIONAL"
+      } else if (explicit_manifest) stop("Configured export manifest does not exist")
+      adapted <- adapt_operational_attempts(op_raw, declared_provenance = declared_origin,
+        file_path = args[1], manifest = export_manifest)
       events_df <- adapted$attempts_df
       questions_df <- adapted$questions_df
       interventions_df <- NULL
       is_operational_adapted <- TRUE
       data_prov_type <- adapted$metadata$data_provenance
       is_real_data <- adapted$metadata$is_real_student_data
+      provenance_audit <- list(verdict = adapted$metadata$provenance_verdict,
+        reasons = adapted$metadata$provenance_reasons, warnings = adapted$metadata$provenance_warnings)
       cat(sprintf(">>> [AUDITORIA DE PROCEDENCIA]: Classificado como: %s (%s)\n",
                   data_prov_type, adapted$metadata$provenance_verdict))
       if (!is_real_data) {
@@ -110,26 +140,16 @@ main <- function() {
     attr(events_df, "provenance_info") <- prov_evt
     data_prov_type <- prov_evt$provenance_type
     is_real_data <- prov_evt$is_real_student_data
+    provenance_audit <- list(verdict = prov_evt$audit_verdict, reasons = prov_evt$reasons, warnings = prov_evt$warnings)
   }
   
   # 2. Validação e Integridade
   cat("\n[2/6] Executando validacao de esquemas e integridade referencial...\n")
   if (is_operational_adapted) {
-    val_q <- list(
-      is_valid = TRUE,
-      has_warnings = FALSE,
-      issues = data.frame(severity = character(0), rule_code = character(0), column_name = character(0), row_index = character(0), message = character(0), stringsAsFactors = FALSE),
-      summary = list(total_rows = nrow(questions_df), blocking_errors = 0L, warnings = 0L)
-    )
-    val_evt <- list(
-      is_valid = TRUE,
-      has_warnings = TRUE,
-      issues = data.frame(
-        severity = "WARNING", rule_code = "TEMPORAL_DATA_ABSENT", column_name = "occurred_at",
-        row_index = "N/A", message = "Timestamps ausentes na exportacao operacional adaptada; metricas temporais marcadas como ausentes.", stringsAsFactors = FALSE
-      ),
-      summary = list(total_rows = nrow(events_df), attempt_events = nrow(events_df), blocking_errors = 0L, warnings = 1L, infos = 1L)
-    )
+    # Use the actual structural audit performed by the adapter, including gaps.
+    val_q <- adapted$questions_validation
+    val_evt <- adapted$validation
+    val_evt$summary$attempt_events <- nrow(events_df)
     val_int <- NULL
   } else {
     val_q <- validate_questions_dataset(questions_df)
@@ -159,9 +179,12 @@ main <- function() {
   }
   
   # Filtrar apenas tentativas de resposta com gabarito preenchido
-  attempts_df <- events_df[events_df$event_type == "ANSWER_SUBMITTED", ]
+  raw_attempts_df <- events_df[events_df$event_type == "ANSWER_SUBMITTED", , drop = FALSE]
+  attr(raw_attempts_df, "provenance_info") <- attr(events_df, "provenance_info")
+  selection <- select_evaluable_attempts(raw_attempts_df, questions_df)
+  attempts_df <- selection$attempts_df
   if (nrow(attempts_df) == 0) {
-    cat("\n>>> [COLD START]: Nenhuma tentativa de resposta encontrada nos eventos.\n")
+    cat("\n>>> [COLD START]: Nenhuma tentativa com resultado avaliavel disponivel para inferencia.\n")
     cat(">>> Emitindo pesos balanceados de inicio a frio (Cold Start) para orquestracao segura.\n")
     
     dir.create(file.path(output_root, "metrics"), showWarnings = FALSE, recursive = TRUE)
@@ -174,7 +197,7 @@ main <- function() {
           signal_id = "SIG_COLD_START_INSUFFICIENT_EVIDENCE",
           signal_type = "INSUFFICIENT_EVIDENCE",
           description = "Volume amostral insuficiente (0 tentativas registradas). Sistema em modo Cold Start.",
-          evidence_summary = "N = 0 tentativas. Distribuicao equilibrada aplicada preventivamente.",
+          evidence_summary = "N = 0 tentativas. Nenhum ajuste analitico de pesos foi aplicado.",
           n_observations = 0L,
           period_start = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
           period_end = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
@@ -200,15 +223,19 @@ main <- function() {
       methodological_caution = "Pesos padronizados de inicio a frio emitidos por ausencia de historico de resolucoes."
     )
     
+    cold_signals <- envelope(cold_signals, "NO_DATA")
+    cold_weights <- envelope(cold_weights, "INSUFFICIENT_EVIDENCE")
     if (requireNamespace("jsonlite", quietly = TRUE)) {
       writeLines(jsonlite::toJSON(cold_signals, pretty = TRUE, auto_unbox = TRUE), con = file.path(output_root, "metrics/analytical_signals_v1.json"), useBytes = TRUE)
       writeLines(jsonlite::toJSON(cold_weights, pretty = TRUE, auto_unbox = TRUE), con = file.path(output_root, "metrics/robin_hood_weights.json"), useBytes = TRUE)
     }
     
-    empty_summary <- list(status="COLD_START", n_observations=0L, data_provenance=data_prov_type, is_real_student_data=FALSE, metrics=list(), run_id=Sys.getenv("FISCALSTUDY_RUN_ID", "manual"))
+    empty_summary <- list(status=if (nrow(raw_attempts_df) == 0) "COLD_START" else "NO_EVALUABLE_EVIDENCE", observed_attempt_count=nrow(raw_attempts_df), n_observations=0L, data_provenance=data_prov_type, is_real_student_data=FALSE, metrics=list(), run_id=run_id, can_apply=FALSE)
+    empty_summary <- envelope(empty_summary)
     writeLines(jsonlite::toJSON(empty_summary, pretty=TRUE, auto_unbox=TRUE), con=file.path(output_root,"metrics/metrics_summary_v1.json"), useBytes=TRUE)
     utils::write.csv(data.frame(metric_name="attempt_count", value=0, n_observations=0L), file.path(output_root,"metrics/metrics_summary_v1.csv"), row.names=FALSE)
-    writeLines(jsonlite::toJSON(list(status="INSUFFICIENT_EVIDENCE", n_observations=0L, can_generate_student_profile=FALSE),pretty=TRUE,auto_unbox=TRUE),con=file.path(output_root,"metrics/learning_profile_v1.json"),useBytes=TRUE)
+    writeLines(jsonlite::toJSON(envelope(list(n_observations=0L, observed_attempt_count=nrow(raw_attempts_df), can_generate_student_profile=FALSE), if (nrow(raw_attempts_df) == 0) "NO_DATA" else "NO_EVALUABLE_EVIDENCE"),pretty=TRUE,auto_unbox=TRUE),con=file.path(output_root,"metrics/learning_profile_v1.json"),useBytes=TRUE)
+    writeLines(jsonlite::toJSON(envelope(list(evaluation_status="NO_DATA", total_interventions=0L, evaluated_count=0L), "NO_DATA"),pretty=TRUE,auto_unbox=TRUE),con=file.path(output_root,"metrics/intervention_evaluation_v1.json"),useBytes=TRUE)
 
     cat(">>> Artefatos de Cold Start gravados com sucesso em output/metrics/\n")
     cat("========================================================================\n")
@@ -223,16 +250,17 @@ main <- function() {
   perf_topic <- calculate_performance_by_topic(attempts_df, questions_df)
   time_metrics <- calculate_time_metrics(attempts_df)
   conf_metrics <- calculate_confidence_metrics(attempts_df)
-  temp_evolution <- calculate_temporal_evolution(attempts_df)
+  temporal_attempts <- attempts_df[!is.na(attempts_df$session_id) & nzchar(trimws(attempts_df$session_id)) & !is.na(attempts_df$occurred_at) & nzchar(trimws(attempts_df$occurred_at)), , drop = FALSE]
+  temp_evolution <- calculate_temporal_evolution(temporal_attempts)
   
   period_comp <- NULL
   if (nrow(temp_evolution) >= 2) {
     s1_id <- temp_evolution$session_id[1]
     s2_id <- temp_evolution$session_id[nrow(temp_evolution)]
-    s1_sub <- attempts_df[attempts_df$session_id == s1_id, ]
-    s2_sub <- attempts_df[attempts_df$session_id == s2_id, ]
-    p1_range <- c(min(s1_sub$occurred_at), max(s1_sub$occurred_at))
-    p2_range <- c(min(s2_sub$occurred_at), max(s2_sub$occurred_at))
+    s1_sub <- temporal_attempts[temporal_attempts$session_id == s1_id, , drop = FALSE]
+    s2_sub <- temporal_attempts[temporal_attempts$session_id == s2_id, , drop = FALSE]
+    p1_range <- range(s1_sub$occurred_at, na.rm = TRUE)
+    p2_range <- range(s2_sub$occurred_at, na.rm = TRUE)
     period_comp <- compare_performance_periods(
       attempts_df,
       period1_range = p1_range,
@@ -244,7 +272,7 @@ main <- function() {
   
   # 4. Perfil Multidimensional e Sinais Analíticos
   cat("\n[4/6] Construindo perfil de aprendizagem multidimensional e detectando sinais...\n")
-  learning_profile <- build_learning_profile(attempts_df, questions_df, validation_result = val_evt)
+  learning_profile <- build_learning_profile(raw_attempts_df, questions_df, validation_result = val_evt)
   analytical_signals <- detect_analytical_signals(learning_profile, attempts_df, questions_df)
   
   # Avaliação de recomendações/intervenções se disponível
@@ -297,6 +325,15 @@ main <- function() {
     period_end = period_end
   )
   
+  consolidated_pkg$observed_attempt_count <- nrow(raw_attempts_df)
+  consolidated_pkg$evaluable_attempt_count <- nrow(attempts_df)
+  consolidated_pkg <- envelope(consolidated_pkg, "OBSERVATIONAL_ANALYSIS")
+  learning_profile <- envelope(learning_profile, "OBSERVATIONAL_ANALYSIS")
+  analytical_signals <- envelope(analytical_signals, "HEURISTIC_SIGNALS")
+  robin_hood_weights <- envelope(robin_hood_weights, can_apply = FALSE)
+  if (is.null(eval_recs)) eval_recs <- list(evaluation_status = "NO_DATA", total_interventions = 0L, evaluated_count = 0L)
+  eval_recs <- envelope(eval_recs, "OBSERVATIONAL_ANALYSIS")
+
   json_out <- file.path(output_root, "metrics/metrics_summary_v1.json")
   csv_out <- file.path(output_root, "metrics/metrics_summary_v1.csv")
   export_metrics_package(consolidated_pkg, json_out, csv_out)
@@ -317,8 +354,8 @@ main <- function() {
   cat("\n========================================================================\n")
   cat("                   RESUMO ESTATISTICO CONSOLIDADO                       \n")
   cat("========================================================================\n")
-  cat(sprintf("Procedencia dos Dados:  %s (%s)\n", data_prov_type, if (is_real_data) "AUTENTICADO REAL" else "DEMO/FIXTURE (NAO E ESTUDANTE REAL)"))
-  cat(sprintf("Status de Aprendizado:  %s\n", if (is_real_data) "AVALIADO" else "PENDING_AUTHENTICATED_OPERATIONAL_DATA"))
+  cat(sprintf("Procedencia dos Dados:  %s (%s)\n", data_prov_type, if (is_real_data) "ORIGEM PESSOAL DECLARADA, AUDITORIA DE INTEGRIDADE APROVADA" else "ORIGEM NAO VERIFICADA OU FIXTURE (NAO E PERFIL PESSOAL)"))
+  cat(sprintf("Status de Aprendizado:  %s\n", if (is_real_data) "OBSERVACOES ANALISADAS; EFICACIA NAO DEMONSTRADA" else "PENDING_AUTHENTICATED_OPERATIONAL_DATA"))
   cat(sprintf("Motor Adaptativo R-Hood:%s (Meta: %.0f%%)\n", robin_hood_weights$algorithm, robin_hood_weights$target_retention_threshold * 100))
   cat(sprintf("Decisao de Alocacao:    %s\n", robin_hood_weights$recommendations$summary_instruction))
   cat(sprintf("Acuracia Global:        %.1f%% [IC 95%% Wilson: %.1f%% - %.1f%%]\n",
