@@ -47,3 +47,15 @@ Branch: `fix/wave0-cognitive-action-gates`, base `db8bf3d72646d22c62f7339d82a466
 - Testes de regressão foram escritos/atualizados para o bloqueio e a ausência de estimativas. **Status: NOT_EXECUTED nesta sessão**, pois este ambiente não tem checkout local do FiscalStudy nem executável Maven do projeto. O PR/CI remoto ainda precisa fornecer evidência.
 - Esta mudança não valida FSRS, o motor R, a integração Java → R ou o sistema completo. Os endpoints/modelos legados identificados em `StudentKnowledgeStateService`, `UnifiedCognitiveArchitectureService` e `DigitalTwinService` continuam fora do escopo deste incremento e precisam ser bloqueados ou corrigidos com revisão de consumidores.
 
+
+
+## Backtest temporal de baselines — incremento em revisão
+
+Base remota desta frente: `dbf00bf1ce3fdc5ef4b455fa84619414a3251bad` (main após os PRs #19, #20 e #21). Branch: `feature/r-temporal-baseline-audit`.
+
+- `evaluate_baselines_temporally` executa uma avaliação prequential com janela expansiva. Cada lote com timestamp igual é previsto antes de qualquer resultado do lote entrar no histórico; portanto, resultados futuros e eventos simultâneos não vazam para aquela previsão.
+- Compara a média histórica global e a média suavizada por tópico, registra tamanho do histórico usado, exposição anterior da mesma questão e métricas descritivas Brier/log loss. O tópico usa apenas rótulos presentes na linha da tentativa; sua procedência temporal não é confirmada pelo helper.
+- O backtest distingue questão já vista de primeira exposição registrada. Essa distinção não demonstra transferência conceitual; tentativas do mesmo item/estudante continuam dependentes.
+- O helper de comparação de vetores `evaluate_model_vs_baseline` agora retorna `DESCRIPTIVE_SCORE_ONLY`; como recebe vetores sem desenho de validação, já não classifica amostras de N≥20 como comparação válida nem como desempenho fora da amostra.
+- O artefato `temporal_baseline_backtest_v1.json` é integrado ao pipeline e à avaliação operacional, inclusive em cold start. Toda saída tem `can_apply=false`, não altera FSRS e não alimenta o planejador.
+- Validação local R nesta sessão: **NOT_EXECUTED** (não há checkout executável do repositório neste ambiente). CI remota desta branch: pendente de execução após PR draft. Testes e dados sintéticos especificam o comportamento esperado, não validam previsões pessoais nem eficácia de aprendizagem.
