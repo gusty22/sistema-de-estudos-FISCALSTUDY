@@ -15,4 +15,6 @@ public interface TopicKnowledgeRepository {
     List<TopicKnowledgeProjection> findByDisciplineId(String disciplineId);
 
     List<TopicKnowledgeProjection> findAll();
+
+    void deleteAll();
 }

@@ -12,6 +12,7 @@ import {
 import { AnaliseConteudoModal } from './AnaliseConteudoModal';
 import { CalibracaoRetencaoAbas } from './CalibracaoRetencaoAbas';
 import { AuditoriaAnomaliasEstudo } from './AuditoriaAnomaliasEstudo';
+import { ModeloConhecimentoView } from '../knowledge/ModeloConhecimentoView';
 import { useSimplifiedMode } from '../../context/SimplifiedModeContext';
 import './PainelDesempenho.css';
 
@@ -32,8 +33,8 @@ export const PainelDesempenho: React.FC<PainelDesempenhoProps> = ({
 }) => {
   const { isSimplifiedMode, toggleSimplifiedMode } = useSimplifiedMode();
 
-  // Aba principal: Painel T26 vs Calibração/Retenção T28 vs Auditoria Anomalias T29
-  const [activeMainTab, setActiveMainTab] = useState<'T26_PAINEL' | 'T28_CALIBRACAO' | 'T29_ANOMALIAS'>('T26_PAINEL');
+  // Aba principal: Painel T26 vs Calibração/Retenção T28 vs Auditoria Anomalias T29 vs Modelo de Conhecimento T30 (EPIC 02)
+  const [activeMainTab, setActiveMainTab] = useState<'T26_PAINEL' | 'T28_CALIBRACAO' | 'T29_ANOMALIAS' | 'T30_CONHECIMENTO'>('T26_PAINEL');
 
   // Filtro de período para o gráfico temporal
   const [periodFilter, setPeriodFilter] = useState<'ALL' | 'MONTH' | 'WEEK' | 'TODAY'>('ALL');
@@ -181,6 +182,14 @@ export const PainelDesempenho: React.FC<PainelDesempenhoProps> = ({
         >
           <ShieldAlert className="w-4 h-4 inline mr-2 text-rose-500" />
           {isSimplifiedMode ? 'Diagnóstico de Hábitos' : 'Auditoria de Anomalias (Diagnóstico Automático)'}
+        </button>
+
+        <button
+          className={`nav-tab-btn ${activeMainTab === 'T30_CONHECIMENTO' ? 'active' : ''}`}
+          onClick={() => setActiveMainTab('T30_CONHECIMENTO')}
+        >
+          <Layers className="w-4 h-4 inline mr-2 text-indigo-400" />
+          {isSimplifiedMode ? 'Evidências de Conhecimento' : 'Modelo de Conhecimento (EPIC 02)'}
         </button>
       </div>
 
@@ -468,6 +477,13 @@ export const PainelDesempenho: React.FC<PainelDesempenhoProps> = ({
           onNavigateToCycle={onNavigateToCycle}
           onNavigateToQuestions={onNavigateToQuestions}
         />
+      )}
+
+      {/* =========================================================================
+          ABA PRINCIPAL: T30 — MODELO INDIVIDUAL DE CONHECIMENTO (EPIC 02)
+          ========================================================================= */}
+      {activeMainTab === 'T30_CONHECIMENTO' && (
+        <ModeloConhecimentoView />
       )}
 
       {/* =========================================================================

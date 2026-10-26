@@ -60,6 +60,30 @@ public final class SchemaMigration {
                 }
                 record(c,3,"Material, notebook and simulated-exam indexes");
             }
+            if(!applied(c,4)) {
+                ensureColumn(c,"topic_knowledge_projections","topic_name","TEXT");
+                ensureColumn(c,"topic_knowledge_projections","error_attempts","INTEGER NOT NULL DEFAULT 0");
+                ensureColumn(c,"topic_knowledge_projections","accuracy_denominator_text","TEXT NOT NULL DEFAULT 'SEM_EVIDENCIAS'");
+                ensureColumn(c,"topic_knowledge_projections","total_active_time_ms","INTEGER NOT NULL DEFAULT 0");
+                ensureColumn(c,"topic_knowledge_projections","average_active_time_ms","INTEGER NOT NULL DEFAULT 0");
+                ensureColumn(c,"topic_knowledge_projections","last_attempt_at","TEXT");
+                ensureColumn(c,"topic_knowledge_projections","unique_questions_count","INTEGER NOT NULL DEFAULT 0");
+                ensureColumn(c,"topic_knowledge_projections","new_questions_attempts","INTEGER NOT NULL DEFAULT 0");
+                ensureColumn(c,"topic_knowledge_projections","repeated_questions_attempts","INTEGER NOT NULL DEFAULT 0");
+                ensureColumn(c,"topic_knowledge_projections","variant_questions_attempts","INTEGER NOT NULL DEFAULT 0");
+                ensureColumn(c,"topic_knowledge_projections","avg_confidence_ordinal","REAL");
+                ensureColumn(c,"topic_knowledge_projections","low_confidence_successes","INTEGER NOT NULL DEFAULT 0");
+                ensureColumn(c,"topic_knowledge_projections","high_confidence_errors","INTEGER NOT NULL DEFAULT 0");
+                ensureColumn(c,"topic_knowledge_projections","confidence_distribution_json","TEXT");
+                ensureColumn(c,"topic_knowledge_projections","context_distribution_json","TEXT");
+                ensureColumn(c,"topic_knowledge_projections","error_causes_distribution_json","TEXT");
+                ensureColumn(c,"topic_knowledge_projections","fsrs_stability_days","REAL");
+                ensureColumn(c,"topic_knowledge_projections","fsrs_retrieval_rate","REAL");
+                ensureColumn(c,"topic_knowledge_projections","evidence_status","TEXT NOT NULL DEFAULT 'SEM_EVIDENCIAS'");
+                ensureColumn(c,"topic_knowledge_projections","epistemic_limitations_json","TEXT");
+                ensureColumn(c,"topic_knowledge_projections","pedagogical_hypotheses_json","TEXT");
+                record(c,4,"Topic knowledge observable indicators and epistemic governance");
+            }
             c.commit();
         } catch(Exception e){c.rollback();throw new SQLException("Migration rolled back",e);}
         finally{c.setAutoCommit(auto);}
