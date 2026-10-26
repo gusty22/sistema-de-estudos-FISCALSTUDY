@@ -17,3 +17,8 @@ Integrações Anki defaultoff,consentimento persistido e hardgate de rede nos te
 ## Validação e limites
 
 Ver docs/VALIDATION_REPORT.md e IMPLEMENTATION_PLAN.md para evidências por área.255 testes Java,11Python,7frontend e325verificaçõesR aprovados nesta execução. Homologação HTTP isolada realizada;visual e eficácia pedagógica pendentes. Não há dados suficientes para afirmar curva individual por matéria.
+
+
+### Fronteira analítica observacional (26/10/2026)
+
+O Bridge transporta CSV e manifesto do mesmo snapshot para o run e informa seu caminho ao R. A análise pode terminar com sucesso sem possuir autoridade para alterar o ciclo. O DTO RobinHoodWeightsDTO legado não possui contrato decisório homologado: supportsAutomaticPlanning=false; injeção, recarga e consumo direto são bloqueados. Endpoints de aplicação manual retornam 422 para entradas não aplicáveis, evitando falso sucesso. O ciclo configurado e FSRS permanecem autoridades próprias. Uma nova versão decisória precisa especificação, critérios de validação e homologação explícitos; flags JSON desconhecidas não autorizam execução.

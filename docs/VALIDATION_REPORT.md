@@ -168,3 +168,35 @@ Limites: a bateria foi executada na base isolada 13509e6 com foundation externa,
 Validação desta documentação: links locais dos cinco arquivos do checkpoint, nota, plano, relatório e README verificados; git diff --check aprovado. Nenhum teste de produto foi criado para a alteração documental. A nota para Obsidian foi preparada no repositório; o vault original e seus índices não foram sincronizados.
 
 Reconsulta GitHub desta retomada: PRs #8–#12 estão fechados e integrados por outra frente em 25/10/2026; #13/#14 permanecem abertos como draft. Seus conteúdos anteriores são ancestrais da main fdd450c. Os estados draft registrados nas seções anteriores descrevem o momento da publicação, não o estado atual. Nenhum desses merges foi executado por esta equipe.
+
+
+## Auditoria R e gate de procedência/decisão — 26/10/2026
+
+Base main: 4ec0343100baf389ceb615c2307354a64f99c296. R em PR #23; backend na branch fix/analytics-bridge-provenance. O snapshot local do backend foi extraído de dbf00bf; árvore backend 2d0282ef9400f3e2d4c659c5e6c3cc07d8231bfe idêntica à da main auditada, antes das alterações específicas.
+
+### Alterações
+
+AnalyticsBridgeService usa exportPackageToDirectory para obter CSV/manifesto do mesmo snapshot e passa FISCALSTUDY_EXPORT_MANIFEST ao subprocesso. Não muda schema nem toca banco de produção.
+
+O DTO analítico legado não possui contrato decisório homologado. supportsAutomaticPlanning retorna false; serviço bloqueia injeção e recarga e o motor rejeita esse payload diretamente. Flags JSON desconhecidas não autorizam ações. O ciclo configurado continua funcionando; payloads analíticos manuais legados deixam de alterar alocação até haver contrato validado.
+
+### Validação efetivamente executada
+
+Comando: node scripts/validate-backend.cjs -Dtest=AnalyticsBridgeProvenanceContractTest,AnalyticsDecisionGateTest,RobinHoodCycleEngineTest,FsrsReferenceConformanceTest,FsrsEngineTest -Dfiscalstudy.analytics-engine-dir=<snapshot-R-da-PR-23> -Dsurefire.timeout=120 test
+
+Java 17.0.12, Maven local em modo offline, R 4.5.1 e pacotes já instalados. Resultado final: BUILD SUCCESS; 22 testes, 0 falhas, 0 erros, 0 ignorados; 01:04 min.
+
+- FSRS: 6 testes de núcleo e 5 de conformidade com vetores registrados.
+- Gate: 6 testes, cobrindo flags JSON, injeção, recarga, consumo direto e HTTP 422 explícito para aplicação/sincronização não autorizadas.
+- Ciclo configurado: 4 testes existentes.
+- Bridge: 1 teste com pacote sintético controlado e R real, sem Spring/SQLite/rede. Verifica checksum dos bytes, manifesto por execução, run_id e preservação de SYNTHETIC_FIXTURE/is_real_student_data=false/can_apply=false.
+
+A suíte R final passou com 574 verificações/0 falhas (22.302s), incluindo pipeline e correções de histograma unitário/constante e fallback SHA-256 limitado. Limite de 64 MiB é política de memória do fallback, não norma universal. Hash continua sobre os mesmos bytes; ausência/erro/arquivo além do limite permanece fail-closed.
+
+### Falhas encontradas e limites
+
+A seleção inicial de testes Spring foi interrompida após inicialização sem resultado conclusivo; AnalyticsBridgeIntegrationTest e AnalyticsExportIntegrationTest não estão homologados por essa execução. Tentativa de diagnóstico de threads teve acesso negado. O teste isolado sem Spring reproduziu: falha de rename no temp do sandbox; em target controlado, falha do histograma FD para uma tentativa e falha da leitura nativa de hash. As duas últimas foram corrigidas na PR R e o gate real repetido com sucesso. Não se apresenta nenhuma dessas tentativas como aprovação.
+
+O teste de transporte usa projeção controlada de arquivos, não exportação do SQLite real. Não demonstra eficácia pedagógica, calibração pessoal, compreensão, transferência ou autenticidade humana. Comentários/teste Spring foram ampliados, mas seu fluxo completo não foi executado com sucesso. Nenhuma integração externa foi disparada; produção e trabalho local preexistente foram preservados.
+
+Ordem de integração: PR R #23 antes desta branch backend; a dependência foi validada com snapshots isolados, sem incluir código R na branch backend. Sem merge automático.

@@ -29,3 +29,8 @@ Uma nova tentativa elegível substitui o vencimento do item FSRS,pois constitui 
 
 ### Data local e instante de memória
 O estado FSRS persiste instantes UTC. A data da fila resulta da conversão para fiscalstudy.zone validado na inicialização. Configurar FISCALSTUDY_ZONE não reinterpreta nem reescreve automaticamente datas já persistidas.
+
+
+### Evidência transportada não equivale a autoridade de decisão (26/10/2026)
+
+A inspeção revelou que o DTO legado descartava flags can_apply/is_validated enquanto consumidores podiam aplicar pesos. Em vez de confiar em campos sem critério de homologação, todo esse contrato permanece observacional. Bloqueamos serviço, leitura de arquivo, motor direto e sucesso HTTP enganoso. O ciclo por configuração continua coberto por regressões; payloads analíticos manuais legados deixam de alterar alocação. A habilitação futura exige revisão do contrato, não uma flag arbitrária. Separadamente, o Bridge reutiliza exportPackageToDirectory para CSV/manifesto coerentes; a validação de transporte não afirma validade científica.
