@@ -148,16 +148,30 @@ test('5. Estados explícitos de interface do Dashboard', () => {
     'ERROR'
   );
 
-  // 4. Concurso sem edital ou tópicos
+  // 4a. Concurso sem edital cadastrado
   assert.equal(
     getDashboardUIState({
       hasActiveConcurso: true,
       isLoading: false,
       loadError: null,
+      editaisCount: 0,
       topicsCount: 0,
       queueActivitiesCount: 0
     }),
-    'NO_EDITAL_TOPICS'
+    'NO_EDITAL'
+  );
+
+  // 4b. Edital existente sem tópicos verticalizados
+  assert.equal(
+    getDashboardUIState({
+      hasActiveConcurso: true,
+      isLoading: false,
+      loadError: null,
+      editaisCount: 1,
+      topicsCount: 0,
+      queueActivitiesCount: 0
+    }),
+    'NO_TOPICS_IN_EDITAL'
   );
 
   // 5. Edital disponível, mas sem atividades elegíveis (fila vazia)
@@ -166,6 +180,7 @@ test('5. Estados explícitos de interface do Dashboard', () => {
       hasActiveConcurso: true,
       isLoading: false,
       loadError: null,
+      editaisCount: 1,
       topicsCount: 42,
       queueActivitiesCount: 0
     }),
@@ -178,6 +193,7 @@ test('5. Estados explícitos de interface do Dashboard', () => {
       hasActiveConcurso: true,
       isLoading: false,
       loadError: null,
+      editaisCount: 1,
       topicsCount: 42,
       queueActivitiesCount: 3
     }),

@@ -75,6 +75,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   // Estados de Dados da API
   const [topics, setTopics] = useState<EditalTopic[]>([]);
+  const [editaisCount, setEditaisCount] = useState<number>(0);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [revisionAgenda, setRevisionAgenda] = useState<{
     todayDate: string;
@@ -144,6 +145,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const loadDashboardData = useCallback(() => {
     if (!activeConcurso) {
       setTopics([]);
+      setEditaisCount(0);
       setRevisionAgenda(null);
       setRobinHoodCycle(null);
       setAnomalyReport(null);
@@ -164,6 +166,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         return res.json();
       })
       .then((data) => {
+        setEditaisCount(Array.isArray(data?.editais) ? data.editais.length : 0);
         if (data && Array.isArray(data.topicos)) {
           setTopics(data.topicos);
         } else {
@@ -268,10 +271,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
       hasActiveConcurso: Boolean(activeConcurso),
       isLoading,
       loadError,
+      editaisCount,
       topicsCount: topics.length,
       queueActivitiesCount: queueActivities.length
     });
-  }, [activeConcurso, isLoading, loadError, topics.length, queueActivities.length]);
+  }, [activeConcurso, isLoading, loadError, editaisCount, topics.length, queueActivities.length]);
 
   // Atividade atual em destaque (Hero) — com guarda segura contra NaN e array vazio
   const currentActivity: QueueActivity | undefined = useMemo(() => {
@@ -659,7 +663,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </section>
         )}
 
-        {dashboardState === 'NO_EDITAL_TOPICS' && (
+        {dashboardState === 'NO_EDITAL' && (
           <section className="calm-hero-card" style={{ padding: '2.5rem 1.5rem', textAlign: 'center' }}>
             <div style={{ maxWidth: '480px', margin: '0 auto' }}>
               <div style={{
@@ -675,10 +679,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <BookOpen className="w-6 h-6 text-indigo-500" />
               </div>
               <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--calm-text)', margin: '0 0 0.5rem 0' }}>
-                Edital Ainda Não Cadastrado
+                Edital Não Cadastrado
               </h3>
               <p style={{ fontSize: '0.88rem', color: 'var(--calm-text-muted)', lineHeight: 1.5, margin: '0 0 1.5rem 0' }}>
-                O concurso '{activeConcurso?.nome}' não possui tópicos cadastrados no momento. Importe o edital verticalizado para que as recomendações pedagógicas sejam geradas.
+                O concurso '{activeConcurso?.nome}' ainda não possui nenhum edital anexado. Importe o edital bruto ou oficial para estruturar seu plano.
               </p>
               <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
                 <button
@@ -688,6 +692,49 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 >
                   <BookOpen className="w-4 h-4" />
                   Cadastrar / Importar Edital
+                </button>
+                <button
+                  onClick={() => onNavigateToTab('banco')}
+                  className="calm-btn-why"
+                  style={{ padding: '0.65rem 1.25rem', fontSize: '0.85rem' }}
+                >
+                  <Play className="w-4 h-4" />
+                  Abrir Banco de Questões
+                </button>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {dashboardState === 'NO_TOPICS_IN_EDITAL' && (
+          <section className="calm-hero-card" style={{ padding: '2.5rem 1.5rem', textAlign: 'center' }}>
+            <div style={{ maxWidth: '480px', margin: '0 auto' }}>
+              <div style={{
+                width: '3.5rem',
+                height: '3.5rem',
+                borderRadius: '9999px',
+                backgroundColor: 'var(--calm-subtle-bg)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 1rem auto'
+              }}>
+                <BookOpen className="w-6 h-6 text-indigo-500" />
+              </div>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--calm-text)', margin: '0 0 0.5rem 0' }}>
+                Edital sem Tópicos Verticalizados
+              </h3>
+              <p style={{ fontSize: '0.88rem', color: 'var(--calm-text-muted)', lineHeight: 1.5, margin: '0 0 1.5rem 0' }}>
+                O concurso '{activeConcurso?.nome}' possui {editaisCount} edital(is) vinculado(s), mas nenhum tópico foi verticalizado ou confirmado ainda.
+              </p>
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => onNavigateToTab('edital')}
+                  className="calm-btn-start"
+                  style={{ padding: '0.65rem 1.25rem', fontSize: '0.85rem' }}
+                >
+                  <BookOpen className="w-4 h-4" />
+                  Verticalizar / Confirmar Tópicos
                 </button>
                 <button
                   onClick={() => onNavigateToTab('banco')}

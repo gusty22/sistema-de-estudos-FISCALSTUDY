@@ -40,7 +40,8 @@ export type DashboardUIState =
   | 'NO_CONCURSO'
   | 'LOADING'
   | 'ERROR'
-  | 'NO_EDITAL_TOPICS'
+  | 'NO_EDITAL'
+  | 'NO_TOPICS_IN_EDITAL'
   | 'NO_ACTIVITIES'
   | 'HAS_ACTIVITIES';
 
@@ -102,20 +103,34 @@ export function computeQueueActivities(
 }
 
 /**
- * Determina o estado explícito da interface do Dashboard.
+ * Determina o estado explícito da interface do Dashboard, diferenciando
+ * ausência de edital de edital existente sem tópicos verticalizados.
  */
 export function getDashboardUIState(params: {
   hasActiveConcurso: boolean;
   isLoading: boolean;
   loadError: string | null;
+  editaisCount?: number;
   topicsCount: number;
   queueActivitiesCount: number;
 }): DashboardUIState {
   if (!params.hasActiveConcurso) return 'NO_CONCURSO';
   if (params.isLoading) return 'LOADING';
   if (params.loadError) return 'ERROR';
-  if (params.topicsCount === 0) return 'NO_EDITAL_TOPICS';
-  if (params.queueActivitiesCount === 0) return 'NO_ACTIVITIES';
+
+  const editaisCount = params.editaisCount ?? 0;
+  if (editaisCount === 0 && params.topicsCount === 0) {
+    return 'NO_EDITAL';
+  }
+  if (editaisCount > 0 && params.topicsCount === 0) {
+    return 'NO_TOPICS_IN_EDITAL';
+  }
+  if (params.topicsCount === 0) {
+    return 'NO_EDITAL';
+  }
+  if (params.queueActivitiesCount === 0) {
+    return 'NO_ACTIVITIES';
+  }
   return 'HAS_ACTIVITIES';
 }
 
