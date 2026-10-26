@@ -1,39 +1,25 @@
 package com.fiscalstudy.backend.application.review;
 
-import com.fiscalstudy.backend.application.cognitive.UnifiedCognitiveArchitectureService;
-import com.fiscalstudy.backend.application.cognitive.UnifiedCognitiveStateDTO;
 import com.fiscalstudy.backend.domain.EventStoreRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.UUID;
 
 @Service
 public class AdaptiveReviewDecisionEngine {
 
     private static final Logger log = LoggerFactory.getLogger(AdaptiveReviewDecisionEngine.class);
 
-    private final UnifiedCognitiveArchitectureService cognitiveService;
     private final EventStoreRepository eventStoreRepository;
-    private final JdbcTemplate jdbcTemplate;
 
-    public AdaptiveReviewDecisionEngine(UnifiedCognitiveArchitectureService cognitiveService,
-                                        EventStoreRepository eventStoreRepository,
-                                        JdbcTemplate jdbcTemplate) {
-        this.cognitiveService = cognitiveService;
+    public AdaptiveReviewDecisionEngine(EventStoreRepository eventStoreRepository) {
         this.eventStoreRepository = eventStoreRepository;
-        this.jdbcTemplate = jdbcTemplate;
     }
 
-    /**
-     * Avalia e decide a próxima revisão combinando os 4 fatores essenciais:
-     * 1. Estimativa de recuperabilidade do conhecimento (FSRS / R(t))
-     * 2. Importância do conteúdo para o edital (Peso e incidência)
-     * 3. Consequências de esquecer para os tópicos seguintes (DAG de pré-requisitos)
-     * 4. Tempo disponível para estudar e revisar (Alocação com restrição)
-     */
     /**
      * The prior topic-level BKT/exponential outputs are not empirically validated.
      * Keep this endpoint fail-closed until a validated decision contract is available.
@@ -50,7 +36,7 @@ public class AdaptiveReviewDecisionEngine {
                 "Sem decisões cognitivas: o modelo por tópico ainda não foi validado. " +
                 "Consulte a fila canônica de revisões FSRS e o planejamento do edital."
         );
-        result.setDecisoes(Collections.emptyList());
+        result.setDecisoes(java.util.Collections.emptyList());
         result.setEstatisticas(new AdaptiveRevisionDecisionDTO.DecisionStatistics());
         return result;
     }
@@ -113,49 +99,5 @@ public class AdaptiveReviewDecisionEngine {
         }
 
         return response;
-    }
-
-    private int calculateDownstreamDependencies(String disciplina, String topico) {
-        if (topico == null) return 0;
-        String normalized = topico.toLowerCase();
-
-        // 1. Consulta SQL no banco se existirem pré-requisitos canônicos cadastrados
-        try {
-            Integer count = jdbcTemplate.queryForObject(
-                    "SELECT COUNT(*) FROM canonical_concept_prerequisites ccp " +
-                            "JOIN canonical_concepts cc ON ccp.prerequisite_concept_id = cc.id " +
-                            "WHERE LOWER(cc.nome) LIKE ?",
-                    Integer.class,
-                    "%" + normalized + "%"
-            );
-            if (count != null && count > 0) {
-                return count;
-            }
-        } catch (Exception ignored) {}
-
-        // 2. Heurística Epistemológica para Matérias Fiscais
-        // Português: Morfologia é pré-requisito essencial para Sintaxe, Concordância, Regência e Crase
-        if (normalized.contains("morfologia") || normalized.contains("classes de palavras") || normalized.contains("estrutura das palavras")) {
-            return 3;
-        }
-        if (normalized.contains("sintaxe") || normalized.contains("termos da oração")) {
-            return 2;
-        }
-        // Tributário: Princípios e Competência são pré-requisitos para Fato Gerador, Lançamento, Suspensão e Extinção
-        if (normalized.contains("conceito de tributo") || normalized.contains("princípios tributários") || normalized.contains("competência")) {
-            return 4;
-        }
-        if (normalized.contains("obrigação tributária") || normalized.contains("fato gerador")) {
-            return 3;
-        }
-        // Contabilidade: Contabilidade Básica/Método das Partidas Dobradas é pré-requisito para DFC, DVA, Balanço
-        if (normalized.contains("partidas dobradas") || normalized.contains("atos e fatos") || normalized.contains("estrutura conceitual")) {
-            return 4;
-        }
-        if (normalized.contains("estoques") || normalized.contains("ativo imobilizado")) {
-            return 2;
-        }
-
-        return 0;
     }
 }
