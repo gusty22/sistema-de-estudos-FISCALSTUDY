@@ -29,11 +29,12 @@ public class LearningEvidenceService {
     public Map<String,Object> preview(String questionId) {
         Map<String,Object> result = new LinkedHashMap<>();
         FsrsCardState current=state(questionId);
+        Instant predictedAt = Instant.now();
         result.put("modelVersion",MODEL_VERSION);
-        result.put("recallBefore",current == null ? null : current.getRetrievability(Instant.now()));
+        result.put("recallBefore",current == null ? null : current.getRetrievability(predictedAt));
         result.put("evidenceStatus",current == null ? "COLD_START" : "UNCALIBRATED_ITEM_ESTIMATE");
         result.put("scope","QUESTION_OCCURRENCE_NOT_TOPIC_MASTERY");
-        result.put("predictedAt",Instant.now().toString());
+        result.put("predictedAt",predictedAt.toString());
         return result;
     }
     public static String pedagogicalSignal(Boolean correct, Double recallBefore) {

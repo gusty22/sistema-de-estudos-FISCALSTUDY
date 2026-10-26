@@ -162,7 +162,7 @@ public class AnalyticsProjectionService {
         List<com.fiscalstudy.backend.domain.EventRecord> events = eventStoreRepository.getEventsUpTo("ANSWER_SUBMITTED", maxRowid);
 
         StringBuilder sb = new StringBuilder();
-        sb.append("question_id,selected_option,is_correct,gabarito_status,confidence_level,active_time_ms,discipline,board,year,topic,assunto,orgao,cargo,event_id,session_id,occurred_at,origin_type,concurso_point\n");
+        sb.append("question_id,selected_option,is_correct,gabarito_status,confidence_level,active_time_ms,discipline,board,year,topic,assunto,orgao,cargo,event_id,session_id,occurred_at,origin_type,concurso_point,fsrs_retrievability_pre_update,fsrs_prediction_timestamp,fsrs_model_version,fsrs_evidence_status\n");
 
         for (com.fiscalstudy.backend.domain.EventRecord event : events) {
             try {
@@ -174,6 +174,12 @@ public class AnalyticsProjectionService {
                 int confidence = node.path("confidenceLevel").asInt();
                 long activeTime = node.path("activeTimeMs").asLong();
                 int concursoPoint = node.path("concursoPoint").asInt(0);
+                JsonNode memoryPrediction = node.path("memoryPrediction");
+                String fsrsRetrievability = memoryPrediction.path("recallBefore").isNumber()
+                        ? memoryPrediction.path("recallBefore").asText() : "";
+                String fsrsPredictionTimestamp = memoryPrediction.path("predictedAt").asText("");
+                String fsrsModelVersion = memoryPrediction.path("modelVersion").asText("");
+                String fsrsEvidenceStatus = memoryPrediction.path("evidenceStatus").asText("");
 
                 String origin = node.has("origin") && !node.path("origin").asText().isBlank()
                         ? node.path("origin").asText().trim()
@@ -205,7 +211,7 @@ public class AnalyticsProjectionService {
                 String sessionId = event.getSessionId() != null && !event.getSessionId().isBlank() ? event.getSessionId() : "NA";
                 String occurredAt = event.getOccurredAt() != null && !event.getOccurredAt().isBlank() ? event.getOccurredAt() : "NA";
 
-                sb.append(String.format("\"%s\",\"%s\",%s,\"%s\",%d,%d,\"%s\",\"%s\",%d,\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",%d\n",
+                sb.append(String.format("\"%s\",\"%s\",%s,\"%s\",%d,%d,\"%s\",\"%s\",%d,\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",%d,%s,\"%s\",\"%s\",\"%s\"\n",
                         escapeCsv(questionId),
                         escapeCsv(selectedOption),
                         isCorrectStr,
@@ -223,7 +229,11 @@ public class AnalyticsProjectionService {
                         escapeCsv(sessionId),
                         escapeCsv(occurredAt),
                         escapeCsv(origin),
-                        concursoPoint
+                        concursoPoint,
+                        fsrsRetrievability,
+                        escapeCsv(fsrsPredictionTimestamp),
+                        escapeCsv(fsrsModelVersion),
+                        escapeCsv(fsrsEvidenceStatus)
                 ));
             } catch (Exception e) {
                 // ignore unparseable record
@@ -509,8 +519,8 @@ public class AnalyticsProjectionService {
         );
 
         return new com.fiscalstudy.backend.infrastructure.in.web.dto.ExportManifestDTO(
-                "1.0.0",
-                "1.0.0",
+                "1.1.0",
+                "1.1.0",
                 java.time.Instant.now().toString(),
                 "db/fiscalstudy.db:event_store",
                 "default_user",
