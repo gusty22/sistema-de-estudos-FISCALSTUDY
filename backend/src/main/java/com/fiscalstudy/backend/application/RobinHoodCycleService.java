@@ -80,10 +80,10 @@ public class RobinHoodCycleService {
         // Contagem de ciclos completados para gatilho de recalibração
         int completedCycles = 0;
         try {
-            List<Map<String, Object>> countRow = jdbcTemplate.queryForList(
-                    "SELECT COUNT(*) as c FROM event_store WHERE event_type = 'CYCLE_COMPLETED' " +
-                            (concursoId != null ? "AND aggregate_id = '" + concursoId + "'" : "")
-            );
+            String countSql = "SELECT COUNT(*) as c FROM event_store WHERE event_type = 'CYCLE_COMPLETED' ";
+            List<Map<String, Object>> countRow = concursoId != null
+                    ? jdbcTemplate.queryForList(countSql + "AND aggregate_id = ?", concursoId)
+                    : jdbcTemplate.queryForList(countSql);
             if (!countRow.isEmpty() && countRow.get(0).get("c") != null) {
                 completedCycles = ((Number) countRow.get(0).get("c")).intValue();
             }
@@ -134,9 +134,8 @@ public class RobinHoodCycleService {
                     "FROM edital_topicos WHERE concurso_id = ? " +
                     "GROUP BY disciplina";
             rows = jdbcTemplate.queryForList(sql, concursoId.trim());
-        }
-
-        if (rows.isEmpty()) {
+        } else {
+            // Global view is explicit. An empty selected contest must stay empty.
             String fallbackSql = "SELECT disciplina, AVG(peso) as peso_medio, COUNT(*) as qtd_topicos " +
                     "FROM edital_topicos " +
                     "GROUP BY disciplina";
