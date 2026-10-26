@@ -102,8 +102,14 @@ public class AdaptiveReviewDecisionEngine {
                     "investigation-candidate-v1",
                     payload
             );
+            response.setPersistenceStatus("PERSISTED");
         } catch (Exception e) {
             log.warn("Falha ao registrar candidato de investigação de erro: {}", e.getMessage());
+            response.setPersistenceStatus("FAILED");
+            response.setExplicacaoPedagogica(
+                    "A causa continua não determinada e o candidato de investigação não foi persistido. " +
+                    "Nenhum agendamento ou estado de conhecimento foi alterado."
+            );
         }
 
         return response;
