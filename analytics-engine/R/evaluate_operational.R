@@ -81,6 +81,7 @@ run_operational_evaluation <- function(export_path = "data/raw/operational_expor
   base_hist <- calculate_baseline_historical_mean(attempts)
   base_disc <- calculate_baseline_topic_mean(attempts, catalog)
   base_ma <- calculate_baseline_moving_average(attempts, window_size = 5L)
+  temporal_baseline_backtest <- evaluate_baselines_temporally(attempts)
   
   # ComparaÃ§Ã£o de calibraÃ§Ã£o subjetiva contra baseline histÃ³rico
   y_true <- as.numeric(attempts$is_correct == TRUE)
@@ -106,7 +107,9 @@ run_operational_evaluation <- function(export_path = "data/raw/operational_expor
   }
   
   result_package <- list(
-    evaluation_version = "1.1.0",
+    evaluation_version = "1.2.0",
+    is_validated = FALSE,
+    can_apply = FALSE,
     generated_at = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
     evaluation_type = if (isTRUE(meta$is_real_student_data)) "OPERATIONAL_REAL_EVALUATION" else "SAMPLE_CONTRACT_EVALUATION",
     data_provenance = meta$data_provenance,
@@ -160,7 +163,8 @@ run_operational_evaluation <- function(export_path = "data/raw/operational_expor
         current_estimate = base_ma$current_estimate,
         rolling_series = base_ma$rolling_series
       ),
-      calibration_vs_historical_baseline = model_comp
+      calibration_vs_historical_baseline = model_comp,
+      temporal_backtest = temporal_baseline_backtest
     ),
     advanced_models_prerequisites_audit = list(
       bkt = bkt_audit,
