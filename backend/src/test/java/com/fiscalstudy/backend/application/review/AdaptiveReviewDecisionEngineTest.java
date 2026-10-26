@@ -60,6 +60,7 @@ class AdaptiveReviewDecisionEngineTest {
             assertNull(result.getNovaEstabilidadeDias());
             assertEquals("NOT_ASSESSED", result.getStatusPrerequisitos());
             assertEquals("DIAGNOSTIC_FOLLOW_UP_CANDIDATE", result.getIntervencaoPrescrita());
+            assertEquals("PERSISTED", result.getPersistenceStatus());
             assertFalse(result.isDominioZerado());
         }
 
@@ -76,13 +77,33 @@ class AdaptiveReviewDecisionEngineTest {
 
     @Test
     void missingContextStaysMissingInsteadOfBecomingAZeroOrDefaultEstimate() {
-        ReviewFailureDiagnosisDTO result = engine.handleReviewFailure(request(null, null, null, null, null));
+        ReviewFailureRequestDTO request = request(null, null, null, null, null);
+        request.setDominioAnteriorPct(null);
+
+        ReviewFailureDiagnosisDTO result = engine.handleReviewFailure(request);
 
         assertNull(result.getDominioAnteriorPct());
         assertNull(result.getNovoDominioAjustadoPct());
         assertNull(result.getNovaEstabilidadeDias());
         assertEquals("CAUSE_UNRESOLVED", result.getStatus());
         assertFalse(result.isCanApply());
+        assertEquals("PERSISTED", result.getPersistenceStatus());
+    }
+
+    @Test
+    void persistenceFailureIsExplicitAndDoesNotClaimTheCandidateWasRecorded() {
+        doThrow(new IllegalStateException("store unavailable"))
+                .when(eventStoreRepository)
+                .appendEvent(anyString(), anyString(), anyString(), anyString(), anyInt(), anyString(), anyString());
+
+        ReviewFailureDiagnosisDTO result = engine.handleReviewFailure(request(2.0, 4, false, false, null));
+
+        assertEquals("CAUSE_UNRESOLVED", result.getStatus());
+        assertEquals("FAILED", result.getPersistenceStatus());
+        assertFalse(result.isCanApply());
+        assertTrue(result.getExplicacaoPedagogica().contains("não foi persistido"));
+        assertNull(result.getNovoDominioAjustadoPct());
+        assertNull(result.getNovaEstabilidadeDias());
     }
 
     private ReviewFailureRequestDTO request(Double days, Integer confidence, Boolean isNew,
