@@ -27,6 +27,25 @@ public class LocalAccessFilter extends OncePerRequestFilter {
     @Override protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain chain) throws ServletException, IOException {
         String origin = req.getHeader("Origin");
         if (origin != null && !origins.contains(origin)) { deny(res,403,"Origin not allowed"); return; }
+        String secFetchSite = req.getHeader("Sec-Fetch-Site");
+        if (secFetchSite != null && "cross-site".equalsIgnoreCase(secFetchSite)) {
+            deny(res, 403, "Cross-site request forbidden");
+            return;
+        }
+        String referer = req.getHeader("Referer");
+        if (referer != null && !referer.isBlank()) {
+            boolean allowedReferer = false;
+            for (String allowed : origins) {
+                if (referer.startsWith(allowed)) {
+                    allowedReferer = true;
+                    break;
+                }
+            }
+            if (!allowedReferer) {
+                deny(res, 403, "Referer origin not allowed");
+                return;
+            }
+        }
         String uri=req.getRequestURI();
         boolean admin=uri.startsWith("/api/v1/system/backup") || uri.startsWith("/api/v1/system/audit") || uri.startsWith("/api/v1/ingestion");
         if (admin && !"OPTIONS".equals(req.getMethod())) {
@@ -36,6 +55,23 @@ public class LocalAccessFilter extends OncePerRequestFilter {
             String supplied=req.getHeader("X-FiscalStudy-Admin-Token");
             if(!local || adminToken.isBlank() || supplied==null || !MessageDigest.isEqual(adminToken.getBytes(StandardCharsets.UTF_8),supplied.getBytes(StandardCharsets.UTF_8))) {
                 deny(res,403,"Administrative operation requires loopback access and configured admin token"); return;
+            }
+        }
+        boolean isKnowledgeRebuild = uri.startsWith("/api/v1/knowledge/rebuild") && !"OPTIONS".equals(req.getMethod());
+        if (isKnowledgeRebuild) {
+            boolean local;
+            try { local = InetAddress.getByName(req.getRemoteAddr()).isLoopbackAddress(); }
+            catch(Exception e){ local = false; }
+            if (!local) {
+                deny(res, 403, "Rebuild operation is strictly restricted to local loopback interface");
+                return;
+            }
+            if (!adminToken.isBlank()) {
+                String supplied = req.getHeader("X-FiscalStudy-Admin-Token");
+                if (supplied == null || !MessageDigest.isEqual(adminToken.getBytes(StandardCharsets.UTF_8), supplied.getBytes(StandardCharsets.UTF_8))) {
+                    deny(res, 403, "Administrative rebuild requires configured admin token");
+                    return;
+                }
             }
         }
         chain.doFilter(req,res);

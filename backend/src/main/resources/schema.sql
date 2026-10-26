@@ -496,3 +496,36 @@ CREATE INDEX IF NOT EXISTS idx_qfamily_id ON question_families(family_id);
 CREATE TABLE IF NOT EXISTS learning_memory_state(question_id TEXT PRIMARY KEY,stability REAL NOT NULL,difficulty REAL NOT NULL,reps INTEGER NOT NULL,lapses INTEGER NOT NULL,last_reviewed_at TEXT NOT NULL,due_at TEXT NOT NULL,model_version TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS learning_evidence_projection(attempt_id TEXT PRIMARY KEY,question_id TEXT NOT NULL,occurred_at TEXT NOT NULL,origin TEXT NOT NULL,recall_before REAL,pedagogical_signal TEXT NOT NULL,model_version TEXT NOT NULL);
 CREATE INDEX IF NOT EXISTS idx_learning_memory_due ON learning_memory_state(due_at);
+
+-- EPIC 02: Modelo Individual de Conhecimento (Read-Model Canônico)
+CREATE TABLE IF NOT EXISTS topic_knowledge_projections (
+    topic_id TEXT NOT NULL PRIMARY KEY,
+    discipline_id TEXT NOT NULL,
+    topic_name TEXT,
+    total_attempts INTEGER NOT NULL DEFAULT 0,
+    correct_attempts INTEGER NOT NULL DEFAULT 0,
+    error_attempts INTEGER NOT NULL DEFAULT 0,
+    accuracy_rate REAL NOT NULL DEFAULT 0.0,
+    accuracy_denominator_text TEXT NOT NULL DEFAULT 'SEM_EVIDENCIAS',
+    total_active_time_ms INTEGER NOT NULL DEFAULT 0,
+    average_active_time_ms INTEGER NOT NULL DEFAULT 0,
+    last_attempt_at TEXT,
+    unique_questions_count INTEGER NOT NULL DEFAULT 0,
+    new_questions_attempts INTEGER NOT NULL DEFAULT 0,
+    repeated_questions_attempts INTEGER NOT NULL DEFAULT 0,
+    variant_questions_attempts INTEGER NOT NULL DEFAULT 0,
+    avg_confidence_ordinal REAL,
+    low_confidence_successes INTEGER NOT NULL DEFAULT 0,
+    high_confidence_errors INTEGER NOT NULL DEFAULT 0,
+    confidence_distribution_json TEXT,
+    context_distribution_json TEXT,
+    error_causes_distribution_json TEXT,
+    fsrs_stability_days REAL,
+    fsrs_retrieval_rate REAL,
+    evidence_status TEXT NOT NULL DEFAULT 'SEM_EVIDENCIAS',
+    epistemic_limitations_json TEXT,
+    pedagogical_hypotheses_json TEXT,
+    updated_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_topic_knowledge_discipline ON topic_knowledge_projections(discipline_id);
+CREATE INDEX IF NOT EXISTS idx_topic_knowledge_updated ON topic_knowledge_projections(updated_at);

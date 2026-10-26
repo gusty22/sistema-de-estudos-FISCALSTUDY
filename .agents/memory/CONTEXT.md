@@ -94,6 +94,12 @@
     - Em [CadernosSimulados.tsx](file:///c:/Users/washi/OneDrive/%C3%81rea%20de%20Trabalho/fiscalstudy-platform/core-app/frontend/src/components/simulados/CadernosSimulados.tsx), corrigida a inicialização de `selectedDisciplinas` para contemplar as 10 matérias do concurso e adicionado ajuste automático do filtro de prioridade para a classe com dados ativos.
     - Em [MapaConteudos.tsx](file:///c:/Users/washi/OneDrive/%C3%81rea%20de%20Trabalho/fiscalstudy-platform/core-app/frontend/src/components/edital/MapaConteudos.tsx), implementado desempacotador robusto e fallback automático para `/api/v1/edital/topicos`, garantindo a exibição ininterrupta da árvore (10 disciplinas, tópicos e subtópicos).
     - Em [motorParetoEdital.ts](file:///c:/Users/washi/OneDrive/%C3%81rea%20de%20Trabalho/fiscalstudy-platform/core-app/frontend/src/utils/motorParetoEdital.ts), cabeçalhos de matérias com prefixos como `DISCIPLINA:` e pontuações são reconhecidos com 100% de acurácia, evitando o descarte acidental de tópicos importados.
+- **Modelo Individual de Conhecimento — Segurança por Concepção & Homologação Epistêmica (v3.39)**:
+  - **Atomicidade Transacional e Idempotência**: Reconstrução (`TopicKnowledgeAggregatorService.rebuildAll()`) protegida com trava concorrente atômica (`AtomicBoolean`), processamento em memória e persistência em lote atômica via `topicKnowledgeRepository.replaceAll()` com `@Transactional(rollbackFor = Exception.class)`, eliminando janelas de tabelas vazias (dirty reads) ou inconsistências parciais.
+  - **Segurança de Endpoints & Sanitização**: Proteção contra chamadas não-loopback para `/api/v1/knowledge/rebuild` em `LocalAccessFilter`, bloqueio de requisições concorrentes (HTTP 409 Conflict), validação rigorosa de limites em filtros e sanitização em `GlobalExceptionHandler` para evitar vazamento de caminhos locais, banco de dados ou stack traces.
+  - **Refinamento Científico & Nomenclatura Amostral**: Status `CONSOLIDADA` revisado para `SUFICIENTE_OPERACIONAL` para evitar confusão entre suficiência de evidências amostrais e domínio conceitual real; limiares (N=10, N=25) documentados formalmente como convenções heurísticas operacionais da plataforma.
+  - **Governança de Eventos e Anotações**: Integração de `ATTEMPT_ANNOTATED` para preservação e sobreposição resiliente de causas de erro categorizadas pelo estudante; descarte rigoroso de eventos com origens sintéticas (`AUTOMATED_TEST`, `SYNTHETIC_BENCHMARK`) e deduplicação estrita de `event_id`.
+  - **Suíte de Testes Automatizada & Homologação E2E**: 16 testes automatizados passando 100% cobrindo reconstrução determinística, contratos epistemológicos, segurança/integridade e fluxo ponta a ponta com dados controlados e isolados.
 
 ## 4. Índice de Documentação Modular
 Consulte pontualmente via `view_file` conforme o escopo da tarefa:
@@ -120,14 +126,39 @@ Consulte pontualmente via `view_file` conforme o escopo da tarefa:
   - Auditoria de tokens: `uv run python scripts/measure_tokens.py` (telemetria real da sessão via transcript.jsonl).
   - Cofre Obsidian: `..\obsidian\FiscalStudy-Obsidian\00 - Painel\Dashboard.md`.
 
-## 6. Wave 1 — Homologação Integrada e Validação Funcional
-- **Branch Principal (`main`)**: Intacta no commit canônico `c26ee20352fc1b6ace0c58be4f24a41a1092fbf0` (merge NÃO autorizado até homologação formal completa).
-- **Worktree de Integração**: `target/worktrees/integration-wave-1` (Branch `integration/wave-1`, HEAD `926b642`).
-- **Branch Frontend**: `fix/frontend-accessibility-flows` (HEAD `3ee32d9`).
-- **Validação Integrada de Fluxo E2E (10 Etapas)**:
-  - Implementada em `Wave1IntegratedE2EFlowTest.java` (commit `926b642`).
-  - Suíte completa de 50 testes de backend aprovada (`mvnw.cmd test`, 0 falhas, 0 erros).
-  - 11 testes do pipeline Python de ingestão documental aprovados (`test_golden_set_q15`, `test_inventory_integrity`, `test_pipeline_resilience`).
-  - 12 testes do frontend aprovados via `npm test` (`learning-contracts.test.mjs`).
-- **Governança & Scripts**: `scripts/github_issues_sync.ps1` com suporte a `-WhatIf`, idempotência e associação aos PRs #8, #9, #10 e #11.
+## 6. Wave 1 — Estabilização, Integração Isolada e Governança
+- **Estado da Branch `main`**: 🔒 **BLOQUEADA PARA MERGE**. A branch remota `origin/main` permanece estritamente intacta no commit canônico `c26ee20352fc1b6ace0c58be4f24a41a1092fbf0`.
+- **Ambiente de Trabalho**: Exclusivamente na worktree isolada `target/worktrees/integration-wave-1` (branch `integration/wave-1`).
+- **Catálogo Canônico dos 15 Epics**: Fonte única e definitiva em [`docs/architecture/EPICS_CANONICAL.md`](file:///c:/Users/washi/OneDrive/%C3%81rea%20de%20Trabalho/fiscalstudy-platform/core-app/docs/architecture/EPICS_CANONICAL.md). É expressamente proibido renumerar ou substituir estes identificadores por iniciativas de engenharia.
+- **Especificação de Avaliação Cognitiva**: Formalizada em [`docs/architecture/specs/AVALIACAO_CONHECIMENTO_CONCEITUAL.md`](file:///c:/Users/washi/OneDrive/%C3%81rea%20de%20Trabalho/fiscalstudy-platform/core-app/docs/architecture/specs/AVALIACAO_CONHECIMENTO_CONCEITUAL.md) com FSRS-4.5 oficial preservado, sem pesos fixos arbitrários e com segregação tripartite (Evidência Observada, Estimativa do Modelo, Hipótese Pedagógica).
+- **Validação Integrada Automatizada na Worktree**:
+  - Backend Java: 56 testes automatizados aprovados (`mvnw.cmd test`, 0 falhas, 0 erros).
+  - Fluxo Integrado E2E: `Wave1IntegratedE2EFlowTest` aprovado (7 testes de borda HTTP/JSON, 0 falhas).
+  - Suíte Python de Ingestão: `test_complete_ingestion_lifecycle.py` aprovado (100% de sucesso atômico, backup físico e auditoria no `event_store`).
+  - Frontend TypeScript/React: `npm test` aprovado (12 testes unitários, 0 falhas).
+  - Acessibilidade e DOM: Validação com Microsoft Edge local em modo headless.
+  - **N4 Homologação Visual**: Mantido formalmente como **PENDENTE** de sessão interativa em tela real com operador humano.
+- **Bancos de Dados**: Bancos reais de produção `db/fiscalstudy.db` e `db/staging.db` 100% intocados e preservados.
+
+## 7. Epic 02 — Modelo Individual de Conhecimento & Gate Final Concluído (v3.40)
+- **Branch Ativa**: `feature/epic-02-knowledge-model` (HEAD `740d119`). Branch `main` estritamente intacta e não mesclada; ancestralidade confirmada com `fix/dashboard-pedagogical-integrity` (commit `253d72d`).
+- **Read-Model Canônico**: Tabela `topic_knowledge_projections` e entidade `TopicKnowledgeProjection.java` alimentadas deterministamente por `TopicKnowledgeAggregatorService.java`.
+- **Governança Epistêmica Inegociável**:
+  1. *Observação vs Inferência*: Desempenho observado (acertos, erros, denominador auditado) não é fundido em notas de domínio genéricas.
+  2. *Eliminação de Pesos Arbitrários*: Simulados e retestes registrados puramente como metadados contextuais (`contextDistributionJson`), sem fatores 1.5x / 1.2x. Distinção rigorosa preservada entre simulado real de concurso (`origin = REAL_STUDY`, `interventionType = SIMULADO`) e sessões de testes sintéticos descartadas.
+  3. *Confiança Ordinal Pura (1 a 5)*: Escala tratada como ordinal; detecção explícita de acertos inseguros (nível 1-2) e erros com alta certeza (nível 4-5).
+  4. *Tratamento de Insuficiência Amostral*: Exibição de `SEM_EVIDENCIAS` para tópicos com N=0; `PRELIMINAR` com contagem real N para poucas tentativas (< 10 tentativas ou < 5 itens únicos).
+  5. *Memória FSRS Desacoplada*: Retenção temporal do FSRS ($S$ e $R$) preservada para agendamento de repetição espaçada, sem penalizar domínio conceitual via decaimento exponencial genérico.
+  6. *Reconstrução Determinística & Atomicidade Transacional*: `replaceAll` executa exclusão e inserção em transação atômica única com rollback efetivo em caso de falha intermediária, mantendo a projeção anterior intacta. Event store append-only 100% inalterado.
+  7. *Proteção Local de Endpoint*: `/api/v1/knowledge/rebuild` blindado contra loopback externo, Origin externa, Sec-Fetch-Site cross-site e Referer malicioso, sem criação desnecessária de autenticação multiusuário.
+- **Interface Funcional**: Componente `ModeloConhecimentoView.tsx` integrado ao `PainelDesempenho.tsx` (aba *Evidências de Conhecimento*) com cards resumo, tabela de tópicos e gaveta de auditoria epistêmica com as 6 seções segregadas.
+- **Validação Automatizada**:
+  - `TopicKnowledgeSecurityAndIntegrityTest`: 12 testes de segurança, integridade, rollback transacional e legitimidade aprovados.
+  - `TopicKnowledgeDeterministicReconstructionTest`: 4 testes unitários e de reconstrução aprovados.
+  - `TopicKnowledgeControllerIntegrationTest`: 2 testes de integração Spring Boot MockMvc aprovados.
+  - `TopicKnowledgeE2EHomologationTest`: 1 teste de homologação ponta a ponta aprovado. Total de 19 testes automatizados no backend aprovados.
+  - `knowledge-model-contracts.test.mjs`: 4 testes de contrato no frontend aprovados (total de 22 testes unitários no frontend aprovados).
+  - Browser Playwright: Evidências visuais registradas em `epic02_knowledge_model_overview.png` e `epic02_epistemic_drawer.png`.
+
+
 
