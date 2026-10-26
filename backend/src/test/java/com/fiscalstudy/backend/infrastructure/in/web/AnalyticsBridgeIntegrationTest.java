@@ -2,6 +2,8 @@ package com.fiscalstudy.backend.infrastructure.in.web;
 
 import com.fiscalstudy.backend.application.AnalyticsBridgeService;
 import com.fiscalstudy.backend.application.AttemptSubmissionService;
+import com.fiscalstudy.backend.infrastructure.config.AnalyticsPaths;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +29,9 @@ public class AnalyticsBridgeIntegrationTest {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private AnalyticsPaths analyticsPaths;
 
     @BeforeEach
     void setup() {
@@ -54,7 +59,7 @@ public class AnalyticsBridgeIntegrationTest {
     }
 
     @Test
-    void executeAnalyticsPipeline_RunsSuccessfullyAndInjectsWeights() throws Exception {
+    void executeAnalyticsPipeline_ProducesReadOnlyArtifacts() throws Exception {
         String exec = bridgeService.resolveExecutable();
         boolean hasExec = Files.isRegularFile(Path.of(exec));
         assumeTrue(hasExec, "Rscript must be installed to run end-to-end bridge test");
@@ -65,9 +70,25 @@ public class AnalyticsBridgeIntegrationTest {
         AnalyticsBridgeService.AnalyticsExecutionResult result = bridgeService.executeAnalyticsPipeline();
         assertNotNull(result);
         assertTrue(result.success(), "Execução da pipeline falhou. Msg: " + result.message() + " | Logs: " + result.logs());
-        assertNotNull(result.weights(), "Pesos do ciclo adaptativo Robin Hood devem ser gerados");
+        assertNotNull(result.weights(), "Envelope analitico observacional deve estar disponivel");
         assertNotNull(result.signals(), "Sinais analíticos devem ser extraídos");
         assertTrue(result.executionTimeMs() >= 0);
+
+        // Transport validation on an isolated test database; not personal learning evidence.
+        var mapper = new ObjectMapper();
+        var runManifest = mapper.readTree(Files.readString(analyticsPaths.currentManifest()));
+        String runId = runManifest.path("runId").asText();
+        Path run = analyticsPaths.output().resolve("runs").resolve(runId);
+        Path exportManifest = run.resolve("export_manifest.json");
+        assertTrue(Files.isRegularFile(exportManifest), "Each run must retain its own export manifest");
+        var sourceManifest = mapper.readTree(Files.readString(exportManifest));
+        assertEquals(runManifest.path("inputSha256").asText(), sourceManifest.path("checksum").asText(),
+                "The R input and export manifest must describe identical bytes");
+        var summary = mapper.readTree(Files.readString(run.resolve("metrics/metrics_summary_v1.json")));
+        assertEquals(runId, summary.path("run_id").asText(), "R artifacts belong to this actual run");
+        assertFalse(summary.path("can_apply").asBoolean(), "A transport test cannot authorize planning");
+        assertTrue(Files.isRegularFile(run.resolve("metrics/temporal_baseline_backtest_v1.json")));
+        assertTrue(Files.isRegularFile(run.resolve("metrics/retrieval_surprise_v1.json")));
 
         // Validar recuperação subsequente via getters
         assertNotNull(bridgeService.loadRobinHoodWeights(), "Pesos devem ser recuperáveis do run bem-sucedido");
