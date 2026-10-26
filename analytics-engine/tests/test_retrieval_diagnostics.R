@@ -77,3 +77,27 @@ bad_thresholds <- tryCatch({
   FALSE
 }, error = function(e) TRUE)
 assert_true(bad_thresholds, "Invalid triage thresholds fail explicitly")
+
+
+# Integrity and temporal evidence regressions, independent of FSRS equations.
+duplicate_memory <- rbind(memory_fixture, memory_fixture[2, , drop = FALSE])
+duplicate_audit <- calculate_retrieval_surprise(duplicate_memory)
+assert_equal(duplicate_audit$valid_preupdate_snapshot_count, 3L,
+             "All duplicate event identities are excluded from FSRS scores")
+assert_equal(length(duplicate_audit$investigation_queue), 0L,
+             "Duplicate high-error event cannot create duplicate investigations")
+unknown_identity <- memory_fixture
+unknown_identity$event_id[2] <- NA_character_
+assert_equal(calculate_retrieval_surprise(unknown_identity)$valid_preupdate_snapshot_count, 3L,
+             "Missing event identity cannot establish auditable evidence")
+naive_memory <- memory_fixture
+naive_memory$fsrs_prediction_timestamp[2] <- "2026-10-01 10:59:00"
+assert_equal(calculate_retrieval_surprise(naive_memory)$valid_preupdate_snapshot_count, 3L,
+             "Timezone-free snapshot is not proven to precede the answer")
+offset_memory <- memory_fixture[2, , drop = FALSE]
+offset_memory$fsrs_prediction_timestamp <- "2026-10-01T07:59:00-03:00"
+assert_equal(calculate_retrieval_surprise(offset_memory)$valid_preupdate_snapshot_count, 1L,
+             "FSRS diagnostic accepts explicit equivalent timezone offsets")
+assert_equal(calculate_retrieval_surprise(offset_memory)$by_topic[[1]]$error_rate_among_high_predictions, 1,
+             "High-prediction error rate uses high-prediction denominator")
+assert_false(calculate_retrieval_surprise(offset_memory)$can_apply, "Integrity fixes do not grant decision authority")

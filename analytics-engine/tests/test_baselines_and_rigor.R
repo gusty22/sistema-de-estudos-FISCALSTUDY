@@ -179,3 +179,26 @@ assert_equal(duplicate_result$prediction_count, 0L,
 small_temporal <- evaluate_baselines_temporally(temporal_fixture, initial_training_observations = 10L)
 assert_equal(small_temporal$status, "INSUFFICIENT_HISTORY",
              "Historico menor que a janela inicial produz estado insuficiente explicito")
+
+
+naive_temporal <- temporal_fixture
+naive_temporal$occurred_at <- gsub("T", " ", gsub("Z$", "", naive_temporal$occurred_at))
+assert_equal(evaluate_baselines_temporally(naive_temporal)$status, "NO_EVALUABLE_TEMPORAL_ATTEMPTS",
+             "Predictive backtest rejects timestamps with an unknown timezone")
+offset_temporal <- temporal_fixture
+offset_temporal$occurred_at[5] <- "2026-01-01T10:00:00-03:00"
+offset_backtest <- evaluate_baselines_temporally(offset_temporal, initial_training_observations = 3L)
+assert_equal(key_temporal(offset_backtest$predictions), key_temporal(temporal_result$predictions),
+             "Same-instant events stay in one prediction batch across timezone representations")
+
+
+perfect_scores <- evaluate_model_vs_baseline(c(0, 1), c(0, 1), c(0, 1))
+assert_equal(perfect_scores$brier_model, 0, "Perfect probabilities have exactly zero Brier without clipping")
+assert_true(is.na(perfect_scores$brier_skill_score), "BSS against a perfect zero-error baseline is undefined")
+assert_false(perfect_scores$is_superior_to_baseline, "Undefined BSS cannot claim superiority")
+assert_equal(evaluate_model_vs_baseline(c(0, 2), c(0.2, 0.8), c(0.5, 0.5))$status,
+             "INVALID_PROBABILITY_OR_OUTCOME", "Nonbinary outcome is not silently recoded as incorrect")
+assert_equal(evaluate_model_vs_baseline(c(0, 1), c(-0.1, 1.1), c(0.5, 0.5))$status,
+             "INVALID_PROBABILITY_OR_OUTCOME", "Out-of-range probabilities are rejected instead of clipped")
+assert_equal(evaluate_model_vs_baseline(c(0, 1), c(NA, 0.5), c(0.5, 0.5))$status,
+             "INVALID_PROBABILITY_OR_OUTCOME", "Missing probabilities cannot produce a valid score")

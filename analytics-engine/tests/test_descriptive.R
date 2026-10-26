@@ -109,3 +109,18 @@ assert_true(!is.na(comp_real$p_value), "Valor de p calculado via Fisher/prop.tes
 assert_true(comp_real$sample_disparity_flag, "Flag de disparidade amostral ativada devido a N1=8 e N2=4")
 assert_true(length(comp_real$methodological_cautions) >= 2, "Advertencias metodologicas retornadas explicitamente")
 
+
+
+# Absolute timestamp contract for predictive and followup evidence.
+parsed_instants <- parse_evidence_timestamp(c(
+  "2026-10-11T12:00:00Z", "2026-10-11T09:00:00-03:00", "2026-10-11T140000+0200",
+  "2026-10-11 12:00:00", "2026-02-30T12:00:00Z", "2026-10-11T12:00:00Ztrailing",
+  "2026-10-11T12:00:00+25:00", NA_character_
+))
+assert_equal(as.numeric(parsed_instants[1]), as.numeric(parsed_instants[2]),
+             "Explicit offset and UTC are the same instant")
+assert_true(all(is.na(parsed_instants[3:8])),
+            "Malformed, naive, impossible and missing timestamps remain unavailable")
+fractional <- parse_evidence_timestamp(c("2026-10-11T12:00:00.250Z", "2026-10-11T14:00:00.250+0200"))
+assert_equal(as.numeric(fractional[1]), as.numeric(fractional[2]), "Fractions survive explicit-offset conversion")
+assert_true(is.na(parse_evidence_timestamp("2026-10-11T12:60:00Z")), "Invalid clock minute is rejected")
