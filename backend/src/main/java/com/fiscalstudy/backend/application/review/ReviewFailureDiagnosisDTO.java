@@ -16,6 +16,7 @@ public class ReviewFailureDiagnosisDTO {
     private String status;
     private boolean causeResolved;
     private boolean canApply;
+    private String persistenceStatus = "NOT_ATTEMPTED";
     private boolean dominioZerado = false;
 
     public String getTipoFalha() { return tipoFalha; }
@@ -40,6 +41,8 @@ public class ReviewFailureDiagnosisDTO {
     public void setCauseResolved(boolean causeResolved) { this.causeResolved = causeResolved; }
     public boolean isCanApply() { return canApply; }
     public void setCanApply(boolean canApply) { this.canApply = canApply; }
+    public String getPersistenceStatus() { return persistenceStatus; }
+    public void setPersistenceStatus(String persistenceStatus) { this.persistenceStatus = persistenceStatus; }
     public boolean isDominioZerado() { return dominioZerado; }
     public void setDominioZerado(boolean dominioZerado) { this.dominioZerado = dominioZerado; }
 }
