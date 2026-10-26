@@ -19,6 +19,47 @@ categorize_evidence_level <- function(n, thresholds = list(low = 10L, moderate =
   "HIGH_EVIDENCE"
 }
 
+# Shared eligibility boundary for profile and pipeline metrics. Original rows are never modified.
+select_evaluable_attempts <- function(attempts_df, questions_df = NULL) {
+  if (is.null(attempts_df)) attempts_df <- data.frame()
+  # A non-null outcome is not enough: annulled/ungraded items are not evidence.
+  raw_outcomes <- if ("is_correct" %in% names(attempts_df)) toupper(trimws(as.character(attempts_df$is_correct))) else rep(NA_character_, nrow(attempts_df))
+  normalized_outcomes <- rep(NA, nrow(attempts_df))
+  normalized_outcomes[raw_outcomes %in% c("TRUE", "1")] <- TRUE
+  normalized_outcomes[raw_outcomes %in% c("FALSE", "0")] <- FALSE
+  non_evaluable <- rep(FALSE, nrow(attempts_df))
+  blocked_statuses <- c("ANULADA", "AUSENTE", "SOB_REVISAO")
+  for (column in intersect(c("gabarito_status", "correct_option"), names(attempts_df))) {
+    non_evaluable <- non_evaluable | toupper(trimws(as.character(attempts_df[[column]]))) %in% blocked_statuses
+  }
+  if ("is_annulled" %in% names(attempts_df)) {
+    non_evaluable <- non_evaluable | toupper(trimws(as.character(attempts_df$is_annulled))) %in% c("TRUE", "1")
+  }
+  if (!is.null(questions_df) && "question_id" %in% names(questions_df) && "question_id" %in% names(attempts_df)) {
+    excluded_catalog <- rep(FALSE, nrow(questions_df))
+    for (column in intersect(c("gabarito_status", "correct_option"), names(questions_df))) {
+      excluded_catalog <- excluded_catalog | toupper(trimws(as.character(questions_df[[column]]))) %in% blocked_statuses
+    }
+    if ("is_annulled" %in% names(questions_df)) {
+      excluded_catalog <- excluded_catalog | toupper(trimws(as.character(questions_df$is_annulled))) %in% c("TRUE", "1")
+    }
+    non_evaluable <- non_evaluable | attempts_df$question_id %in% questions_df$question_id[excluded_catalog]
+  }
+  evaluable <- !is.na(normalized_outcomes) & !non_evaluable
+  valid_attempts <- attempts_df[evaluable, , drop = FALSE]
+  valid_attempts$is_correct <- normalized_outcomes[evaluable]
+  n_valid <- nrow(valid_attempts)
+
+  # Provenance still describes the original dataset, not proof granted by this filter.
+  provenance <- attr(attempts_df, "provenance_info")
+  if (!is.null(provenance)) attr(valid_attempts, "provenance_info") <- provenance
+  list(attempts_df = valid_attempts, evaluable_mask = evaluable,
+       original_count = as.integer(nrow(attempts_df)),
+       excluded_count = as.integer(sum(!evaluable)),
+       missing_outcome_count = as.integer(sum(is.na(normalized_outcomes))),
+       status_excluded_count = as.integer(sum(non_evaluable)))
+}
+
 #' Constrói o Perfil Multidimensional de Aprendizagem do Estudante
 #' @param attempts_df data.frame de tentativas (ANSWER_SUBMITTED)
 #' @param questions_df data.frame do catálogo de questões
@@ -29,6 +70,7 @@ build_learning_profile <- function(attempts_df, questions_df = NULL, validation_
   if (is.null(attempts_df) || nrow(attempts_df) == 0) {
     return(list(
       profile_version = "1.0.0",
+      evidence_policy_version = "1.1.0",
       generated_at = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
       data_provenance = "NO_DATA",
       is_real_student_profile = FALSE,
@@ -37,6 +79,12 @@ build_learning_profile <- function(attempts_df, questions_df = NULL, validation_
         is_valid = FALSE,
         total_events = 0L,
         valid_attempts = 0L,
+        excluded_non_evaluable_attempts = 0L,
+        missing_outcome_attempts = 0L,
+        personal_origin_rows = 0L,
+        classification_metadata_policy = "RECORDED_VALUES_WITH_CURRENT_CATALOG_FALLBACK",
+        classification_temporal_validity = "NOT_ESTABLISHED",
+        missingness = list(confidence = 0L, active_time = 0L, occurred_at = 0L, session_id = 0L),
         has_blocking_errors = FALSE,
         warnings_count = 0L,
         quality_flags = c("EMPTY_DATASET", "NO_DATA")
@@ -75,7 +123,9 @@ build_learning_profile <- function(attempts_df, questions_df = NULL, validation_
         n_repeated_attempts = 0L,
         repeat_accuracy = NA_real_,
         initial_accuracy = NA_real_,
-        transfer_delta = NA_real_
+        transfer_delta = NA_real_,
+        repeat_vs_initial_accuracy_delta = NA_real_,
+        transfer_status = "NOT_ESTABLISHED"
       ),
       fluency = list(
         n_valid_times = 0L,
@@ -104,7 +154,9 @@ build_learning_profile <- function(attempts_df, questions_df = NULL, validation_
         repeated_attempts_count = 0L,
         novel_vs_repeat_ratio = NA_real_,
         novel_accuracy = NA_real_,
-        repeat_accuracy = NA_real_
+        repeat_accuracy = NA_real_,
+        repeat_vs_initial_accuracy_delta = NA_real_,
+        transfer_status = "NOT_ESTABLISHED"
       ),
       methodological_cautions = c("Perfil gerado sobre conjunto de dados vazio.")
     ))
@@ -128,12 +180,33 @@ build_learning_profile <- function(attempts_df, questions_df = NULL, validation_
     )
   }
 
-  # Filtrar apenas tentativas com validação de is_correct
-  valid_attempts <- attempts_df[!is.na(attempts_df$is_correct), ]
+  selection <- select_evaluable_attempts(attempts_df, questions_df)
+  valid_attempts <- selection$attempts_df
   n_valid <- nrow(valid_attempts)
+
+  # Audit the original rows, not just the retained subset: filtering cannot launder origins.
+  personal_origins <- "origin_type" %in% names(attempts_df) &&
+    all(!is.na(attempts_df$origin_type) & as.character(attempts_df$origin_type) == "REAL_STUDY")
+  provenance_allows_profile <- isTRUE(provenance_info$is_proven_operational) &&
+    isTRUE(provenance_info$is_real_student_data) && isTRUE(provenance_info$can_generate_student_profile)
+  real_profile <- provenance_allows_profile && personal_origins && n_valid > 0L &&
+    (is.null(validation_result) || isTRUE(validation_result$is_valid))
+  if (provenance_allows_profile && !personal_origins) {
+    provenance_info$provenance_type <- "UNVERIFIED_SOURCE"
+    provenance_info$audit_verdict <- "ORIGIN_NOT_PERSONAL"
+    provenance_info$reasons <- c(provenance_info$reasons, "Original dataset contains missing or nonpersonal origins; profile cannot be personal.")
+  }
+  missing_count <- function(column) {
+    if (!column %in% names(valid_attempts)) return(as.integer(n_valid))
+    values <- valid_attempts[[column]]
+    as.integer(sum(is.na(values) | trimws(as.character(values)) == ""))
+  }
   
   # Metadados de qualidade
   quality_flags <- c(paste0("PROVENANCE_", provenance_info$provenance_type))
+  if (selection$excluded_count > 0L) quality_flags <- c(quality_flags, "NON_EVALUABLE_ATTEMPTS_EXCLUDED")
+  if (n_valid == 0L) quality_flags <- c(quality_flags, "NO_EVALUABLE_ATTEMPTS", "NO_DATA")
+  if (!real_profile) quality_flags <- c(quality_flags, "NOT_A_PERSONAL_LEARNING_PROFILE")
   has_blocking <- FALSE
   warn_count <- 0L
   if (!is.null(validation_result)) {
@@ -159,7 +232,7 @@ build_learning_profile <- function(attempts_df, questions_df = NULL, validation_
   times_present <- "occurred_at" %in% names(valid_attempts) && any(!is.na(valid_attempts$occurred_at))
   p_start <- if (times_present) min(valid_attempts$occurred_at, na.rm = TRUE) else NA_character_
   p_end   <- if (times_present) max(valid_attempts$occurred_at, na.rm = TRUE) else NA_character_
-  total_sess <- if ("session_id" %in% names(valid_attempts)) length(unique(valid_attempts$session_id)) else 1L
+  total_sess <- if ("session_id" %in% names(valid_attempts)) length(unique(valid_attempts$session_id[!is.na(valid_attempts$session_id) & trimws(valid_attempts$session_id) != ""])) else 0L
   
   # 2. Dimensão 1: Domínio por Disciplina
   disc_df <- calculate_performance_by_discipline(valid_attempts, questions_df)
@@ -262,12 +335,17 @@ build_learning_profile <- function(attempts_df, questions_df = NULL, validation_
   
   # 8. Advertências Metodológicas e Salvaguarda Epistêmica
   cautions <- c(
+    "Evidence-level categories depend only on provisional sample-size thresholds; HIGH_EVIDENCE does not establish mastery or pedagogical efficacy.",
+    "transfer_delta is a compatibility alias for repeat-minus-initial accuracy; it is not evidence of conceptual transfer.",
+    "Accuracy describes observed task performance, not measured conceptual mastery; confidence and response time do not establish the cause of an error.",
+    "Recorded classification is preserved; current catalog only fills gaps and does not establish the classification known at the historical attempt time.",
+    "Confidence-to-probability mapping is provisional; ECE on samples below 30 should be interpreted as descriptive and unstable.",
     "1. Perfil multidimensional: nenhum escore isolado sintetiza a proficiencia do estudante.",
     "2. Ausencia de tentativas em tópicos e rotulada estritamente como NO_DATA e nao como deficiencia.",
     "3. Estimativas pontuais acompanhadas de intervalos de confianca Wilson a 95%.",
     "4. Retencao em itens repetidos reflete memoria do item especifico e nao garantia de transferencia abstrata."
   )
-  if (!provenance_info$is_real_student_data) {
+  if (!real_profile) {
     cautions <- c(
       sprintf("BLOQUEIO EPISTEMICO MANDATORIO: Procedencia dos dados e '%s'. PROIBIDO apresentar como historico real de estudante.", provenance_info$provenance_type),
       cautions
@@ -285,9 +363,10 @@ build_learning_profile <- function(attempts_df, questions_df = NULL, validation_
   
   list(
     profile_version = "1.0.0",
+      evidence_policy_version = "1.1.0",
     generated_at = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
     data_provenance = provenance_info$provenance_type,
-    is_real_student_profile = provenance_info$is_real_student_data,
+    is_real_student_profile = real_profile,
     provenance_audit = provenance_info$audit_verdict,
     provenance_reasons = provenance_info$reasons,
     provenance_warnings = provenance_info$warnings,
@@ -295,6 +374,12 @@ build_learning_profile <- function(attempts_df, questions_df = NULL, validation_
       is_valid = if (!is.null(validation_result)) validation_result$is_valid else TRUE,
       total_events = nrow(attempts_df),
       valid_attempts = n_valid,
+      excluded_non_evaluable_attempts = selection$excluded_count,
+      missing_outcome_attempts = selection$missing_outcome_count,
+      personal_origin_rows = if ("origin_type" %in% names(attempts_df)) as.integer(sum(attempts_df$origin_type %in% "REAL_STUDY")) else 0L,
+      classification_metadata_policy = "RECORDED_VALUES_WITH_CURRENT_CATALOG_FALLBACK",
+      classification_temporal_validity = "NOT_ESTABLISHED",
+      missingness = list(confidence = missing_count("confidence_level"), active_time = missing_count("active_time_ms"), occurred_at = missing_count("occurred_at"), session_id = missing_count("session_id")),
       has_blocking_errors = has_blocking,
       warnings_count = warn_count,
       quality_flags = quality_flags
@@ -316,7 +401,9 @@ build_learning_profile <- function(attempts_df, questions_df = NULL, validation_
       initial_accuracy = acc_init,
       initial_ci_lower = ci_init["lower"],
       initial_ci_upper = ci_init["upper"],
-      transfer_delta = transfer_delta
+      transfer_delta = transfer_delta,
+      repeat_vs_initial_accuracy_delta = transfer_delta,
+      transfer_status = "NOT_ESTABLISHED"
     ),
     fluency = list(
       n_valid_times = time_res$n_valid_times,
@@ -353,7 +440,9 @@ build_learning_profile <- function(attempts_df, questions_df = NULL, validation_
       repeat_accuracy = acc_rep,
       repeat_ci_lower = ci_rep["lower"],
       repeat_ci_upper = ci_rep["upper"],
-      transfer_delta = transfer_delta
+      transfer_delta = transfer_delta,
+      repeat_vs_initial_accuracy_delta = transfer_delta,
+      transfer_status = "NOT_ESTABLISHED"
     ),
     methodological_cautions = cautions
   )
