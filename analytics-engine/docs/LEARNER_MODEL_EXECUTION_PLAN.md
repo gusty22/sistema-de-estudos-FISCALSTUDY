@@ -76,3 +76,14 @@ O status factual de implementação e os comandos/resultados encontram-se em [LE
 ### Integridade da persistência do candidato de investigação
 
 O endpoint de falha de revisão separa o estado epistemológico (`CAUSE_UNRESOLVED`) do estado de gravação (`PERSISTED` ou `FAILED`). Se o append falhar, a resposta informa que o candidato não foi registrado; ela não afirma sucesso nem autoriza ação. A identidade do evento continua sujeita ao contrato canônico de tentativas/eventos e precisa ser validada na integração.
+
+
+## Estado após merge do gate Onda 0 e incremento de validação temporal
+
+A main consultada nesta rodada já contém os PRs #19 (gate de decisões cognitivas), #20 (integridade do Dashboard) e #21 (read model individual por tópico). O estado e o código desta atualização partem do SHA `dbf00bf1ce3fdc5ef4b455fa84619414a3251bad`; checkpoints anteriores deste documento não devem ser usados como estado atual sem revalidação.
+
+A lacuna mais concreta no módulo R era que `evaluate_model_vs_baseline` recebia vetores sem qualquer desenho temporal, mas retornava `VALID_COMPARISON` quando N≥20. Isso media scores, mas não podia provar desempenho fora da amostra. A função agora chama esse resultado de comparação descritiva; o novo backtest prequential separa previsões futuras da atualização do histórico e registra as limitações. Veja [LEARNER_MODEL_VALIDATION.md](LEARNER_MODEL_VALIDATION.md).
+
+O backtest é uma ferramenta de avaliação do próprio baseline, ainda não uma previsão de domínio cognitivo validada nem uma saída executável. Para um estudante único, dependência entre tentativas e repetição de itens impede interpretar N de tentativas como N de evidências conceituais independentes. A classificação curricular usada pelo baseline deve permanecer rastreável e válida no instante do evento.
+
+FSRS continua sendo a única autoridade de estados mnemônicos e agenda. Este incremento não ajusta uma segunda curva de esquecimento, não muda o planejador, não faz inferência causal e não afirma eficácia pedagógica. A validação automatizada e a avaliação empírica permanecem gates separados.

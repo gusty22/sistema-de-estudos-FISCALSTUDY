@@ -234,6 +234,10 @@ main <- function() {
     cold_retrieval <- calculate_retrieval_surprise(raw_attempts_df)
     cold_retrieval <- envelope(cold_retrieval, cold_retrieval$status, can_apply = FALSE)
     writeLines(jsonlite::toJSON(cold_retrieval, pretty = TRUE, auto_unbox = TRUE), con = file.path(output_root, "metrics/retrieval_surprise_v1.json"), useBytes = TRUE)
+    cold_baseline_backtest <- evaluate_baselines_temporally(raw_attempts_df)
+    cold_baseline_backtest <- envelope(cold_baseline_backtest, cold_baseline_backtest$status, can_apply = FALSE)
+    writeLines(jsonlite::toJSON(cold_baseline_backtest, pretty = TRUE, auto_unbox = TRUE),
+               con = file.path(output_root, "metrics/temporal_baseline_backtest_v1.json"), useBytes = TRUE)
     empty_summary <- list(status=if (nrow(raw_attempts_df) == 0) "COLD_START" else "NO_EVALUABLE_EVIDENCE", observed_attempt_count=nrow(raw_attempts_df), n_observations=0L, data_provenance=data_prov_type, is_real_student_data=FALSE, metrics=list(), run_id=run_id, can_apply=FALSE)
     empty_summary <- envelope(empty_summary)
     writeLines(jsonlite::toJSON(empty_summary, pretty=TRUE, auto_unbox=TRUE), con=file.path(output_root,"metrics/metrics_summary_v1.json"), useBytes=TRUE)
@@ -279,6 +283,7 @@ main <- function() {
   learning_profile <- build_learning_profile(raw_attempts_df, questions_df, validation_result = val_evt)
   analytical_signals <- detect_analytical_signals(learning_profile, attempts_df, questions_df)
   retrieval_diagnostics <- calculate_retrieval_surprise(attempts_df)
+  temporal_baseline_backtest <- evaluate_baselines_temporally(attempts_df)
   
   # Avaliação de recomendações/intervenções se disponível
   eval_recs <- NULL
@@ -336,6 +341,7 @@ main <- function() {
   learning_profile <- envelope(learning_profile, "OBSERVATIONAL_ANALYSIS")
   analytical_signals <- envelope(analytical_signals, "HEURISTIC_SIGNALS")
   retrieval_diagnostics <- envelope(retrieval_diagnostics, retrieval_diagnostics$status, can_apply = FALSE)
+  temporal_baseline_backtest <- envelope(temporal_baseline_backtest, temporal_baseline_backtest$status, can_apply = FALSE)
   robin_hood_weights <- envelope(robin_hood_weights, can_apply = FALSE)
   if (is.null(eval_recs)) eval_recs <- list(evaluation_status = "NO_DATA", total_interventions = 0L, evaluated_count = 0L)
   eval_recs <- envelope(eval_recs, "OBSERVATIONAL_ANALYSIS")
@@ -353,6 +359,8 @@ main <- function() {
     writeLines(jsonlite::toJSON(analytical_signals, pretty = TRUE, auto_unbox = TRUE), con = signals_out, useBytes = TRUE)
     writeLines(jsonlite::toJSON(robin_hood_weights, pretty = TRUE, auto_unbox = TRUE), con = robin_hood_out, useBytes = TRUE)
     writeLines(jsonlite::toJSON(retrieval_diagnostics, pretty = TRUE, auto_unbox = TRUE), con = file.path(output_root, "metrics/retrieval_surprise_v1.json"), useBytes = TRUE)
+    writeLines(jsonlite::toJSON(temporal_baseline_backtest, pretty = TRUE, auto_unbox = TRUE),
+               con = file.path(output_root, "metrics/temporal_baseline_backtest_v1.json"), useBytes = TRUE)
     if (!is.null(eval_recs)) {
       writeLines(jsonlite::toJSON(eval_recs, pretty = TRUE, auto_unbox = TRUE), con = file.path(output_root, "metrics/intervention_evaluation_v1.json"), useBytes = TRUE)
     }

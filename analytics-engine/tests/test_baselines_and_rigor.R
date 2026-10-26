@@ -92,3 +92,90 @@ assert_false(audit_ret_short$is_viable, "Retencao parametrica sem espacamento > 
 assert_equal(calculate_baseline_historical_mean(NULL)$n_observations, 0L, "Baseline historico com NULL retorna 0 observacoes")
 assert_equal(calculate_baseline_topic_mean(NULL, NULL)$topic_table, data.frame(), "Baseline topicos com NULL retorna dataframe vazio")
 assert_equal(calculate_baseline_moving_average(NULL)$n_observations, 0L, "Media movel com NULL retorna 0 observacoes")
+
+
+# 5. Backtest temporal prequential: previsão estritamente anterior ao desfecho
+assert_equal(test_eval_bs$status, "DESCRIPTIVE_SCORE_ONLY",
+             "Comparacao de vetores sem desenho temporal nao se apresenta como validação")
+assert_false(test_eval_bs$can_apply,
+             "Comparacao descritiva nao pode dirigir o planejador")
+
+temporal_fixture <- data.frame(
+  event_id = paste0("evt-", 1:7),
+  question_id = c("q-a", "q-b", "q-c", "q-d", "q-e", "q-a", "q-z"),
+  occurred_at = c(
+    "2026-01-01T10:00:00Z", "2026-01-01T11:00:00Z", "2026-01-01T12:00:00Z",
+    "2026-01-01T13:00:00Z", "2026-01-01T13:00:00Z", "2026-01-01T14:00:00Z",
+    "2026-01-01T15:00:00Z"
+  ),
+  is_correct = c(TRUE, FALSE, TRUE, FALSE, TRUE, FALSE, TRUE),
+  gabarito_status = c(rep("DEFINITIVO", 6), "ANULADA"),
+  disciplina = rep("Direito Tributario", 7),
+  assunto = rep("Topico A", 7),
+  stringsAsFactors = FALSE
+)
+temporal_result <- evaluate_baselines_temporally(
+  temporal_fixture, initial_training_observations = 3L, prior_weight = 2
+)
+assert_equal(temporal_result$status, "DESCRIPTIVE_TEMPORAL_BACKTEST",
+             "Backtest temporal gera status descritivo explicitamente nao validado")
+assert_true(temporal_result$is_out_of_sample,
+            "Cada previsao usa somente eventos anteriores ao seu timestamp")
+assert_false(temporal_result$is_validated,
+             "Backtest individual nao se autodeclara empiricamente validado")
+assert_false(temporal_result$can_apply,
+             "Backtest nao comanda revisao FSRS nem plano")
+assert_equal(temporal_result$evaluable_attempt_count, 6L,
+             "Item anulado e excluido do backtest")
+assert_equal(temporal_result$excluded_attempt_count, 1L,
+             "Backtest informa tentativa excluida")
+pred_e4_global <- temporal_result$predictions[
+  temporal_result$predictions$event_id == "evt-4" &
+    temporal_result$predictions$model_name == "GLOBAL_HISTORICAL_MEAN", ]
+pred_e5_global <- temporal_result$predictions[
+  temporal_result$predictions$event_id == "evt-5" &
+    temporal_result$predictions$model_name == "GLOBAL_HISTORICAL_MEAN", ]
+assert_equal(pred_e4_global$predicted_probability, 2 / 3,
+             "Primeira previsao usa somente os tres resultados anteriores")
+assert_equal(pred_e5_global$predicted_probability, 2 / 3,
+             "Eventos no mesmo timestamp nao vazam resultado entre si")
+assert_equal(pred_e4_global$training_observations, 3L,
+             "Tamanho do historico preditivo e rastreado")
+pred_e6 <- temporal_result$predictions[
+  temporal_result$predictions$event_id == "evt-6" &
+    temporal_result$predictions$model_name == "GLOBAL_HISTORICAL_MEAN", ]
+assert_equal(pred_e6$item_exposure, "REPEATED_ITEM",
+             "Questao previamente vista e separada de primeira exposicao")
+
+shuffled_result <- evaluate_baselines_temporally(
+  temporal_fixture[rev(seq_len(nrow(temporal_fixture))), ],
+  initial_training_observations = 3L, prior_weight = 2
+)
+key_temporal <- function(x) {
+  out <- x[order(x$event_id, x$model_name), c("event_id", "model_name", "predicted_probability")]
+  rownames(out) <- NULL
+  out
+}
+assert_equal(key_temporal(shuffled_result$predictions), key_temporal(temporal_result$predictions),
+             "Backtest temporal e invariante a ordem de entrada")
+future_changed <- temporal_fixture
+future_changed$is_correct[4:6] <- c(TRUE, FALSE, TRUE)
+future_result <- evaluate_baselines_temporally(
+  future_changed, initial_training_observations = 3L, prior_weight = 2
+)
+future_pred_e4 <- future_result$predictions[
+  future_result$predictions$event_id == "evt-4" &
+    future_result$predictions$model_name == "GLOBAL_HISTORICAL_MEAN", ]
+assert_equal(future_pred_e4$predicted_probability, pred_e4_global$predicted_probability,
+             "Resultados futuros nao alteram a previsao ja feita")
+
+duplicate_fixture <- temporal_fixture
+duplicate_fixture$event_id[2] <- duplicate_fixture$event_id[1]
+duplicate_result <- evaluate_baselines_temporally(duplicate_fixture, initial_training_observations = 3L)
+assert_equal(duplicate_result$status, "DUPLICATE_EVENT_ID",
+             "Identidade duplicada bloqueia avaliacao temporal")
+assert_equal(duplicate_result$prediction_count, 0L,
+             "Identidade duplicada nao produz previsoes")
+small_temporal <- evaluate_baselines_temporally(temporal_fixture, initial_training_observations = 10L)
+assert_equal(small_temporal$status, "INSUFFICIENT_HISTORY",
+             "Historico menor que a janela inicial produz estado insuficiente explicito")
