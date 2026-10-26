@@ -45,6 +45,16 @@ Contagens e proporções descrevem o conjunto observado. Intervalos de Wilson s�
 - `calculate_robin_hood_weights`: `can_apply=FALSE`, `status=UNVALIDATED_MEMORY_MODEL`, mapa de pesos vazio e nenhuma lista de doadores, tópicos críticos ou disciplinas hiperconsolidadas baseada na curva exploratória. Orçamento e atraso não observados não são preenchidos com valores fictícios.
 
 Esses estados impedem que um ajuste exploratório seja apresentado como uma curva individual comprovada. Não significam abandono da análise: as observações por intervalo continuam disponíveis e a calibração futura requer validação temporal e comparação com o modelo de referência.
+## Onda 0 — bloqueio de inferências cognitivas não validadas
+
+Incremento de proteção preparado na branch `fix/wave0-cognitive-action-gates` a partir da `main` em `db8bf3d`:
+
+- `AdaptiveReviewDecisionEngine.evaluateDecisions` retorna `BLOCKED_UNVALIDATED_MODEL`, `canApply=false` e nenhuma decisão executável; o endpoint não consulta o modelo determinístico BKT/exponencial. Revisões FSRS continuam no calendário canônico.
+- `handleReviewFailure` registra contexto relatado em evento append-only e devolve somente candidato de investigação. Não infere causa, não atribui domínio/estabilidade, não agenda revisão e não preenche ausência com zero ou defaults.
+- Testes de regressão foram atualizados para cobrir o bloqueio, causas não resolvidas e valores ausentes. **Os testes ainda não foram executados nesta sessão**; validar em checkout com Maven/CI antes de aprovar integração.
+
+Este incremento não neutraliza ainda a apresentação/uso dos modelos legados em `StudentKnowledgeStateService`, `UnifiedCognitiveArchitectureService` (endpoint direto), `DigitalTwinService` e seus consumidores de interface/planejamento. Esses caminhos permanecem achados Onda 0 pendentes; não tratar o bloqueio desta API como correção global da arquitetura cognitiva.
+
 ## Lacunas que exigem próxima etapa
 
 - Propagar recuperabilidade FSRS prevista **antes** da resposta e o estado do item (estabilidade, dificuldade e última revisão) em exportação versionada, com contrato a validar, para medir erros esperados/inesperados sem vazamento temporal. Registrar também novidade/exposição, ajuda recebida e dificuldade contextual do item; não inferir esses dados ausentes a partir do resultado atual.
