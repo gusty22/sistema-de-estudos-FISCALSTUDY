@@ -139,3 +139,32 @@ PR #8 tem parent c0f63c547ba1db61e9415cb0b000c2ff582d1be5; #9 e #10 partem de 10
 Nenhuma escrita ou migração nos bancos originais, sincronização AnkiWeb, homologação visual ou demonstração de eficácia pedagógica nesta rodada. Testes usam AUTOMATED_TEST, SQLite em target/test-data e integrações externas desabilitadas. A migração testa cópia descartável da fixture, não o original. Consulta Git ao caminho original core-app retornou must be run in work tree e HEAD da5bc26; portanto, não se declara o checkout original limpo ou idêntico ao baseline. A rodada não escreveu ali.
 
 Estado final: quatro áreas publicadas em PRs draft, validações direcionadas e suplemento aprovados; suíte completa explicitamente não aprovada por uma falha ambiental reproduzida também na base. Isso não encerra globalmente F01–F36 nem comprova aprendizagem.
+## Validação do planejamento por concurso — retomada de 25/10/2026
+
+Resultado: `test-compile` e sete suítes, **30 testes, zero falhas, erros ou ignorados**, BUILD SUCCESS em 2:02 minutos, exit 0. Ambiente mínimo isolado, com foundation externa apenas para validar contratos. Nenhuma cópia de banco original ou integração externa ativa.
+
+| Suíte | Testes |
+| --- | ---: |
+| MaestroContestScopeRegressionTest | 10 |
+| MaestroOrchestratorServiceTest | 2 |
+| MaestroAdaptiveInterleavingIntegrationTest | 2 |
+| RobinHoodContestScopeRegressionTest | 7 |
+| RobinHoodCycleEngineTest | 4 |
+| RobinHoodCycleControllerTest | 3 |
+| RobinHoodWeightsIntegrationTest | 2 |
+
+Evidência local: `C:/workspace/planning-combined-tests.log`, `planning-combined-summary.json`, `planning-source-hashes-before.json` e `planning-source-hashes-after.json`. Cinco hashes de fontes/testes conferidos, sem divergência. O teste-compile e os 13 testes anteriores de RobinHood (`planning-robinhood-tests.log`, 35.990 segundos) se sobrepõem a esta bateria; não somar como casos distintos.
+
+| Publicação | Commit local | Commit remoto | Árvore Git idêntica |
+| --- | --- | --- | --- |
+| [PR draft #13](https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/13), escopo RobinHood | b4682918a8f30c8225c364ef458b684ea6f7ca2b | 2853b78e00791de4533cff09fab44f7a8871e2ea | 191910b8766efcc041235a2a120d46125f3a1702 |
+| #13, parâmetro SQL | fea0d3398f1e592dd42c016c65044bf7c28db12c | 70bd415b6d8af3746c13500c7bdbc97306708bb6 | 57147146b8d637b65044f65dc348dd8c068e202d |
+| [PR draft #14](https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/14), Maestro | 54a374b21070f5a54b085793d57105cb669ac09d | aeb4ff0da54b8216f7c9cf81ee51f78260d71c6d | 35801c19f93caf23c7bf4594a26378d68deec6da |
+
+Publicação pelo conector GitHub com novos metadados de commit; não se afirma push dos SHAs locais idênticos. As branches mantêm parent remoto `e5320d055bc288ff590b33a9ce65e772f56890c9`, equivalente à base local `13509e69479f13f1dd77e1ce7c0b02ddf08d95ee`; não houve rebase. Os PRs são direcionados à main, e seus diffs foram conferidos: três arquivos em #13 e quatro em #14, sem fontes de outras áreas. Heads e main reconsultados: main `fdd450c839c06e05379844b9a8f12edb2b438a5f`, avançada por outra frente. Esta equipe não executou merge.
+
+Limites: a bateria foi executada na base isolada 13509e6 com foundation externa, não em todos os commits atuais da main. Não houve nova suíte completa, execução R, sincronização externa, homologação visual ou demonstração de eficácia pedagógica nesta etapa. A falha ambiental documentada da suíte completa anterior de 280 testes continua registrada; estes 30 testes não a apagam. Métricas legadas de desempenho, orçamento de tempo e defaults de materiais/páginas permanecem pendências explícitas.
+
+Validação desta documentação: links locais dos cinco arquivos do checkpoint, nota, plano, relatório e README verificados; git diff --check aprovado. Nenhum teste de produto foi criado para a alteração documental. A nota para Obsidian foi preparada no repositório; o vault original e seus índices não foram sincronizados.
+
+Reconsulta GitHub desta retomada: PRs #8–#12 estão fechados e integrados por outra frente em 25/10/2026; #13/#14 permanecem abertos como draft. Seus conteúdos anteriores são ancestrais da main fdd450c. Os estados draft registrados nas seções anteriores descrevem o momento da publicação, não o estado atual. Nenhum desses merges foi executado por esta equipe.

@@ -1,5 +1,7 @@
 # FiscalStudy
 
+Estado atual, entregas verificadas e pendências: [checkpoint do projeto](docs/PROJECT_CHECKPOINT.md). Consulte esse índice antes de iniciar uma tarefa; descrições de módulos não substituem evidências de implementação e testes.
+
 ## Descrição do Produto
 O FiscalStudy é um sistema pessoal adaptativo de preparação para concursos, baseado em captura de eventos de telemetria cognitiva. O objetivo é atuar como um "terceiro observador", analisando continuamente o desempenho, a fluência, e as tendências do estudante para definir a melhor estratégia de estudo diária (avançar, revisar ou aprofundar).
 
