@@ -36,3 +36,14 @@ Validação final desta rodada: R 4.5.1, suíte executada em 26/10/2026, **487 v
 Nenhum banco original ou evento append-only foi alterado. Sem implantação, merge na main ou sincronização externa por este trabalho documental. As alterações de código continuam rastreáveis por diff e commits da área após revisão do orquestrador. Testes R não executam Java/Bridge nem homologam a aplicação integrada.
 
 Não se declara homologação visual, integração Java executada, curva individual calibrada, eficácia pedagógica ou resolução de todas as lacunas do modelo do estudante. Os critérios de evolução estão em [LEARNER_MODEL_EXECUTION_PLAN.md](LEARNER_MODEL_EXECUTION_PLAN.md).
+
+
+## Onda 0 — gate de decisões cognitivas (26/10/2026)
+
+Branch: `fix/wave0-cognitive-action-gates`, base `db8bf3d72646d22c62f7339d82a466ff1b66fcb8`.
+
+- Foram adicionados estados explícitos `BLOCKED_UNVALIDATED_MODEL` e `CAUSE_UNRESOLVED`; a API de decisão não deve emitir revisões adaptativas executáveis nem chamar o modelo de tópico ainda não validado.
+- A falha de revisão passa a registrar os campos relatados pelo estudante sem converter intervalo, confiança ou ajuda em causa, domínio ajustado ou estabilidade. O evento append-only recebe novo tipo de investigação; eventos históricos não são reescritos.
+- Testes de regressão foram escritos/atualizados para o bloqueio e a ausência de estimativas. **Status: NOT_EXECUTED nesta sessão**, pois este ambiente não tem checkout local do FiscalStudy nem executável Maven do projeto. O PR/CI remoto ainda precisa fornecer evidência.
+- Esta mudança não valida FSRS, o motor R, a integração Java → R ou o sistema completo. Os endpoints/modelos legados identificados em `StudentKnowledgeStateService`, `UnifiedCognitiveArchitectureService` e `DigitalTwinService` continuam fora do escopo deste incremento e precisam ser bloqueados ou corrigidos com revisão de consumidores.
+
