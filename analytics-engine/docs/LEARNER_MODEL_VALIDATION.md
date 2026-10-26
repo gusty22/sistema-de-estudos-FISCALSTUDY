@@ -109,7 +109,9 @@ O motor é uma camada descritiva com backtest temporal de baselines e auditoria 
 | R17 | Média | Configuração de analytical_signals pode divergir dos contadores prontos do perfil | PENDENTE: calcular com a configuração efetiva ou restringir parâmetros não suportados. |
 | R18 | Média | DEVELOPMENT_STATUS/contexto antigo afirmam conclusão ampla e citam digital_twin_engine.R ausente | Este registro atualiza o estado, preservando histórico. Especificação N-de-1 não é implementação. |
 | R19 | Média | Backtest varre timestamps por lote; manifesto Java hasheia entrypoint, não todos os módulos | PENDENTE: medir custo antes de otimizar e versionar/hash do conjunto completo. Não há benchmark de desempenho nesta rodada. |
-| R20 | Alta | RobinHoodWeightsDTO ignorava can_apply/is_validated; injectWeights, recarga de arquivo e generateCycle podiam aceitar pesos exploratórios | CORREÇÃO em fix/analytics-bridge-provenance: o contrato legado permanece observacional, sem autoridade de alocação; novos testes protegem injeção, recarga e consumo direto. Uma versão executável futura exige homologação explícita. |
+| R20 | Alta | RobinHoodWeightsDTO ignorava can_apply/is_validated; injectWeights, recarga de arquivo e generateCycle podiam aceitar pesos exploratórios | CORRIGIDO/TESTADO em fix/analytics-bridge-provenance: contrato legado observacional; injeção, recarga e consumo direto bloqueados. Contrato futuro exige homologação. |
+| R21 | Alta | visualization.R/plot_response_time_distribution abortava histograma FD com uma tentativa | CORRIGIDO: uma classe para amostra unitária/constante, exclusão de tempos não finitos e regressões; falha foi reproduzida no teste Java → R. |
+| R22 | Alta | provenance.R/native digest rejeitava arquivo como ilegível, embora leitura por conexão R fosse permitida | CORRIGIDO: fallback SHA-256 dos mesmos bytes por conexão, limitado a 64 MiB e fail-closed; vetores conhecidos abc/arquivo vazio e integração Java comprovam o caminho. Limite é política de memória do fallback, não norma universal. |
 
 O achado R20 foi identificado ao rastrear o consumidor após a primeira publicação da auditoria. O bloqueio preserva o cálculo do ciclo configurado e FSRS, mas impede que DTOs analíticos legados alterem pesos ou criem blocos emergenciais. Não é suficiente confiar em flags desconhecidas descartadas pelo deserializador.
 
@@ -130,7 +132,9 @@ Snapshot analítico isolado do SHA acima. Rscript 4.5.1 em C:/Program Files/R/R-
 | Gate | Resultado real |
 |---|---|
 | main: Rscript tests/test_runner.R | 526 verificações, 0 falhas, 13.251s |
-| Correções R: mesmo comando | 566 verificações, 0 falhas, 21.524s |
+| Primeiro incremento R | 566 verificações, 0 falhas, 21.524s |
+| R final, incluindo R21/R22 | 574 verificações, 0 falhas, 22.302s |
+| Java: FSRS, ciclo, gate e Bridge com processo R real | 22 testes, 0 falhas, 0 erros, 0 ignorados; 01:04 min; integração com snapshot R da PR #23 |
 | Casos acrescentados | Timestamp sem fuso/inválido/com offset, previsão posterior, IDs duplicados, anulado, desfecho divergente, avaliação compartilhada/simultânea, evento ausente, probabilidades inválidas e BSS indefinido |
 | Integração do pipeline R | Incluída na suíte, via subprocessos/diretórios temporários; sem Anki ou serviços externos |
 | Validade preditiva pessoal/causalidade/uso longitudinal | NOT_EXECUTED: nenhum histórico pessoal elegível foi analisado nesta rodada |
@@ -145,3 +149,15 @@ Os números contam verificações do runner, não evidências de aprendizagem in
 3. Completar origem/ajuda/classificação/versionamento/anotações/variantes e medir cobertura real.
 4. Backtest por primeira exposição/repetição e escopo curricular válido, com dependência e incerteza explícitas.
 5. Só então avaliar modelos mais complexos, auditoria diagnóstica ativa e consumo pelo planejador. can_apply depende da homologação do contrato decisório, não da quantidade de testes.
+
+### Evidências adicionais de integração e disponibilidade de dados
+
+O gate Java executou FsrsEngineTest (6), FsrsReferenceConformanceTest (5), AnalyticsDecisionGateTest (6), RobinHoodCycleEngineTest (4) e AnalyticsBridgeProvenanceContractTest (1). O último usa projeção de pacote controlada e R real, sem Spring, SQLite ou rede. Confere bytes/hash/run_id e preserva SYNTHETIC_FIXTURE/can_apply=false. Não homologa o fluxo completo SQLite → Spring → R nem dados pessoais.
+
+A tentativa inicial com AnalyticsBridgeIntegrationTest iniciou Spring, mas não concluiu e foi interrompida; AnalyticsExportIntegrationTest não chegou a ser concluído nessa seleção. O diagnóstico de threads foi negado pelo ambiente. A primeira fixture em temp também falhou ao renomear o manifesto; a fixture final usa target isolado. Em seguida foram reproduzidos e corrigidos o histograma unitário e a falha do provedor de hash. Essas execuções não aprovadas não foram contadas como sucesso.
+
+Os três arquivos versionados analytics-engine/data/raw/operational_export_v1.csv, analytics-engine/data/raw/sample_export_v1.csv e analytics/sample_data.csv possuem o mesmo blob Git c4dca17307624e62f126dbc6a0502a584913c922. Portanto não fornecem três bases independentes nem evidência pessoal; não houve avaliação preditiva real nesta rodada.
+
+A branch backend parte da mesma base, mas o gate integrado utiliza as correções R da PR #23. Ordem de integração: R, depois backend, sem carregar código de outra área na branch. O bloqueio do DTO legado também impede aplicar pesos analíticos injetados manualmente; o ciclo configurado permanece coberto pelos quatro testes existentes. Nenhuma fórmula FSRS ou dado operacional foi modificado.
+
+Fechamento do gate: 22 testes Java/0 falhas/0 erros/0 ignorados. Inclui rejeição HTTP 422 na tentativa de aplicar/sincronizar dados não autorizados. A matriz R01–R22 contém achados resolvidos e pendentes; o sistema completo não foi declarado finalizado ou empiricamente validado.

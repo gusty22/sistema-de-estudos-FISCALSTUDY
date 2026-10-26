@@ -153,4 +153,7 @@ Validação R local em R 4.5.1: `tests/test_runner.R`, 529 verificações aprova
 
 As tabelas históricas não representam validação científica global. Base atual: main 4ec0343100baf389ceb615c2307354a64f99c296. O motor permanece descritivo/exploratório, com baseline temporal e diagnóstico de discrepâncias FSRS; compreensão/transferência pessoal não foram empiricamente validadas. N-de-1 continua especificação, não ensaio executado.
 
-Suíte R 4.5.1 em snapshot isolado: main 526/0; incremento 566/0 (verificações/falhas), incluindo pipeline/fixtures e regressões de scores, temporalidade, IDs e vínculos de intervenção. Isso não demonstra eficácia pedagógica. Achados R01–R20 e pendências estão em LEARNER_MODEL_VALIDATION.md. Transporte do manifesto do Bridge é frente específica.
+Suíte R 4.5.1 em snapshot isolado: main 526/0; incremento 566/0 (verificações/falhas), incluindo pipeline/fixtures e regressões de scores, temporalidade, IDs e vínculos de intervenção. Isso não demonstra eficácia pedagógica. Achados R01–R22 e pendências estão em LEARNER_MODEL_VALIDATION.md. Transporte do manifesto do Bridge é frente específica.
+
+
+Resultado final atualizado: 574 verificações R/0 falhas (22.302s); 22 testes Java/0 falhas/0 erros/0 ignorados (01:04 min). Os 6 testes do gate incluem retorno HTTP 422 para aplicação manual sem contrato válido. Detalhes das tentativas não aprovadas e dos limites estão no relatório de validação.
