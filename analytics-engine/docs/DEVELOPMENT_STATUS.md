@@ -139,3 +139,11 @@ Foram iniciadas correções coordenadas do perfil avaliável/proveniência, pres
 Linha de base executada no Windows: R 4.5.1, 342 verificações aprovadas, zero falhas, exit 0, 2.623 segundos (`r-evidence-baseline.log`). A execução final das alterações permanece em andamento; esse resultado não é atribuído ao código novo.
 
 Plano, responsabilidades, critérios e lacunas: [LEARNER_MODEL_EXECUTION_PLAN.md](LEARNER_MODEL_EXECUTION_PLAN.md). Evidências e limites: [LEARNER_MODEL_VALIDATION.md](LEARNER_MODEL_VALIDATION.md).
+
+## Diagnóstico de discrepância FSRS × resultado — 2026-10-26
+
+O R agora consome os campos opcionais `fsrs_retrievability_pre_update`, `fsrs_prediction_timestamp`, `fsrs_model_version` e `fsrs_evidence_status` quando presentes. A camada separa erro com baixa recuperação prevista de erro com alta recuperação prevista (candidato a investigação), exclui estados sem evidência elegível e produz Brier/log-loss descritivos por versão, sem recalibrar nem alterar o FSRS. A fila não diagnostica causa, não recomenda ação e não altera agendamento. Ausência de campos em exports antigos permanece ausente.
+
+Também foi removida a atribuição causal de erro de conceito, leitura precipitada, impulsividade ou desatenção a partir apenas de confiança máxima ou tempo sub-segundo. Os sinais passam a nomear a observação e explicitar causa desconhecida.
+
+Validação R local em R 4.5.1: `tests/test_runner.R`, 528 verificações aprovadas, 0 falhas. Os campos ainda precisam ser adicionados e versionados no exportador Java para a análise receber previsões reais; o teste local do backend Java não foi executado neste checkout.

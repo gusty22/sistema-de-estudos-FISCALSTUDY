@@ -355,7 +355,7 @@ build_learning_profile <- function(attempts_df, questions_df = NULL, validation_
     cautions <- c(cautions, sprintf("Amostra global reduzida (N = %d); intervalos amplos requerem cautela analítica.", n_valid))
   }
   if (sub_sec_count > 0) {
-    cautions <- c(cautions, sprintf("%d resposta(s) sub-segundo identificada(s); possivel clique impulsivo ou desatencao.", sub_sec_count))
+    cautions <- c(cautions, sprintf("%d resposta(s) sub-segundo identificada(s); duracao registrada inferior a um segundo; causa desconhecida, possivelmente dado de temporizacao incompleto.", sub_sec_count))
   }
   if (!is.na(conf_res$overconfidence_count) && conf_res$overconfidence_count > 0) {
     cautions <- c(cautions, sprintf("%d erro(s) cometido(s) com confianca maxima (nivel 5), apontando para discrepancia entre certeza declarada e gabarito em conteudos especificos.", conf_res$overconfidence_count))

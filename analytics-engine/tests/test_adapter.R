@@ -84,12 +84,21 @@ trace_df <- data.frame(
   origin_type = c("AUTOMATED_TEST", "UNKNOWN"),
   question_id = c("trace-1", "trace-1"), selected_option = c("A", "B"),
   is_correct = c(TRUE, FALSE), gabarito_status = c("DEFINITIVO", "DEFINITIVO"),
-  confidence_level = c(5, NA), active_time_ms = c(15000, 18000), stringsAsFactors = FALSE
+  confidence_level = c(5, NA), active_time_ms = c(15000, 18000),
+  fsrs_retrievability_pre_update = c(0.91, 0.42),
+  fsrs_model_version = c("FSRS-6.0-default-core-no-fuzz", "FSRS-6.0-default-core-no-fuzz"),
+  fsrs_prediction_timestamp = c("2026-10-10T09:59:00Z", "2026-10-12T09:59:00Z"),
+  fsrs_evidence_status = c("UNCALIBRATED_ITEM_ESTIMATE", "UNCALIBRATED_ITEM_ESTIMATE"),
+  stringsAsFactors = FALSE
 )
 traced <- adapt_operational_attempts(trace_df, declared_provenance = "SYNTHETIC_FIXTURE")
-for (field in c("event_id", "session_id", "occurred_at", "origin_type")) {
+for (field in c("event_id", "session_id", "occurred_at", "origin_type", "fsrs_retrievability_pre_update", "fsrs_prediction_timestamp", "fsrs_model_version", "fsrs_evidence_status")) {
   assert_equal(traced$attempts_df[[field]], trace_df[[field]], paste("Preserves observed trace:", field))
 }
+assert_equal(traced$attempts_df$fsrs_retrievability_pre_update, c(0.91, 0.42), "Preserves FSRS pre-update probability without recomputation")
+assert_equal(traced$attempts_df$fsrs_model_version, rep("FSRS-6.0-default-core-no-fuzz", 2), "Preserves the recorded FSRS implementation version")
+assert_equal(traced$attempts_df$fsrs_prediction_timestamp, c("2026-10-10T09:59:00Z", "2026-10-12T09:59:00Z"), "Preserves the FSRS prediction timestamp")
+assert_equal(traced$attempts_df$fsrs_evidence_status, rep("UNCALIBRATED_ITEM_ESTIMATE", 2), "Preserves the estimate calibration status")
 assert_true(traced$metadata$temporal_data_present, "Existing timestamps are recognized")
 assert_true(traced$metadata$temporal_data_complete, "Complete timestamps retain complete coverage")
 assert_equal(traced$metadata$temporal_observations, 2L, "Temporal denominator is explicit")
@@ -98,11 +107,12 @@ assert_false(traced$metadata$is_real_student_data, "Trace presence does not conv
 assert_true(all(is.na(traced$questions_df$enunciado)), "Adapter does not fabricate question source text")
 assert_true("CONFIDENCE_ABSENT" %in% traced$validation$issues$rule_code, "Missing confidence remains an explicit gap")
 
-legacy_df <- trace_df[, setdiff(names(trace_df), c("event_id", "session_id", "occurred_at", "origin_type"))]
+legacy_df <- trace_df[, setdiff(names(trace_df), c("event_id", "session_id", "occurred_at", "origin_type", "fsrs_retrievability_pre_update", "fsrs_prediction_timestamp", "fsrs_model_version", "fsrs_evidence_status"))]
 legacy <- adapt_operational_attempts(legacy_df)
-for (field in c("event_id", "session_id", "occurred_at", "origin_type")) {
+for (field in c("event_id", "session_id", "occurred_at", "origin_type", "fsrs_retrievability_pre_update", "fsrs_prediction_timestamp", "fsrs_model_version", "fsrs_evidence_status")) {
   assert_true(all(is.na(legacy$attempts_df[[field]])), paste("Legacy omission remains unknown:", field))
 }
+assert_true(all(is.na(legacy$attempts_df$fsrs_retrievability_pre_update)), "Legacy exports do not acquire fabricated FSRS estimates")
 assert_false(legacy$metadata$temporal_data_present, "Legacy exports do not acquire synthetic timestamps")
 assert_false(legacy$metadata$identity_data_complete, "Legacy exports do not acquire synthetic identity")
 assert_false(legacy$metadata$can_generate_student_profile, "Missing origin cannot establish a personal profile")
