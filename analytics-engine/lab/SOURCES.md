@@ -1,0 +1,31 @@
+# Fontes externas: inventário e limites
+
+Consulta documental em 26/10/2026. Hashes das revisões/readmes e estados de disponibilidade estão em source_inventory.json. Nenhum dataset foi baixado, nenhuma biblioteca foi copiada/instalada e nenhum benchmark externo foi executado. Esta investigação não é validação retrospectiva.
+
+## Datasets
+
+| Fonte oficial | Unidade/esquema verificado | Acesso/licença | Limite e próximo tratamento |
+|---|---|---|---|
+| [EdNet](https://github.com/riiid/ednet) | KT1: resposta por questão, arquivos por estudante; timestamp em ms deslocado, question_id, user_answer, elapsed_time; catálogo fornece correct_answer/tags. KT2–4 incluem ações. | README declara CC-BY-NC-4.0 para pesquisa; links públicos. | Preservar pseudotempo deslocado, juntar gabarito sem multiplicar eventos, separar ações/primeiras respostas. Repetição observacional não equivale a teste tardio controlado. Duplicatas/ausência/cobertura por aluno NÃO MEDIDAS. |
+| [ASSISTments 2017](https://sites.google.com/view/assistmentsdatamining/dataset) | Dicionário oficial: ITEST_id/actionId/problemId/skill/correct/startTime/endTime/hint/hintCount. Há variáveis agregadas/estimadas. | Cadastro e link por email; concordância com termos. Endpoint dos termos retornou 502, licença não foi integralmente confirmada. | Não usar AveKnow/afetos como conhecimento verdadeiro ou traço psicológico; verificar disponibilidade temporal dos agregados antes de resposta. Dados brutos e retenção tardia NÃO INSPECIONADOS. |
+| [Junyi/DataShop](https://pslcdatashop.web.cmu.edu/) | Catálogo oficial indexado identifica “Junyi Academy Math Practicing Log (to Jan. 2015)” e “Partial Samples”, com período amplo 2012–2015. | Página direta retornou 403. Licença/ID específico/exportação ainda não confirmados. | Título do dataset identificado; esquema real e amostra ainda bloqueados. Não atribuir um datasetId ao acaso nem assumir teste tardio. |
+| [MaiMemo](https://huggingface.co/datasets/Maimemo/student-memory-logs) | Card identifica logs de memória e arquivos TSV relacionados; esquema bruto não disponível nesta consulta. | CC-BY-NC-4.0; gated, exige aceitação de condições e compartilhamento de dados de conta. Não aceitos pelo agente. | Validar estudante/item/resultado/intervalos após acesso autorizado; não deduzir colunas ou half-lives do título. Código upstream SSP-MMC com MIT não muda a licença dos dados. |
+
+Nenhuma estatística de missingness, duplicidade ou identificabilidade individual de dados públicos foi calculada. O próximo gate é uma amostra autorizada e documentada, mantendo separação temporal e, para generalização a novos estudantes, separação por estudante. Não misturar essas fontes para inflar N.
+
+## Modelos e projetos
+
+| Projeto oficial | Evidência consultada / versão | Licença e dependências | Papel experimental / estado |
+|---|---|---|---|
+| [pyBKT](https://github.com/CAHLR/pyBKT) | README + setup.py 1.5.0, APIs de ajuste/predição e formatos corretos -1/0/1. | MIT; numpy, pandas, requests; README indica implementação pura Python no Windows. | Baseline BKT interpretável. Versão básica não deve ser presumida estimador contínuo de esquecimento pelo relógio. pyBKT/pandas ausentes neste ambiente; instalação não tentada no MVP. NOT_EXECUTED. |
+| [FSRS](https://github.com/open-spaced-repetition/fsrs4anki) | README oficial + implementação Java atual do produto identificada na auditoria: FSRS-6.0-default-core-no-fuzz. | Repo de referência MIT; core Java existente não depende de servidor externo. | Separar R previsto, agendamento e otimização. Os vetores Java não tornam o scheduler completo nem a calibração individual comprovados. Adaptador experimental de política: NOT_EXECUTED. Nenhuma segunda equação operacional criada. |
+| [EduStudio](https://edustudio.ai/) / HFUT-LEC | Site e README oficiais: CD/KT, módulos de preparação/treino/avaliação/logs. | MIT; PyTorch. | Útil após hipótese/dados adequados. Torch/EduStudio ausentes; NOT_EXECUTED. |
+| [pyKT](https://github.com/pykt-team/pykt-toolkit) | README documenta toolkit DLKT e variantes temporais, com cenários de avaliação. | MIT; PyTorch e dependências de preparação. | DKT/SAKT/AKT não são necessários para o primeiro teste. Não se reproduziu benchmark externo; NOT_EXECUTED. |
+| [GDINA](https://github.com/Wenchao-Ma/GDINA) | DESCRIPTION 2.13.2: CDM, validação de matriz Q e ajuste. | GPL-3. | Exige definição válida da Q-matrix e desenho identificável. Não converter tags atuais em Q verdadeira. NOT_EXECUTED. |
+| [mirt](https://philchalmers.github.io/mirt/) | DESCRIPTION 1.48.2 / README. | GPL >=3; ferramentas R/C++ do pacote. | Estimação/calibração psicométrica; não calibrar itens e pessoa simultaneamente a partir de um estudante sem âncoras. NOT_EXECUTED. |
+| [catsim](https://github.com/douglasrizzo/catsim) | pyproject.toml 0.21.0; Python >=3.11, scipy/numpy. | BSD-3-Clause. | Seleção informativa depende de itens calibrados; não demonstra benefício pedagógico da atividade. Não instalado; NOT_EXECUTED. |
+| [OATutor](https://github.com/CAHLR/OATutor) | README descreve conteúdos, feedback/scaffolds e variantes A/B atribuídas por usuário. | LICENSE MIT para código; README especifica CC-BY-4.0 e atribuição nos itens de conteúdo. | Reaproveitar padrões após revisão dessas camadas, não importar projeto inteiro. Execução e evidências empíricas não reproduzidas. |
+| [TASA](https://github.com/YANGWU001/TASA) | README: persona/memória/LLM, KT e dinâmica temporal; instalação cita torch 2.5/CUDA. | MIT no repo; licenças de pesos/modelos externos não foram revisadas. | Alegações documentais não comprovam identificação do aluno. Não incorporar decaimento concorrente ao FSRS. NOT_EXECUTED. |
+| [Adaptive E-Learning](https://github.com/Bentheghost/Adaptive-Learning-System) | README: agentes Gemini, BKT e prioridade days_since*(1-level). | MIT no repo; dependência de serviço generativo. | Essa prioridade não é probabilidade de esquecimento calibrada. Não copiar como Memory Twin; maturidade empírica/testes não foram homologados. NOT_EXECUTED. |
+
+A ausência de pacote não foi convertida em sucesso por substituição silenciosa. Versões descritas são as dos arquivos oficiais consultados, não versões instaladas nem garantias de compatibilidade. A consulta às fontes não autoriza redistribuir dados ou pesos sob outras licenças.
