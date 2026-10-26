@@ -59,3 +59,12 @@
    - Intervenção com `time_spent_ms < 5000` (menos de 5 segundos, indicando leitura sumária ou cancelamento rápido).
    - `post_outcome == "PENDING_EVALUATION"` com atraso temporal superior a 14 dias (avaliação posterior possivelmente perdida).
    - `post_assessment_type == "SAME_QUESTION"` registrado como evidência de transferência conceitual (inconsistência metodológica).
+
+
+## Extensão analítica compatível 1.1.0 — vínculo de acompanhamento
+
+Entrada V1 permanece. Saída acrescenta evaluation_version, declared_evaluated_count, unverified_followup_count, followup_audit, inference_scope, assessment_type_status, intervention_origin_status, transfer_status e is_validated/can_apply/can_schedule=false.
+
+evaluated_count agora significa tentativa avaliável com event_id único, estritamente posterior ao occurred_at da intervenção e coerente com o desfecho declarado. Sem attempts_df ou vínculo verificável, a declaração não entra no denominador. Avaliação compartilhada por intervenções é ambígua e não é contada. Intervalo declarado é preservado; intervalo observado usa os dois instantes.
+
+Isso não verifica identidade conceitual, novidade, equivalência curricular, término da intervenção, confundidores ou causalidade. SAME_QUESTION, SAME_TOPIC_NEW_QUESTION e TRANSFER_ITEM permanecem rótulos declarados. A comparação continua observacional mesmo após atingir o mínimo operacional.
