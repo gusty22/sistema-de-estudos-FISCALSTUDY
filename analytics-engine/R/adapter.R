@@ -6,6 +6,15 @@ if (file.exists("R/provenance.R")) {
   source("R/provenance.R")
 }
 
+# Java exports UTC Instant values. Retain the original representation and validate it.
+parse_operational_timestamps <- function(values) {
+  values <- as.character(values)
+  parsed <- suppressWarnings(as.POSIXct(values, format = "%Y-%m-%dT%H:%M:%OSZ", tz = "UTC"))
+  valid_shape <- !is.na(values) & grepl("^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}([.][0-9]+)?Z$", values)
+  parsed[!valid_shape] <- NA
+  parsed
+}
+
 #' Valida Arquivo de Exportação Operacional do FiscalStudy (fiscalstudy_attempts.csv)
 #' @param export_df data.frame proveniente de GET /api/v1/analytics/export
 #' @param allow_empty Se TRUE, aceita dataset com 0 linhas sob aviso de Cold Start (padrão FALSE)
@@ -90,7 +99,11 @@ validate_operational_export <- function(export_df, allow_empty = FALSE) {
   
   # Validar confidence_level [1..5]
   conf_num <- suppressWarnings(as.numeric(export_df$confidence_level))
-  bad_conf <- which(is.na(conf_num) | conf_num < 1 | conf_num > 5 | conf_num != round(conf_num))
+  raw_conf <- trimws(as.character(export_df$confidence_level))
+  bad_conf <- which((!is.na(conf_num) & (conf_num < 1 | conf_num > 5 | conf_num != round(conf_num))) |
+                    (!is.na(raw_conf) & nzchar(raw_conf) & is.na(conf_num)))
+  missing_conf <- which(is.na(conf_num))
+  if (length(missing_conf) > 0) add_iss("WARNING", "CONFIDENCE_ABSENT", "confidence_level", missing_conf, "Confianca nao informada; calibracao deve usar somente observacoes presentes.")
   if (length(bad_conf) > 0) {
     add_iss("BLOCKING_ERROR", "INVALID_CONFIDENCE_RANGE", "confidence_level", bad_conf, "Niveis de confianca fora da escala [1, 5].")
   }
@@ -102,6 +115,13 @@ validate_operational_export <- function(export_df, allow_empty = FALSE) {
     add_iss("BLOCKING_ERROR", "NEGATIVE_ACTIVE_TIME", "active_time_ms", neg_time, "Tempos ativos de resolucao negativos.")
   }
   
+  raw_time <- trimws(as.character(export_df$active_time_ms))
+  invalid_time <- which(!is.na(raw_time) & nzchar(raw_time) & is.na(time_num))
+  if (length(invalid_time) > 0) add_iss("BLOCKING_ERROR", "INVALID_ACTIVE_TIME", "active_time_ms", invalid_time, "Tempo ativo presente nao e numerico.")
+  raw_correct <- tolower(trimws(as.character(export_df$is_correct)))
+  invalid_correct <- which(!is.na(raw_correct) & !raw_correct %in% c("", "na", "null", "true", "false", "1", "0"))
+  if (length(invalid_correct) > 0) add_iss("BLOCKING_ERROR", "INVALID_IS_CORRECT", "is_correct", invalid_correct, "Resultado presente nao e booleano avaliavel.")
+
   # Warnings para tempos sub-segundo e itens sem gabarito
   sub_sec <- which(!is.na(time_num) & time_num >= 0 & time_num < 1000)
   if (length(sub_sec) > 0) {
@@ -113,6 +133,24 @@ validate_operational_export <- function(export_df, allow_empty = FALSE) {
     add_iss("INFO", "NON_EVALUABLE_ITEMS_DETECTED", "gabarito_status", unverified, sprintf("%d tentativa(s) com gabarito ausente, anulada ou sob revisao.", length(unverified)))
   }
   
+  # Identity and time are observations, not fields that the adapter may invent.
+  for (field in c("event_id", "session_id", "occurred_at", "origin_type")) {
+    values <- if (field %in% names(export_df)) as.character(export_df[[field]]) else rep(NA_character_, n_rows)
+    missing <- which(is.na(values) | trimws(values) == "")
+    if (length(missing) > 0) add_iss("WARNING", paste0(toupper(field), "_ABSENT"), field, missing, "Campo de rastreabilidade ausente; preservado como desconhecido.")
+    if (field == "event_id") {
+      known <- !is.na(values) & trimws(values) != ""
+      duplicate <- which(known & duplicated(values))
+      if (length(duplicate) > 0) add_iss("BLOCKING_ERROR", "DUPLICATE_EVENT_ID", field, duplicate, "A mesma identidade de evento aparece mais de uma vez; nao duplicar evidencias.")
+    }
+    if (field == "occurred_at") {
+      known <- !is.na(values) & trimws(values) != ""
+      parsed <- parse_operational_timestamps(values)
+      invalid <- which(known & is.na(parsed))
+      if (length(invalid) > 0) add_iss("BLOCKING_ERROR", "INVALID_DATE_FORMAT", field, invalid, "Timestamp presente invalido; o contrato operacional exige ISO-8601 UTC com Z.")
+    }
+  }
+
   n_block <- sum(issues$severity == "BLOCKING_ERROR")
   n_warn <- sum(issues$severity == "WARNING")
   
@@ -184,7 +222,8 @@ adapt_operational_attempts <- function(export_df, declared_provenance = NULL, fi
   }
   
   gabarito_st <- as.character(df$gabarito_status)
-  gabarito_st[is.na(gabarito_st) | trimws(gabarito_st) == ""] <- "DEFINITIVO"
+  gabarito_st <- toupper(trimws(gabarito_st))
+  gabarito_st[is.na(gabarito_st) | gabarito_st == ""] <- "AUSENTE"
   
   # 3. Segregação Metrológica: Avaliável vs Não-Avaliável
   # Se gabarito for AUSENTE, SOB_REVISAO ou ANULADA, o item NÃO entra na acurácia pedagógica
@@ -194,12 +233,13 @@ adapt_operational_attempts <- function(export_df, declared_provenance = NULL, fi
   norm_corr[is_non_evaluable] <- NA
   
   # 4. Construção do data.frame de Tentativas Adaptadas
-  # Mantendo estrito respeito: occurred_at permanece NA, sem invenção de dados
+  # Preserve original trace fields; a legacy omission remains unknown.
   if (n_total == 0) {
     adapted_attempts <- data.frame(
       event_id = character(0),
       event_type = character(0),
       session_id = character(0),
+      origin_type = character(0),
       question_id = character(0),
       occurred_at = character(0),
       selected_option = character(0),
@@ -216,11 +256,12 @@ adapt_operational_attempts <- function(export_df, declared_provenance = NULL, fi
     evaluable_sub <- adapted_attempts
   } else {
     adapted_attempts <- data.frame(
-      event_id = paste0("op-evt-", sprintf("%04d", seq_len(n_total))),
+      event_id = if ("event_id" %in% names(df)) as.character(df$event_id) else rep(NA_character_, n_total),
       event_type = "ANSWER_SUBMITTED",
-      session_id = "SESSION_OPERACIONAL",
+      session_id = if ("session_id" %in% names(df)) as.character(df$session_id) else rep(NA_character_, n_total),
+      origin_type = if ("origin_type" %in% names(df)) as.character(df$origin_type) else rep(NA_character_, n_total),
       question_id = as.character(df$question_id),
-      occurred_at = NA_character_, # Lacuna temporal preservada com transparência
+      occurred_at = if ("occurred_at" %in% names(df)) as.character(df$occurred_at) else rep(NA_character_, n_total),
       selected_option = toupper(trimws(as.character(df$selected_option))),
       is_correct = norm_corr,
       confidence_level = as.integer(df$confidence_level),
@@ -247,7 +288,7 @@ adapt_operational_attempts <- function(export_df, declared_provenance = NULL, fi
       is_annulled <- toupper(first_row$gabarito_status) == "ANULADA"
       data.frame(
         question_id = qid,
-        enunciado = paste("Enunciado da questão", qid),
+        enunciado = NA_character_, # The operational export does not contain source text.
         correct_option = if (is_annulled) "ANULADA" else NA_character_,
         disciplina = first_row$disciplina,
         assunto = first_row$assunto,
@@ -282,8 +323,8 @@ adapt_operational_attempts <- function(export_df, declared_provenance = NULL, fi
   cautions <- c(
     "1. Dados adaptados do contrato plano de tentativas do FiscalStudy (fiscalstudy_attempts.csv).",
     "2. Questoes com gabarito ausente/anuladas foram segregadas do denominador de acuracia pedagogica.",
-    "3. Concurso score calculado oficialmente (acertos validos + anuladas do edital).",
-    "4. Timestamps nao presentes no arquivo plano: analises temporais marcadas como TEMPORAL_DATA_ABSENT."
+    "3. Concurso score legado e uma soma descritiva, nao aplica pesos ou criterios eliminatorios da prova.",
+    "4. Identidades, origens e timestamps existentes foram preservados; lacunas permanecem desconhecidas."
   )
   if (!provenance_info$is_proven_operational) {
     cautions <- c(
@@ -293,11 +334,19 @@ adapt_operational_attempts <- function(export_df, declared_provenance = NULL, fi
   }
   
   list(
+    validation = val_res,
+    questions_validation = list(
+      is_valid = val_res$is_valid, has_warnings = nrow(adapted_catalog) > 0,
+      summary = list(total_rows = nrow(adapted_catalog), blocking_errors = 0L, warnings = as.integer(nrow(adapted_catalog) > 0)),
+      issues = if (nrow(adapted_catalog) > 0) data.frame(severity = "WARNING", rule_code = "CATALOG_SOURCE_FIELDS_NOT_EXPORTED", column_name = "enunciado,correct_option", row_index = "N/A", message = "Catalogo extraido das tentativas; texto e gabarito fonte nao foram exportados.", stringsAsFactors = FALSE) else val_res$issues[0, ]
+    ),
     attempts_df = adapted_attempts,
     evaluable_attempts_df = evaluable_sub,
     questions_df = adapted_catalog,
     metadata = list(
-      adapter_version = "1.0.0",
+      adapter_version = "1.1.0",
+      validation_scope = "OPERATIONAL_ATTEMPTS_AND_DERIVED_CATALOG",
+      catalog_source_verified = FALSE,
       data_provenance = provenance_info$provenance_type,
       is_proven_operational = provenance_info$is_proven_operational,
       is_real_student_data = provenance_info$is_real_student_data,
@@ -311,8 +360,13 @@ adapt_operational_attempts <- function(export_df, declared_provenance = NULL, fi
       pedagogical_correct = k_eval,
       pedagogical_accuracy = if (n_eval > 0) round(k_eval / n_eval, 4) else NA_real_,
       annulled_count = n_annulled,
-      concurso_official_score = concurso_score,
-      temporal_data_present = FALSE,
+      concurso_official_score = concurso_score, # Legacy descriptive alias, not the exam rules.
+      official_score_available = FALSE,
+      descriptive_correct_plus_annulled = concurso_score,
+      temporal_data_present = n_total > 0 && any(!is.na(parse_operational_timestamps(adapted_attempts$occurred_at))),
+      temporal_data_complete = n_total > 0 && all(!is.na(parse_operational_timestamps(adapted_attempts$occurred_at))),
+      temporal_observations = sum(!is.na(parse_operational_timestamps(adapted_attempts$occurred_at))),
+      identity_data_complete = n_total > 0 && all(!is.na(adapted_attempts$event_id) & nzchar(trimws(adapted_attempts$event_id)) & !is.na(adapted_attempts$session_id) & nzchar(trimws(adapted_attempts$session_id))),
       quality_flags = c(
         paste0("PROVENANCE_", provenance_info$provenance_type),
         "OPERATIONAL_EXPORT_ADAPTED",

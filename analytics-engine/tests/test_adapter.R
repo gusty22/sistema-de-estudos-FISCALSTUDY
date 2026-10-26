@@ -75,3 +75,52 @@ if (file.exists(op_file)) {
   assert_true("question_id" %in% names(cat_df), "question_id presente no catalogo")
   assert_true("disciplina" %in% names(cat_df), "disciplina presente no catalogo")
 }
+
+# Trace preservation: these are synthetic contract fixtures, not personal evidence.
+trace_df <- data.frame(
+  event_id = c("attempt-real-101", "attempt-real-102"),
+  session_id = c("session-1", "session-2"),
+  occurred_at = c("2026-10-10T10:00:00.125Z", "2026-10-12T10:00:00Z"),
+  origin_type = c("AUTOMATED_TEST", "UNKNOWN"),
+  question_id = c("trace-1", "trace-1"), selected_option = c("A", "B"),
+  is_correct = c(TRUE, FALSE), gabarito_status = c("DEFINITIVO", "DEFINITIVO"),
+  confidence_level = c(5, NA), active_time_ms = c(15000, 18000), stringsAsFactors = FALSE
+)
+traced <- adapt_operational_attempts(trace_df, declared_provenance = "SYNTHETIC_FIXTURE")
+for (field in c("event_id", "session_id", "occurred_at", "origin_type")) {
+  assert_equal(traced$attempts_df[[field]], trace_df[[field]], paste("Preserves observed trace:", field))
+}
+assert_true(traced$metadata$temporal_data_present, "Existing timestamps are recognized")
+assert_true(traced$metadata$temporal_data_complete, "Complete timestamps retain complete coverage")
+assert_equal(traced$metadata$temporal_observations, 2L, "Temporal denominator is explicit")
+assert_true(traced$metadata$identity_data_complete, "Existing event and session identities are complete")
+assert_false(traced$metadata$is_real_student_data, "Trace presence does not convert fixtures to personal study")
+assert_true(all(is.na(traced$questions_df$enunciado)), "Adapter does not fabricate question source text")
+assert_true("CONFIDENCE_ABSENT" %in% traced$validation$issues$rule_code, "Missing confidence remains an explicit gap")
+
+legacy_df <- trace_df[, setdiff(names(trace_df), c("event_id", "session_id", "occurred_at", "origin_type"))]
+legacy <- adapt_operational_attempts(legacy_df)
+for (field in c("event_id", "session_id", "occurred_at", "origin_type")) {
+  assert_true(all(is.na(legacy$attempts_df[[field]])), paste("Legacy omission remains unknown:", field))
+}
+assert_false(legacy$metadata$temporal_data_present, "Legacy exports do not acquire synthetic timestamps")
+assert_false(legacy$metadata$identity_data_complete, "Legacy exports do not acquire synthetic identity")
+assert_false(legacy$metadata$can_generate_student_profile, "Missing origin cannot establish a personal profile")
+
+partial_df <- trace_df
+partial_df$occurred_at[2] <- NA_character_
+partial <- adapt_operational_attempts(partial_df)
+assert_true(partial$metadata$temporal_data_present, "Partial time coverage is present")
+assert_false(partial$metadata$temporal_data_complete, "Partial time coverage is not complete")
+assert_equal(partial$metadata$temporal_observations, 1L, "Partial temporal denominator is explicit")
+
+bad_trace <- trace_df
+bad_trace$occurred_at[2] <- "not-a-date"
+assert_false(validate_operational_export(bad_trace)$is_valid, "Malformed observed timestamps block adaptation")
+bad_trace <- trace_df
+bad_trace$event_id[2] <- bad_trace$event_id[1]
+assert_false(validate_operational_export(bad_trace)$is_valid, "Duplicate known attempt identities cannot duplicate evidence")
+
+missing_key <- trace_df
+missing_key$gabarito_status[1] <- NA_character_
+assert_true(is.na(adapt_operational_attempts(missing_key)$attempts_df$is_correct[1]), "Missing answer-key status is not silently definitive")
