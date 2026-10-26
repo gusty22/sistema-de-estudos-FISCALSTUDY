@@ -98,3 +98,14 @@ custom_signals <- detect_analytical_signals(
 )
 custom_sig_ids <- vapply(custom_signals$signals, function(x) x$signal_id, character(1))
 assert_false("SIG_RECURRENT_ERROR_Q_q002" %in% custom_sig_ids, "Configuracao customizada de limiar respeitada")
+
+
+# A summary cannot fabricate the underlying attempt counts.
+missing_rows_profile <- list(
+  data_quality = list(valid_attempts = 10L),
+  period = list(start = NA_character_, end = NA_character_),
+  error_patterns = list(recurrent_error_questions = "synthetic-unknown-question")
+)
+missing_rows_signals <- detect_analytical_signals(missing_rows_profile)
+assert_false(any(vapply(missing_rows_signals$signals, function(x) x$signal_type == "RECURRENT_ERROR", logical(1))),
+             "Absent attempt rows do not invent two errors to support a signal")
