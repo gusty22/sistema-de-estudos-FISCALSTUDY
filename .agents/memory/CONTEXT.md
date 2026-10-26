@@ -134,4 +134,22 @@ Consulte pontualmente via `view_file` conforme o escopo da tarefa:
   - **N4 Homologação Visual**: Mantido formalmente como **PENDENTE** de sessão interativa em tela real com operador humano.
 - **Bancos de Dados**: Bancos reais de produção `db/fiscalstudy.db` e `db/staging.db` 100% intocados e preservados.
 
+## 7. Epic 02 — Modelo Individual de Conhecimento & Refinamento Científico (v3.38)
+- **Branch Ativa**: `feature/epic-02-knowledge-model` (HEAD `604dcec`). Branch `main` e `fix/dashboard-pedagogical-integrity` estritamente intactas e não mescladas.
+- **Read-Model Canônico**: Tabela `topic_knowledge_projections` e entidade `TopicKnowledgeProjection.java` alimentadas deterministamente por `TopicKnowledgeAggregatorService.java`.
+- **Governança Epistêmica Inegociável**:
+  1. *Observação vs Inferência*: Desempenho observado (acertos, erros, denominador auditado) não é fundido em notas de domínio genéricas.
+  2. *Eliminação de Pesos Arbitrários*: Simulados e retestes registrados puramente como metadados contextuais (`contextDistributionJson`), sem fatores 1.5x / 1.2x.
+  3. *Confiança Ordinal Pura (1 a 5)*: Escala tratada como ordinal; Brier Score desativado por ausência de calibração empírica probabilística. Detecção explícita de acertos inseguros (nível 1-2) e erros com alta certeza (nível 4-5).
+  4. *Tratamento de Insuficiência Amostral*: Exibição de `SEM_EVIDENCIAS` para tópicos com N=0; `PRELIMINAR` com contagem real N para poucas tentativas (&lt; 10 tentativas ou &lt; 5 itens únicos).
+  5. *Memória FSRS Desacoplada*: Retenção temporal do FSRS ($S$ e $R$) preservada para agendamento de repetição espaçada, sem penalizar domínio conceitual via decaimento exponencial genérico.
+  6. *Reconstrução Determinística*: 100% reconstruível a partir dos eventos originais `ANSWER_SUBMITTED` com `origin = REAL_STUDY` (`POST /api/v1/knowledge/rebuild`).
+- **Interface Funcional**: Componente `ModeloConhecimentoView.tsx` integrado ao `PainelDesempenho.tsx` (aba *Evidências de Conhecimento*) com cards resumo, tabela de tópicos e gaveta de auditoria epistêmica com as 6 seções segregadas.
+- **Validação Automatizada**:
+  - `TopicKnowledgeDeterministicReconstructionTest`: 4 testes unitários e de reconstrução aprovados.
+  - `TopicKnowledgeControllerIntegrationTest`: 2 testes de integração Spring Boot MockMvc aprovados.
+  - `knowledge-model-contracts.test.mjs`: 4 testes de contrato no frontend aprovados (total de 22 testes unitários no frontend aprovados).
+  - Browser Playwright: Evidências visuais registradas em `epic02_knowledge_model_overview.png` e `epic02_epistemic_drawer.png`.
+
+
 
