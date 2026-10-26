@@ -66,6 +66,8 @@ assert_false(memory_audit$can_apply, "Pedagogical analysis never changes FSRS sc
 cold_memory_fixture <- memory_fixture[1, , drop = FALSE]
 cold_memory_fixture$fsrs_evidence_status <- "COLD_START"
 cold_audit <- calculate_retrieval_surprise(cold_memory_fixture)
+assert_equal(cold_audit$per_attempt$snapshot_status[1], "FSRS_EVIDENCE_STATUS_NOT_ELIGIBLE",
+             "Cold start is explicitly labeled as an ineligible memory state")
 assert_equal(cold_audit$valid_preupdate_snapshot_count, 0L,
              "FSRS cold-start state is not treated as a probability prediction")
 

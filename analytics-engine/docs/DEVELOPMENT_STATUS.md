@@ -146,4 +146,4 @@ O R agora consome os campos opcionais `fsrs_retrievability_pre_update`, `fsrs_pr
 
 Também foi removida a atribuição causal de erro de conceito, leitura precipitada, impulsividade ou desatenção a partir apenas de confiança máxima ou tempo sub-segundo. Os sinais passam a nomear a observação e explicitar causa desconhecida.
 
-Validação R local em R 4.5.1: `tests/test_runner.R`, 528 verificações aprovadas, 0 falhas. Os campos ainda precisam ser adicionados e versionados no exportador Java para a análise receber previsões reais; o teste local do backend Java não foi executado neste checkout.
+Validação R local em R 4.5.1: `tests/test_runner.R`, 529 verificações aprovadas, 0 falhas. Os campos ainda precisam ser adicionados e versionados no exportador Java para a análise receber previsões reais; o teste local do backend Java não foi executado neste checkout.

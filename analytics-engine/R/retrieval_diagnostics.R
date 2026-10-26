@@ -50,6 +50,7 @@ calculate_retrieval_surprise <- function(attempts_df = NULL,
   empty_attempts <- data.frame(
     event_id = character(0), question_id = character(0),
     fsrs_model_version = character(0), fsrs_evidence_status = character(0),
+    fsrs_prediction_timestamp = character(0),
     fsrs_retrievability_pre_update = numeric(0),
     classification = character(0), snapshot_status = character(0),
     stringsAsFactors = FALSE
@@ -123,11 +124,11 @@ calculate_retrieval_surprise <- function(attempts_df = NULL,
   evidence_valid <- evidence_status %in% "UNCALIBRATED_ITEM_ESTIMATE"
 
   snapshot_status <- rep("VALID_PREUPDATE_SNAPSHOT", n)
-  snapshot_status[!p_valid] <- "RETRIEVABILITY_MISSING_OR_OUT_OF_RANGE"
-  snapshot_status[p_valid & !time_valid] <- "FSRS_STATE_NOT_PROVEN_PREUPDATE"
-  snapshot_status[p_valid & time_valid & !version_valid] <- "FSRS_MODEL_VERSION_MISSING"
-  snapshot_status[p_valid & time_valid & version_valid & !evidence_valid] <- "FSRS_EVIDENCE_STATUS_NOT_ELIGIBLE"
-  valid_snapshot <- p_valid & time_valid & version_valid & evidence_valid
+  snapshot_status[!evidence_valid] <- "FSRS_EVIDENCE_STATUS_NOT_ELIGIBLE"
+  snapshot_status[evidence_valid & !p_valid] <- "RETRIEVABILITY_MISSING_OR_OUT_OF_RANGE"
+  snapshot_status[evidence_valid & p_valid & !time_valid] <- "FSRS_STATE_NOT_PROVEN_PREUPDATE"
+  snapshot_status[evidence_valid & p_valid & time_valid & !version_valid] <- "FSRS_MODEL_VERSION_MISSING"
+  valid_snapshot <- evidence_valid & p_valid & time_valid & version_valid
   classification <- ifelse(!is.na(outcome), "MEMORY_ESTIMATE_UNAVAILABLE", "NOT_EVALUABLE")
   classification[valid_snapshot & outcome] <- "RETRIEVAL_SUCCESS"
   classification[valid_snapshot & outcome & raw_p <= low_retrievability_threshold] <- "SUCCESS_WITH_LOW_PREDICTED_RETRIEVAL"
@@ -168,6 +169,8 @@ calculate_retrieval_surprise <- function(attempts_df = NULL,
     assunto = topic,
     observed_correct = outcome,
     fsrs_model_version = model_version,
+    fsrs_evidence_status = evidence_status,
+    fsrs_prediction_timestamp = as.character(evaluable$fsrs_prediction_timestamp),
     fsrs_retrievability_pre_update = raw_p,
     snapshot_status = snapshot_status,
     classification = classification,
