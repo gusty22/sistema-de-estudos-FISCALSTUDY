@@ -71,3 +71,8 @@ Pan, S. C.; Rickard, T. C. (2018), *Transfer of test-enhanced learning: Meta-ana
 [Documentação oficial FSRS — The Algorithm](https://github.com/open-spaced-repetition/awesome-fsrs/wiki/The-Algorithm), consultada em 26/10/2026: o modelo estima estados de memória, incluindo dificuldade, estabilidade e recuperabilidade. A decisão arquitetural desta rodada é preservar essa responsabilidade no FSRS e manter análises pedagógicas externas. Nenhuma equação FSRS é modificada pelo trabalho R.
 
 O status factual de implementação e os comandos/resultados encontram-se em [LEARNER_MODEL_VALIDATION.md](LEARNER_MODEL_VALIDATION.md). Teste automatizado valida comportamento de software; não é validação empírica de aprendizagem.
+
+
+### Integridade da persistência do candidato de investigação
+
+O endpoint de falha de revisão separa o estado epistemológico (`CAUSE_UNRESOLVED`) do estado de gravação (`PERSISTED` ou `FAILED`). Se o append falhar, a resposta informa que o candidato não foi registrado; ela não afirma sucesso nem autoriza ação. A identidade do evento continua sujeita ao contrato canônico de tentativas/eventos e precisa ser validada na integração.
