@@ -320,7 +320,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
         setTimeout(() => setRestMessage(null), 5000);
         break;
       case 'NEXT_ACTIVITY':
-        setActiveQueueIndex(prev => getNextQueueIndex(prev, queueActivities.length));
+        if (queueActivities.length <= 1) {
+          setRestMessage('Nenhuma outra atividade na fila para alternar no momento.');
+          setTimeout(() => setRestMessage(null), 4000);
+        } else {
+          setActiveQueueIndex(prev => getNextQueueIndex(prev, queueActivities.length));
+        }
         setShowWhy(false);
         break;
       case 'NO_MATERIAL':
