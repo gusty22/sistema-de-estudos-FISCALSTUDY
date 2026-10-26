@@ -40,7 +40,7 @@ for (s in signals_res$signals) {
 sig_ids <- vapply(signals_res$signals, function(x) x$signal_id, character(1))
 assert_true("SIG_OVERCONFIDENCE_ERROR" %in% sig_ids, "Detectou sinal SIG_OVERCONFIDENCE_ERROR")
 overconf_sig <- signals_res$signals[[which(sig_ids == "SIG_OVERCONFIDENCE_ERROR")]]
-assert_equal(overconf_sig$signal_type, "OVERCONFIDENCE_MISCONCEPTION", "Tipo do sinal e OVERCONFIDENCE_MISCONCEPTION")
+assert_equal(overconf_sig$signal_type, "HIGH_CONFIDENCE_ERROR", "Tipo do sinal e HIGH_CONFIDENCE_ERROR")
 assert_false(overconf_sig$is_heuristic, "Superconfianca e definicao metrologica exata, nao heuristica arbitraria")
 
 # 4. Teste do Sinal de Evidência Insuficiente em Tópicos

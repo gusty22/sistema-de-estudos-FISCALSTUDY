@@ -17,6 +17,7 @@ suppressPackageStartupMessages({
   source("R/validation.R")
   source("R/descriptive_analysis.R")
   source("R/retention_analysis.R")
+  source("R/retrieval_diagnostics.R")
   source("R/visualization.R")
   source("R/export_results.R")
   source("R/learning_profile.R")
@@ -185,7 +186,7 @@ main <- function() {
   attempts_df <- selection$attempts_df
   if (nrow(attempts_df) == 0) {
     cat("\n>>> [COLD START]: Nenhuma tentativa com resultado avaliavel disponivel para inferencia.\n")
-    cat(">>> Emitindo pesos balanceados de inicio a frio (Cold Start) para orquestracao segura.\n")
+    cat(">>> Sem evidencias avaliaveis: nenhuma redistribuicao ou curva de memoria sera inferida.\n")
     
     dir.create(file.path(output_root, "metrics"), showWarnings = FALSE, recursive = TRUE)
     dir.create(file.path(output_root, "figures"), showWarnings = FALSE, recursive = TRUE)
@@ -218,9 +219,9 @@ main <- function() {
       recommendations = list(
         time_theft_donors = list(),
         priority_recipients = list(),
-        summary_instruction = "Inicio a frio: manter ciclo adaptativo equilibrado baseado no edital ate acumular telemetria."
+        summary_instruction = "Sem evidencia analitica; o backend mantem suas regras de planejamento existentes."
       ),
-      methodological_caution = "Pesos padronizados de inicio a frio emitidos por ausencia de historico de resolucoes."
+      methodological_caution = "Mapa de pesos vazio. Ausencia de dados nao autoriza estimar prioridade ou retention target."
     )
     
     cold_signals <- envelope(cold_signals, "NO_DATA")
@@ -230,6 +231,9 @@ main <- function() {
       writeLines(jsonlite::toJSON(cold_weights, pretty = TRUE, auto_unbox = TRUE), con = file.path(output_root, "metrics/robin_hood_weights.json"), useBytes = TRUE)
     }
     
+    cold_retrieval <- calculate_retrieval_surprise(raw_attempts_df)
+    cold_retrieval <- envelope(cold_retrieval, cold_retrieval$status, can_apply = FALSE)
+    writeLines(jsonlite::toJSON(cold_retrieval, pretty = TRUE, auto_unbox = TRUE), con = file.path(output_root, "metrics/retrieval_surprise_v1.json"), useBytes = TRUE)
     empty_summary <- list(status=if (nrow(raw_attempts_df) == 0) "COLD_START" else "NO_EVALUABLE_EVIDENCE", observed_attempt_count=nrow(raw_attempts_df), n_observations=0L, data_provenance=data_prov_type, is_real_student_data=FALSE, metrics=list(), run_id=run_id, can_apply=FALSE)
     empty_summary <- envelope(empty_summary)
     writeLines(jsonlite::toJSON(empty_summary, pretty=TRUE, auto_unbox=TRUE), con=file.path(output_root,"metrics/metrics_summary_v1.json"), useBytes=TRUE)
@@ -274,6 +278,7 @@ main <- function() {
   cat("\n[4/6] Construindo perfil de aprendizagem multidimensional e detectando sinais...\n")
   learning_profile <- build_learning_profile(raw_attempts_df, questions_df, validation_result = val_evt)
   analytical_signals <- detect_analytical_signals(learning_profile, attempts_df, questions_df)
+  retrieval_diagnostics <- calculate_retrieval_surprise(attempts_df)
   
   # Avaliação de recomendações/intervenções se disponível
   eval_recs <- NULL
@@ -330,6 +335,7 @@ main <- function() {
   consolidated_pkg <- envelope(consolidated_pkg, "OBSERVATIONAL_ANALYSIS")
   learning_profile <- envelope(learning_profile, "OBSERVATIONAL_ANALYSIS")
   analytical_signals <- envelope(analytical_signals, "HEURISTIC_SIGNALS")
+  retrieval_diagnostics <- envelope(retrieval_diagnostics, retrieval_diagnostics$status, can_apply = FALSE)
   robin_hood_weights <- envelope(robin_hood_weights, can_apply = FALSE)
   if (is.null(eval_recs)) eval_recs <- list(evaluation_status = "NO_DATA", total_interventions = 0L, evaluated_count = 0L)
   eval_recs <- envelope(eval_recs, "OBSERVATIONAL_ANALYSIS")
@@ -346,6 +352,7 @@ main <- function() {
     writeLines(jsonlite::toJSON(learning_profile, pretty = TRUE, auto_unbox = TRUE), con = profile_out, useBytes = TRUE)
     writeLines(jsonlite::toJSON(analytical_signals, pretty = TRUE, auto_unbox = TRUE), con = signals_out, useBytes = TRUE)
     writeLines(jsonlite::toJSON(robin_hood_weights, pretty = TRUE, auto_unbox = TRUE), con = robin_hood_out, useBytes = TRUE)
+    writeLines(jsonlite::toJSON(retrieval_diagnostics, pretty = TRUE, auto_unbox = TRUE), con = file.path(output_root, "metrics/retrieval_surprise_v1.json"), useBytes = TRUE)
     if (!is.null(eval_recs)) {
       writeLines(jsonlite::toJSON(eval_recs, pretty = TRUE, auto_unbox = TRUE), con = file.path(output_root, "metrics/intervention_evaluation_v1.json"), useBytes = TRUE)
     }

@@ -116,7 +116,7 @@ detect_analytical_signals <- function(profile, attempts_df = NULL, questions_df 
       profile$metacognition$overconfidence_count > 0) {
     signals[[length(signals) + 1]] <- build_signal_record(
       signal_id = "SIG_OVERCONFIDENCE_ERROR",
-      signal_type = "OVERCONFIDENCE_MISCONCEPTION",
+      signal_type = "HIGH_CONFIDENCE_ERROR",
       description = "Ocorrencia observavel de resposta incorreta acompanhada do nivel maximo de confianca declarada (nivel 5).",
       evidence_summary = sprintf("%d erro(s) em questoes respondidas com certeza absoluta declarada (nivel 5). Taxa no nivel 5: %.1f%%.",
                                  profile$metacognition$overconfidence_count,
@@ -128,7 +128,7 @@ detect_analytical_signals <- function(profile, attempts_df = NULL, questions_df 
       is_heuristic = FALSE,
       limitations = c(
         "Foco estrito em metrologia educacional: desacordo observavel entre certeza subjetiva maxima e gabarito.",
-        "Nao constitui diagnostico psicologico definitivo ('ilusao de maestria'); reflete equivoco pontual em item especifico ou leitura precipitada."
+        "Registra somente a combinacao observada de resposta incorreta e confianca maxima; a causa do desacordo e desconhecida e nao e atribuida a um conceito ou perfil."
       ),
       method_version = "v1.0.0-overconfidence_flag"
     )
@@ -157,7 +157,7 @@ detect_analytical_signals <- function(profile, attempts_df = NULL, questions_df 
     )
   }
   
-  # 4. Sinal: Tempos Discrepantes (Sub-segundo / Impulsividade)
+  # 4. Sinal: Duracao Observada Sub-segundo
   if (!is.null(profile$fluency$sub_second_count) &&
       profile$fluency$sub_second_count > 0) {
     signals[[length(signals) + 1]] <- build_signal_record(
@@ -171,8 +171,8 @@ detect_analytical_signals <- function(profile, attempts_df = NULL, questions_df 
       applied_criterion = sprintf("active_time_ms < %.0f ms", cfg$sub_second_ms),
       is_heuristic = TRUE,
       limitations = c(
-        "Fisiologicamente improvavel a leitura completa de enunciado e alternativas em < 1s.",
-        "Indica clique acidental, chute impulsivo sem leitura ou revisao mecânica de gabarito decorado."
+        "O tempo registrado e inferior a um segundo; isso pode refletir temporizacao incompleta, interrupcao, clique acidental ou outra condicao nao observada.",
+        "A causa nao pode ser inferida somente do tempo registrado e deve ser confirmada antes de excluir a tentativa da analise."
       ),
       method_version = "v1.0.0-subsecond_filter"
     )

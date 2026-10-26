@@ -13,3 +13,9 @@ The old tests that expected a negative slope from three observations or a slower
 Exposure labels use `exposure_basis=RECORDED_ATTEMPTS_ONLY`. INITIAL_EXPOSURE means the first attempt in the available event history; it does not prove that the student never saw the item or concept before. The 24-hour category boundary is an operational heuristic, not proof of recognition versus retrieval as a cognitive mechanism.
 
 Focused validation: R 4.5.1, LC_ALL=C and LANG=C, actual descriptive/profile dependencies plus tests/test_retention.R: 45 checks passed, exit 0. Log: r-memory-focused.log (local). Parsing and git diff --check passed. This focused harness is not the combined suite, executed Java integration or proof of learning efficacy.
+
+## Comparação entre recuperação prevista e resultado observado
+
+Quando a exportação fornecer `fsrs_retrievability_pre_update`, `fsrs_prediction_timestamp`, `fsrs_model_version` e `fsrs_evidence_status`, `calculate_retrieval_surprise()` compara o estado de memória FSRS anterior à atualização com o resultado da tentativa. Uma resposta errada sob baixa recuperação prevista é compatível com esquecimento esperado; um erro sob alta recuperação prevista vira apenas candidato a investigação com o estudante. Nenhum desses padrões identifica sozinho a causa.
+
+A previsão é capturada durante o envio da resposta, a partir do estado FSRS antes de processar o novo resultado. Ela não é uma medição registrada antes da primeira exposição à questão. Registros sem timestamp anterior ao evento, versão conhecida ou estado elegível são excluídos. `COLD_START` não é probabilidade. Brier e log-loss são descrições por versão do modelo e não demonstram calibração individual. Os limites baixo/alto são faixas de triagem configuráveis e ainda não validadas. Essa análise não altera o FSRS, agenda revisão, estima domínio conceitual nem escolhe intervenção.

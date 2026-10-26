@@ -32,7 +32,11 @@ pipeline_df <- data.frame(
   gabarito_status = c("DEFINITIVO", "DEFINITIVO", "ANULADA"),
   confidence_level = c(5, 3, 4), active_time_ms = c(12345, 23456, 34567),
   discipline = c("Disciplina fixture", "Disciplina fixture", "Disciplina fixture"),
-  assunto = c("Topico fixture", "Topico fixture", "Topico fixture"), stringsAsFactors = FALSE
+  assunto = c("Topico fixture", "Topico fixture", "Topico fixture"),
+  fsrs_retrievability_pre_update = c(0.30, 0.95, 0.20),
+  fsrs_model_version = rep("FSRS-6.0-default-core-no-fuzz", 3),
+  fsrs_prediction_timestamp = c("2026-10-10T09:59:00Z", "2026-10-12T09:59:00Z", "2026-10-12T10:04:00Z"),
+  fsrs_evidence_status = rep("UNCALIBRATED_ITEM_ESTIMATE", 3), stringsAsFactors = FALSE
 )
 write.csv(pipeline_df, pipeline_csv, row.names = FALSE)
 pipeline_manifest_path <- file.path(pipeline_dir, "export_manifest.json")
@@ -47,10 +51,15 @@ assert_equal(fixture_run$exit, 0L, paste("Pipeline accepts valid temporal contra
 if (fixture_run$exit == 0) {
   summary <- jsonlite::fromJSON(file.path(pipeline_output, "metrics", "metrics_summary_v1.json"), simplifyVector = FALSE)
   weights <- jsonlite::fromJSON(file.path(pipeline_output, "metrics", "robin_hood_weights.json"), simplifyVector = FALSE)
+  retrieval <- jsonlite::fromJSON(file.path(pipeline_output, "metrics", "retrieval_surprise_v1.json"), simplifyVector = FALSE)
   assert_equal(summary$run_id, "fixture-run-synthetic", "Summary identifies its actual run")
   assert_equal(summary$data_provenance, "UNVERIFIED_SOURCE", "Synthetic fixture manifest cannot establish operational provenance")
   assert_false(summary$is_real_student_data, "Synthetic fixture cannot be labeled real-student data")
   assert_false(weights$can_apply, "Exploratory R output cannot override the scheduler")
+  assert_equal(retrieval$run_id, "fixture-run-synthetic", "FSRS diagnostic identifies its source run")
+  assert_equal(retrieval$per_attempt[[2]]$classification, "ERROR_WITH_HIGH_PREDICTED_RETRIEVAL", "Pipeline separates a high-retrievability error for investigation")
+  assert_equal(length(retrieval$investigation_queue), 1L, "Pipeline emits one unresolved investigation candidate")
+  assert_false(retrieval$can_apply, "FSRS diagnostic cannot change memory scheduling")
   assert_equal(length(weights$weights), 0L, "Unvalidated model emits no discipline overrides")
   assert_true(all(vapply(summary$metrics, function(m) identical(m$n_observations, 2L) || identical(m$n_observations, 2), logical(1))), "Non-evaluable attempt does not enter effective metric denominators")
 }
@@ -90,6 +99,9 @@ if (empty_run$exit == 0) {
   no_intervention <- jsonlite::fromJSON(file.path(pipeline_output, "metrics", "intervention_evaluation_v1.json"))
   assert_equal(no_intervention$evaluation_status, "NO_DATA", "Cold start replaces stale intervention results")
   assert_equal(no_intervention$run_id, "fixture-run-empty", "Cold-start artifact identifies its own run")
+  cold_retrieval <- jsonlite::fromJSON(file.path(pipeline_output, "metrics", "retrieval_surprise_v1.json"), simplifyVector = FALSE)
+  assert_equal(cold_retrieval$status, "NO_DATA", "Cold start replaces memory diagnostics with explicit no-data status")
+  assert_false(cold_retrieval$can_apply, "Cold-start memory diagnostics cannot schedule")
   assert_false(no_intervention$can_apply, "No data is not an actionable recommendation")
 }
 missing_manifest <- run_pipeline_fixture(pipeline_csv, pipeline_output, "fixture-run-missing", file.path(pipeline_dir, "does-not-exist.json"))

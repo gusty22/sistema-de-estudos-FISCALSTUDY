@@ -21,3 +21,6 @@ A fixture de integração é deliberadamente identificada como não produção e
 O FSRS continua autoridade para memória e agenda. O ajuste empírico R é exploratório e não programa revisões. Resultados não avaliáveis não entram nos denominadores; resultado errado após intervalo longo, por si só, não diagnostica dificuldade conceitual. Saídas de pesos exploratórios são vazias e `can_apply=false`. O backend precisa continuar a usar edital, disponibilidade e regras próprias até validar formalmente uma integração.
 
 Veja `LEARNER_MODEL_VALIDATION.md` para comandos e resultados da suíte e `LEARNER_MODEL_EXECUTION_PLAN.md` para pré-requisitos de evolução.
+## Diagnóstico exploratório de discrepância FSRS × tentativa
+
+O artefato `metrics/retrieval_surprise_v1.json` relata discrepâncias entre uma previsão de recuperação FSRS pré-atualização e o resultado observável da tentativa. Erro com baixa recuperação estimada não é automaticamente dificuldade conceitual; erro com alta recuperação estimada é uma pergunta de investigação, com causa não resolvida. O artefato é exploratório, não executável e não substitui o FSRS nem o planejador do backend. Entradas sem proveniência/versionamento temporal elegível permanecem não pontuadas.

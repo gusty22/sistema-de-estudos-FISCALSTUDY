@@ -85,6 +85,7 @@ run_all_tests <- function() {
   source("R/intervention_analysis.R")
   source("R/recommendation_evaluation.R")
   source("R/adapter.R")
+  source("R/retrieval_diagnostics.R")
   source("R/baselines.R")
   source("R/provenance.R")
   
@@ -101,6 +102,7 @@ run_all_tests <- function() {
     "tests/test_baselines_and_rigor.R",
     "tests/test_provenance.R",
     "tests/test_pipeline_evidence.R",
+    "tests/test_retrieval_diagnostics.R",
     "tests/test_learner_contract_integration.R"
   )
   

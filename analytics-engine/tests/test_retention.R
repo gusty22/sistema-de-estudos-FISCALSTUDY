@@ -84,7 +84,7 @@ assert_true(is.na(project_critical_intervention_point(exploratory, "Unknown")$n_
 val_res <- list(is_valid = TRUE, has_warnings = FALSE, summary = list(warnings = 0))
 mock_profile <- build_learning_profile(attempts_df, q_df, val_res)
 rh_weights <- calculate_robin_hood_weights(mock_profile, exploratory,
-  list(signals = list(list(signal_type = "OVERCONFIDENCE_MISCONCEPTION"))))
+  list(signals = list(list(signal_type = "HIGH_CONFIDENCE_ERROR"))))
 assert_equal(rh_weights$algorithm, "ROBIN_HOOD_ADAPTIVE_CYCLE_V1", "Java-compatible algorithm envelope retained")
 assert_true(!rh_weights$can_apply && rh_weights$disciplines_count == 0, "Unvalidated weights cannot override the actual study plan")
 assert_equal(length(rh_weights$weights), 0, "No invented allocation percentages or study minutes")
