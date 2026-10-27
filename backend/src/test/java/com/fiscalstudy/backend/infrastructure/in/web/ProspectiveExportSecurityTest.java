@@ -18,6 +18,9 @@ class ProspectiveExportSecurityTest {
   assertEquals(403,status("/api/v1/learning-lab/prospective-export","127.0.0.1","localhost","wrong",null,null));
   assertEquals(204,status("/api/v1/learning-lab/prospective-export","127.0.0.1","localhost","fixture-token",null,null));
  }
+ @Test void encodedExportPathStillRequiresAuthorization() throws Exception {
+  assertEquals(403,status("/api/v1/learning-lab/prospective-%65xport","127.0.0.1","localhost",null,null,null));
+ }
  @Test void tokenDoesNotAuthorizeLanOrReboundHost() throws Exception {
   assertEquals(403,status("/api/v1/learning-lab/prospective-export","192.168.1.2","localhost","fixture-token",null,null));
   assertEquals(403,status("/api/v1/learning-lab/prospective-export","127.0.0.1","evil.example","fixture-token",null,null));

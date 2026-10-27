@@ -46,7 +46,11 @@ public class LocalAccessFilter extends OncePerRequestFilter {
                 return;
             }
         }
-        String uri=req.getRequestURI();
+        String uri=req.getServletPath();
+        if(uri==null || uri.isBlank()) {
+            try { uri=java.net.URLDecoder.decode(req.getRequestURI(),StandardCharsets.UTF_8); }
+            catch(IllegalArgumentException invalid) { deny(res,400,"Invalid request path");return; }
+        }
         boolean prospective=uri.startsWith("/api/v1/learning-lab/") ||
             (uri.startsWith("/api/v1/questions/") && uri.contains("/predictions"));
         if(prospective) {
