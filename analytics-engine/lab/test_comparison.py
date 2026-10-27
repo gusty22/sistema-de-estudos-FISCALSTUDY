@@ -142,6 +142,20 @@ class RealPyBKTTests(unittest.TestCase):
         self.assertEqual(status["students"][rows[0]["student_id"]]["status"],"INSUFFICIENT_HISTORY")
 
 class RealMovingAverageTests(unittest.TestCase):
+    def test_assisted_exposure_is_not_mislabeled_as_unseen(self):
+        from test_lab import RealRContractTests
+        rows,_,_=generate(331,18,profiles=[dict(name="test_only",gain=.1,half_life=8)])
+        rows=[dict(e,used_help="false",session_complete="true",gabarito_status="DEFINITIVO",
+                   is_correct="true" if i%3 else "false",question_id="unique-"+str(i),
+                   prior_exposures=0,attempt_number=1) for i,e in enumerate(rows)]
+        rows[0]["used_help"]="true"
+        rows[11].update(question_id=rows[0]["question_id"],prior_exposures=1,attempt_number=2)
+        predictions,_=RealRContractTests().invoke(rows)
+        target=[p for p in predictions if p["event_id"]==rows[11]["event_id"]]
+        self.assertEqual(len(target),3)
+        self.assertTrue(all(p["item_exposure"]=="RECORDED_PREVIOUS_EXPOSURE" for p in target))
+        self.assertTrue(all(p["model_history_item_exposure"]=="FIRST_SEEN_ITEM" for p in target))
+
     def test_real_r_reuses_previous_five_without_current_outcome(self):
         from test_lab import RealRContractTests
         rows,_,_=generate(331,18,profiles=[dict(name="test_only",gain=.1,half_life=8)])

@@ -63,6 +63,9 @@ for (student in sort(unique(input$student_id))) {
   if (nrow(result$predictions) > 0L) {
     rows <- result$predictions
     rows$student_id <- student
+    rows$model_history_item_exposure <- rows$item_exposure
+    prior <- as.numeric(input$prior_exposures[match(rows$event_id, input$event_id)])
+    rows$item_exposure <- ifelse(prior == 0, "RECORDED_FIRST_EXPOSURE", "RECORDED_PREVIOUS_EXPOSURE")
     predictions[[length(predictions) + 1L]] <- rows
   }
 }

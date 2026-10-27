@@ -130,7 +130,8 @@ def predict_events(rows):
                 training_observations=len(train),
                 state_history_observations=len(history),
                 topic_training_observations=sum(e["skill_id"]==event["skill_id"] for e in train),
-                item_exposure="REPEATED_ITEM" if any(e["question_id"]==event["question_id"] for e in history) else "FIRST_SEEN_ITEM",
+                model_history_item_exposure="REPEATED_ITEM" if any(e["question_id"]==event["question_id"] for e in history) else "FIRST_SEEN_ITEM",
+                item_exposure="RECORDED_PREVIOUS_EXPOSURE" if int(event["prior_exposures"])>0 else "RECORDED_FIRST_EXPOSURE",
                 prediction_basis="FROZEN_PREFIX_PARAMETERS_FORWARD_HISTORY"))
             count += 1
         support[student] = dict(status="PARTIAL_NUMERICAL_UNAVAILABILITY" if numerical_unavailable else "EXPLORATORY_FROZEN_PREFIX", eligible=len(selected),
@@ -159,7 +160,7 @@ def main():
     predictions, status = predict_events(rows)
     columns = ["event_id","student_id","question_id","occurred_at","model_name",
         "predicted_probability","observed_correct","training_observations",
-        "state_history_observations","topic_training_observations","item_exposure","prediction_basis"]
+        "state_history_observations","topic_training_observations","item_exposure","model_history_item_exposure","prediction_basis"]
     with target.open("w", encoding="utf-8", newline="") as stream:
         writer=csv.DictWriter(stream,fieldnames=columns)
         writer.writeheader()
