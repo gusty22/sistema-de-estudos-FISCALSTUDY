@@ -150,3 +150,38 @@ The report now retains statistical contrast values but labels memory comparisons
 Minor report-label limitation: the shared comparison uncertainty text mentions donor/overlapping folds; that qualification applies to memory calibration. ASSISTments actually uses only within-student prequential models and a paired-student bootstrap. The computation is unchanged and documented separately; no ASSISTments donor fit is claimed.
 
 The final documentation/archive commit changes no analytical code or workflow after these executions. No production data, FSRS equation, planner authority, credentials or main merge were changed.
+
+## Prospective question ledger v1 (independent increment after PR34 CI repair)
+
+Operational path: QuestionViewer → separate preparation POST → existing SQLite event_store PREDICTION_COMMITTED → answer POST with the reserved attempt UUID → ANSWER_SUBMITTED → snapshot sidecar export → experimental R evaluator. There is no new database, migration, scheduler, event mutation or automatic model authority.
+
+POST /api/v1/questions/{questionId}/predictions accepts only attemptId (canonical UUID) and sessionId. The service has no answer/result arguments. Same-intent retries return the frozen event; conflicting identity and post-answer backfill fail. The client waits for confirmed preparation before permitting selection/submission, and never displays forecast probabilities. Network failures have explicit retry states. Existing noninstrumented clients remain compatible, but their answers are not retroactively forecast-scored.
+
+Version: prospective-question-v1. Embedded event contract is distinct from the existing v2 appendEventOnce envelope.
+- predictionId: stable namespaced UUID; attemptId: pre-reserved UUID; questionId: existing occurrence identity.
+- studentId: LOCAL_SINGLE_USER, an explicit local scope, NOT backend multi-user isolation.
+- target: QUESTION_CORRECTNESS_WITHOUT_DECLARED_HELP. This is neither Anki recall rating nor conceptual mastery.
+- horizon: first submission of this reserved attempt in this session. Creation-to-answer delay is exported; it is NOT a fixed delayed-retention horizon.
+- createdAt/dataCutoffAt: server UTC Instant; snapshotRowid: append-only prefix boundary. Evidence IDs, counts and observed outcomes support independent reconstruction.
+- model: PERSONAL_BETA11_PREFIX_V1, probability=(prior correct+1)/(prior eligible+2). A simple experimental correctness baseline, not a new FSRS model. n=0 is a declared prior-only forecast, not zero knowledge.
+- Eligibility: strictly earlier REAL_STUDY, definitive Boolean correctness, explicitly recorded usedHelp=false. Unknown help/origin and annulled/ambiguous outcomes are excluded. Guess correctness is still a correctness observation; confidence==1 remains excluded from FSRS by its existing operational rules.
+- fsrsContextNotCorrectnessForecast: existing versioned FSRS preview, kept separate and NOT evaluated as correctness or used to schedule through this lab.
+- curriculumLinksAtCreation: current CONFIRMED classification records frozen at preparation with their existing provenance; discipline/topic text are labels, not proof of concept identity.
+- priorRecordedSameQuestionAttempts: eligible logged attempts only; zero never proves unseen content or generalization.
+- Confidence capture time remains UNVERIFIED_NOT_SCORED. Raw payload confidence, help, exposure/intervention fields and later ATTEMPT_ANNOTATED events are preserved by the sidecar; no later annotation overwrites the original answer.
+
+GET /api/v1/learning-lab/prospective-export returns a no-store envelope with version, snapshotRowid, exact UTF-8 inputJson and inputSha256. Export and prefix selection use the existing SQLite datasource within a transaction. SHA-256 proves byte integrity, not human authenticity or a digital signature. No filesystem path is accepted. The existing 22-column operational CSV and its manifest are unchanged; this experimental sidecar avoids breaking existing consumers while transporting complete event payloads. Historical absent variables remain absent.
+
+From analytics-engine:
+    Rscript lab/prospective_evaluation.R personal-envelope.json NEW-personal-report.json
+
+R independently reconstructs every eligible forecast prefix, probability and identity, requires explicit timestamps and prior rowid ordering, checks target/authority/hash, and associates only a later matching attempt. Invalid integrity fails the run; pending/assisted/unknown-origin outcomes are explicitly unscored. Input ordering is immaterial; duplicate IDs/rowids, future evidence, altered probabilities and invalid timestamps fail closed.
+Reports: Brier, log loss, Brier skill vs fixed0.5 on identical targets, reliability bins, observed-rate Wilson intervals, bias, coverage/exclusions, response-delay strata, question/session counts and high-probability errors. Wilson intervals assume conditionally independent trials and do NOT identify model uncertainty or independence of repeated questions. No threshold here proves enough evidence for personal calibration.
+
+Java integration tests create SQLite exclusively under JUnit @TempDir, disable all external integrations by constructing services directly, and produce target/prospective-fixture.json marked SYNTHETIC_FIXTURE. The real R evaluator consumes that Java export, tests integrity mutations and produces byte-identical replay reports. These fixtures validate transport only; their score may be WORSE than fixed0.5 and must not be presented as human model performance.
+Validation workflow: .github/workflows/prospective-ledger.yml. Shared APT preparation is reused byte-for-byte from PR34's independently verified infrastructure correction so this branch can test from main before either PR is merged. No PR34 cohort/model/result files are copied.
+
+Pending: full browser homologation; page-reload recovery of unfinished answer payloads; baseline representativeness/parameter uncertainty; immutable item reservation and novel-question holdouts; preregistered immediate-versus-delayed/personal N-of-1 protocol; causal interventions and active evidence selection. Current UI transport tests/build are distinct from browser E2E. This first baseline measures logged correctness only; human personal validation, latent knowledge, memory curves and policy benefits remain NOT_ESTABLISHED.
+A next personal experiment should first collect blinded precommitted forecasts on ordinary independent no-help questions, stratify repeated versus first-recorded occurrences, and separately reserve genuinely unseen equivalent items and delayed recall probes BEFORE practice. Register those assignments/timing before outcomes; never tune against the final holdout. Evaluation itself is a learning exposure. No causal claims follow from the initial observational collection.
+
+All output remains can_apply=false and can_schedule=false. FSRS equations, weights and operational eligibility/scheduling are unchanged.
