@@ -6,7 +6,7 @@ import platform
 import subprocess
 from pathlib import Path
 from importlib.metadata import version
-from public_data_adapters import acquire_fsrs,parse_fsrs_tsv,replay_fsrs,NORMAL_FIELDS,digest
+from public_data_adapters import acquire_fsrs,parse_fsrs_tsv,replay_fsrs,NORMAL_FIELDS,digest,clone_public_snapshot
 from human_metrics import summarize,metrics
 from run_experiment import dump,sha,resolve_rscript
 
@@ -25,17 +25,17 @@ CRITERIA=dict(version="human-memory-protocol-v1",source_kind="PUBLIC_HUMAN_DATAS
     hypothesis="Predict self-reported flashcard recall; not multiple-choice accuracy or conceptual mastery",
     can_apply=False,can_schedule=False)
 
-def run(output,download=False):
+def run(output,download=False,source_run=None):
     engine=Path(__file__).resolve().parents[1];output=Path(output).resolve()
     allowed=(engine/"lab"/"runs").resolve()
     if output==allowed or not output.is_relative_to(allowed):
         raise ValueError("Output must be a new lab/runs subdirectory")
-    if not download:
-        raise RuntimeError("Explicit --download required for external research data")
+    if bool(download)==bool(source_run):
+        raise RuntimeError("Choose explicit --download OR an existing --source-run")
     output.mkdir(parents=True,exist_ok=False)
     try:
         dump(output/"criteria.json",CRITERIA)
-        source=acquire_fsrs(output/"raw",download=True)
+        source=acquire_fsrs(output/"raw",download=True) if download else clone_public_snapshot(source_run,output/"raw","fsrs")
         dump(output/"source-manifest.json",source)
         events=[];qa=[];parameters=None
         for record in source["files"]:
@@ -100,6 +100,7 @@ if __name__=="__main__":
     parser=argparse.ArgumentParser()
     parser.add_argument("--output",type=Path,required=True)
     parser.add_argument("--download",action="store_true")
+    parser.add_argument("--source-run",type=Path)
     opts=parser.parse_args()
-    report=run(opts.output,opts.download)
+    report=run(opts.output,opts.download,opts.source_run)
     print(json.dumps({k:v for k,v in report.items() if k not in ("qa","students","horizons")},sort_keys=True))

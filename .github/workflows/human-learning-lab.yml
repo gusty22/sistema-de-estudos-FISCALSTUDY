@@ -33,7 +33,7 @@ jobs:
         with:
           python-version: '3.13.7'
       - uses: r-lib/actions/setup-r@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05
-        timeout-minutes: 5
+        timeout-minutes: 10
         with:
           r-version: '4.5.1'
           use-public-rspm: true
@@ -54,6 +54,21 @@ jobs:
       - name: Execute separate official ASSISTments corrected sample
         run: |
           python lab/assistments_experiment.py --download --output lab/runs/assistments-ci 2>&1 | tee logs/human-assistments.log
+      - name: Offline snapshot replay and byte comparison
+        run: |
+          python lab/human_learning_experiment.py --source-run lab/runs/human-ci --output lab/runs/human-replay 2>&1 | tee logs/human-replay.log
+          python lab/assistments_experiment.py --source-run lab/runs/assistments-ci --output lab/runs/assistments-replay 2>&1 | tee logs/human-assistments-replay.log
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          for name in ("human","assistments"):
+              a=Path("lab/runs/"+name+"-ci")
+              b=Path("lab/runs/"+name+"-replay")
+              left={p.relative_to(a).as_posix():p.read_bytes() for p in a.rglob("*") if p.is_file()}
+              right={p.relative_to(b).as_posix():p.read_bytes() for p in b.rglob("*") if p.is_file()}
+              assert left==right, name+" offline replay differs"
+              print(json.dumps({"dataset":name,"replay_files":len(left),"differences":0}))
+          PY
       - name: Preserve aggregate research evidence only
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02

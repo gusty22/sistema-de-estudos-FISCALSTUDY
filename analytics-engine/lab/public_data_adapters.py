@@ -180,9 +180,50 @@ def acquire_assistments(folder,download=False):
     payload=bounded_get(ASSIST_CORRECTED,100*1024*1024)
     if not payload.lstrip().startswith(b'"","order_id"'):
         raise ValueError("Not the corrected ASSISTments CSV; no HTML/consent bypass")
+    if digest(payload)!="162ef8d2d28bcbfea6591a282994062bd8d5eaa00636544292a0d268dca6e5da":
+        raise ValueError("ASSISTments corrected source changed from verified research snapshot")
     (folder/"corrected.csv").write_bytes(payload)
+    (folder/"license-source.html").write_bytes(page)
     return payload,dict(source=ASSIST_CORRECTED,source_page=ASSIST_PAGE,
         sha256=digest(payload),bytes=len(payload),license="OFFICIAL_FREE_USE_DECLARATION_NO_SPDX",
         license_page_sha256=digest(page),redistribution="NOT_AUTHORIZED_BY_THIS_LAB",
         source_version="Corrected Drive file, mutable upstream; bytes SHA recorded BEFORE analysis",
         decoding="latin-1 byte-preserving transport; only ASCII numeric IDs/skills selected")
+
+
+def clone_public_snapshot(source_run,target,kind):
+    """Offline replay of an existing complete run. No arbitrary paths or partial inputs."""
+    import re
+    source_run=Path(source_run).resolve();target=Path(target)
+    allowed=(Path(__file__).resolve().parents[1]/"lab"/"runs").resolve()
+    if not source_run.is_relative_to(allowed) or source_run==allowed:
+        raise ValueError("Source replay outside lab/runs")
+    master=json.loads((source_run/"manifest.json").read_text(encoding="utf-8"))
+    if (master.get("status")!="SUCCEEDED" or master.get("can_apply") is not False or
+        master.get("can_schedule") is not False or master.get("source_kind")!="PUBLIC_HUMAN_DATASET"):
+        raise ValueError("Invalid source run")
+    payload=(source_run/"source-manifest.json").read_bytes()
+    if digest(payload)!=master["artifacts"].get("source-manifest.json"):
+        raise ValueError("Changed source manifest")
+    source=json.loads(payload)
+    if kind=="fsrs":
+        if source.get("dataset")!=FSRS_DATASET or source.get("revision")!=FSRS_REVISION or len(source["files"])!=12:
+            raise ValueError("Unregistered FSRS replay source")
+        checks=[("dataset-card.txt",source["license_sha256"])]
+        for row in source["files"]:
+            if not re.fullmatch(r"revlog_history-[0-9a-f]{7}\.tsv",row["name"]):
+                raise ValueError("Unsafe source filename")
+            checks.append((row["name"],row["sha256"]))
+    elif kind=="assistments":
+        if source.get("source")!=ASSIST_CORRECTED:
+            raise ValueError("Unregistered ASSISTments source")
+        checks=[("corrected.csv",source["sha256"]),("license-source.html",source["license_page_sha256"])]
+    else:
+        raise ValueError("Unknown replay source")
+    target.mkdir(parents=True,exist_ok=False)
+    for name,expected in checks:
+        path=(source_run/"raw"/name).resolve()
+        if not path.is_relative_to(source_run/"raw") or digest(path.read_bytes())!=expected:
+            raise ValueError("Raw source replay hash mismatch")
+        (target/name).write_bytes(path.read_bytes())
+    return source

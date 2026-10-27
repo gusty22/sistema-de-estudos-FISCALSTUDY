@@ -30,7 +30,7 @@ jobs:
         with:
           python-version: '3.13.7'
       - uses: r-lib/actions/setup-r@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05
-        timeout-minutes: 5
+        timeout-minutes: 10
         with:
           r-version: '4.5.1'
           use-public-rspm: true

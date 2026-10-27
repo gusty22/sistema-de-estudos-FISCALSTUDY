@@ -1,0 +1,1066 @@
+{
+  "contract_version": "public_human_reference_v1",
+  "source_kind": "PUBLIC_HUMAN_DATASET",
+  "fsrs": {
+    "commit": "a009e9d7e8b651a78bfa689566d90f0c5108ac8b",
+    "ci": 40535216294,
+    "summary": {
+      "can_apply": false,
+      "can_schedule": false,
+      "comparisons": [
+        {
+          "brier_skill_score": 0.04400297421160515,
+          "can_apply": false,
+          "complete_coverage": true,
+          "estimand": "Equal-weight student mean difference; aggregate BSS weights events",
+          "harmed_students_descriptive": [
+            {
+              "brier_difference": 0.0003562760747389815,
+              "n": 1192,
+              "student_id": "3a3b552740058e8f2ed3bb78"
+            },
+            {
+              "brier_difference": 0.006012491454019497,
+              "n": 849,
+              "student_id": "449b0404ce05e0acf021d863"
+            },
+            {
+              "brier_difference": 0.006089310626832489,
+              "n": 170,
+              "student_id": "c2a5bac93e663f455bb13d4b"
+            },
+            {
+              "brier_difference": 0.008446230380548536,
+              "n": 2429,
+              "student_id": "e8536850a3c5654adc189502"
+            }
+          ],
+          "left": "INDIVIDUAL_CALIBRATION",
+          "left_total": 16438,
+          "paired_events": 16438,
+          "paired_student_differences": {
+            "brier": [
+              0.0003562760747389815,
+              -0.0023467493132791617,
+              0.006012491454019497,
+              -0.05766049245367655,
+              -0.00811109829161269,
+              -0.010866138577517004,
+              -0.003828955485069452,
+              0.006089310626832489,
+              -0.0667915976414328,
+              0.008446230380548536,
+              -0.0059447311604447425,
+              -0.0017097362761465396
+            ],
+            "log_loss": [
+              0.0006316865735966903,
+              -0.004181261332250441,
+              0.030186718823812075,
+              -0.14411902283851286,
+              -0.015763359370096208,
+              -0.055187138132135605,
+              -0.0041901120545240755,
+              0.013919438658815675,
+              -0.14653815609442683,
+              -0.0725110100955696,
+              -0.02939118151820727,
+              -0.0058231037658218465
+            ]
+          },
+          "paired_student_intervals": {
+            "brier": [
+              -0.026047343386132155,
+              -0.00019328092526918646
+            ],
+            "log_loss": [
+              -0.06949079904198983,
+              -0.0075170744185683175
+            ]
+          },
+          "paired_students": 12,
+          "right": "GLOBAL_CALIBRATION",
+          "right_total": 16438,
+          "status": "BETTER_ONLY_IN_THIS_RETROSPECTIVE_SAMPLE",
+          "uncertainty": "Paired student-cluster bootstrap, conditional on fitted donor models; overlapping folds"
+        },
+        {
+          "brier_skill_score": 0.006323043019661023,
+          "can_apply": false,
+          "complete_coverage": true,
+          "estimand": "Equal-weight student mean difference; aggregate BSS weights events",
+          "harmed_students_descriptive": [
+            {
+              "brier_difference": 0.0007038421289835978,
+              "n": 1192,
+              "student_id": "3a3b552740058e8f2ed3bb78"
+            },
+            {
+              "brier_difference": 0.004356835198515541,
+              "n": 849,
+              "student_id": "449b0404ce05e0acf021d863"
+            },
+            {
+              "brier_difference": 0.01456269735499463,
+              "n": 170,
+              "student_id": "c2a5bac93e663f455bb13d4b"
+            },
+            {
+              "brier_difference": 0.013484620128274588,
+              "n": 2429,
+              "student_id": "e8536850a3c5654adc189502"
+            },
+            {
+              "brier_difference": 0.0007380571440437633,
+              "n": 1957,
+              "student_id": "f682471938471e2ce93a343c"
+            }
+          ],
+          "left": "INDIVIDUAL_CALIBRATION",
+          "left_total": 16438,
+          "paired_events": 16438,
+          "paired_student_differences": {
+            "brier": [
+              0.0007038421289835978,
+              -0.0007063204279906671,
+              0.004356835198515541,
+              -0.01492181313225957,
+              -0.0044154482271275275,
+              -0.006834666502604336,
+              -0.0015914355280743087,
+              0.01456269735499463,
+              -0.052633374239316064,
+              0.013484620128274588,
+              -0.0027568916393875473,
+              0.0007380571440437633
+            ],
+            "log_loss": [
+              -0.277828034998152,
+              -0.13288525349422597,
+              -0.95620641002558,
+              -0.0942686256315336,
+              -0.13814728065141413,
+              -1.533221656974817,
+              -0.050899426497707734,
+              0.03283760802825525,
+              -0.11640890434495915,
+              -0.7520392211340273,
+              -0.09368056441095482,
+              -0.16735850575415007
+            ]
+          },
+          "paired_student_intervals": {
+            "brier": [
+              -0.014046313583336236,
+              0.003497681314765893
+            ],
+            "log_loss": [
+              -0.6629417288849282,
+              -0.1326721641130133
+            ]
+          },
+          "paired_students": 12,
+          "right": "FSRS_DEFAULT",
+          "right_total": 16438,
+          "status": "INCONCLUSIVE_OR_NO_SUPERIORITY",
+          "uncertainty": "Paired student-cluster bootstrap, conditional on fitted donor models; overlapping folds"
+        },
+        {
+          "brier_skill_score": 0.034871379241870115,
+          "can_apply": false,
+          "complete_coverage": true,
+          "estimand": "Equal-weight student mean difference; aggregate BSS weights events",
+          "harmed_students_descriptive": [
+            {
+              "brier_difference": 0.0002850609432420298,
+              "n": 2956,
+              "student_id": "3b8dfd6f31dddd21a5dfc782"
+            },
+            {
+              "brier_difference": 0.003928843344900457,
+              "n": 1641,
+              "student_id": "af53a2b86ef2516d05ea11e2"
+            },
+            {
+              "brier_difference": 0.03244414042225026,
+              "n": 170,
+              "student_id": "c2a5bac93e663f455bb13d4b"
+            },
+            {
+              "brier_difference": 0.013387423219679943,
+              "n": 432,
+              "student_id": "df9430e923d77752d0169a10"
+            },
+            {
+              "brier_difference": 0.0043157930012723,
+              "n": 2429,
+              "student_id": "e8536850a3c5654adc189502"
+            }
+          ],
+          "left": "INDIVIDUAL_CALIBRATION",
+          "left_total": 16438,
+          "paired_events": 16438,
+          "paired_student_differences": {
+            "brier": [
+              -0.008843251274497796,
+              0.0002850609432420298,
+              -0.0010484523568143889,
+              -0.0508651418609708,
+              -0.047875323137668124,
+              -0.009184902928415312,
+              0.003928843344900457,
+              0.03244414042225026,
+              0.013387423219679943,
+              0.0043157930012723,
+              -0.0012089621015382787,
+              -0.01243566887235631
+            ],
+            "log_loss": [
+              0.10028841470616678,
+              0.06797704111311248,
+              0.5152801696338802,
+              -0.07770801708377773,
+              -0.050605755435899846,
+              0.7530729304555465,
+              0.04444486266923453,
+              0.06605819829455106,
+              0.05273998029381763,
+              0.3583090467208535,
+              0.02801735090518742,
+              0.03355927797040509
+            ]
+          },
+          "paired_student_intervals": {
+            "brier": [
+              -0.02004601548296788,
+              0.006041287341960346
+            ],
+            "log_loss": [
+              0.037058105412570735,
+              0.3126806810534652
+            ]
+          },
+          "paired_students": 12,
+          "right": "PERSONAL_ONLINE_BETA11",
+          "right_total": 16438,
+          "status": "INCONCLUSIVE_OR_NO_SUPERIORITY",
+          "uncertainty": "Paired student-cluster bootstrap, conditional on fitted donor models; overlapping folds"
+        }
+      ],
+      "conceptual_knowledge": "NOT_IDENTIFIED",
+      "dataset": "open-spaced-repetition/fsrs-dataset",
+      "fsrs_pretraining_overlap": "UNKNOWN",
+      "generalization": "Leave-one-student-out calibration transfer, with prior own FSRS history; NOT zero-shot",
+      "macro_by_student": {
+        "FSRS_DEFAULT": {
+          "brier": 0.13880147546552601,
+          "log_loss": 0.9575001587403721
+        },
+        "GLOBAL_CALIBRATION": {
+          "brier": 0.1459965832089503,
+          "log_loss": 0.6369051775117099
+        },
+        "INDIVIDUAL_CALIBRATION": {
+          "brier": 0.134633650653697,
+          "log_loss": 0.6008246357496
+        },
+        "PERSONAL_ONLINE_BETA11": {
+          "brier": 0.14105868745377334,
+          "log_loss": 0.4432051773960101
+        }
+      },
+      "metrics": {
+        "FSRS_DEFAULT": {
+          "auc_roc": 0.6882651282588632,
+          "brier": 0.11905223615606628,
+          "calibration_bias": 0.012128797703672561,
+          "conceptual_mastery": "NOT_IDENTIFIED",
+          "failure_average_precision": 0.373660420656118,
+          "high_predicted_recall_failures": 686,
+          "high_predicted_recall_n": 7878,
+          "log_loss": 0.8835649052526588,
+          "n": 16438,
+          "n_items": 9525,
+          "n_students": 12,
+          "observed_failure_rate": 0.15616255018858738,
+          "reliability": [
+            {
+              "bin": 2,
+              "binomial_wilson_interval": [
+                0,
+                0.2775327998628892
+              ],
+              "mean_prediction": 0.2789618373378506,
+              "n": 10,
+              "observed_accuracy": 0
+            },
+            {
+              "bin": 3,
+              "binomial_wilson_interval": [
+                0.10757621191020425,
+                0.2587455830906018
+              ],
+              "mean_prediction": 0.36294155509026277,
+              "n": 94,
+              "observed_accuracy": 0.1702127659574468
+            },
+            {
+              "bin": 4,
+              "binomial_wilson_interval": [
+                0.2783754827394286,
+                0.41209321077416705
+              ],
+              "mean_prediction": 0.4587637731999072,
+              "n": 190,
+              "observed_accuracy": 0.34210526315789475
+            },
+            {
+              "bin": 5,
+              "binomial_wilson_interval": [
+                0.5471865236929999,
+                0.6214920894819357
+              ],
+              "mean_prediction": 0.5601343147415827,
+              "n": 672,
+              "observed_accuracy": 0.5848214285714286
+            },
+            {
+              "bin": 6,
+              "binomial_wilson_interval": [
+                0.6115998427690805,
+                0.6664036106168101
+              ],
+              "mean_prediction": 0.6557985781388469,
+              "n": 1176,
+              "observed_accuracy": 0.6394557823129252
+            },
+            {
+              "bin": 7,
+              "binomial_wilson_interval": [
+                0.740179323303178,
+                0.7805685250804976
+              ],
+              "mean_prediction": 0.7551043275686454,
+              "n": 1711,
+              "observed_accuracy": 0.760958503798948
+            },
+            {
+              "bin": 8,
+              "binomial_wilson_interval": [
+                0.8723448414309296,
+                0.890788461064028
+              ],
+              "mean_prediction": 0.8584213024623156,
+              "n": 4707,
+              "observed_accuracy": 0.881878053962184
+            },
+            {
+              "bin": 9,
+              "binomial_wilson_interval": [
+                0.9064930486324458,
+                0.9189485736066099
+              ],
+              "mean_prediction": 0.9477151526574543,
+              "n": 7878,
+              "observed_accuracy": 0.9129220614369129
+            }
+          ],
+          "true_probability_rmse": "NOT_OBSERVABLE"
+        },
+        "GLOBAL_CALIBRATION": {
+          "auc_roc": 0.6616595786592453,
+          "brier": 0.12374459392036813,
+          "calibration_bias": 0.008269471679442966,
+          "conceptual_mastery": "NOT_IDENTIFIED",
+          "failure_average_precision": 0.3146354529219419,
+          "high_predicted_recall_failures": 681,
+          "high_predicted_recall_n": 7070,
+          "log_loss": 0.5772034672691571,
+          "n": 16438,
+          "n_items": 9525,
+          "n_students": 12,
+          "observed_failure_rate": 0.15616255018858738,
+          "reliability": [
+            {
+              "bin": 3,
+              "binomial_wilson_interval": [
+                0.05668215145437519,
+                0.5098375284633583
+              ],
+              "mean_prediction": 0.36817854274452816,
+              "n": 10,
+              "observed_accuracy": 0.2
+            },
+            {
+              "bin": 4,
+              "binomial_wilson_interval": [
+                0.3544871197523637,
+                0.5272550161434058
+              ],
+              "mean_prediction": 0.4591404676501093,
+              "n": 123,
+              "observed_accuracy": 0.43902439024390244
+            },
+            {
+              "bin": 5,
+              "binomial_wilson_interval": [
+                0.5692140788969946,
+                0.6476504285900082
+              ],
+              "mean_prediction": 0.5517632547320391,
+              "n": 591,
+              "observed_accuracy": 0.6091370558375635
+            },
+            {
+              "bin": 6,
+              "binomial_wilson_interval": [
+                0.5633535797044334,
+                0.6204891174266217
+              ],
+              "mean_prediction": 0.6488182692963066,
+              "n": 1133,
+              "observed_accuracy": 0.5922330097087378
+            },
+            {
+              "bin": 7,
+              "binomial_wilson_interval": [
+                0.7434562221139792,
+                0.7782810681834563
+              ],
+              "mean_prediction": 0.7554285771811193,
+              "n": 2300,
+              "observed_accuracy": 0.7613043478260869
+            },
+            {
+              "bin": 8,
+              "binomial_wilson_interval": [
+                0.8824469308282071,
+                0.899360154237422
+              ],
+              "mean_prediction": 0.8532146936157643,
+              "n": 5211,
+              "observed_accuracy": 0.8911917098445595
+            },
+            {
+              "bin": 9,
+              "binomial_wilson_interval": [
+                0.8965795091203138,
+                0.910337076899922
+              ],
+              "mean_prediction": 0.9479472183749084,
+              "n": 7070,
+              "observed_accuracy": 0.9036775106082037
+            }
+          ],
+          "true_probability_rmse": "NOT_OBSERVABLE"
+        },
+        "INDIVIDUAL_CALIBRATION": {
+          "auc_roc": 0.7109388789917628,
+          "brier": 0.11829946374526462,
+          "calibration_bias": 0.007315398837782671,
+          "conceptual_mastery": "NOT_IDENTIFIED",
+          "failure_average_precision": 0.37980969541388043,
+          "high_predicted_recall_failures": 685,
+          "high_predicted_recall_n": 8756,
+          "log_loss": 0.5477520684959204,
+          "n": 16438,
+          "n_items": 9525,
+          "n_students": 12,
+          "observed_failure_rate": 0.15616255018858738,
+          "reliability": [
+            {
+              "bin": 1,
+              "binomial_wilson_interval": [
+                0.06591599071428142,
+                0.4300888096197414
+              ],
+              "mean_prediction": 0.18631043295570662,
+              "n": 16,
+              "observed_accuracy": 0.1875
+            },
+            {
+              "bin": 2,
+              "binomial_wilson_interval": [
+                0.22033812687205268,
+                0.36364917739166003
+              ],
+              "mean_prediction": 0.2602157978407272,
+              "n": 150,
+              "observed_accuracy": 0.2866666666666667
+            },
+            {
+              "bin": 3,
+              "binomial_wilson_interval": [
+                0.4278872727370848,
+                0.5339718272533337
+              ],
+              "mean_prediction": 0.35753580378561967,
+              "n": 337,
+              "observed_accuracy": 0.4807121661721068
+            },
+            {
+              "bin": 4,
+              "binomial_wilson_interval": [
+                0.5411475629129705,
+                0.6205117462747811
+              ],
+              "mean_prediction": 0.45565231041929743,
+              "n": 590,
+              "observed_accuracy": 0.5813559322033899
+            },
+            {
+              "bin": 5,
+              "binomial_wilson_interval": [
+                0.5599184843045211,
+                0.637522465974599
+              ],
+              "mean_prediction": 0.54293907015411,
+              "n": 609,
+              "observed_accuracy": 0.5993431855500821
+            },
+            {
+              "bin": 6,
+              "binomial_wilson_interval": [
+                0.6741860680318059,
+                0.7411611772253757
+              ],
+              "mean_prediction": 0.6574447124498992,
+              "n": 704,
+              "observed_accuracy": 0.7088068181818182
+            },
+            {
+              "bin": 7,
+              "binomial_wilson_interval": [
+                0.7453814117754888,
+                0.7878760131166979
+              ],
+              "mean_prediction": 0.7583706446031904,
+              "n": 1517,
+              "observed_accuracy": 0.7673038892551087
+            },
+            {
+              "bin": 8,
+              "binomial_wilson_interval": [
+                0.8453172302072104,
+                0.867707761507661
+              ],
+              "mean_prediction": 0.8644612144114364,
+              "n": 3759,
+              "observed_accuracy": 0.8568768289438681
+            },
+            {
+              "bin": 9,
+              "binomial_wilson_interval": [
+                0.9159564771880611,
+                0.927209467620528
+              ],
+              "mean_prediction": 0.9555120850096757,
+              "n": 8756,
+              "observed_accuracy": 0.9217679305619004
+            }
+          ],
+          "true_probability_rmse": "NOT_OBSERVABLE"
+        },
+        "PERSONAL_ONLINE_BETA11": {
+          "auc_roc": 0.7086220780452485,
+          "brier": 0.12257378053128067,
+          "calibration_bias": -0.024325335163982848,
+          "conceptual_mastery": "NOT_IDENTIFIED",
+          "failure_average_precision": 0.2917287121145977,
+          "high_predicted_recall_failures": 300,
+          "high_predicted_recall_n": 5152,
+          "log_loss": 0.39829703624873103,
+          "n": 16438,
+          "n_items": 9525,
+          "n_students": 12,
+          "observed_failure_rate": 0.15616255018858738,
+          "reliability": [
+            {
+              "bin": 5,
+              "binomial_wilson_interval": [
+                0.6402543214534572,
+                0.7484565658936256
+              ],
+              "mean_prediction": 0.5884639683442635,
+              "n": 274,
+              "observed_accuracy": 0.6970802919708029
+            },
+            {
+              "bin": 6,
+              "binomial_wilson_interval": [
+                0.6788325104285244,
+                0.7071992970402117
+              ],
+              "mean_prediction": 0.6456735749984981,
+              "n": 4058,
+              "observed_accuracy": 0.6931986200098571
+            },
+            {
+              "bin": 7,
+              "binomial_wilson_interval": [
+                0.710360174922058,
+                0.769213133539709
+              ],
+              "mean_prediction": 0.7220604568389154,
+              "n": 849,
+              "observed_accuracy": 0.7408716136631331
+            },
+            {
+              "bin": 8,
+              "binomial_wilson_interval": [
+                0.8739006013320316,
+                0.8900740461457177
+              ],
+              "mean_prediction": 0.8541008360015239,
+              "n": 6105,
+              "observed_accuracy": 0.8822276822276822
+            },
+            {
+              "bin": 9,
+              "binomial_wilson_interval": [
+                0.9350404692460006,
+                0.9478416046805294
+              ],
+              "mean_prediction": 0.9437971106868546,
+              "n": 5152,
+              "observed_accuracy": 0.9417701863354038
+            }
+          ],
+          "true_probability_rmse": "NOT_OBSERVABLE"
+        }
+      },
+      "n_input_events": 105955,
+      "personal_validation": "NOT_EXECUTED",
+      "policy_effectiveness": "NOT_EXECUTED",
+      "prediction_coverage": {
+        "FSRS_DEFAULT": {
+          "coverage": 1,
+          "n": 16438,
+          "reference_targets": 16438
+        },
+        "GLOBAL_CALIBRATION": {
+          "coverage": 1,
+          "n": 16438,
+          "reference_targets": 16438
+        },
+        "INDIVIDUAL_CALIBRATION": {
+          "coverage": 1,
+          "n": 16438,
+          "reference_targets": 16438
+        },
+        "PERSONAL_ONLINE_BETA11": {
+          "coverage": 1,
+          "n": 16438,
+          "reference_targets": 16438
+        }
+      },
+      "r_python_score_agreement": true,
+      "revision": "ae96575728d364265a75f2447fe7b7fa389ba96c",
+      "source_kind": "PUBLIC_HUMAN_DATASET",
+      "total_cold": 23794
+    }
+  },
+  "assistments": {
+    "commit": "0f9d8cb0454fd0bef543f6027e2ae5af2dd05d20",
+    "ci": 40536145013,
+    "summary": {
+      "can_apply": false,
+      "can_schedule": false,
+      "comparisons": [
+        {
+          "brier_skill_score": 0.040778819604179395,
+          "can_apply": false,
+          "complete_coverage": true,
+          "estimand": "Equal-weight student mean difference; aggregate BSS weights events",
+          "harmed_students_descriptive": [
+            {
+              "brier_difference": 0.022982920200000034,
+              "n": 50,
+              "student_id": "1528baf6e0376d8b796c07de"
+            },
+            {
+              "brier_difference": 0.006825029062500015,
+              "n": 352,
+              "student_id": "26756eb3f00be6cbe7e15336"
+            },
+            {
+              "brier_difference": 0.01614876328244276,
+              "n": 131,
+              "student_id": "33339ce8c9d3abd8744a75d1"
+            },
+            {
+              "brier_difference": 0.009809221387755113,
+              "n": 245,
+              "student_id": "3a82737a3b75b6ac49f35dbb"
+            },
+            {
+              "brier_difference": 0.004225979855072448,
+              "n": 69,
+              "student_id": "6f77d24ce386f456839ba69f"
+            },
+            {
+              "brier_difference": 0.003080529802631571,
+              "n": 152,
+              "student_id": "8550db0cbdccd5964ece25f0"
+            }
+          ],
+          "left": "SMOOTHED_SKILL_SET",
+          "left_total": 1562,
+          "paired_events": 1562,
+          "paired_student_differences": {
+            "brier": [
+              0.022982920200000034,
+              0.006825029062500015,
+              0.01614876328244276,
+              0.009809221387755113,
+              -0.003694615802469131,
+              0.004225979855072448,
+              0.003080529802631571,
+              -0.007542449523809502,
+              -0.05380988310344828,
+              -0.05332578626373624,
+              -0.08224422129032258,
+              -0.011434085607476607
+            ],
+            "log_loss": [
+              0.06852179582032569,
+              0.01576313165357257,
+              0.06146335160888017,
+              0.020039483916240552,
+              -0.01975315075902606,
+              0.012797796717287757,
+              0.0026397718149662186,
+              -0.012779862797744679,
+              -0.10746959929288336,
+              -0.11515677110958222,
+              -0.17799623363889822,
+              -0.025489486448002308
+            ]
+          },
+          "paired_student_intervals": {
+            "brier": [
+              -0.0300395600585248,
+              0.0035543099534037794
+            ],
+            "log_loss": [
+              -0.06319147573737906,
+              0.013883829227236513
+            ]
+          },
+          "paired_students": 12,
+          "right": "PERSONAL_HISTORICAL",
+          "right_total": 1562,
+          "status": "INCONCLUSIVE_OR_NO_SUPERIORITY",
+          "uncertainty": "Paired student-cluster bootstrap, conditional on fitted donor models; overlapping folds"
+        }
+      ],
+      "eligible_students": 1161,
+      "memory_validation": "NOT_APPLICABLE",
+      "metrics": {
+        "MOVING_5": {
+          "auc_roc": 0.6283418079096045,
+          "brier": 0.22916773367477594,
+          "calibration_bias": 0.0019206145966709455,
+          "conceptual_mastery": "NOT_IDENTIFIED",
+          "failure_average_precision": 0.4277923169111559,
+          "high_predicted_recall_failures": 69,
+          "high_predicted_recall_n": 343,
+          "log_loss": 2.253295602992432,
+          "n": 1562,
+          "n_items": 1543,
+          "n_students": 12,
+          "observed_failure_rate": 0.32010243277848915,
+          "reliability": [
+            {
+              "bin": 0,
+              "binomial_wilson_interval": [
+                0.1584833794013461,
+                0.43992489997397105
+              ],
+              "mean_prediction": 0,
+              "n": 36,
+              "observed_accuracy": 0.2777777777777778
+            },
+            {
+              "bin": 2,
+              "binomial_wilson_interval": [
+                0.39740700785165506,
+                0.5843849309893538
+              ],
+              "mean_prediction": 0.20000000000000004,
+              "n": 106,
+              "observed_accuracy": 0.49056603773584906
+            },
+            {
+              "bin": 4,
+              "binomial_wilson_interval": [
+                0.5095234221733599,
+                0.639905041921298
+              ],
+              "mean_prediction": 0.4000000000000001,
+              "n": 217,
+              "observed_accuracy": 0.576036866359447
+            },
+            {
+              "bin": 6,
+              "binomial_wilson_interval": [
+                0.6097552070196289,
+                0.7058866171168333
+              ],
+              "mean_prediction": 0.6,
+              "n": 370,
+              "observed_accuracy": 0.6594594594594595
+            },
+            {
+              "bin": 8,
+              "binomial_wilson_interval": [
+                0.6875321981726931,
+                0.7660546686224067
+              ],
+              "mean_prediction": 0.8,
+              "n": 490,
+              "observed_accuracy": 0.7285714285714285
+            },
+            {
+              "bin": 9,
+              "binomial_wilson_interval": [
+                0.7532065038179013,
+                0.8378416387456392
+              ],
+              "mean_prediction": 1,
+              "n": 343,
+              "observed_accuracy": 0.7988338192419825
+            }
+          ],
+          "true_probability_rmse": "NOT_OBSERVABLE"
+        },
+        "PERSONAL_HISTORICAL": {
+          "auc_roc": 0.6045564971751413,
+          "brier": 0.21169660461587708,
+          "calibration_bias": 0.013622471190781048,
+          "conceptual_mastery": "NOT_IDENTIFIED",
+          "failure_average_precision": 0.38964334966369096,
+          "high_predicted_recall_failures": 23,
+          "high_predicted_recall_n": 171,
+          "log_loss": 0.6545148926823572,
+          "n": 1562,
+          "n_items": 1543,
+          "n_students": 12,
+          "observed_failure_rate": 0.32010243277848915,
+          "reliability": [
+            {
+              "bin": 3,
+              "binomial_wilson_interval": [
+                0.2307242812760128,
+                0.882379225767352
+              ],
+              "mean_prediction": 0.33233999999999997,
+              "n": 5,
+              "observed_accuracy": 0.6
+            },
+            {
+              "bin": 4,
+              "binomial_wilson_interval": [
+                0.3856944827051576,
+                0.6843311439327215
+              ],
+              "mean_prediction": 0.4570871794871795,
+              "n": 39,
+              "observed_accuracy": 0.5384615384615384
+            },
+            {
+              "bin": 5,
+              "binomial_wilson_interval": [
+                0.5734429483905239,
+                0.684429503164734
+              ],
+              "mean_prediction": 0.5672543554006968,
+              "n": 287,
+              "observed_accuracy": 0.6306620209059234
+            },
+            {
+              "bin": 6,
+              "binomial_wilson_interval": [
+                0.5555904834509001,
+                0.6391748820136155
+              ],
+              "mean_prediction": 0.6253714285714286,
+              "n": 525,
+              "observed_accuracy": 0.5980952380952381
+            },
+            {
+              "bin": 7,
+              "binomial_wilson_interval": [
+                0.6976377229706358,
+                0.7790414118664729
+              ],
+              "mean_prediction": 0.7519216704288939,
+              "n": 443,
+              "observed_accuracy": 0.7404063205417607
+            },
+            {
+              "bin": 8,
+              "binomial_wilson_interval": [
+                0.6295814700794521,
+                0.8086422435075468
+              ],
+              "mean_prediction": 0.854458695652174,
+              "n": 92,
+              "observed_accuracy": 0.7282608695652174
+            },
+            {
+              "bin": 9,
+              "binomial_wilson_interval": [
+                0.8062594402294927,
+                0.9086739676883155
+              ],
+              "mean_prediction": 0.9412672514619884,
+              "n": 171,
+              "observed_accuracy": 0.8654970760233918
+            }
+          ],
+          "true_probability_rmse": "NOT_OBSERVABLE"
+        },
+        "SMOOTHED_SKILL_SET": {
+          "auc_roc": 0.6721911487758946,
+          "brier": 0.20306386696542894,
+          "calibration_bias": -0.02908245838668374,
+          "conceptual_mastery": "NOT_IDENTIFIED",
+          "failure_average_precision": 0.5135228694692321,
+          "high_predicted_recall_failures": 30,
+          "high_predicted_recall_n": 227,
+          "log_loss": 0.638260619132045,
+          "n": 1562,
+          "n_items": 1543,
+          "n_students": 12,
+          "observed_failure_rate": 0.32010243277848915,
+          "reliability": [
+            {
+              "bin": 0,
+              "binomial_wilson_interval": [
+                0.05915927776244326,
+                0.3247868542781298
+              ],
+              "mean_prediction": 0.07125555555555556,
+              "n": 27,
+              "observed_accuracy": 0.14814814814814814
+            },
+            {
+              "bin": 1,
+              "binomial_wilson_interval": [
+                0.12993707017054082,
+                0.39206812363239807
+              ],
+              "mean_prediction": 0.14648684210526314,
+              "n": 38,
+              "observed_accuracy": 0.23684210526315788
+            },
+            {
+              "bin": 2,
+              "binomial_wilson_interval": [
+                0.28671719277157315,
+                0.5908581890983192
+              ],
+              "mean_prediction": 0.2581189189189189,
+              "n": 37,
+              "observed_accuracy": 0.43243243243243246
+            },
+            {
+              "bin": 3,
+              "binomial_wilson_interval": [
+                0.4176473297995616,
+                0.6289502007521409
+              ],
+              "mean_prediction": 0.3563317073170732,
+              "n": 82,
+              "observed_accuracy": 0.524390243902439
+            },
+            {
+              "bin": 4,
+              "binomial_wilson_interval": [
+                0.4711584215549716,
+                0.6353443094277895
+              ],
+              "mean_prediction": 0.4464890510948905,
+              "n": 137,
+              "observed_accuracy": 0.5547445255474452
+            },
+            {
+              "bin": 5,
+              "binomial_wilson_interval": [
+                0.6214351559478819,
+                0.7405111563721207
+              ],
+              "mean_prediction": 0.5494367965367966,
+              "n": 231,
+              "observed_accuracy": 0.683982683982684
+            },
+            {
+              "bin": 6,
+              "binomial_wilson_interval": [
+                0.6088746857353734,
+                0.7076512532353761
+              ],
+              "mean_prediction": 0.6449882857142857,
+              "n": 350,
+              "observed_accuracy": 0.66
+            },
+            {
+              "bin": 7,
+              "binomial_wilson_interval": [
+                0.6778124785576694,
+                0.7845864201798898
+              ],
+              "mean_prediction": 0.7466842307692307,
+              "n": 260,
+              "observed_accuracy": 0.7346153846153847
+            },
+            {
+              "bin": 8,
+              "binomial_wilson_interval": [
+                0.7254010989177654,
+                0.8457319412275747
+              ],
+              "mean_prediction": 0.8471982658959538,
+              "n": 173,
+              "observed_accuracy": 0.791907514450867
+            },
+            {
+              "bin": 9,
+              "binomial_wilson_interval": [
+                0.8176056732256668,
+                0.905834565166333
+              ],
+              "mean_prediction": 0.9505515418502203,
+              "n": 227,
+              "observed_accuracy": 0.8678414096916299
+            }
+          ],
+          "true_probability_rmse": "NOT_OBSERVABLE"
+        }
+      },
+      "personal_validation": "NOT_EXECUTED",
+      "policy_effectiveness": "NOT_EXECUTED",
+      "selected_events": 1682,
+      "selected_students": 12,
+      "source": {
+        "bytes": 64412812,
+        "decoding": "latin-1 byte-preserving transport; only ASCII numeric IDs/skills selected",
+        "license": "OFFICIAL_FREE_USE_DECLARATION_NO_SPDX",
+        "license_page_sha256": "01b445026d35c2f68e736d1479316929b8cda781fc909ee52962d30909a2463a",
+        "redistribution": "NOT_AUTHORIZED_BY_THIS_LAB",
+        "sha256": "162ef8d2d28bcbfea6591a282994062bd8d5eaa00636544292a0d268dca6e5da",
+        "source": "https://drive.google.com/uc?export=download&id=1NNXHFRxcArrU0ZJSb9BIL56vmUt5FhlE",
+        "source_page": "https://sites.google.com/site/assistmentsdata/home/2009-2010-assistment-data",
+        "source_version": "Corrected Drive file, mutable upstream; bytes SHA recorded BEFORE analysis"
+      },
+      "source_kind": "PUBLIC_HUMAN_DATASET",
+      "time_horizons": "NOT_AVAILABLE",
+      "transfer": "First observed item is NOT proof of conceptual transfer"
+    }
+  },
+  "personal_validation": "NOT_EXECUTED",
+  "policy_effectiveness": "NOT_EXECUTED",
+  "can_apply": false,
+  "can_schedule": false
+}

@@ -47,3 +47,57 @@ The first prospective personal experiment should freeze predictions and model ve
 ## Execution status
 
 Implementation prepared; new CI must execute the current revision. No human superiority or personal validation is claimed before results are recorded.
+
+
+## Observed retrospective results (historical source commits, not personal validation)
+
+FSRS first run: commit a009e9d, CI 40535216294. Twelve selected source collections contained 105,955 records and 23,794 cold-start records; 16,438 final events were evaluated per model. Individual calibration vs global had aggregate BSS 0.044003 and paired-student difference intervals Brier [-0.026047,-0.000193], log loss [-0.069491,-0.007517]. This conditional primary contrast improved, but four of twelve users had worse Brier. Against raw FSRS the Brier interval crossed zero. Against the online personal mean the log-loss difference was POSITIVE [0.037058,0.312681]: personalization did not establish superiority. These are selected, retrospective human records, not FiscalStudy personal data.
+
+| Recall model | N | Brier | Log loss |
+|---|---:|---:|---:|
+| Raw FSRS defaults | 16438 | 0.119052 | 0.883565 |
+| Global calibration | 16438 | 0.123745 | 0.577203 |
+| Individual calibration | 16438 | 0.118299 | 0.547752 |
+| Online personal Beta(1,1) | 16438 | 0.122574 | 0.398297 |
+
+After observing the large log-loss contrast, a SECONDARY numerical-guard baseline was added: FSRS probability clipped to the same 1e-6 guard used by the calibrator, without a fitted shift. This distinguishes clipping effects from genuine calibration gains. It does not retune models or change the registered primary contrast; it must be evaluated by the subsequent CI and not retroactively described as preregistered.
+
+ASSISTments corrected official file was actually acquired in commit 0f9d8cb, CI 40536145013: 64,412,812 bytes, SHA256 162ef8d2d28bcbfea6591a282994062bd8d5eaa00636544292a0d268dca6e5da. Selection before outcomes: twelve midpoint history-length strata in 50..500-event eligibility frame, complete selected histories. The adapter found 1,161 eligible students; 1,682 selected events, 1,562 evaluated after ten-event warmups. Source hint/attempt counts and answer text are not prediction features. Raw file is NOT redistributed.
+
+| First-attempt/help target | N | Brier | Log loss |
+|---|---:|---:|---:|
+| Personal historical mean | 1562 | 0.211697 | 0.654515 |
+| Smoothed skill-set baseline (existing R function) | 1562 | 0.203064 | 0.638261 |
+| Moving last five | 1562 | 0.229168 | 2.253296 |
+
+Skill-set BSS=0.040779 against personal mean, but both paired-student intervals crossed zero (Brier [-0.030040,0.003554], log loss [-0.063191,0.013884]); six of twelve students had worse Brier. Superiority is INCONCLUSIVE despite better aggregate scores. Moving-average extremes can cause poor log loss. No retention horizons are generated from ordinal order IDs.
+
+The full historical aggregate summaries are archived in docs/results/public_human_reference_v1.json. The subsequent revision adds an independent R temporal-invariance test, explicit unverified origins in parsers, the guard comparator, raw data SHA freezing for ASSISTments and offline snapshot replay. Current-head CI must confirm these additions independently.
+
+## Verified personal-data transport gaps on base 525fb13
+
+This is code inspection, NOT integrated Spring/SQLite/browser homologation.
+
+| Observation | Code evidence | Consequence / next test |
+|---|---|---|
+| Stable attempt UUID and idempotent append | backend/.../application/AttemptSubmissionService.java, submitAttempt, eventId attempt:UUID and appendEventOnce | Preserve identity across retries; retest with isolated DB before changing contract |
+| FSRS preview before projection/update | Same service, preview(questionId) before append and project | Pre-update evidence exists; it is computed during answer submission, NOT an independently precommitted forecast before the student's response |
+| Help, exposure count, prior outcome and intervention type recorded in payload | Same service fields usedHelp/helpType/exposicaoAnteriorCount/resultadoAnterior/interventionType | Canonical CSV does not transport these fields; do not infer absence of help from missing export |
+| Current canonical export has 22 fields including event/session/time/origin and four FSRS fields | AnalyticsProjectionService.java exportCsv | Help, variants, exposure counts and post-attempt cause annotations need a versioned transport increment |
+| Confidence submitted with answer | frontend/.../questoes/ResolucaoQuestaoModal.tsx handleAnswer | Explicit confidence-selection timestamp/feedback ordering is not established by this code inspection alone |
+| Error cause can be annotated after response | Same modal handleSelectCausaErro / annotateAttempt | Must join by attempt ID and preserve annotation time; canonical CSV currently omits annotation |
+| Legacy sequence timestamp fallback | AnalyticsProjectionService.java exportSequenceCsv Instant.EPOCH fallback | Not used by this public lab; cannot accept as genuine measurement time in future personal validation |
+
+No historical event was altered and no missing value was promoted to zero. A complete personal prediction ledger and novel-item holdout must be tested through the existing frontend→Java→SQLite→R chain in a separate, versioned increment. Declaring the present public-data test a personal calibration would be incorrect.
+
+## First proposed N-of-1 experiment (NOT_EXECUTED)
+
+Precommit predictions and item/variant identities BEFORE responding; capture help and confidence timing without a long questionnaire. After taxonomy and source quality are verified, compare two acceptable retrieval-based strategies on matched concept clusters, with assignment randomized BEFORE outcomes and workload measured in actual time. Reserve unseen equivalent items for delayed evaluation and report both original-item recall and novel-item performance. Delay windows must be registered according to exam calendar and availability; no fixed universal session duration is assumed.
+
+A naive same-concept ABAB crossover is inappropriate when learning persists and cannot be washed out. Consider parallel matched concept clusters with counterbalanced session order, recording prerequisite overlap/spillover, repeat exposures, test-induced learning, actual delays and intervention completion. Estimate effects at the randomized concept-cluster unit, not by pretending every attempt is independent. This protocol needs real eligible concepts/items and isolated integrated tests before execution. Active information-gain selection remains exploratory and unimplemented here; no simulated gain can schedule a real activity.
+
+## Reproducibility and infrastructure
+
+The updated CLI supports --source-run lab/runs/previous-success instead of --download. It checks a successful source manifest, every source SHA and confinement, and replays without internet. CI compares complete run trees byte for byte. The official ASSISTments file SHA is frozen from the first verified download, so upstream changes stop acquisition instead of silently changing the cohort.
+
+An earlier unrelated synthetic gate (40536144628) timed out while INSTALLING the pinned R runtime after five minutes; no test assertion failed. R setup timeout is raised to ten minutes, keeping the same R 4.5.1 and dependencies. This changes the bounded infrastructure budget, not model criteria or test expectations.

@@ -4,11 +4,11 @@ import json
 import subprocess
 from pathlib import Path
 from collections import defaultdict
-from public_data_adapters import acquire_assistments,parse_assistments_csv
+from public_data_adapters import acquire_assistments,parse_assistments_csv,clone_public_snapshot
 from human_metrics import metrics,paired_comparison
 from run_experiment import dump,sha,resolve_rscript
 
-def run(output,download=False):
+def run(output,download=False,source_run=None):
     engine=Path(__file__).resolve().parents[1];output=Path(output).resolve()
     root=(engine/"lab"/"runs").resolve()
     if output==root or not output.is_relative_to(root):
@@ -22,7 +22,13 @@ def run(output,download=False):
             primary="SMOOTHED_SKILL_SET vs PERSONAL_HISTORICAL",
             acceptance="Five or more paired students and both Brier/log loss bootstrap upper bounds below zero",
             can_apply=False,can_schedule=False))
-        payload,source=acquire_assistments(output/"raw",download)
+        if bool(download)==bool(source_run):
+            raise ValueError("Choose --download OR --source-run")
+        if download:
+            payload,source=acquire_assistments(output/"raw",True)
+        else:
+            source=clone_public_snapshot(source_run,output/"raw","assistments")
+            payload=(output/"raw"/"corrected.csv").read_bytes()
         dump(output/"source-manifest.json",source)
         # Byte-preserving decoding, NOT an inference about natural-language encoding.
         events,qa=parse_assistments_csv(payload,encoding="latin-1",origin_type="PUBLIC_HUMAN_DATASET")
@@ -83,5 +89,6 @@ def run(output,download=False):
 if __name__=="__main__":
     parser=argparse.ArgumentParser();parser.add_argument("--output",type=Path,required=True)
     parser.add_argument("--download",action="store_true")
-    opts=parser.parse_args();result=run(opts.output,opts.download)
+    parser.add_argument("--source-run",type=Path)
+    opts=parser.parse_args();result=run(opts.output,opts.download,opts.source_run)
     print(json.dumps({k:v for k,v in result.items() if k not in ("qa","novelty")},sort_keys=True))
