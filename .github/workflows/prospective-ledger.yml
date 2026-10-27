@@ -73,5 +73,5 @@ jobs:
           if-no-files-found: warn
           path: |
             backend/target/surefire-reports/
-            backend/target/prospective-fixture.json
+            backend/target/prospective*fixture.json
             backend/target/prospective-metrics*.json

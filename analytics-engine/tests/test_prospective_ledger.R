@@ -55,4 +55,8 @@ e$inputSha256 <- digest::digest(enc2utf8(e$inputJson),algo="sha256",serialize=FA
 path <- tempfile();writeLines(jsonlite::toJSON(e,auto_unbox=TRUE,null="null"),path)
 zero <- evaluate_prospective(path)
 stopifnot(zero$scored_count==0,zero$metrics$status=="INSUFFICIENT_EVIDENCE",is.null(zero$coverage))
-cat("Prospective R: 10 integrity/scoring scenarios passed; fixture-only, no personal validation.\n")
+delayed <- evaluate_prospective("../backend/target/prospective-delayed-fixture.json")
+stopifnot(delayed$scored_count==1,delayed$unforecasted_attempt_count==1,
+          delayed$metrics$brier==0.25,delayed$metrics$brier_skill_score==0,
+          delayed$predictions[[1]]$p==0.5)
+cat("Prospective R: 11 integrity/scoring scenarios passed; fixture-only, no personal validation.\n")

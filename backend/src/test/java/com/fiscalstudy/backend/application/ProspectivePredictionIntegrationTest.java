@@ -58,6 +58,20 @@ class ProspectivePredictionIntegrationTest {
         assertEquals(frozen,events.findByEventId("prediction:"+id).orElseThrow().getPayloadJson());
         assertThrows(org.springframework.web.server.ResponseStatusException.class,()->ledger.prepare("q1","other-session",id));
     }
+    @Test void delayedResponseDoesNotRefitAfterInterveningResults() throws Exception {
+        String delayed=UUID.randomUUID().toString();
+        var frozen=ledger.prepare("q1","personal-session",delayed);
+        String original=events.findByEventId("prediction:"+delayed).orElseThrow().getPayloadJson();
+        answer(UUID.randomUUID().toString(),"A",false,4); // Another result arrives while this forecast waits.
+        assertEquals(frozen,ledger.prepare("q1","personal-session",delayed));
+        answer(delayed,"B",false,4);
+        assertEquals(original,events.findByEventId("prediction:"+delayed).orElseThrow().getPayloadJson());
+        assertEquals(0,frozen.path("nEvidence").asInt());
+        assertEquals(0.5,frozen.path("probability").asDouble());
+        assertEquals(2,jdbc.queryForObject("SELECT COUNT(*) FROM learning_evidence_projection",Integer.class));
+        Path output=Path.of("target/prospective-delayed-fixture.json");
+        Files.createDirectories(output.getParent());Files.writeString(output,json.writeValueAsString(ledger.exportSnapshot()));
+    }
     @Test void cannotBackfillACompletedAttempt() {
         String id=UUID.randomUUID().toString();answer(id,"A",false,4);
         assertThrows(org.springframework.web.server.ResponseStatusException.class,()->ledger.prepare("q1","personal-session",id));

@@ -108,6 +108,11 @@ evaluate_prospective <- function(path) {
     source_kind=input$sourceKind,target="QUESTION_CORRECTNESS_WITHOUT_DECLARED_HELP",
     model="PERSONAL_BETA11_PREFIX_V1",metrics=metric(y,p),calibration_bins=bins,
     response_delay_metrics_NOT_memory_retention_horizons=horizons,
+    attempt_count=sum(vapply(rows,function(e)identical(e$event_type,"ANSWER_SUBMITTED"),logical(1))),
+    unforecasted_attempt_count=sum(vapply(ids,function(key) {
+      identical(rows[[key]]$event_type,"ANSWER_SUBMITTED") &&
+        !paste0("prediction:",payload[[key]]$attemptId) %in% forecasts
+    },logical(1))),
     forecast_count=length(forecasts),scored_count=length(scored),excluded_count=length(exclusions),
     coverage=if(length(forecasts))length(scored)/length(forecasts) else NULL,
     unique_questions=length(unique(vapply(scored,function(r)r$question_id,character(1)))),
