@@ -416,6 +416,11 @@ build_learning_profile <- function(attempts_df, questions_df = NULL, validation_
     ),
     metacognition = list(
       n_observations = conf_res$n_observations,
+      n_level5=conf_res$n_level5,n_low_confidence=conf_res$n_low_confidence,
+      measurement_scale=conf_res$measurement_scale,
+      conversion_hypothesis=conf_res$conversion_hypothesis,
+      probability_mapping_validated=FALSE,confidence_timing_status="NOT_ESTABLISHED",
+      calibration_metrics_status="MAPPING_SENSITIVITY_ONLY",
       brier_score = conf_res$brier_score,
       ece = conf_res$ece,
       overconfidence_count = conf_res$overconfidence_count,

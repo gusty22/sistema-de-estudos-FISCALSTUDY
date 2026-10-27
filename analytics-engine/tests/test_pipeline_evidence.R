@@ -67,7 +67,7 @@ if (fixture_run$exit == 0) {
   assert_equal(length(retrieval$investigation_queue), 1L, "Pipeline emits one unresolved investigation candidate")
   assert_false(retrieval$can_apply, "FSRS diagnostic cannot change memory scheduling")
   assert_equal(length(weights$weights), 0L, "Unvalidated model emits no discipline overrides")
-  assert_true(all(vapply(summary$metrics, function(m) identical(m$n_observations, 2L) || identical(m$n_observations, 2), logical(1))), "Non-evaluable attempt does not enter effective metric denominators")
+  assert_true(all(vapply(summary$metrics, function(m) as.integer(m$n_observations)==if (identical(m$metric_name,"overconfidence_rate_level5")) 1L else 2L, logical(1))), "Each metric preserves its actual evaluable or conditional denominator")
 }
 
 

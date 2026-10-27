@@ -124,3 +124,39 @@ assert_true(all(is.na(parsed_instants[3:8])),
 fractional <- parse_evidence_timestamp(c("2026-10-11T12:00:00.250Z", "2026-10-11T14:00:00.250+0200"))
 assert_equal(as.numeric(fractional[1]), as.numeric(fractional[2]), "Fractions survive explicit-offset conversion")
 assert_true(is.na(parse_evidence_timestamp("2026-10-11T12:60:00Z")), "Invalid clock minute is rejected")
+
+
+# Ordinal confidence is an observation, not a measured continuous probability.
+confidence_contract <- data.frame(
+  confidence_level=c("5","3","1","4.9","6","NA",NA,"5"),
+  is_correct=c("false","true","1","true","true","false","true","false"),
+  gabarito_status=c(rep("DEFINITIVO",7),"ANULADA"),stringsAsFactors=FALSE)
+ordinal <- calculate_confidence_metrics(confidence_contract)
+assert_equal(ordinal$n_observations,3L,"Only exact ordinal levels and evaluable outcomes enter confidence metrics")
+assert_equal(ordinal$n_level5,1L,"Maximum-confidence denominator is its own observed subset")
+assert_equal(ordinal$n_low_confidence,1L,"Low-confidence denominator is its own observed subset")
+assert_equal(ordinal$n_excluded_observations,5L,"Invalid ordinal evidence is counted, not silently truncated")
+assert_equal(ordinal$overconfidence_rate_in_level5,1,"Conditional high-confidence error rate uses 1/1")
+assert_equal(ordinal$underconfidence_rate_in_low_conf,1,"Conditional low-confidence success rate uses 1/1")
+assert_equal(ordinal$brier_score,.6,"Mapped Brier matches the independent three-observation vector")
+assert_equal(ordinal$ece,.7333,"Mapped ECE uses unrounded empirical bin proportions")
+assert_false(ordinal$probability_mapping_validated,"An assumed mapping never claims validated subjective probabilities")
+assert_equal(ordinal$confidence_timing_status,"NOT_ESTABLISHED","Missing pre-feedback timing is not reconstructed")
+no_extremes <- calculate_confidence_metrics(data.frame(confidence_level=3,is_correct=TRUE))
+assert_true(is.na(no_extremes$overconfidence_rate_in_level5),"Absent level five is unknown rate, not zero")
+assert_true(is.na(no_extremes$underconfidence_rate_in_low_conf),"Absent low-confidence group is unknown rate")
+none_valid <- calculate_confidence_metrics(data.frame(confidence_level=4.9,is_correct=TRUE))
+assert_equal(none_valid$n_observations,0L,"Fractional ordinal level is excluded")
+assert_true(is.na(none_valid$brier_score),"No valid ordinal evidence produces no Brier score")
+assert_true(all(c("overconfidence_rate_in_level5","underconfidence_rate_in_low_conf","conversion_hypothesis") %in% names(none_valid)),
+            "Empty confidence result preserves the result contract")
+alternative <- setNames(c(.1,.3,.5,.7,.9),as.character(1:5))
+mapped <- calculate_confidence_metrics(confidence_contract,prob_mapping=alternative)
+assert_true(mapped$brier_score!=ordinal$brier_score,"Mapped scores are explicitly sensitive to the assumed mapping")
+bad_mappings <- list(rep(.5,5),setNames(c(.2,.4,.6,.8,1.2),as.character(1:5)),
+  setNames(c(.2,.4,NA,.8,1),as.character(1:5)),setNames(c(.9,.8,.7,.6,.5),as.character(1:5)),
+  setNames(rep(.5,4),as.character(1:4)))
+for (mapping in bad_mappings) {
+  rejected <- tryCatch({calculate_confidence_metrics(confidence_contract,prob_mapping=mapping);FALSE},error=function(e)TRUE)
+  assert_true(rejected,"Malformed probability mapping fails explicitly rather than reverting or emitting NA scores")
+}

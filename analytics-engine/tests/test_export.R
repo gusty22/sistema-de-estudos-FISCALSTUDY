@@ -96,3 +96,12 @@ quoted_read <- utils::read.csv(quoted_csv,encoding="UTF-8",stringsAsFactors=FALS
 assert_equal(quoted_read$definition,quoted_definition,"UTF-8 CSV retains standard quote/comma/newline semantics")
 assert_equal(quoted_read$value,"n\u00e3o","UTF-8 CSV retains character metric values")
 unlink(c(quoted_json,quoted_csv))
+
+# Conditional rates carry their own observed denominator and mapping provenance.
+conditional <- pkg$metrics[[which(vapply(pkg$metrics,function(m) identical(m$metric_name,"overconfidence_rate_level5"),logical(1)))]]
+assert_equal(conditional$n_observations,conf_res$n_level5,"Conditional confidence export uses its subset denominator")
+assert_true(conf_res$n_level5<conf_res$n_observations,"Fixture distinguishes subset from total observations")
+assert_false(pkg$probability_mapping_validated,"Metric package does not claim subjective probability validation")
+assert_equal(pkg$confidence_conversion_hypothesis$nature,"HIPOTESE_PARAMETRICA_ASSUMIDA","Assumed mapping provenance survives export")
+brier_record <- pkg$metrics[[which(vapply(pkg$metrics,function(m) identical(m$metric_name,"calibration_brier_score"),logical(1)))]]
+assert_true("ORDINAL_MAPPING_UNVALIDATED" %in% unlist(brier_record$quality_flags),"CSV/JSON record exposes unvalidated ordinal mapping")
