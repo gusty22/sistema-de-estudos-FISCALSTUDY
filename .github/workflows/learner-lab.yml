@@ -37,6 +37,7 @@ jobs:
         run: |
           mkdir -p logs
           python -m pip install -r lab/requirements-lab-lock.txt
+          python -m pip install -r lab/requirements-memory-lab.txt
           Rscript -e 'install.packages(c("jsonlite", "digest"), repos="https://cloud.r-project.org")'
       - name: Software and R regression gates
         run: |
@@ -75,6 +76,20 @@ jobs:
               external.append({"replicate":folder.name,"numerical_unavailable":sum(len(v.get("numerical_unavailable_event_ids",[])) for v in st["students"].values()),"statuses":{name:v["status"] for name,v in st["students"].items()}})
           print(json.dumps({"source_kind":"SYNTHETIC_BENCHMARK","events":s["event_count"],"targets":s["unique_evaluated_event_count"],"metrics":metrics,"comparisons":s["comparisons"],"external":external,"can_apply":False},sort_keys=True))
           PY
+      - name: Official FSRS memory reference and real R audit
+        run: |
+          python lab/memory_benchmark.py --output tests/fixtures/learner_lab/run-memory-ci 2>&1 | tee logs/memory.log
+          python lab/memory_benchmark.py --output tests/fixtures/learner_lab/run-memory-replay 2>&1 | tee logs/memory-replay.log
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          a=Path("tests/fixtures/learner_lab/run-memory-ci")
+          b=Path("tests/fixtures/learner_lab/run-memory-replay")
+          left={p.relative_to(a).as_posix():p.read_bytes() for p in a.rglob("*") if p.is_file()}
+          right={p.relative_to(b).as_posix():p.read_bytes() for p in b.rglob("*") if p.is_file()}
+          assert left==right, "Memory replay artifacts differ"
+          print(json.dumps({"memory_replay_files":len(left),"differences":0}))
+          PY
       - name: Preserve synthetic evidence and logs
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -86,3 +101,5 @@ jobs:
             analytics-engine/logs/
             analytics-engine/tests/fixtures/learner_lab/run-ci/
             analytics-engine/tests/fixtures/learner_lab/run-ci-replay/
+            analytics-engine/tests/fixtures/learner_lab/run-memory-ci/
+            analytics-engine/tests/fixtures/learner_lab/run-memory-replay/
