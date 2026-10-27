@@ -248,14 +248,32 @@ calculate_time_metrics <- function(attempts_df) {
 #' @param prob_mapping Vetor nomeado opcional de probabilidades para cada nível de confiança (ex: c("1"=0.2, ..., "5"=1.0))
 #' @return Lista com distribuições, acurácia por nível, Brier Score, ECE, viés amostral e mapeamento probabilístico
 calculate_confidence_metrics <- function(attempts_df, prob_mapping = NULL) {
-  # Mapeamento probabilístico padrão explícito (5 alternativas: chute = 0.20 até teto nominal = 1.00)
+  # Legacy technical mapping for sensitivity analysis; not measured guessing chance or subjective probability.
   default_mapping <- c("1" = 0.20, "2" = 0.40, "3" = 0.60, "4" = 0.80, "5" = 1.00)
-  active_mapping <- if (!is.null(prob_mapping) && length(prob_mapping) == 5) prob_mapping else default_mapping
+  if (!is.null(prob_mapping) && (!is.numeric(prob_mapping) || length(prob_mapping)!=5L ||
+      !setequal(names(prob_mapping),as.character(1:5)) || anyDuplicated(names(prob_mapping)) ||
+      any(!is.finite(prob_mapping)) || any(prob_mapping<0 | prob_mapping>1))) {
+    stop("prob_mapping must name levels 1..5 with five finite probabilities in [0,1]")
+  }
+  active_mapping <- if (is.null(prob_mapping)) default_mapping else prob_mapping[as.character(1:5)]
+  if (any(diff(active_mapping)<0)) stop("prob_mapping must preserve the ordinal level order")
+  if (!is.null(attempts_df) && !is.data.frame(attempts_df)) stop("Expected an attempts data.frame")
+  input_count <- if (is.null(attempts_df)) 0L else nrow(attempts_df)
+  conversion_hyp <- list(
+    description="Ordinal levels mapped to assumed probabilities; not measured subjective probabilities.",
+    mapping=active_mapping,nature="HIPOTESE_PARAMETRICA_ASSUMIDA",
+    epistemic_warning="The mapping is unvalidated and confidence timing before feedback is not established.")
+
 
   if (is.null(attempts_df) || nrow(attempts_df) == 0 ||
       !"confidence_level" %in% names(attempts_df) || !"is_correct" %in% names(attempts_df)) {
     return(list(
-      n_observations = 0,
+      n_observations = 0L, n_input_observations=input_count, n_excluded_observations=input_count,
+      n_level5=0L, n_low_confidence=0L,
+      overconfidence_rate_in_level5=NA_real_, underconfidence_rate_in_low_conf=NA_real_,
+      measurement_scale="ORDINAL_1_TO_5", probability_mapping_validated=FALSE,
+      calibration_metrics_status="MAPPING_SENSITIVITY_ONLY",confidence_timing_status="NOT_ESTABLISHED",
+      conversion_hypothesis=conversion_hyp,
       distribution = rep(0, 5),
       accuracy_by_level = data.frame(),
       overconfidence_count = 0,
@@ -270,11 +288,33 @@ calculate_confidence_metrics <- function(attempts_df, prob_mapping = NULL) {
     ))
   }
   
-  sub <- attempts_df[!is.na(attempts_df$confidence_level) & !is.na(attempts_df$is_correct), ]
+  if (exists("select_evaluable_attempts",mode="function")) {
+    selected <- select_evaluable_attempts(attempts_df)$attempts_df
+  } else {
+    # Standalone compatibility; same canonical binary/status rules.
+    raw <- toupper(trimws(as.character(attempts_df$is_correct)))
+    blocked <- rep(FALSE,nrow(attempts_df))
+    for (column in intersect(c("gabarito_status","correct_option"),names(attempts_df))) {
+      blocked <- blocked | toupper(trimws(as.character(attempts_df[[column]]))) %in% c("ANULADA","AUSENTE","SOB_REVISAO")
+    }
+    if ("is_annulled" %in% names(attempts_df)) blocked <- blocked |
+      toupper(trimws(as.character(attempts_df$is_annulled))) %in% c("TRUE","1")
+    selected <- attempts_df[raw %in% c("TRUE","FALSE","1","0") & !blocked,,drop=FALSE]
+    selected$is_correct <- toupper(trimws(as.character(selected$is_correct))) %in% c("TRUE","1")
+  }
+  confidence <- suppressWarnings(as.numeric(as.character(selected$confidence_level)))
+  valid <- is.finite(confidence) & confidence==floor(confidence) & confidence>=1 & confidence<=5
+  sub <- selected[valid,,drop=FALSE]
+  sub$confidence_level <- confidence[valid]
   n <- nrow(sub)
   if (n == 0) {
     return(list(
-      n_observations = 0,
+      n_observations = 0L, n_input_observations=input_count, n_excluded_observations=input_count,
+      n_level5=0L, n_low_confidence=0L,
+      overconfidence_rate_in_level5=NA_real_, underconfidence_rate_in_low_conf=NA_real_,
+      measurement_scale="ORDINAL_1_TO_5", probability_mapping_validated=FALSE,
+      calibration_metrics_status="MAPPING_SENSITIVITY_ONLY",confidence_timing_status="NOT_ESTABLISHED",
+      conversion_hypothesis=conversion_hyp,
       distribution = rep(0, 5),
       accuracy_by_level = data.frame(),
       overconfidence_count = 0,
@@ -314,7 +354,7 @@ calculate_confidence_metrics <- function(attempts_df, prob_mapping = NULL) {
       ci_upper = ci["upper"],
       expected_probability = expected_prob,
       calibration_gap = if (!is.na(acc_lvl)) round(acc_lvl - expected_prob, 4) else NA_real_,
-      denominator_text = sprintf("%d/%d (%.1f%%)", k_lvl, n_lvl, if (!is.na(acc_lvl)) acc_lvl * 100 else 0),
+      denominator_text = if (n_lvl>0) sprintf("%d/%d (%.1f%%)",k_lvl,n_lvl,acc_lvl*100) else "0/0 (sem evidencias)",
       stringsAsFactors = FALSE
     )
   }))
@@ -322,12 +362,12 @@ calculate_confidence_metrics <- function(attempts_df, prob_mapping = NULL) {
   # Superconfiança: Resposta errada com confiança máxima (nível 5)
   conf5_df <- sub[sub$conf == 5, ]
   overconf_count <- sum(conf5_df$correct_num == 0)
-  overconf_rate_in_conf5 <- if (nrow(conf5_df) > 0) overconf_count / nrow(conf5_df) else 0
+  overconf_rate_in_conf5 <- if (nrow(conf5_df) > 0) overconf_count / nrow(conf5_df) else NA_real_
   
   # Subconfiança: Resposta certa com confiança baixa (níveis 1 e 2)
   lowconf_df <- sub[sub$conf %in% c(1, 2), ]
   underconf_count <- sum(lowconf_df$correct_num == 1)
-  underconf_rate_in_lowconf <- if (nrow(lowconf_df) > 0) underconf_count / nrow(lowconf_df) else 0
+  underconf_rate_in_lowconf <- if (nrow(lowconf_df) > 0) underconf_count / nrow(lowconf_df) else NA_real_
   
   # Brier Score com mapeamento probabilístico explicitamente definido
   p_pred <- as.numeric(active_mapping[as.character(sub$conf)])
@@ -339,19 +379,12 @@ calculate_confidence_metrics <- function(attempts_df, prob_mapping = NULL) {
   for (i in 1:nrow(acc_by_level)) {
     n_bin <- acc_by_level$n_attempts[i]
     if (n_bin > 0) {
-      gap <- abs(acc_by_level$accuracy[i] - acc_by_level$expected_probability[i])
+      gap <- abs(acc_by_level$n_correct[i]/n_bin - acc_by_level$expected_probability[i])
       ece_sum <- ece_sum + (n_bin / n) * gap
     }
   }
   
   # Advertências metodológicas sobre limites de pequenas amostras e hipótese de conversão
-  conversion_hyp <- list(
-    description = "A escala ordinal Likert (1 a 5) foi convertida em probabilidades pontuais de acordo com o mapeamento explicitado.",
-    mapping = active_mapping,
-    nature = "HIPOTESE_PARAMETRICA_ASSUMIDA",
-    epistemic_warning = "Esta conversao e uma hipotese metodologica do pesquisador e NAO representa medicao direta de probabilidade subjetiva continua do estudante."
-  )
-  
   cautions <- c(
     sprintf("Mapeamento probabilistico utilizado: Nivel 1=%.2f, 2=%.2f, 3=%.2f, 4=%.2f, 5=%.2f.",
             active_mapping["1"], active_mapping["2"], active_mapping["3"], active_mapping["4"], active_mapping["5"]),
@@ -366,7 +399,13 @@ calculate_confidence_metrics <- function(attempts_df, prob_mapping = NULL) {
   }
   
   list(
-    n_observations = n,
+    n_observations = n, n_input_observations=input_count, n_excluded_observations=input_count-n,
+    n_level5=nrow(conf5_df), n_low_confidence=nrow(lowconf_df),
+    measurement_scale="ORDINAL_1_TO_5", probability_mapping_validated=FALSE,
+    calibration_metrics_status="MAPPING_SENSITIVITY_ONLY",confidence_timing_status="NOT_ESTABLISHED",
+    overconfidence_rate=round(overconf_rate_in_conf5,4),
+    underconfidence_rate=round(underconf_rate_in_lowconf,4),
+    distribution=as.integer(acc_by_level$n_attempts),
     accuracy_by_level = acc_by_level,
     overconfidence_count = overconf_count,
     overconfidence_rate_in_level5 = round(overconf_rate_in_conf5, 4),
@@ -377,7 +416,7 @@ calculate_confidence_metrics <- function(attempts_df, prob_mapping = NULL) {
     prob_mapping_used = active_mapping,
     conversion_hypothesis = conversion_hyp,
     small_sample_warning = (n < 30),
-    methodological_cautions = cautions
+    methodological_cautions = c(cautions,"Timing before feedback is not established. Mapping scores are hypotheses, not validated probability calibration. Repeated items may be dependent; descriptive binomial intervals do not establish personal mastery.")
   )
 }
 

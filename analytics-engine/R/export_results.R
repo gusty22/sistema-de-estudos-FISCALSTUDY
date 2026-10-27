@@ -52,6 +52,13 @@ build_metric_record <- function(metric_name, definition, value,
 consolidate_analytics_metrics <- function(overall_res, time_res, conf_res, retention_res,
                                           validation_res, period_start, period_end) {
   
+  confidence5_n <- conf_res$n_level5
+  if (is.null(confidence5_n)) {
+    bins <- conf_res$accuracy_by_level
+    confidence5_n <- if (is.data.frame(bins) && all(c("confidence_level","n_attempts") %in% names(bins)) &&
+      any(bins$confidence_level==5)) sum(bins$n_attempts[bins$confidence_level==5]) else NA_integer_
+  }
+  confidence_flags <- c("ORDINAL_MAPPING_UNVALIDATED","CONFIDENCE_TIMING_NOT_ESTABLISHED")
   quality_flags <- c()
   if (validation_res$is_valid) {
     quality_flags <- c(quality_flags, "VALID_DATA", "NO_BLOCKING_ERRORS")
@@ -105,27 +112,27 @@ consolidate_analytics_metrics <- function(overall_res, time_res, conf_res, reten
   # 3. Brier Score de Calibração
   metrics[[length(metrics) + 1]] <- build_metric_record(
     metric_name = "calibration_brier_score",
-    definition = "Indice de Brier ponderado mapeando confianca 1-5 para probabilidade 0.20-1.00.",
+    definition = "Media do erro quadratico sob mapeamento assumido da confianca ordinal; nao mede probabilidade subjetiva continua.",
     value = conf_res$brier_score,
     n_observations = conf_res$n_observations,
     period_start = period_start,
     period_end = period_end,
-    method_version = "v1.0.0-discrete_brier",
-    limitations = c("Assume mapeamento linear da escala discreta de 5 opcoes"),
-    quality_flags = quality_flags
+    method_version = "v1.1.0-ordinal_mapping_hypothesis",
+    limitations = c(conf_res$methodological_cautions,"O mapeamento e hipotetico e nao foi calibrado como probabilidade subjetiva."),
+    quality_flags = c(quality_flags,confidence_flags)
   )
   
   # 4. Expected Calibration Error (ECE)
   metrics[[length(metrics) + 1]] <- build_metric_record(
     metric_name = "expected_calibration_error_ece",
-    definition = "Diferenca media ponderada absoluta entre acuracia observada e confianca declarada em 5 faixas.",
+    definition = "Diferenca ponderada entre acerto observado e mapeamento probabilistico assumido em cinco niveis ordinais.",
     value = conf_res$ece,
     n_observations = conf_res$n_observations,
     period_start = period_start,
     period_end = period_end,
-    method_version = "v1.0.0-5bin_ece",
-    limitations = c("Discretizado em 5 bins correspondentes a cada nivel de confianca"),
-    quality_flags = quality_flags
+    method_version = "v1.1.0-ordinal_mapping_hypothesis",
+    limitations = c(conf_res$methodological_cautions,"ECE depende do mapeamento assumido e nao prova calibracao pessoal."),
+    quality_flags = c(quality_flags,confidence_flags)
   )
   
   # 5. Taxa de Superconfiança (Erros com Confiança 5)
@@ -133,11 +140,11 @@ consolidate_analytics_metrics <- function(overall_res, time_res, conf_res, reten
     metric_name = "overconfidence_rate_level5",
     definition = "Proporcao de erros em tentativas respondidas com confianca maxima (nivel 5).",
     value = conf_res$overconfidence_rate_in_level5,
-    n_observations = conf_res$n_observations,
+    n_observations = confidence5_n,
     period_start = period_start,
     period_end = period_end,
-    method_version = "v1.0.0-level5_error_rate",
-    limitations = c("Foco em detectar ilusoes graves de competencia"),
+    method_version = "v1.1.0-level5_conditional_denominator",
+    limitations = c("Denominador restrito a respostas avaliaveis com confianca 5. Ausencia da faixa nao e taxa zero. Discrepancia observada; causa desconhecida, sem diagnostico de dominio ou personalidade."),
     quality_flags = quality_flags
   )
   
@@ -157,6 +164,10 @@ consolidate_analytics_metrics <- function(overall_res, time_res, conf_res, reten
   list(
     contract_version = "1.0.0",
     generated_at = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
+    confidence_metrics_version = "1.1.0-ordinal-mapping",
+    confidence_conversion_hypothesis = conf_res$conversion_hypothesis,
+    confidence_timing_status = "NOT_ESTABLISHED",
+    probability_mapping_validated = FALSE,
     metrics_count = length(metrics),
     metrics = metrics
   )
@@ -198,7 +209,19 @@ export_metrics_package <- function(consolidated_package, json_output_path, csv_o
   })
   
   csv_df <- do.call(rbind, csv_rows)
-  utils::write.csv(csv_df, file = csv_output_path, row.names = FALSE, fileEncoding = "UTF-8")
+  # write.table translates marked strings through LC_CTYPE before writing.
+  # Serialize a local UTF-8 byte copy to a binary connection; retain standard
+  # CSV quoting/numeric/NA rules without changing the process locale.
+  encoded_csv <- csv_df
+  for (column in names(encoded_csv)[vapply(encoded_csv,is.character,logical(1))]) {
+    values <- enc2utf8(encoded_csv[[column]])
+    if (any(!is.na(values) & !validUTF8(values))) stop("Metric text is not valid UTF-8")
+    Encoding(values) <- "unknown"
+    encoded_csv[[column]] <- values
+  }
+  connection <- file(csv_output_path,open="wb")
+  on.exit(close(connection),add=TRUE)
+  utils::write.csv(encoded_csv, file=connection, row.names=FALSE)
   
   invisible(list(json = json_output_path, csv = csv_output_path))
 }

@@ -180,3 +180,20 @@ Branch experiment/fsrs-memory-lab, dependente do PR #27. Implementados gerador i
 CI 40432790113, commit f9849b2: 30 testes do laboratório e 600 verificações R, zero falhas; oito arquivos de memória e 50 do laboratório anterior reproduzidos byte a byte. 1120 eventos, 160 cold starts sem previsão inventada, 960 alvos maduros, escores R/Python concordantes. FSRS padrão obteve Brier 0,275057 e log loss 0,870704, versus 0,217010/0,642642 do histórico suavizado; não demonstrou superioridade neste gerador. Não inferir eficácia ou falha pessoal a partir disso; priorizar calibração com treino/teste separados antes de ampliar políticas. Detalhes em lab/MEMORY_PROTOCOL.md e fixture memory_reference_result.json.
 
 Validação sintética e técnica concluída para este incremento; otimização pessoal, causalidade, políticas, dados reais, equivalência Java e homologação visual NÃO executadas. can_apply/can_schedule seguem false; main preservada.
+
+
+## Transporte UTF-8 — integridade do pipeline
+
+PR #29: problema de CSV corrompido sob locale C reproduzido na CI 40435204718; corrigidos bootstrap de módulos UTF-8, leitura declarada sem conversão nativa, BOM opcional e serialização binária UTF-8 com regras CSV padrão. Sem modificar fontes, checksums, banco ou equações. CI 40439080064, commit 3a8d074: 23 testes do laboratório, 614 verificações R, zero falhas; rótulos de disciplina/tópico e CSV de métricas preservados sob C; replay de 50 arquivos passou. Detalhes e tentativas anteriores em docs/UTF8_TRANSPORT_VALIDATION.md. Windows local, visual e Java E2E não foram homologados; integrar junto do #30 sem perder os dois conjuntos de testes.
+
+
+## Confiança ordinal — correção estatística isolada
+
+PR #30, branch fix/r-ordinal-confidence-contract: nível fracionário não é truncado; mapeamentos inválidos falham explicitamente; ausência da faixa retorna taxa NA; denominador máximo de confiança é o subconjunto observado, com n_level5 explícito. Perfil, pacote e rótulos gráficos distinguem escala ordinal, hipótese de probabilidade e instante de confiança não estabelecido. Sem novos modelos de memória ou autoridade decisória.
+
+CI 40437888763 no commit 68dea90: 23 testes do laboratório e 626 verificações R sem falhas; cinco seeds e replay de 50 arquivos passaram. Alterações posteriores de documentação e rótulos devem ser validadas no novo head. Ver docs/CONFIDENCE_METRICS_VALIDATION.md. Homologação visual e Java E2E não executadas. A correção textual sob locale C permanece na branch independente do PR #29; integrar preservando os testes de ambas.
+
+
+## Composicao temporaria para testes cruzados
+
+Branch integration/r-laboratory-validation: proposta de composicao, sem merge nas branches originais ou main. Commits exatos em docs/INTEGRATION_SOURCES.json. Preservados os contratos de memoria, leitura/serializacao UTF-8 e denominadores ordinais, com os dois conjuntos de testes. Validacao cruzada inicialmente PENDENTE; consultar CI deste head. A composicao nao habilita autoridade decisoria nem valida eficacia pessoal.
