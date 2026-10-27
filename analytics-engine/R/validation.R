@@ -425,7 +425,7 @@ validate_events_dataset <- function(events_df, questions_df = NULL) {
 # Read the declared UTF-8 CSV contract without converting text to the host locale.
 # Keep the source file unchanged so its manifest checksum remains meaningful.
 read_utf8_csv <- function(path, ...) {
-  connection <- file(path, open="rb")
+  connection <- file(path, open="rt")
   on.exit(close(connection), add=TRUE)
   repeat {
     lines <- withCallingHandlers(
@@ -435,7 +435,10 @@ read_utf8_csv <- function(path, ...) {
     if (any(!validUTF8(lines))) stop("CSV input is not valid UTF-8", call.=FALSE)
   }
   seek(connection, where=0, origin="start")
-  prefix <- readBin(connection, what="raw", n=3L)
-  if (!identical(prefix, as.raw(c(239,187,191)))) seek(connection, where=0, origin="start")
+  header <- readLines(connection, n=1L, warn=FALSE, encoding="UTF-8")
+  if (length(header)>0L) {
+    if (startsWith(header[1],intToUtf8(65279L))) header[1] <- substring(header[1],2L)
+    pushBack(header,connection,encoding="UTF-8")
+  }
   utils::read.csv(connection, encoding="UTF-8", ...)
 }
