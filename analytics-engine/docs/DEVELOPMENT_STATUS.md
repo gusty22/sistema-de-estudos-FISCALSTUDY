@@ -205,3 +205,12 @@ Validação da recuperação 3b5942b: CI 40500031291 aprovada, 30 testes de labo
 ## Resolução do conflito #31 após integração #30 — 27/10/2026
 
 A main 35f046a recebeu a correção de confiança #30 após a última atualização da #31. Preservados integralmente os arquivos de código/testes da main e os registros históricos de confiança; acrescentados os arquivos e registros do laboratório de memória da #31. Sem migrações, alterações de dados ou habilitação decisória. CI desta nova composição deve ser conferida na PR; evidências anteriores continuam históricas.
+
+
+## Investigação de calibração individual e identificabilidade — 27/10/2026
+
+Incremento experimental sobre main 63a81c4, após #31. Implementados ajuste global/individual de intercepto logístico com encolhimento, treino/seleção/teste temporal, sondagens de retenção com verdade independente e histórias imediatas equivalentes. Reutiliza FSRS oficial e diagnóstico R existente; não altera banco, parâmetros FSRS ou autoridade do planejador. Variáveis latentes permanecem fora dos adapters. Novos testes incluem perturbação de resultados futuros e rejeição de registros inválidos.
+
+Protocolo e limites adicionados a lab/MEMORY_PROTOCOL.md. Nenhuma melhora é presumida: resultados deste código serão registrados somente após a execução dos gates. Conhecimento versus esquecimento, half-life individual, eficácia pedagógica e validação humana continuam não demonstrados.
+
+Evidência executada do incremento fe9f9b3: CI 40504239066, 36 testes de laboratório, 640 verificações R, zero falhas e replay de 13 arquivos idênticos. O ajuste individual melhorou Brier/log loss futuros em média neste gerador; três de 20 estudantes pioraram no Brier versus global e a calibração não é perfeita. Históricos imediatos não identificaram retenções distintas; sondagens tardias dependeram do intervalo e N. Sumário completo em tests/fixtures/learner_lab/individual_calibration_reference_result.json e matriz científica em lab/MEMORY_PROTOCOL.md. Hardening posterior de versões, proveniência e casos curtos requer a CI do head atual. Planejador continua bloqueado.

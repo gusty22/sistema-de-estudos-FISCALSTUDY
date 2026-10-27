@@ -92,6 +92,24 @@ jobs:
           assert left==right, "Memory replay artifacts differ"
           print(json.dumps({"memory_replay_files":len(left),"differences":0}))
           PY
+      - name: Individual calibration and identifiability holdout
+        run: |
+          python lab/calibration_experiment.py --output tests/fixtures/learner_lab/run-calibration-ci 2>&1 | tee logs/calibration.log
+          python lab/calibration_experiment.py --output tests/fixtures/learner_lab/run-calibration-replay 2>&1 | tee logs/calibration-replay.log
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          import sys
+          sys.path.insert(0,"lab")
+          from calibration_experiment import audit
+          a=Path("tests/fixtures/learner_lab/run-calibration-ci")
+          b=Path("tests/fixtures/learner_lab/run-calibration-replay")
+          print(audit(a));print(audit(b))
+          left={p.relative_to(a).as_posix():p.read_bytes() for p in a.rglob("*") if p.is_file()}
+          right={p.relative_to(b).as_posix():p.read_bytes() for p in b.rglob("*") if p.is_file()}
+          assert left==right, "Calibration replay differs"
+          print(json.dumps({"calibration_replay_files":len(left),"differences":0}))
+          PY
       - name: Preserve synthetic evidence and logs
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -105,3 +123,5 @@ jobs:
             analytics-engine/tests/fixtures/learner_lab/run-ci-replay/
             analytics-engine/tests/fixtures/learner_lab/run-memory-ci/
             analytics-engine/tests/fixtures/learner_lab/run-memory-replay/
+            analytics-engine/tests/fixtures/learner_lab/run-calibration-ci/
+            analytics-engine/tests/fixtures/learner_lab/run-calibration-replay/

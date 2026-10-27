@@ -93,3 +93,12 @@ MEMORY_PROTOCOL.md documenta um experimento separado de recordação, sem chute 
     python lab/memory_benchmark.py --output tests/fixtures/learner_lab/run-memory
 
 O gerador é independente do FSRS. O R usa seu diagnóstico de recuperação existente e os escores são conferidos por Python. A biblioteca FSRS 6.3.2 oficial permanece inalterada; não há novo agendador no R ou consumo operacional. Resultados sintéticos, inclusive a ausência de superioridade do FSRS padrão neste gerador, estão documentados com CI, métricas e replay. O HTML do laboratório de questões não é apresentado como dashboard de memória; os artefatos de memória são JSON/CSV. Homologação visual permanece pendente.
+
+
+## Calibração individual e sondagens de identificabilidade
+
+Execute, no mesmo ambiente experimental com FSRS 6.3.2 já instalado:
+
+    python lab/calibration_experiment.py --output tests/fixtures/learner_lab/run-calibration
+
+O protocolo e critérios prévios estão em MEMORY_PROTOCOL.md. O R ajusta candidatos de calibração exclusivamente em treino, seleciona a penalidade em validação e avalia em teste futuro. Outro gerador independente compara históricos imediatos idênticos com sondagens tardias. Os artefatos distinguem observações, predições e verdade sintética; não fornecem autoridade ao planejador. Não há novo dashboard ou dependência. Incerteza dos parâmetros, eficácia pedagógica e validação humana permanecem explicitamente indisponíveis.

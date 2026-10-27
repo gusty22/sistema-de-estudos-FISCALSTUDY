@@ -83,3 +83,81 @@ Bins de confiabilidade e seus intervalos de Wilson são descritivos; tentativas 
 Resultado compacto permanente: tests/fixtures/learner_lab/memory_reference_result.json. Artefato de CI 12702842479, SHA-256 120ac8183467e550d50f3b7b05d497c7b2913a9cf10300f46392243cef46b1ee, disponível até 03/11/2026. Os comandos acima reproduzem os dados; o hash do artefato não é assinatura científica.
 
 Próxima etapa: desenho de calibração temporal e identificabilidade antes de comparar políticas. Os quatro perfis são condições geradoras conhecidas, não uma personalidade atribuída ao estudante. Este resultado não modifica o planejador, os modelos operacionais ou os controles de autoridade.
+
+
+## Incremento experimental: calibração individual e identificabilidade
+
+**Protocolo registrado antes de executar as seeds 811,839,863,887,911.** O gerador de memória e a implementação oficial FSRS permanecem inalterados. Esta avaliação não otimiza os parâmetros FSRS, não calcula outra curva operacional e não habilita o planejador.
+
+### Perguntas e métodos
+
+1. Um ajuste individual da probabilidade prevista melhora previsões futuras em relação a um ajuste global?
+2. Históricos imediatos idênticos permitem identificar diferenças de retenção? Quanto avaliações tardias em itens distintos ajudam?
+
+O primeiro experimento reaproveita generate_memory, FSRSReference e o diagnóstico R existente. O R experimental recebe somente observações. A partir de seis lotes maduros por estudante, os três primeiros são treino (dias 1,3,7), o quarto é seleção (dia 14) e os dois últimos são teste (dias 28,42). Lotes com mesmo timestamp permanecem juntos. Janelas globais sobrepostas são rejeitadas; históricos mais curtos retornam insuficiência.
+
+A hipótese de calibração é logit(p_cal)=logit(p_FSRS)+a. O intercepto global minimiza a soma de log losses mais a²/2. Interceptos individuais minimizam essa soma mais lambda*(a_i-a_global)²/2. lambda pertence a {1,4,16}, escolhido pela menor log loss de validação, sem refazer ajuste sobre validação ou teste. Penalidades são hipóteses numéricas experimentais, não propriedades psicológicas. Otimização unidimensional limitada a [-12,12]; o logit de entrada usa guarda 1e-6 e os escores usam guarda 1e-15, como o avaliador Python existente. Não há estimativa de incerteza dos coeficientes; isso consta como NOT_ESTIMATED.
+
+Comparadores no mesmo conjunto futuro: FSRS oficial sem ajustes, intercepto global, interceptos individuais com encolhimento e médias Beta(1,1) global e por estudante congeladas do treino. Brier, log loss, confiabilidade, viés e RMSE contra a probabilidade verdadeira são calculados fora do ajuste. A alegação de melhora exige limites superiores negativos para diferenças de Brier E log loss no bootstrap pareado por seed, com pelo menos cinco seeds. A comparação primária é individual versus global: melhorar só contra o FSRS padrão não demonstra ganho individual.
+
+Os intervalos reamostram seeds, não tratam eventos repetidos como independentes. Cinco seeds não garantem precisão; intervalos de bins de confiabilidade são descritivos. Diferenças entre as duas formas de esquecimento e entre intervalos não demonstram generalização humana.
+
+### Gerador independente de sondagens
+
+identifiability_simulator.py não importa R, FSRS nem o calibrador. Reutiliza somente as hipóteses geradoras já declaradas em simulator.forgetting. Para cada forma exponencial/potência e intervalo de 1,7,28 dias, quatro pares por seed recebem aquisição conhecida=1, half-lives geradoras 1,5/18 dias, 64 itens distintos e resultados imediatos idênticos. Cada item tem somente UMA sondagem tardia; não há revisão entre as avaliações. Os intervalos usam estudantes/coortes diferentes, sem fingir que o teste anterior não alterou a aprendizagem. Papéis e pseudônimos são embaralhados; parâmetros e pares verdadeiros nunca entram no R.
+
+O R produz taxas observadas e intervalos Wilson95 existentes em prefixos de 2,8,32,64 itens por fase. O avaliador externo mede separação correta e separação errada contra a verdade oculta, por forma, intervalo e tamanho da amostra, com bootstrap de seeds. O critério de detecção é não sobreposição dos intervalos com ordenação correta. Históricos imediatos devem permanecer indistinguíveis. Esta é uma análise de identificabilidade da probabilidade observada nas condições do simulador, NÃO uma estimação de half-life, domínio, causa do erro ou conhecimento versus esquecimento. O diagnóstico expõe explicitamente essas limitações.
+
+### Integridade, execução e autoridade
+
+    python lab/calibration_experiment.py --output tests/fixtures/learner_lab/run-calibration
+
+O diretório deve ser novo e confinado às fixtures. criteria.json precede os dados. Dois processos R reais terminam antes de truth.json e probe-truth.json serem persistidos. O adapter valida schemas fechados, origem, IDs, timestamps, resultados e hashes do snapshot. Testes perturbam os resultados de teste para comprovar invariância dos ajustes/predições, invertem a ordem das linhas, exercitam cold start, probabilidades extremas e rejeitam colunas latentes, duplicatas, origem real e previsões posteriores.
+
+manifest.json registra hashes de fontes e artefatos, versões e can_apply=false/can_schedule=false. audit() confere a integridade em leitura; checksum não autentica veracidade. O replay compara todos os artefatos byte a byte.
+
+**Estado inicial deste incremento:** implementação sujeita aos gates da PR. Resultados pessoais, dados públicos, benefício causal das revisões e intervenções, autoridade Java e equivalência com Java-FSRS continuam NOT_EXECUTED. Resultados sintéticos observados devem ser acrescentados somente depois da execução.
+
+
+### Resultados executados — avaliação sintética inicial
+
+Fonte imutável: commit fe9f9b3, [CI 40504239066](https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40504239066), SUCESSO. 36 testes do laboratório, 640 verificações R, zero falhas; replay de 13 artefatos de calibração idênticos, além dos replays de questões/memória existentes. O sumário completo, inclusive resultados por estudante e todos os estratos, está em tests/fixtures/learner_lab/individual_calibration_reference_result.json. Alterações posteriores devem ter CI própria.
+
+Foram avaliadas 320 tentativas futuras em 20 estudantes sintéticos e cinco seeds. Cada estudante contribuiu com 24 observações maduras de treino, oito de seleção e 16 de teste, em oito itens repetidos. Portanto 320 eventos NÃO são 320 estudantes independentes. É avaliação temporal dos mesmos estudantes, não generalização para pessoas novas. O bootstrap por seed é condicional aos modelos já ajustados e a este gerador; não incorpora toda a incerteza da estimação.
+
+| Modelo | N de teste | Brier | Log loss | Viés médio (p-y) |
+|---|---:|---:|---:|---:|
+| FSRS oficial, padrões | 320 | 0,318511 | 0,954646 | +0,372342 |
+| Ajuste global | 320 | 0,190087 | 0,564920 | +0,045475 |
+| Ajuste individual com encolhimento | 320 | 0,178597 | 0,542774 | +0,056907 |
+| Média individual congelada | 320 | 0,256620 | 0,754970 | +0,317548 |
+| Média global congelada | 320 | 0,340114 | 0,884990 | +0,331496 |
+
+O contraste primário individual-global passou SOMENTE neste simulador: diferença Brier IC bootstrap95 [-0,013759; -0,008800], log loss [-0,031830; -0,014406]. Comparações com os outros baselines também tiveram ambos os limites superiores negativos. Isso não comprova calibração perfeita: o viés médio foi ligeiramente pior que o global, há bins com discrepâncias e três de 20 estudantes tiveram Brier individual pior. Não selecionar esses três como grupo conhecido de risco com base no próprio teste: seriam necessários novos resultados futuros.
+
+Sondagens: os históricos imediatos foram indistinguíveis em todos os estratos. Separações corretas em 20 pares por estrato (0 separações com ordenação errada observadas):
+
+| Forma / intervalo | 2 itens | 8 itens | 32 itens | 64 itens |
+|---|---:|---:|---:|---:|
+| Exponencial / 1 dia | 0/20 | 0/20 | 15/20 | 20/20 |
+| Exponencial / 7 dias | 0/20 | 13/20 | 20/20 | 20/20 |
+| Exponencial / 28 dias | 0/20 | 0/20 | 17/20 | 20/20 |
+| Potência / 1 dia | 0/20 | 0/20 | 16/20 | 20/20 |
+| Potência / 7 dias | 0/20 | 7/20 | 20/20 | 20/20 |
+| Potência / 28 dias | 0/20 | 0/20 | 18/20 | 20/20 |
+
+Esses tamanhos não são recomendações universais de quantidade de questões. Dependeram das duas half-lives escolhidas, aquisição conhecida, hipóteses de esquecimento e critério conservador. A ausência de erros em uma amostra finita não estima risco zero. Intervalos bootstrap [1,1] nos estratos saturados não demonstram certeza populacional. O teste tardio informa a recuperação nessas condições, não identifica compreensão ou causa de erro.
+
+| Capacidade | Estado nesta execução | Lacuna |
+|---|---|---|
+| Pipeline real e reprodução | Aprovado tecnicamente | Não equivale a eficácia |
+| Ganho preditivo individual-global | Aprovado somente no simulador | Só cinco seeds e população escolhida |
+| Calibração probabilística perfeita | Parcial | Viés/bins e desempenho individual heterogêneos |
+| Separação por recuperação observável | Parcial | Depende de intervalo e amostra |
+| Identificação de half-life/ganho de aprendizagem | Inconclusivo | Não estimados, aquisição fixada em 1 |
+| Conhecimento versus esquecimento | Inconclusivo | Gerador não varia aquisição |
+| Atividades melhores / benefício causal | Inconclusivo | Nenhuma política comparada |
+| Validação pública ou pessoal | Inconclusivo | Não executada |
+| Aplicação automática ao planejador | Bloqueada | can_apply/can_schedule=false |
+
+O próximo teste justificado é ampliar geradores/coortes e repetir avaliação futura antes de tentar autorizar intervenções. Não promover o calibrador por ter vencido estas seeds. Procedência de versões FSRS, amostras curtas e cronologias assíncronas possuem gates adicionais; o manifesto agora inclui parâmetros e hashes do pacote oficial instalado.
