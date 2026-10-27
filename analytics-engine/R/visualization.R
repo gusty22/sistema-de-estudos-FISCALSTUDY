@@ -147,7 +147,7 @@ plot_calibration_curve <- function(confidence_metrics, output_path = NULL) {
     on.exit(grDevices::dev.off())
   }
   
-  graphics::par(mar = c(4.5, 4.5, 3.5, 1.5), family = "sans")
+  graphics::par(mar = c(6.0, 4.5, 3.5, 1.5), family = "sans")
   
   # X: Probabilidade esperada (0.20 a 1.00)
   # Y: Acurácia observada (0.00 a 1.00)
@@ -159,10 +159,10 @@ plot_calibration_curve <- function(confidence_metrics, output_path = NULL) {
   graphics::plot(
     x, y,
     type = "p", pch = 19, col = "#2563EB", cex = 1.5,
-    xlim = c(0.1, 1.05), ylim = c(0, 1.05),
-    xlab = "Probabilidade Declarada (Nível de Confiança 1 a 5)",
+    xlim = c(-0.05, 1.05), ylim = c(0, 1.05),
+    xlab = "Probabilidade assumida a partir de escala ordinal",
     ylab = "Acurácia Observada (Proporção de Acerto)",
-    main = "Diagrama de Confiabilidade e Calibração",
+    main = "Acerto observado por nivel de confianca",
     xaxt = "n", yaxt = "n"
   )
   graphics::grid(nx = NULL, ny = NULL, col = "#F1F5F9", lty = 1)
@@ -192,10 +192,10 @@ plot_calibration_curve <- function(confidence_metrics, output_path = NULL) {
   
   # Inscrição de métricas de calibração
   legend_text <- c(
-    "Calibração Perfeita (y = x)",
-    "Observado com IC 95% Wilson",
-    sprintf("Brier Score: %.4f", confidence_metrics$brier_score),
-    sprintf("ECE (Erro de Calibração): %.4f", confidence_metrics$ece)
+    "Referencia do mapeamento assumido (y = x)",
+    "Observado com IC Wilson descritivo",
+    sprintf("Brier sob mapeamento assumido: %.4f", confidence_metrics$brier_score),
+    sprintf("ECE sob mapeamento assumido: %.4f", confidence_metrics$ece)
   )
   graphics::legend(
     "topleft",
@@ -207,6 +207,8 @@ plot_calibration_curve <- function(confidence_metrics, output_path = NULL) {
     cex = 0.8
   )
   
+  graphics::mtext("Mapeamento hipotetico; repeticoes podem ser dependentes. Nao e calibracao pessoal validada.",
+    side=1,line=4.8,cex=0.65,col="#64748B")
   invisible(NULL)
 }
 

@@ -178,6 +178,15 @@ CI 40430980241, commit dfed935: SUCESSO; 23 testes do laboratório (sem skips), 
 PR #29: problema de CSV corrompido sob locale C reproduzido na CI 40435204718; corrigidos bootstrap de módulos UTF-8, leitura declarada sem conversão nativa, BOM opcional e serialização binária UTF-8 com regras CSV padrão. Sem modificar fontes, checksums, banco ou equações. CI 40439080064, commit 3a8d074: 23 testes do laboratório, 614 verificações R, zero falhas; rótulos de disciplina/tópico e CSV de métricas preservados sob C; replay de 50 arquivos passou. Detalhes e tentativas anteriores em docs/UTF8_TRANSPORT_VALIDATION.md. Windows local, visual e Java E2E não foram homologados; integrar junto do #30 sem perder os dois conjuntos de testes.
 
 
+## Confiança ordinal — correção estatística isolada
+
+PR #30, branch fix/r-ordinal-confidence-contract: nível fracionário não é truncado; mapeamentos inválidos falham explicitamente; ausência da faixa retorna taxa NA; denominador máximo de confiança é o subconjunto observado, com n_level5 explícito. Perfil, pacote e rótulos gráficos distinguem escala ordinal, hipótese de probabilidade e instante de confiança não estabelecido. Sem novos modelos de memória ou autoridade decisória.
+
+CI 40437888763 no commit 68dea90: 23 testes do laboratório e 626 verificações R sem falhas; cinco seeds e replay de 50 arquivos passaram. Alterações posteriores de documentação e rótulos devem ser validadas no novo head. Ver docs/CONFIDENCE_METRICS_VALIDATION.md. Homologação visual e Java E2E não executadas. A correção textual sob locale C permanece na branch independente do PR #29; integrar preservando os testes de ambas.
+
+Atualização de integração: main 28a43c1 (#29) incorporada nesta branch preservando o transporte UTF-8, os testes e timeouts existentes. Exportador e testes compartilhados usam a composição previamente verificada em CI 40440103059; novo gate desta branch obrigatório. Não inclui arquivos do laboratório de memória.
+
+
 ## Laboratório de memória — referência FSRS oficial
 
 Branch experiment/fsrs-memory-lab, dependente do PR #27. Implementados gerador independente de recordação, referência py-fsrs 6.3.2 (MIT, release oficial, parâmetros inalterados), contrato experimental memory_lab_events_v1 e adaptador para calculate_retrieval_surprise existente. Nenhuma equação FSRS foi reimplementada no R ou alterada no produto.
@@ -192,3 +201,7 @@ Validação sintética e técnica concluída para este incremento; otimização 
 A main verificada em 4b28bcbd3df53ed158c7b2e7de156a9b10ef190f contém o incremento #27, mas não contém os arquivos de memória da #28, embora a API registre essa PR como merged. Esta frente reaplica somente os dez arquivos do incremento de memória a partir do commit 04320817714c29bc41f61ef9f2766251f1acc499 sobre a main atual. Não presume a causa da diferença de árvore e não altera #29/#30, Java ou dados operacionais. Resultados históricos acima não substituem o novo gate de CI desta branch; seu resultado deve ser conferido na PR antes de integrar. O laboratório continua sintético, não prescreve atividades e não demonstra eficácia pessoal.
 
 Validação da recuperação 3b5942b: CI 40500031291 aprovada, 30 testes de laboratório, 600 verificações R e replays 50+8 idênticos. Durante essa execução a main recebeu #29 (28a43c1). Esta atualização preserva integralmente essa correção UTF-8 e seus testes, combina somente as adições de memória e retém os timeouts do workflow. Novo gate da composição obrigatório; nenhuma validação científica adicional é inferida.
+
+## Resolução do conflito #31 após integração #30 — 27/10/2026
+
+A main 35f046a recebeu a correção de confiança #30 após a última atualização da #31. Preservados integralmente os arquivos de código/testes da main e os registros históricos de confiança; acrescentados os arquivos e registros do laboratório de memória da #31. Sem migrações, alterações de dados ou habilitação decisória. CI desta nova composição deve ser conferida na PR; evidências anteriores continuam históricas.
