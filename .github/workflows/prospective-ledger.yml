@@ -1,0 +1,77 @@
+name: Prospective question ledger
+on:
+  pull_request:
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - 'analytics-engine/lab/prospective_evaluation.R'
+      - 'analytics-engine/tests/test_prospective_ledger.R'
+      - '.github/scripts/**'
+      - '.github/workflows/prospective-ledger.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: prospective-ledger-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  isolated-ledger:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Bound and verify disposable runner APT
+        timeout-minutes: 4
+        run: |
+          python3 -m unittest discover -s .github/scripts -p 'test_prepare_ubuntu_apt.py' -v
+          sudo python3 .github/scripts/prepare_ubuntu_apt.py
+          sudo timeout 150 apt-get update -o APT::Update::Error-Mode=any
+      - uses: r-lib/actions/setup-r@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05
+        timeout-minutes: 10
+        with:
+          r-version: '4.5.1'
+          use-public-rspm: true
+      - name: Existing R dependencies
+        timeout-minutes: 5
+        run: Rscript -e 'install.packages(c("jsonlite","digest"),repos="https://cloud.r-project.org")'
+      - name: Compile and test Java with isolated SQLite
+        working-directory: backend
+        timeout-minutes: 8
+        run: |
+          mvn -B -ntp test-compile
+          mvn -B -ntp -Dtest=ProspectivePredictionIntegrationTest,AttemptIdentityRegressionTest,LearningEvidenceServiceTest,FsrsReferenceConformanceTest,QuestionControllerTest test
+      - name: Evaluate the actual Java export in R and replay
+        working-directory: analytics-engine
+        run: |
+          Rscript tests/test_prospective_ledger.R
+          Rscript lab/prospective_evaluation.R ../backend/target/prospective-fixture.json ../backend/target/prospective-metrics.json
+          Rscript lab/prospective_evaluation.R ../backend/target/prospective-fixture.json ../backend/target/prospective-metrics-replay.json
+          cmp ../backend/target/prospective-metrics.json ../backend/target/prospective-metrics-replay.json
+          Rscript tests/test_runner.R
+      - name: Frontend tests and production build
+        working-directory: frontend
+        timeout-minutes: 5
+        run: |
+          npm ci --ignore-scripts
+          npm test
+          npm run build
+      - name: Retain explicitly synthetic integration evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: prospective-SYNTHETIC-FIXTURE-${{ github.run_id }}
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            backend/target/surefire-reports/
+            backend/target/prospective-fixture.json
+            backend/target/prospective-metrics*.json

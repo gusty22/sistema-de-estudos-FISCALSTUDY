@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { AttemptSubmission, annotateAttempt } from '../utils/attemptSubmission';
+import { ProspectivePreparation } from '../utils/prospectivePreparation';
 import { cachedStudyPreferences } from '../utils/studyPreferences';
 import { handleKeyActivate } from '../utils/accessibility';
 import './QuestionViewer.css';
@@ -171,6 +172,9 @@ const QuestionViewer: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const pendingAttemptRef = useRef<AttemptSubmission | null>(null);
   const submittingRef = useRef(false);
+  const prospectiveRef = useRef<ProspectivePreparation | null>(null);
+  const [prospectiveStatus, setProspectiveStatus] = useState<'PREPARING' | 'READY' | 'ERROR'>('PREPARING');
+  const [prospectiveRetry, setProspectiveRetry] = useState(0);
 
   // Configuração da Sessão Personalizada (Fase 8)
   const [concursos, setConcursos] = useState<ConcursoOption[]>([]);
@@ -389,16 +393,16 @@ const QuestionViewer: React.FC = () => {
       const isInput = activeEl instanceof HTMLInputElement || activeEl instanceof HTMLTextAreaElement || activeEl?.getAttribute('contenteditable') === 'true';
       if (isInput) return;
 
-      if (!feedback && !pendingAttemptRef.current && ['1', '2', '3', '4', '5'].includes(e.key)) {
+      if (!feedback && !pendingAttemptRef.current && prospectiveRef.current?.ready && prospectiveRef.current.questionId === question?.questionId && ['1', '2', '3', '4', '5'].includes(e.key)) {
         setConfidence(Number(e.key));
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [feedback]);
+  }, [feedback, question?.questionId]);
 
   const handleSelectOption = (opt: string) => {
-    if (feedback || pendingAttemptRef.current) return;
+    if (feedback || pendingAttemptRef.current || !prospectiveRef.current?.ready || prospectiveRef.current.questionId !== question?.questionId) return;
     if (selectedOption && selectedOption !== opt) {
       setOptionSwitchCount((prev) => prev + 1);
       const fromLetter = selectedOption.match(/^([A-E])\)?/)?.[1] || selectedOption.charAt(0);
@@ -517,6 +521,26 @@ const QuestionViewer: React.FC = () => {
   };
   const [sessionId, setSessionId] = useState<string>(getInitialSessionId);
 
+  // The answer controls unlock only after a separate pre-answer request has committed.
+  useEffect(() => {
+    if (!question || feedback) return;
+    let active = true;
+    let intent = prospectiveRef.current;
+    if (!intent || intent.questionId !== question.questionId || intent.sessionId !== sessionId) {
+      intent = new ProspectivePreparation(question.questionId, sessionId);
+      prospectiveRef.current = intent;
+    }
+    setProspectiveStatus('PREPARING');
+    intent.prepare().then(() => { if (active) setProspectiveStatus('READY'); })
+      .catch(() => { if (active) setProspectiveStatus('ERROR'); });
+    return () => { active = false; };
+  }, [question?.questionId, sessionId, feedback, prospectiveRetry]);
+
+  const prospectiveReady = prospectiveStatus === 'READY' &&
+    prospectiveRef.current?.questionId === question?.questionId &&
+    prospectiveRef.current?.sessionId === sessionId && prospectiveRef.current.ready;
+
+
   // Carrega Concursos e Disciplinas disponíveis
   useEffect(() => {
     fetch('/api/v1/concursos')
@@ -550,6 +574,9 @@ const QuestionViewer: React.FC = () => {
 
   const resetQuestionInteractions = () => {
     pendingAttemptRef.current = null;
+    prospectiveRef.current = null;
+    setProspectiveStatus('PREPARING');
+    setProspectiveRetry(value => value + 1);
     submittingRef.current = false;
     setFeedback(null);
     setSelectedOption(null);
@@ -866,7 +893,7 @@ const QuestionViewer: React.FC = () => {
   }, [lastFocusTime, sessionStarted, sessionEnded]);
 
   const handleSubmit = async () => {
-    if (!question || !selectedOption || confidence === 0 || isSubmitting || submittingRef.current || feedback) return;
+    if (!question || !selectedOption || confidence === 0 || isSubmitting || submittingRef.current || feedback || !prospectiveReady) return;
     submittingRef.current = true;
     setIsSubmitting(true);
 
@@ -940,7 +967,7 @@ const QuestionViewer: React.FC = () => {
           interventionType: currentIntervention,
           origin: 'REAL_STUDY',
           ...bioPayload
-        });
+        }, prospectiveRef.current!.attemptId);
       const result = await pendingAttemptRef.current.send(question.questionId);
       {
         setFeedback(result);
@@ -1745,7 +1772,7 @@ const QuestionViewer: React.FC = () => {
                 }}
                 onClick={() => handleSelectOption(opt)}
                 onKeyDown={(e) => {
-                  if (!feedback && !pendingAttemptRef.current) {
+                  if (!feedback && !pendingAttemptRef.current && prospectiveReady) {
                     handleKeyActivate(e, () => handleSelectOption(opt));
                   }
                 }}
@@ -1803,7 +1830,7 @@ const QuestionViewer: React.FC = () => {
                   aria-pressed={confidence === lvl}
                   aria-label={`Nível de certeza ${lvl}: ${label}`}
                   className={`conf-btn ${confidence === lvl ? 'active' : ''}`}
-                  onClick={() => !pendingAttemptRef.current && setConfidence(lvl)}
+                  onClick={() => prospectiveReady && !pendingAttemptRef.current && setConfidence(lvl)}
                   title={`Nível ${lvl} — ${label} (tecla ${lvl})`}
                 >
                   <span className="conf-num">{lvl}</span>
@@ -1835,7 +1862,7 @@ const QuestionViewer: React.FC = () => {
 
             <button 
               className="btn submit-btn" 
-              disabled={!selectedOption || confidence === 0 || isSubmitting}
+              disabled={!selectedOption || confidence === 0 || isSubmitting || !prospectiveReady}
               aria-busy={isSubmitting}
               onClick={handleSubmit}
               title={
@@ -1852,6 +1879,12 @@ const QuestionViewer: React.FC = () => {
             >
               {isSubmitting ? 'Gravando...' : pendingAttemptRef.current ? 'Reenviar tentativa' : 'Responder'}
             </button>
+            {!prospectiveReady && !feedback && (
+              <p role={prospectiveStatus === 'ERROR' ? 'alert' : 'status'}>
+                {prospectiveStatus === 'ERROR' ? 'Não foi possível preparar a questão. Sua resposta ainda não foi enviada.' : 'Preparando questão...'}
+                {prospectiveStatus === 'ERROR' && <button type="button" onClick={() => setProspectiveRetry(value => value + 1)}>Tentar novamente</button>}
+              </p>
+            )}
           </div>
         </div>
       ) : (
