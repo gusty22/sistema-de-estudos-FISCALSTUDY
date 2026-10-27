@@ -26,6 +26,23 @@ class PublicAdapterTests(unittest.TestCase):
         self.assertEqual(rows[0]["moment"].utcoffset().total_seconds(),0)
         self.assertEqual(qa["eligible_rows"],2)
 
+    def test_source_study_day_is_not_silently_equated_to_24h(self):
+        records=sample()
+        records[1]["review_time"]=1600000000000+23*3600*1000
+        rows,qa=parse_fsrs_tsv(tsv(records),"fixture")
+        self.assertEqual(qa["time_basis"]["source_interval_vs_utc_whole_day_mismatches"],1)
+        self.assertEqual(qa["time_basis"]["positive_source_interval_under_24h"],1)
+        self.assertEqual(len(rows),2)
+
+    def test_official_helper_flooring_is_declared_not_reimplemented(self):
+        from public_data_adapters import replay_fsrs
+        records=sample()
+        records[1]["review_time"]=1600000000000+23*3600*1000
+        rows,_=parse_fsrs_tsv(tsv(records),"fixture")
+        predictions,_=replay_fsrs(rows,"fixture")
+        self.assertEqual(predictions[1]["predicted_probability"],1.0)
+        self.assertEqual(predictions[1]["origin_type"],"UNVERIFIED_EXTERNAL")
+
     def test_fsrs_bad_target_duplicate_and_missing_prefix(self):
         rows=sample();rows[1]["y"]=1
         with self.assertRaises(ValueError):

@@ -125,3 +125,12 @@ The online personal mean's log loss remained lower, 0.398297; individual-minus-b
 ASSISTments results and inconclusive intervals were unchanged by integrity/replay hardening. Newly observed items are not validated transfer, ordinal ordering is not a retention interval, and six of twelve histories had worse skill-set Brier.
 
 **Decision: keep all planner authority blocked.** There is no personal prospective validation, validated cognitive twin, estimated conceptual mastery, identified personal forgetting curve, causal intervention effect or demonstrated operational planner benefit. The next justified implementation is the versioned personal evidence transport and an independently precommitted prediction ledger, with isolated SQLite integration tests, before a randomized/counterbalanced delayed-outcome N-of-1 experiment.
+
+
+## Temporal compatibility finding — do not interpret this pilot as canonical FSRS calibration
+
+Horizon inspection of the executed report identified 1,265 final targets below 24 hours: the official helper predicted exactly 1, but 257 failures were observed (Brier and bias both 257/1265). Source inspection at official py-fsrs v6.3.2 fsrs/scheduler.py get_card_retrievability confirms elapsed_days=max(0,(current_datetime-card.last_review).days). This is declared library behavior, not an equation to patch in R.
+
+The dataset's prepared delta_t is not necessarily the number of complete UTC 24-hour periods. Therefore source-study-day versus actual-UTC clock alignment is unresolved, including intervals beyond the subday bin. The new QA reports mismatch counts and positive source intervals under 24 hours, without changing outcomes, deleting subday cases, tuning the test, or replacing the canonical formula. Technical tests exercise the difference explicitly.
+
+Any earlier statement of individual-global improvement remains a conditional comparison of the chosen adapters on these observations, not demonstrated personal retention calibration. The numerical guard finding is strongly affected by this time basis. Review source preparation/day boundaries, pre-register an alternative verified temporal adapter and evaluate it on a separate held-out cohort before interpreting FSRS predictive validity. No post-hoc target exclusion or new forgetting equation is authorized by these results.

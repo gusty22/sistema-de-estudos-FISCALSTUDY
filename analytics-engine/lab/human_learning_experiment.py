@@ -77,6 +77,8 @@ def run(output,download=False,source_run=None):
         report.update(dict(source_kind="PUBLIC_HUMAN_DATASET",dataset=source["dataset"],revision=source["revision"],
             n_input_events=len(events),qa=qa,students=analytical["students"],
             total_cold=analytical["n_cold"],r_python_score_agreement=True,
+            temporal_compatibility="UNRESOLVED" if any(x["time_basis"]["source_interval_vs_utc_whole_day_mismatches"] for x in qa) else "NO_MISMATCH_OBSERVED",
+            reference_settings=dict(enable_fuzzing=False,learning_steps=[],relearning_steps=[],retrieval_clock="Official py-fsrs timedelta.days (whole 24h periods)"),
             generalization=analytical["global_generalization"],
             fsrs_pretraining_overlap="UNKNOWN",policy_effectiveness="NOT_EXECUTED",
             conceptual_knowledge="NOT_IDENTIFIED",personal_validation="NOT_EXECUTED",can_schedule=False))

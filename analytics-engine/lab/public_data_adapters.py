@@ -42,16 +42,24 @@ def parse_fsrs_tsv(data,source_id,origin_type="UNVERIFIED_EXTERNAL"):
             moment=moment,source_delta_t=interval,event_id=pseudonym(source_id,f"{card}:{ms}"))
         cards.setdefault(card,[]).append(entry)
     # A partial card history cannot initialize an official state honestly.
-    excluded=0
+    excluded=0;clock_comparisons=0;clock_mismatches=0;positive_source_under_24h=0
     for card,history in cards.items():
         history.sort(key=lambda r:r["ms"])
         if [r["sequence"] for r in history]!=list(range(1,len(history)+1)):
             excluded+=len(history)
         else:
+            for previous,current in zip(history,history[1:]):
+                days=(current["moment"]-previous["moment"]).total_seconds()/86400
+                clock_comparisons+=1
+                clock_mismatches+=int(not math.isclose(current["source_delta_t"],math.floor(days),abs_tol=1e-9))
+                positive_source_under_24h+=int(current["source_delta_t"]>0 and days<1)
             rows.extend(history)
     rows.sort(key=lambda r:(r["ms"],r["card"]))
     return rows,dict(raw_rows=len(seen),eligible_rows=len(rows),
         exclusions={"MISSING_OR_INCONSISTENT_CARD_PREFIX":excluded},
+        time_basis=dict(comparisons=clock_comparisons,source_interval_vs_utc_whole_day_mismatches=clock_mismatches,
+            positive_source_interval_under_24h=positive_source_under_24h,
+            status="UNRESOLVED_CLOCK_ALIGNMENT" if clock_mismatches else "NO_MISMATCH_OBSERVED"),
         ignored_fields=["t_history","r_history"],target="SELF_REPORTED_RECALL_RATING_GT_1",
         origin_type=origin_type,local_timezone="NOT_AVAILABLE",
         limitation="Already filtered source; not the complete original within-day Anki log")
