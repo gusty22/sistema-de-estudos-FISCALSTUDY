@@ -117,3 +117,47 @@ O diretório deve ser novo e confinado às fixtures. criteria.json precede os da
 manifest.json registra hashes de fontes e artefatos, versões e can_apply=false/can_schedule=false. audit() confere a integridade em leitura; checksum não autentica veracidade. O replay compara todos os artefatos byte a byte.
 
 **Estado inicial deste incremento:** implementação sujeita aos gates da PR. Resultados pessoais, dados públicos, benefício causal das revisões e intervenções, autoridade Java e equivalência com Java-FSRS continuam NOT_EXECUTED. Resultados sintéticos observados devem ser acrescentados somente depois da execução.
+
+
+### Resultados executados — avaliação sintética inicial
+
+Fonte imutável: commit fe9f9b3, [CI 40504239066](https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40504239066), SUCESSO. 36 testes do laboratório, 640 verificações R, zero falhas; replay de 13 artefatos de calibração idênticos, além dos replays de questões/memória existentes. O sumário completo, inclusive resultados por estudante e todos os estratos, está em tests/fixtures/learner_lab/individual_calibration_reference_result.json. Alterações posteriores devem ter CI própria.
+
+Foram avaliadas 320 tentativas futuras em 20 estudantes sintéticos e cinco seeds. Cada estudante contribuiu com 24 observações maduras de treino, oito de seleção e 16 de teste, em oito itens repetidos. Portanto 320 eventos NÃO são 320 estudantes independentes. É avaliação temporal dos mesmos estudantes, não generalização para pessoas novas. O bootstrap por seed é condicional aos modelos já ajustados e a este gerador; não incorpora toda a incerteza da estimação.
+
+| Modelo | N de teste | Brier | Log loss | Viés médio (p-y) |
+|---|---:|---:|---:|---:|
+| FSRS oficial, padrões | 320 | 0,318511 | 0,954646 | +0,372342 |
+| Ajuste global | 320 | 0,190087 | 0,564920 | +0,045475 |
+| Ajuste individual com encolhimento | 320 | 0,178597 | 0,542774 | +0,056907 |
+| Média individual congelada | 320 | 0,256620 | 0,754970 | +0,317548 |
+| Média global congelada | 320 | 0,340114 | 0,884990 | +0,331496 |
+
+O contraste primário individual-global passou SOMENTE neste simulador: diferença Brier IC bootstrap95 [-0,013759; -0,008800], log loss [-0,031830; -0,014406]. Comparações com os outros baselines também tiveram ambos os limites superiores negativos. Isso não comprova calibração perfeita: o viés médio foi ligeiramente pior que o global, há bins com discrepâncias e três de 20 estudantes tiveram Brier individual pior. Não selecionar esses três como grupo conhecido de risco com base no próprio teste: seriam necessários novos resultados futuros.
+
+Sondagens: os históricos imediatos foram indistinguíveis em todos os estratos. Separações corretas em 20 pares por estrato (0 separações com ordenação errada observadas):
+
+| Forma / intervalo | 2 itens | 8 itens | 32 itens | 64 itens |
+|---|---:|---:|---:|---:|
+| Exponencial / 1 dia | 0/20 | 0/20 | 15/20 | 20/20 |
+| Exponencial / 7 dias | 0/20 | 13/20 | 20/20 | 20/20 |
+| Exponencial / 28 dias | 0/20 | 0/20 | 17/20 | 20/20 |
+| Potência / 1 dia | 0/20 | 0/20 | 16/20 | 20/20 |
+| Potência / 7 dias | 0/20 | 7/20 | 20/20 | 20/20 |
+| Potência / 28 dias | 0/20 | 0/20 | 18/20 | 20/20 |
+
+Esses tamanhos não são recomendações universais de quantidade de questões. Dependeram das duas half-lives escolhidas, aquisição conhecida, hipóteses de esquecimento e critério conservador. A ausência de erros em uma amostra finita não estima risco zero. Intervalos bootstrap [1,1] nos estratos saturados não demonstram certeza populacional. O teste tardio informa a recuperação nessas condições, não identifica compreensão ou causa de erro.
+
+| Capacidade | Estado nesta execução | Lacuna |
+|---|---|---|
+| Pipeline real e reprodução | Aprovado tecnicamente | Não equivale a eficácia |
+| Ganho preditivo individual-global | Aprovado somente no simulador | Só cinco seeds e população escolhida |
+| Calibração probabilística perfeita | Parcial | Viés/bins e desempenho individual heterogêneos |
+| Separação por recuperação observável | Parcial | Depende de intervalo e amostra |
+| Identificação de half-life/ganho de aprendizagem | Inconclusivo | Não estimados, aquisição fixada em 1 |
+| Conhecimento versus esquecimento | Inconclusivo | Gerador não varia aquisição |
+| Atividades melhores / benefício causal | Inconclusivo | Nenhuma política comparada |
+| Validação pública ou pessoal | Inconclusivo | Não executada |
+| Aplicação automática ao planejador | Bloqueada | can_apply/can_schedule=false |
+
+O próximo teste justificado é ampliar geradores/coortes e repetir avaliação futura antes de tentar autorizar intervenções. Não promover o calibrador por ter vencido estas seeds. Procedência de versões FSRS, amostras curtas e cronologias assíncronas possuem gates adicionais; o manifesto agora inclui parâmetros e hashes do pacote oficial instalado.
