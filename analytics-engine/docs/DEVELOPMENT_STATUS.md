@@ -197,3 +197,8 @@ CI 40437888763 no commit 68dea90: 23 testes do laboratório e 626 verificações
 ## Composicao temporaria para testes cruzados
 
 Branch integration/r-laboratory-validation: proposta de composicao, sem merge nas branches originais ou main. Commits exatos em docs/INTEGRATION_SOURCES.json. Preservados os contratos de memoria, leitura/serializacao UTF-8 e denominadores ordinais, com os dois conjuntos de testes. Validacao cruzada inicialmente PENDENTE; consultar CI deste head. A composicao nao habilita autoridade decisoria nem valida eficacia pessoal.
+
+
+### Composicao cruzada validada
+
+CI 40440103059, commit 1ffb0e9: 30 testes do laboratorio e 640 verificacoes R, zero falhas, nenhum skip; pipeline locale C, denominadores ordinais e R/Python de memoria aprovados; 50 arquivos de questoes e oito de memoria reproduzidos byte a byte. Ver docs/R_LAB_INTEGRATION_VALIDATION.md e INTEGRATION_SOURCES.json. Nenhum merge na main; dados pessoais, Java E2E e eficacia pedagogica nao foram homologados. Modelos especificos nao demonstraram ganho nos geradores; nao promover automaticamente.

@@ -99,3 +99,14 @@ Manifesto do Bridge é frente separada fix/analytics-bridge-provenance, reutiliz
 
 
 Fechamento: R 574/0; Java 22/0/0/0, incluindo transporte real, bloqueio de aplicação/recarga e respostas HTTP explícitas. Novas observações R21/R22 estão registradas. Próximos trabalhos permanecem dados curriculares/condições da resposta e consumidores cognitivos Java concorrentes, não algoritmos mais complexos.
+
+
+## Continuidade executada — laboratorio e integridade analitica
+
+Registro incremental, preservando o plano/auditoria anteriores. Quatro frentes implementadas e publicadas para revisao: #27 baselines/procedencia, #28 memoria oficial FSRS, #29 transporte UTF-8 e #30 confianca ordinal. A composicao temporaria foi validada na CI 40440103059 (1ffb0e9), com 30 testes do laboratorio e 640 verificacoes R sem falhas; nao houve merge na main. Relatorio completo e matriz A-J em R_LAB_INTEGRATION_VALIDATION.md; fontes exatas em INTEGRATION_SOURCES.json.
+
+O primeiro marco experimental e executavel: gera estudantes sinteticos, executa os modulos R reais, compara probabilidades com resultados e referencia conhecida, conserva hashes/manifestos e reproduz artefatos. pyBKT e referencia FSRS foram efetivamente executados com bibliotecas isoladas. Isso nao conclui um Cognitive Digital Twin nem demonstra eficacia pessoal.
+
+Resultados impediram promocao indevida: media por topico e media movel perderam para a media global no gerador; pyBKT teve cobertura incompleta por nao finitude; FSRS padrao superestimou recordacao no gerador de memoria. Nao alterar equacoes ou selecionar parametros nas mesmas seeds. Confianca ordinal nao e probabilidade subjetiva medida; metadados e denominadores agora explicitam a hipotese.
+
+Proximos gates, em ordem: (1) revisao humana dos PRs e preservacao da composicao testada; (2) completar observacoes reais/semanticas ausentes e identidades historicas sem fabricar valores; (3) definir avaliacoes tardias, identificabilidade e treino/teste temporais; (4) comparar politicas em orcamento equivalente; (5) amostras publicas autorizadas e dados pessoais prospectivos; (6) modelos adicionais somente com ganho justificavel. Integracao Spring/SQLite, Windows local e homologacao visual permanecem nao executadas. Can_apply e can_schedule continuam bloqueados.
