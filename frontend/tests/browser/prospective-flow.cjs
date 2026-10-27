@@ -23,7 +23,7 @@ async function waitFor(fn) { for(let n=0;n<100;n++){if(await fn())return;await n
   await route.continue();
  });
  page.on('dialog',dialog=>dialog.dismiss());
- const gotoStudy=async()=>{await page.getByRole('button',{name:'Sessão de questões',exact:true}).click();};
+ const gotoStudy=async()=>{await page.getByRole('button',{name:/Sessão de questões/}).click();};
  let dropPreparation=true;
  await page.route('**/api/v1/questions/*/predictions',async route=>{
   const response=await route.fetch();
