@@ -63,7 +63,7 @@ def compare_predictions(predictions,truth,seeds):
     metrics={name:dict(**score([r for r in scored if r["model_name"]==name]),
         reliability=reliability([r for r in scored if r["model_name"]==name])) for name in names}
     contrasts={}
-    for baseline in ("GLOBAL_SHIFT","FSRS_OFFICIAL","TRAIN_BETA11"):
+    for baseline in ("GLOBAL_SHIFT","FSRS_OFFICIAL","TRAIN_BETA11","STUDENT_TRAIN_BETA11"):
         differences={key:[] for key in ("brier","log_loss")}
         for seed in seeds:
             left=score([r for r in scored if r["seed"]==seed and r["model_name"]=="INDIVIDUAL_SHRUNK_SHIFT"])

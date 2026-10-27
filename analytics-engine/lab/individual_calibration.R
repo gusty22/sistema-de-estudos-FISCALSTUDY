@@ -57,10 +57,15 @@ evaluate_individual_calibration <- function(data) {
   selected <- which.min(validation_loss) # Fixed order resolves ties. No test labels used.
   shifts <- fits[[selected]]
   frozen_mean <- (sum(train$y)+1)/(nrow(train)+2)
+  student_mean <- vapply(sort(unique(train$student_id)),function(id) {
+    y <- train$y[train$student_id==id]
+    (sum(y)+1)/(length(y)+2)
+  },numeric(1))
   models <- list(FSRS_OFFICIAL=test$p,
     GLOBAL_SHIFT=cal_shift(test$p,global),
     INDIVIDUAL_SHRUNK_SHIFT=cal_shift(test$p,shifts[test$student_id]),
-    TRAIN_BETA11=rep(frozen_mean,nrow(test)))
+    TRAIN_BETA11=rep(frozen_mean,nrow(test)),
+    STUDENT_TRAIN_BETA11=unname(student_mean[test$student_id]))
   predictions <- do.call(rbind,lapply(names(models),function(name) data.frame(
     event_id=test$event_id,student_id=test$student_id,model_name=name,
     predicted_probability=as.numeric(models[[name]]),observed_correct=test$y,
