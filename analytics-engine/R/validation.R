@@ -3,7 +3,8 @@
 # Projeto: FiscalStudy Analytics (R >= 4.0.0)
 
 if (file.exists("R/provenance.R")) {
-  source("R/provenance.R", encoding="UTF-8")
+  if (exists("source_utf8",mode="function")) source_utf8("R/provenance.R") else
+    source("R/provenance.R", encoding="UTF-8")
 }
 
 #' Cria uma estrutura vazia de issues de validação

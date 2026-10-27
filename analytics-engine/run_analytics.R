@@ -13,20 +13,31 @@ output_root <- Sys.getenv("FISCALSTUDY_ANALYTICS_OUTPUT", "output")
 # Pipeline Principal de Execução Analítica
 # Projeto: FiscalStudy Analytics (R >= 4.0.0)
 
+# source(file, encoding=...) transcodes through the native locale, which can
+# truncate UTF-8 modules under LC_ALL=C. Parse declared UTF-8 text directly.
+source_utf8 <- function(path) {
+  contents <- withCallingHandlers(readLines(path,warn=FALSE,encoding="UTF-8"),
+    warning=function(w) stop("Invalid UTF-8 R module: ",conditionMessage(w),call.=FALSE))
+  if (any(!validUTF8(contents))) stop("R module is not valid UTF-8: ",path)
+  expressions <- parse(text=contents,encoding="UTF-8",keep.source=FALSE)
+  for (expression in expressions) eval(expression,envir=.GlobalEnv)
+  invisible(NULL)
+}
+
 suppressPackageStartupMessages({
-  source("R/validation.R", encoding="UTF-8")
-  source("R/descriptive_analysis.R", encoding="UTF-8")
-  source("R/retention_analysis.R", encoding="UTF-8")
-  source("R/retrieval_diagnostics.R", encoding="UTF-8")
-  source("R/visualization.R", encoding="UTF-8")
-  source("R/export_results.R", encoding="UTF-8")
-  source("R/learning_profile.R", encoding="UTF-8")
-  source("R/analytical_signals.R", encoding="UTF-8")
-  source("R/intervention_analysis.R", encoding="UTF-8")
-  source("R/recommendation_evaluation.R", encoding="UTF-8")
-  source("R/adapter.R", encoding="UTF-8")
-  source("R/baselines.R", encoding="UTF-8")
-  if (file.exists("R/provenance.R")) source("R/provenance.R", encoding="UTF-8")
+  source_utf8("R/validation.R")
+  source_utf8("R/descriptive_analysis.R")
+  source_utf8("R/retention_analysis.R")
+  source_utf8("R/retrieval_diagnostics.R")
+  source_utf8("R/visualization.R")
+  source_utf8("R/export_results.R")
+  source_utf8("R/learning_profile.R")
+  source_utf8("R/analytical_signals.R")
+  source_utf8("R/intervention_analysis.R")
+  source_utf8("R/recommendation_evaluation.R")
+  source_utf8("R/adapter.R")
+  source_utf8("R/baselines.R")
+  if (file.exists("R/provenance.R")) source_utf8("R/provenance.R")
 })
 
 main <- function() {
