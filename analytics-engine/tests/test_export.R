@@ -84,3 +84,15 @@ bad_result <- tryCatch({read_utf8_csv(bad_csv);NULL},error=function(e)e)
 assert_true(inherits(bad_result,"error"),"Invalid UTF-8 bytes fail explicitly")
 assert_true(grepl("UTF-8",conditionMessage(bad_result),fixed=TRUE),"Encoding failure identifies UTF-8 contract")
 for (path in c(utf8_csv,bom_csv,bad_csv)) unlink(path)
+
+
+# Standard CSV quoting remains valid for UTF-8, commas, quotes and newlines.
+quoted_json <- tempfile("utf8-quote-",fileext=".json")
+quoted_csv <- tempfile("utf8-quote-",fileext=".csv")
+quoted_definition <- "Mem\u00f3ria, \"teste\"\nCr\u00e9dito"
+quoted_record <- build_metric_record("quoted_utf8",quoted_definition,"n\u00e3o",n_observations=1L)
+export_metrics_package(list(metrics=list(quoted_record)),quoted_json,quoted_csv)
+quoted_read <- utils::read.csv(quoted_csv,encoding="UTF-8",stringsAsFactors=FALSE)
+assert_equal(quoted_read$definition,quoted_definition,"UTF-8 CSV retains standard quote/comma/newline semantics")
+assert_equal(quoted_read$value,"n\u00e3o","UTF-8 CSV retains character metric values")
+unlink(c(quoted_json,quoted_csv))

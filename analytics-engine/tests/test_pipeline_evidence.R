@@ -92,6 +92,11 @@ if (unicode_run$exit==0L) {
   time_limitations <- unicode_metrics$limitations[unicode_metrics$metric_name=="median_active_time_seconds"]
   assert_true(grepl("n\u00e3o mede aten\u00e7\u00e3o",time_limitations,fixed=TRUE),
               "Locale C export preserves full UTF-8 metric limitations")
+  unicode_profile <- jsonlite::fromJSON(file.path(unicode_output,"metrics/learning_profile_v1.json"))
+  assert_true(unicode_label %in% unicode_profile$mastery_by_discipline$disciplina,
+              "Locale C preserves recorded discipline labels through the full pipeline")
+  assert_true("Cr\u00e9dito tribut\u00e1rio" %in% unicode_profile$mastery_by_topic$assunto,
+              "Locale C preserves recorded topic labels through the full pipeline")
   unicode_summary <- jsonlite::fromJSON(file.path(unicode_output,"metrics/metrics_summary_v1.json"))
   assert_false(unicode_summary$is_real_student_data,"Unicode fixture never gains real-student provenance")
 }
