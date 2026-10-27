@@ -1632,7 +1632,7 @@ const QuestionViewer: React.FC = () => {
 
       {/* MAPA DA SESSÃO E NAVEGAÇÃO DE QUESTÕES */}
       {sessionQuestions.length > 0 && (
-        <div className="session-map-bar glass animate-fade-in">
+        <div className="session-map-bar glass animate-fade-in" data-answered-count={Object.values(answeredMap).filter(item => item.feedback).length}>
           <div className="map-info">
             <div className="map-badge-counter">
               <span className="map-title-label">🗺️ Mapa da Sessão:</span>
@@ -1640,7 +1640,7 @@ const QuestionViewer: React.FC = () => {
                 Questão <strong>{currentQuestionIndex + 1}</strong> de <strong>{sessionQuestions.length}</strong>
               </span>
               <span className="map-progress-pct">
-                ({Math.round((Object.keys(answeredMap).length / Math.max(sessionQuestions.length, 1)) * 100)}% respondido)
+                ({Math.round((Object.values(answeredMap).filter(item => item.feedback).length / Math.max(sessionQuestions.length, 1)) * 100)}% respondido)
               </span>
             </div>
 

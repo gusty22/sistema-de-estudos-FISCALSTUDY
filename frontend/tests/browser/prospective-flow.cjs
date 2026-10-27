@@ -89,7 +89,7 @@ async function waitFor(fn) { for(let n=0;n<100;n++){if(await fn())return;await n
  await page.locator('.option-card.correct').waitFor();
  assert.equal(await page.evaluate(()=>localStorage.getItem('fiscalstudy_active_question_session')),priorSession);
  assert.equal(count('PREDICTION_COMMITTED'),1);assert.equal(count('ANSWER_SUBMITTED'),1);
- await waitFor(async()=>await page.locator('.question-map-panel').count() ? (await page.locator('.question-map-panel').innerText()).includes('1/3') : (await page.locator('body').innerText()).includes('1/3'));
+ await waitFor(async()=>await page.locator('.session-map-bar').getAttribute('data-answered-count')==='1');
  await page.screenshot({path:path.join(root,'04-new-runtime-recovery.png'),fullPage:true});
  // Switch quickly while preparation is pending. The response must not select/complete another item.
  await page.getByRole('button',{name:'Próxima ➔',exact:true}).click();
