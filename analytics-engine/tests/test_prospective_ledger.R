@@ -42,6 +42,8 @@ node <- jsonlite::fromJSON(future$events[[index]]$payload_json,simplifyVector=FA
 node$snapshotRowid <- input$snapshotRowid
 future$events[[index]]$payload_json <- jsonlite::toJSON(node,auto_unbox=TRUE,null="null")
 expect_error(evaluate_prospective(emit(future)))
+bad_recording <- input;bad_recording$events[[index]]$recorded_at <- "2099-01-01T12:00:00Z"
+expect_error(evaluate_prospective(emit(bad_recording)))
 wrong_id <- input
 node <- jsonlite::fromJSON(wrong_id$events[[index]]$payload_json,simplifyVector=FALSE)
 node$attemptId <- "not-a-uuid"
@@ -53,4 +55,4 @@ e$inputSha256 <- digest::digest(enc2utf8(e$inputJson),algo="sha256",serialize=FA
 path <- tempfile();writeLines(jsonlite::toJSON(e,auto_unbox=TRUE,null="null"),path)
 zero <- evaluate_prospective(path)
 stopifnot(zero$scored_count==0,zero$metrics$status=="INSUFFICIENT_EVIDENCE",is.null(zero$coverage))
-cat("Prospective R: 9 integrity/scoring scenarios passed; fixture-only, no personal validation.\n")
+cat("Prospective R: 10 integrity/scoring scenarios passed; fixture-only, no personal validation.\n")

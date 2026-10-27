@@ -29,7 +29,8 @@ evaluate_prospective <- function(path) {
   ids <- vapply(rows,function(e)e$event_id,character(1))
   payload <- lapply(rows,function(e)jsonlite::fromJSON(e$payload_json,simplifyVector=FALSE))
   times <- lapply(rows,function(e)scalar_time(e$occurred_at))
-  names(rows) <- names(payload) <- names(times) <- ids
+  recorded <- lapply(rows,function(e)scalar_time(e$recorded_at))
+  names(rows) <- names(payload) <- names(times) <- names(recorded) <- ids
   eligible <- function(n) identical(n$origin,"REAL_STUDY") &&
     is.logical(n$isCorrect) && length(n$isCorrect)==1L &&
     identical(n$gabaritoStatus,"DEFINITIVO") && identical(n$usedHelp,FALSE)
@@ -54,7 +55,7 @@ evaluate_prospective <- function(path) {
     expected <- ids[vapply(ids,function(key) {
       r <- rows[[key]]
       identical(r$event_type,"ANSWER_SUBMITTED") && r$snapshot_rowid<=f$snapshotRowid &&
-        times[[key]]<cutoff_at && eligible(payload[[key]])
+        times[[key]]<cutoff_at && recorded[[key]]<=cutoff_at && eligible(payload[[key]])
     },logical(1))]
     evidence <- as.character(unlist(f$evidenceEventIds,use.names=FALSE))
     if (anyDuplicated(evidence) || !setequal(expected,evidence)) stop("Future/missing/ineligible forecast evidence")
@@ -68,7 +69,8 @@ evaluate_prospective <- function(path) {
     if (!attempt_key %in% ids) { exclusions[[id]] <- "PENDING_OUTCOME"; next }
     a <- rows[[attempt_key]]; y <- payload[[attempt_key]]
     if (!identical(a$event_type,"ANSWER_SUBMITTED") || a$snapshot_rowid<=e$snapshot_rowid ||
-        times[[attempt_key]]<created || !identical(a$aggregate_id,f$questionId) ||
+        times[[attempt_key]]<created || times[[attempt_key]]<recorded[[id]] ||
+        recorded[[id]]<created || recorded[[attempt_key]]<times[[attempt_key]] || !identical(a$aggregate_id,f$questionId) ||
         !identical(a$session_id,f$sessionId) || !identical(y$attemptId,f$attemptId) ||
         !identical(y$questionId,f$questionId) || !identical(y$prospectivePredictionId,f$predictionId))
       stop("Attempt association or precommit ordering invalid")

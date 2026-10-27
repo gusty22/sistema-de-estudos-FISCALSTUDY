@@ -73,7 +73,9 @@ public class ProspectivePredictionService {
                 try { node=read(event.getPayloadJson()); }
                 catch(IllegalStateException malformed) { excluded++; continue; }
                 Instant when;
-                try { when=Instant.parse(event.getOccurredAt()); }
+                try { when=Instant.parse(event.getOccurredAt());
+                    if(Instant.parse(event.getRecordedAt()).isAfter(now)) { excluded++; continue; }
+                }
                 catch(Exception invalid) { excluded++; continue; }
                 if(!when.isBefore(now) || !"REAL_STUDY".equals(node.path("origin").asText()) ||
                    !node.path("isCorrect").isBoolean() || !"DEFINITIVO".equals(node.path("gabaritoStatus").asText()) ||
