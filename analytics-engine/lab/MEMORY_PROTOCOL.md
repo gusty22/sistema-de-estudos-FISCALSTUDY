@@ -83,3 +83,37 @@ Bins de confiabilidade e seus intervalos de Wilson são descritivos; tentativas 
 Resultado compacto permanente: tests/fixtures/learner_lab/memory_reference_result.json. Artefato de CI 12702842479, SHA-256 120ac8183467e550d50f3b7b05d497c7b2913a9cf10300f46392243cef46b1ee, disponível até 03/11/2026. Os comandos acima reproduzem os dados; o hash do artefato não é assinatura científica.
 
 Próxima etapa: desenho de calibração temporal e identificabilidade antes de comparar políticas. Os quatro perfis são condições geradoras conhecidas, não uma personalidade atribuída ao estudante. Este resultado não modifica o planejador, os modelos operacionais ou os controles de autoridade.
+
+
+## Incremento experimental: calibração individual e identificabilidade
+
+**Protocolo registrado antes de executar as seeds 811,839,863,887,911.** O gerador de memória e a implementação oficial FSRS permanecem inalterados. Esta avaliação não otimiza os parâmetros FSRS, não calcula outra curva operacional e não habilita o planejador.
+
+### Perguntas e métodos
+
+1. Um ajuste individual da probabilidade prevista melhora previsões futuras em relação a um ajuste global?
+2. Históricos imediatos idênticos permitem identificar diferenças de retenção? Quanto avaliações tardias em itens distintos ajudam?
+
+O primeiro experimento reaproveita generate_memory, FSRSReference e o diagnóstico R existente. O R experimental recebe somente observações. A partir de seis lotes maduros por estudante, os três primeiros são treino (dias 1,3,7), o quarto é seleção (dia 14) e os dois últimos são teste (dias 28,42). Lotes com mesmo timestamp permanecem juntos. Janelas globais sobrepostas são rejeitadas; históricos mais curtos retornam insuficiência.
+
+A hipótese de calibração é logit(p_cal)=logit(p_FSRS)+a. O intercepto global minimiza a soma de log losses mais a²/2. Interceptos individuais minimizam essa soma mais lambda*(a_i-a_global)²/2. lambda pertence a {1,4,16}, escolhido pela menor log loss de validação, sem refazer ajuste sobre validação ou teste. Penalidades são hipóteses numéricas experimentais, não propriedades psicológicas. Otimização unidimensional limitada a [-12,12]; o logit de entrada usa guarda 1e-6 e os escores usam guarda 1e-15, como o avaliador Python existente. Não há estimativa de incerteza dos coeficientes; isso consta como NOT_ESTIMATED.
+
+Comparadores no mesmo conjunto futuro: FSRS oficial sem ajustes, intercepto global, interceptos individuais com encolhimento e média Beta(1,1) congelada do treino. Brier, log loss, confiabilidade, viés e RMSE contra a probabilidade verdadeira são calculados fora do ajuste. A alegação de melhora exige limites superiores negativos para diferenças de Brier E log loss no bootstrap pareado por seed, com pelo menos cinco seeds. A comparação primária é individual versus global: melhorar só contra o FSRS padrão não demonstra ganho individual.
+
+Os intervalos reamostram seeds, não tratam eventos repetidos como independentes. Cinco seeds não garantem precisão; intervalos de bins de confiabilidade são descritivos. Diferenças entre as duas formas de esquecimento e entre intervalos não demonstram generalização humana.
+
+### Gerador independente de sondagens
+
+identifiability_simulator.py não importa R, FSRS nem o calibrador. Reutiliza somente as hipóteses geradoras já declaradas em simulator.forgetting. Para cada forma exponencial/potência e intervalo de 1,7,28 dias, quatro pares por seed recebem aquisição conhecida=1, half-lives geradoras 1,5/18 dias, 64 itens distintos e resultados imediatos idênticos. Cada item tem somente UMA sondagem tardia; não há revisão entre as avaliações. Os intervalos usam estudantes/coortes diferentes, sem fingir que o teste anterior não alterou a aprendizagem. Papéis e pseudônimos são embaralhados; parâmetros e pares verdadeiros nunca entram no R.
+
+O R produz taxas observadas e intervalos Wilson95 existentes em prefixos de 2,8,32,64 itens por fase. O avaliador externo mede separação correta e separação errada contra a verdade oculta, por forma, intervalo e tamanho da amostra, com bootstrap de seeds. O critério de detecção é não sobreposição dos intervalos com ordenação correta. Históricos imediatos devem permanecer indistinguíveis. Esta é uma análise de identificabilidade da probabilidade observada nas condições do simulador, NÃO uma estimação de half-life, domínio, causa do erro ou conhecimento versus esquecimento. O diagnóstico expõe explicitamente essas limitações.
+
+### Integridade, execução e autoridade
+
+    python lab/calibration_experiment.py --output tests/fixtures/learner_lab/run-calibration
+
+O diretório deve ser novo e confinado às fixtures. criteria.json precede os dados. Dois processos R reais terminam antes de truth.json e probe-truth.json serem persistidos. O adapter valida schemas fechados, origem, IDs, timestamps, resultados e hashes do snapshot. Testes perturbam os resultados de teste para comprovar invariância dos ajustes/predições, invertem a ordem das linhas, exercitam cold start, probabilidades extremas e rejeitam colunas latentes, duplicatas, origem real e previsões posteriores.
+
+manifest.json registra hashes de fontes e artefatos, versões e can_apply=false/can_schedule=false. audit() confere a integridade em leitura; checksum não autentica veracidade. O replay compara todos os artefatos byte a byte.
+
+**Estado inicial deste incremento:** implementação sujeita aos gates da PR. Resultados pessoais, dados públicos, benefício causal das revisões e intervenções, autoridade Java e equivalência com Java-FSRS continuam NOT_EXECUTED. Resultados sintéticos observados devem ser acrescentados somente depois da execução.

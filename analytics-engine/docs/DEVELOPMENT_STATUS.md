@@ -205,3 +205,10 @@ Validação da recuperação 3b5942b: CI 40500031291 aprovada, 30 testes de labo
 ## Resolução do conflito #31 após integração #30 — 27/10/2026
 
 A main 35f046a recebeu a correção de confiança #30 após a última atualização da #31. Preservados integralmente os arquivos de código/testes da main e os registros históricos de confiança; acrescentados os arquivos e registros do laboratório de memória da #31. Sem migrações, alterações de dados ou habilitação decisória. CI desta nova composição deve ser conferida na PR; evidências anteriores continuam históricas.
+
+
+## Investigação de calibração individual e identificabilidade — 27/10/2026
+
+Incremento experimental sobre main 63a81c4, após #31. Implementados ajuste global/individual de intercepto logístico com encolhimento, treino/seleção/teste temporal, sondagens de retenção com verdade independente e histórias imediatas equivalentes. Reutiliza FSRS oficial e diagnóstico R existente; não altera banco, parâmetros FSRS ou autoridade do planejador. Variáveis latentes permanecem fora dos adapters. Novos testes incluem perturbação de resultados futuros e rejeição de registros inválidos.
+
+Protocolo e limites adicionados a lab/MEMORY_PROTOCOL.md. Nenhuma melhora é presumida: resultados deste código serão registrados somente após a execução dos gates. Conhecimento versus esquecimento, half-life individual, eficácia pedagógica e validação humana continuam não demonstrados.
