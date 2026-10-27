@@ -36,7 +36,7 @@ public class LocalAccessFilter extends OncePerRequestFilter {
         if (referer != null && !referer.isBlank()) {
             boolean allowedReferer = false;
             for (String allowed : origins) {
-                if (referer.startsWith(allowed)) {
+                if (sameOrigin(referer, allowed)) {
                     allowedReferer = true;
                     break;
                 }
@@ -47,7 +47,18 @@ public class LocalAccessFilter extends OncePerRequestFilter {
             }
         }
         String uri=req.getRequestURI();
-        boolean admin=uri.startsWith("/api/v1/system/backup") || uri.startsWith("/api/v1/system/audit") || uri.startsWith("/api/v1/ingestion");
+        boolean prospective=uri.startsWith("/api/v1/learning-lab/") ||
+            (uri.startsWith("/api/v1/questions/") && uri.contains("/predictions"));
+        if(prospective) {
+            boolean loopback;
+            try { loopback=InetAddress.getByName(req.getRemoteAddr()).isLoopbackAddress(); }
+            catch(Exception e) { loopback=false; }
+            String host=req.getServerName();
+            if(!loopback || !Set.of("localhost","127.0.0.1","::1","[::1]").contains(host)) {
+                deny(res,403,"Prospective personal lab requires a loopback connection and local Host");return;
+            }
+        }
+        boolean admin=uri.startsWith("/api/v1/learning-lab/prospective-export") || uri.startsWith("/api/v1/system/backup") || uri.startsWith("/api/v1/system/audit") || uri.startsWith("/api/v1/ingestion");
         if (admin && !"OPTIONS".equals(req.getMethod())) {
             boolean local;
             try { local=InetAddress.getByName(req.getRemoteAddr()).isLoopbackAddress(); }
@@ -75,6 +86,14 @@ public class LocalAccessFilter extends OncePerRequestFilter {
             }
         }
         chain.doFilter(req,res);
+    }
+    private static boolean sameOrigin(String referer,String allowed) {
+        try {
+            java.net.URI actual=java.net.URI.create(referer), expected=java.net.URI.create(allowed);
+            return Objects.equals(actual.getScheme(),expected.getScheme()) &&
+                Objects.equals(actual.getHost(),expected.getHost()) && actual.getPort()==expected.getPort() &&
+                actual.getUserInfo()==null;
+        } catch(Exception invalid) { return false; }
     }
     private static void deny(HttpServletResponse res,int code,String message)throws IOException {
         res.setStatus(code);res.setContentType("application/json");res.getWriter().write("{\"error\":\""+message+"\"}");

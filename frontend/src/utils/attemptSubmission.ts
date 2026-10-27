@@ -1,3 +1,4 @@
+import { readAttemptJournal, freezeAttemptPayload, confirmAttempt } from './attemptJournal.ts';
 /** A pending submission keeps its identity and payload after transport failures. */
 export class AttemptSubmission {
   readonly attemptId: string;
@@ -9,8 +10,14 @@ export class AttemptSubmission {
   }
   send(questionId: string): Promise<any> {
     if (this.pending) return this.pending;
+    const durable = readAttemptJournal(questionId, String(this.payload.sessionId || ''));
+    if (durable) freezeAttemptPayload(questionId, this.payload, this.attemptId);
     this.pending = requestJson('/api/v1/questions/' + encodeURIComponent(questionId) + '/attempts', {
       method: 'POST', body: JSON.stringify(this.payload)
+    }).then(result => {
+      if (result.attemptId !== this.attemptId) throw new Error('A resposta confirmou outra tentativa.');
+      if (durable) confirmAttempt(questionId, String(this.payload.sessionId), this.attemptId, result);
+      return result;
     }).finally(() => { this.pending = null; });
     return this.pending;
   }

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { AttemptSubmission, annotateAttempt } from '../utils/attemptSubmission';
 import { ProspectivePreparation } from '../utils/prospectivePreparation';
+import { readAttemptJournal, restoreQuestionSession, saveQuestionSession } from '../utils/attemptJournal';
 import { cachedStudyPreferences } from '../utils/studyPreferences';
 import { handleKeyActivate } from '../utils/accessibility';
 import './QuestionViewer.css';
@@ -172,6 +173,7 @@ const QuestionViewer: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const pendingAttemptRef = useRef<AttemptSubmission | null>(null);
   const submittingRef = useRef(false);
+  const submissionScopeRef = useRef('');
   const prospectiveRef = useRef<ProspectivePreparation | null>(null);
   const [prospectiveStatus, setProspectiveStatus] = useState<'PREPARING' | 'READY' | 'ERROR'>('PREPARING');
   const [prospectiveRetry, setProspectiveRetry] = useState(0);
@@ -520,6 +522,7 @@ const QuestionViewer: React.FC = () => {
     return stored;
   };
   const [sessionId, setSessionId] = useState<string>(getInitialSessionId);
+  submissionScopeRef.current = sessionId + '|' + (question?.questionId || '');
 
   // The answer controls unlock only after a separate pre-answer request has committed.
   useEffect(() => {
@@ -527,11 +530,26 @@ const QuestionViewer: React.FC = () => {
     let active = true;
     let intent = prospectiveRef.current;
     if (!intent || intent.questionId !== question.questionId || intent.sessionId !== sessionId) {
-      intent = new ProspectivePreparation(question.questionId, sessionId);
+      try { intent = new ProspectivePreparation(question.questionId, sessionId); }
+      catch { setProspectiveStatus('ERROR'); return; }
       prospectiveRef.current = intent;
     }
     setProspectiveStatus('PREPARING');
-    intent.prepare().then(() => { if (active) setProspectiveStatus('READY'); })
+    intent.prepare().then(() => {
+      if (!active) return;
+      const saved = readAttemptJournal(question.questionId, sessionId);
+      if (saved?.payload) {
+        pendingAttemptRef.current = new AttemptSubmission(saved.payload, saved.attemptId);
+        const letter = String(saved.payload.selectedOption);
+        const options = question.options.map(o => typeof o === 'string' ? o : (o.label + ') ' + o.text));
+        const restored = options.find(o => o.startsWith(letter)) ||
+          (options.length === 2 && (letter === 'C' || letter === 'E') ? options[letter === 'C' ? 0 : 1] : letter);
+        setSelectedOption(restored); setConfidence(Number(saved.payload.confidenceLevel));
+        setActiveTimeMs(Number(saved.payload.activeTimeMs));
+      }
+      if (saved?.result) setFeedback(saved.result);
+      setProspectiveStatus('READY');
+    })
       .catch(() => { if (active) setProspectiveStatus('ERROR'); });
     return () => { active = false; };
   }, [question?.questionId, sessionId, feedback, prospectiveRetry]);
@@ -602,11 +620,12 @@ const QuestionViewer: React.FC = () => {
     setAuditSuccessMsg('');
   };
 
-  const loadQuestionAtIndex = useCallback((idx: number, list: Question[] = sessionQuestions) => {
+  const loadQuestionAtIndex = useCallback((idx: number, list: Question[] = sessionQuestions, targetSessionId = sessionId) => {
     const targetQ = list[idx];
     if (!targetQ) return;
 
     resetQuestionInteractions();
+    saveQuestionSession(targetSessionId, list, idx);
     setQuestion(targetQ);
     setCurrentQuestionIndex(idx);
 
@@ -627,7 +646,7 @@ const QuestionViewer: React.FC = () => {
       fetch(`/api/v1/questions/${targetQ.questionId}/presented`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId })
+        body: JSON.stringify({ sessionId: targetSessionId })
       }).catch(() => {});
     }
 
@@ -711,6 +730,12 @@ const QuestionViewer: React.FC = () => {
     resetQuestionInteractions();
 
     try {
+      const recovered = restoreQuestionSession(currentSession);
+      if (recovered) {
+        setSessionQuestions(recovered.questions);
+        loadQuestionAtIndex(recovered.index, recovered.questions, currentSession);
+        return;
+      }
       let batchUrl = `/api/v1/questions/batch?sessionId=${currentSession}&limit=${questionCountLimit || 15}`;
       if (selectedConcursoId) batchUrl += `&concursoId=${encodeURIComponent(selectedConcursoId)}`;
       if (selectedDiscipline) batchUrl += `&disciplina=${encodeURIComponent(selectedDiscipline)}`;
@@ -723,7 +748,7 @@ const QuestionViewer: React.FC = () => {
         if (Array.isArray(batchData) && batchData.length > 0) {
           setSessionQuestions(batchData);
           setCurrentQuestionIndex(0);
-          loadQuestionAtIndex(0, batchData);
+          loadQuestionAtIndex(0, batchData, currentSession);
           return;
         }
       }
@@ -734,7 +759,7 @@ const QuestionViewer: React.FC = () => {
         const singleQ = await nextRes.json();
         setSessionQuestions([singleQ]);
         setCurrentQuestionIndex(0);
-        loadQuestionAtIndex(0, [singleQ]);
+        loadQuestionAtIndex(0, [singleQ], currentSession);
       } else {
         setQuestion(null);
       }
@@ -894,6 +919,7 @@ const QuestionViewer: React.FC = () => {
 
   const handleSubmit = async () => {
     if (!question || !selectedOption || confidence === 0 || isSubmitting || submittingRef.current || feedback || !prospectiveReady) return;
+    const submissionScope = submissionScopeRef.current;
     submittingRef.current = true;
     setIsSubmitting(true);
 
@@ -969,6 +995,7 @@ const QuestionViewer: React.FC = () => {
           ...bioPayload
         }, prospectiveRef.current!.attemptId);
       const result = await pendingAttemptRef.current.send(question.questionId);
+      if (submissionScopeRef.current !== submissionScope) return;
       {
         setFeedback(result);
 
@@ -1036,8 +1063,10 @@ const QuestionViewer: React.FC = () => {
       console.error("Failed to submit attempt:", error);
       alert("Não foi possível confirmar a gravação. Reenvie a mesma tentativa. " + (error instanceof Error ? error.message : ""));
     } finally {
-      submittingRef.current = false;
-      setIsSubmitting(false);
+      if (submissionScopeRef.current === submissionScope) {
+        submittingRef.current = false;
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -1750,7 +1779,7 @@ const QuestionViewer: React.FC = () => {
           </div>
         )}
 
-        <div className="options" role="radiogroup" aria-label="Alternativas da questão">
+        <div className="options" aria-busy={!prospectiveReady && !feedback} role="radiogroup" aria-label="Alternativas da questão">
           {optionsList.map((opt, idx) => {
             const isSelected = selectedOption === opt;
             const letter = isCertoErrado 
@@ -1762,6 +1791,7 @@ const QuestionViewer: React.FC = () => {
                 key={idx}
                 role="radio"
                 aria-checked={isSelected}
+                aria-disabled={Boolean(feedback) || !prospectiveReady}
                 tabIndex={feedback ? -1 : 0}
                 aria-label={`Alternativa ${letter}: ${opt.replace(/^([A-Ea-e])\)?\s*/, '')}`}
                 className={`option-card ${isSelected ? 'selected' : ''} ${feedback && isSelected ? (isUnverifiedGabarito ? 'selected' : (feedback.isCorrect ? 'correct' : 'incorrect')) : ''} ${feedback ? 'disabled' : ''}`}

@@ -171,6 +171,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <span className="nav-text">Início / Meu Plano</span>
         </button>
 
+        <button className={`nav-btn ${activeTab === 'study' ? 'active' : ''}`} onClick={() => onSelectTab('study')}>
+          <span className="nav-icon">📝</span><span className="nav-text">Sessão de questões</span>
+        </button>
         <button
           className={`nav-btn ${activeTab === 'banco' ? 'active' : ''}`}
           onClick={() => onSelectTab('banco')}

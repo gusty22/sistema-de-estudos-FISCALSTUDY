@@ -1,4 +1,5 @@
 import { requestJson } from './attemptSubmission.ts';
+import { reserveAttempt } from './attemptJournal.ts';
 
 /** Prepare before allowing an answer. A lost acknowledgment retries the SAME intent UUID. */
 export class ProspectivePreparation {
@@ -7,10 +8,10 @@ export class ProspectivePreparation {
   readonly sessionId: string;
   ready = false;
   private pending: Promise<void> | null = null;
-  constructor(questionId: string, sessionId: string, attemptId = crypto.randomUUID()) {
+  constructor(questionId: string, sessionId: string, attemptId?: string) {
     this.questionId = questionId;
     this.sessionId = sessionId;
-    this.attemptId = attemptId;
+    this.attemptId = attemptId ?? reserveAttempt(questionId, sessionId).attemptId;
   }
   prepare(): Promise<void> {
     if (this.ready) return Promise.resolve();

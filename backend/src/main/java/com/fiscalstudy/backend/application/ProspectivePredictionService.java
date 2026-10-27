@@ -30,8 +30,9 @@ public class ProspectivePredictionService {
 
     @org.springframework.beans.factory.annotation.Autowired
     public ProspectivePredictionService(JdbcTemplate jdbc, EventStoreRepository events,
-            QuestionRepository questions, AttemptSubmissionService attempts, LearningEvidenceService memory) {
-        this(jdbc, events, questions, attempts, memory, Clock.systemUTC(), "LOCAL_EVENT_STORE_UNATTESTED");
+            QuestionRepository questions, AttemptSubmissionService attempts, LearningEvidenceService memory,
+            @org.springframework.beans.factory.annotation.Value("${fiscalstudy.prospective.source-kind:LOCAL_EVENT_STORE_UNATTESTED}") String sourceKind) {
+        this(jdbc, events, questions, attempts, memory, Clock.systemUTC(), sourceKind);
     }
     public ProspectivePredictionService(JdbcTemplate jdbc, EventStoreRepository events,
             QuestionRepository questions, AttemptSubmissionService attempts, LearningEvidenceService memory,
