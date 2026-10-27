@@ -14,19 +14,19 @@ output_root <- Sys.getenv("FISCALSTUDY_ANALYTICS_OUTPUT", "output")
 # Projeto: FiscalStudy Analytics (R >= 4.0.0)
 
 suppressPackageStartupMessages({
-  source("R/validation.R")
-  source("R/descriptive_analysis.R")
-  source("R/retention_analysis.R")
-  source("R/retrieval_diagnostics.R")
-  source("R/visualization.R")
-  source("R/export_results.R")
-  source("R/learning_profile.R")
-  source("R/analytical_signals.R")
-  source("R/intervention_analysis.R")
-  source("R/recommendation_evaluation.R")
-  source("R/adapter.R")
-  source("R/baselines.R")
-  if (file.exists("R/provenance.R")) source("R/provenance.R")
+  source("R/validation.R", encoding="UTF-8")
+  source("R/descriptive_analysis.R", encoding="UTF-8")
+  source("R/retention_analysis.R", encoding="UTF-8")
+  source("R/retrieval_diagnostics.R", encoding="UTF-8")
+  source("R/visualization.R", encoding="UTF-8")
+  source("R/export_results.R", encoding="UTF-8")
+  source("R/learning_profile.R", encoding="UTF-8")
+  source("R/analytical_signals.R", encoding="UTF-8")
+  source("R/intervention_analysis.R", encoding="UTF-8")
+  source("R/recommendation_evaluation.R", encoding="UTF-8")
+  source("R/adapter.R", encoding="UTF-8")
+  source("R/baselines.R", encoding="UTF-8")
+  if (file.exists("R/provenance.R")) source("R/provenance.R", encoding="UTF-8")
 })
 
 main <- function() {
@@ -60,11 +60,11 @@ main <- function() {
   # Processamento de argumentos de linha de comando
   if (length(args) == 1 && file.exists(args[1])) {
     # Suporte a arquivo único de exportação operacional
-    test_hdr <- utils::read.csv(args[1], nrows = 1, stringsAsFactors = FALSE)
+    test_hdr <- read_utf8_csv(args[1], nrows = 1, stringsAsFactors = FALSE)
     if ("gabarito_status" %in% names(test_hdr)) {
       cat(sprintf(">>> Detectada exportacao operacional do FiscalStudy: %s\n", args[1]))
       cat(">>> Auditando procedencia e adaptando esquema via R/adapter.R...\n")
-      op_raw <- utils::read.csv(args[1], stringsAsFactors = FALSE)
+      op_raw <- read_utf8_csv(args[1], stringsAsFactors = FALSE)
       manifest_path <- Sys.getenv("FISCALSTUDY_EXPORT_MANIFEST", "")
       explicit_manifest <- nzchar(manifest_path)
       if (!explicit_manifest) manifest_path <- file.path(dirname(args[1]), "export_manifest.json")
@@ -126,9 +126,9 @@ main <- function() {
       stop("Arquivos de entrada nao encontrados. Abortando pipeline.")
     }
     
-    events_df <- utils::read.csv(events_path, stringsAsFactors = FALSE)
-    questions_df <- utils::read.csv(questions_path, stringsAsFactors = FALSE)
-    interventions_df <- if (file.exists(interventions_path)) utils::read.csv(interventions_path, stringsAsFactors = FALSE) else NULL
+    events_df <- read_utf8_csv(events_path, stringsAsFactors = FALSE)
+    questions_df <- read_utf8_csv(questions_path, stringsAsFactors = FALSE)
+    interventions_df <- if (file.exists(interventions_path)) read_utf8_csv(interventions_path, stringsAsFactors = FALSE) else NULL
     
     # Anexar metadados de procedência
     prov_evt <- if (is_demo) {

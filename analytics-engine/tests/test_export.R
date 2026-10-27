@@ -62,3 +62,25 @@ assert_true("overall_accuracy" %in% read_csv$metric_name, "overall_accuracy pres
 # Limpar artefatos temporários de teste
 if (file.exists(test_json)) file.remove(test_json)
 if (file.exists(test_csv)) file.remove(test_csv)
+
+
+# UTF-8 transport is independent of native locale and preserves the snapshot.
+utf8_csv <- tempfile("utf8-contract-",fileext=".csv")
+utf8_value <- "Direito Tribut\u00e1rio: exce\u00e7\u00e3o, aten\u00e7\u00e3o e mem\u00f3ria"
+utf8_df <- data.frame(discipline=utf8_value,stringsAsFactors=FALSE)
+utils::write.csv(utf8_df,utf8_csv,row.names=FALSE,fileEncoding="UTF-8")
+utf8_before <- compute_file_sha256(utf8_csv)
+utf8_read <- read_utf8_csv(utf8_csv,stringsAsFactors=FALSE)
+assert_equal(utf8_read$discipline,utf8_value,"UTF-8 curriculum labels survive CSV decoding")
+assert_equal(compute_file_sha256(utf8_csv),utf8_before,"UTF-8 reader preserves input snapshot bytes")
+assert_equal(nrow(read_utf8_csv(utf8_csv,nrows=1L)),1L,"UTF-8 header/row limits remain supported")
+bom_csv <- tempfile("utf8-bom-",fileext=".csv")
+utf8_raw <- readBin(utf8_csv,what="raw",n=file.info(utf8_csv)$size)
+writeBin(c(as.raw(c(239,187,191)),utf8_raw),bom_csv)
+assert_equal(read_utf8_csv(bom_csv,stringsAsFactors=FALSE)$discipline,utf8_value,"Optional UTF-8 BOM preserves header identity")
+bad_csv <- tempfile("invalid-utf8-",fileext=".csv")
+writeBin(c(charToRaw("discipline\n"),as.raw(c(255,10))),bad_csv)
+bad_result <- tryCatch({read_utf8_csv(bad_csv);NULL},error=function(e)e)
+assert_true(inherits(bad_result,"error"),"Invalid UTF-8 bytes fail explicitly")
+assert_true(grepl("UTF-8",conditionMessage(bad_result),fixed=TRUE),"Encoding failure identifies UTF-8 contract")
+for (path in c(utf8_csv,bom_csv,bad_csv)) unlink(path)
