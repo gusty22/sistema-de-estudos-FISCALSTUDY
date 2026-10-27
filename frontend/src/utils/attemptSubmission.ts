@@ -3,7 +3,7 @@ export class AttemptSubmission {
   readonly attemptId: string;
   readonly payload: Record<string, unknown>;
   private pending: Promise<any> | null = null;
-  constructor(payload: Record<string, unknown>, id = crypto.randomUUID()) {
+  constructor(payload: Record<string, unknown>, id: string = crypto.randomUUID()) {
     this.attemptId = id;
     this.payload = Object.freeze({ ...payload, attemptId: id });
   }
