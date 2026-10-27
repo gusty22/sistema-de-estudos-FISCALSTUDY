@@ -62,3 +62,13 @@ assert_true("overall_accuracy" %in% read_csv$metric_name, "overall_accuracy pres
 # Limpar artefatos temporários de teste
 if (file.exists(test_json)) file.remove(test_json)
 if (file.exists(test_csv)) file.remove(test_csv)
+
+
+# Conditional rates carry their own observed denominator and mapping provenance.
+conditional <- pkg$metrics[[which(vapply(pkg$metrics,function(m) identical(m$metric_name,"overconfidence_rate_level5"),logical(1)))]]
+assert_equal(conditional$n_observations,conf_res$n_level5,"Conditional confidence export uses its subset denominator")
+assert_true(conf_res$n_level5<conf_res$n_observations,"Fixture distinguishes subset from total observations")
+assert_false(pkg$probability_mapping_validated,"Metric package does not claim subjective probability validation")
+assert_equal(pkg$confidence_conversion_hypothesis$nature,"HIPOTESE_PARAMETRICA_ASSUMIDA","Assumed mapping provenance survives export")
+brier_record <- pkg$metrics[[which(vapply(pkg$metrics,function(m) identical(m$metric_name,"calibration_brier_score"),logical(1)))]]
+assert_true("ORDINAL_MAPPING_UNVALIDATED" %in% unlist(brier_record$quality_flags),"CSV/JSON record exposes unvalidated ordinal mapping")
