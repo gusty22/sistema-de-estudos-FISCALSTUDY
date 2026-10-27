@@ -51,6 +51,9 @@ jobs:
       - name: Execute pinned public human memory sample
         run: |
           python lab/human_learning_experiment.py --download --output lab/runs/human-ci 2>&1 | tee logs/human-experiment.log
+      - name: Execute separate official ASSISTments corrected sample
+        run: |
+          python lab/assistments_experiment.py --download --output lab/runs/assistments-ci 2>&1 | tee logs/human-assistments.log
       - name: Preserve aggregate research evidence only
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -65,3 +68,8 @@ jobs:
             analytics-engine/lab/runs/human-ci/manifest.json
             analytics-engine/lab/runs/human-ci/source-manifest.json
             analytics-engine/lab/runs/human-ci/failure.json
+            analytics-engine/lab/runs/assistments-ci/criteria.json
+            analytics-engine/lab/runs/assistments-ci/summary.json
+            analytics-engine/lab/runs/assistments-ci/manifest.json
+            analytics-engine/lab/runs/assistments-ci/source-manifest.json
+            analytics-engine/lab/runs/assistments-ci/failure.json

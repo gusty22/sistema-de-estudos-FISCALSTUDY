@@ -19,7 +19,7 @@ def digest(data):
 def pseudonym(namespace,value):
     return digest((namespace+":"+str(value)).encode())[:24]
 
-def parse_fsrs_tsv(data,source_id):
+def parse_fsrs_tsv(data,source_id,origin_type="UNVERIFIED_EXTERNAL"):
     reader=csv.DictReader(io.StringIO(data.decode("utf-8-sig")),delimiter="\t")
     if tuple(reader.fieldnames or ())!=FSRS_FIELDS:
         raise ValueError("Unsupported FSRS TSV schema")
@@ -53,10 +53,10 @@ def parse_fsrs_tsv(data,source_id):
     return rows,dict(raw_rows=len(seen),eligible_rows=len(rows),
         exclusions={"MISSING_OR_INCONSISTENT_CARD_PREFIX":excluded},
         ignored_fields=["t_history","r_history"],target="SELF_REPORTED_RECALL_RATING_GT_1",
-        origin_type="PUBLIC_HUMAN_DATASET",local_timezone="NOT_AVAILABLE",
+        origin_type=origin_type,local_timezone="NOT_AVAILABLE",
         limitation="Already filtered source; not the complete original within-day Anki log")
 
-def replay_fsrs(rows,source_id):
+def replay_fsrs(rows,source_id,origin_type="UNVERIFIED_EXTERNAL"):
     from importlib.metadata import version
     if version("fsrs")!="6.3.2":
         raise RuntimeError("Official fsrs==6.3.2 required")
@@ -74,14 +74,14 @@ def replay_fsrs(rows,source_id):
             question_id=pseudonym(source_id,key),occurred_at=moment.isoformat().replace("+00:00","Z"),
             is_correct=row["outcome"],predicted_probability="" if probability is None else probability,
             elapsed_days="" if elapsed is None else elapsed,rating=row["rating"],
-            origin_type="PUBLIC_HUMAN_DATASET",fsrs_model_version="py-fsrs-6.3.2-defaults"))
+            origin_type=origin_type,fsrs_model_version="py-fsrs-6.3.2-defaults"))
         # Current rating is consumed ONLY after the event's prediction was recorded.
         if card is None:
             card=Card(card_id=key,due=moment)
         cards[key],_=scheduler.review_card(card,Rating(row["rating"]),review_datetime=moment)
     return result,list(scheduler.parameters)
 
-def parse_assistments_csv(data,encoding="utf-8-sig"):
+def parse_assistments_csv(data,encoding="utf-8-sig",origin_type="UNVERIFIED_EXTERNAL"):
     reader=csv.DictReader(io.StringIO(data.decode(encoding)))
     required={"order_id","user_id","problem_id","skill_id","correct"}
     if not required.issubset(reader.fieldnames or ()):
@@ -103,7 +103,7 @@ def parse_assistments_csv(data,encoding="utf-8-sig"):
             hint_count=row.get("hint_count") or None,
             target="FIRST_ATTEMPT_CORRECT_WITHOUT_REQUESTED_HELP",
             hint_timing="POST_TARGET_METADATA_NOT_A_PREDICTOR",
-            origin_type="PUBLIC_HUMAN_DATASET")
+            origin_type=origin_type)
         if key in merged:
             previous=merged[key]
             if previous["question_id"]!=entry["question_id"] or previous["is_correct"]!=entry["is_correct"]:
@@ -165,3 +165,24 @@ def acquire_fsrs(folder,download=False):
         (folder/name).write_bytes(payload)
         manifest["files"].append(dict(path=meta["path"],name=name,bytes=len(payload),sha256=digest(payload)))
     return manifest
+
+
+ASSIST_PAGE="https://sites.google.com/site/assistmentsdata/home/2009-2010-assistment-data"
+ASSIST_CORRECTED="https://drive.google.com/uc?export=download&id=1NNXHFRxcArrU0ZJSb9BIL56vmUt5FhlE"
+
+def acquire_assistments(folder,download=False):
+    if not download:
+        raise RuntimeError("Explicit research download required")
+    folder=Path(folder);folder.mkdir(parents=True,exist_ok=False)
+    page=bounded_get(ASSIST_PAGE,2000000)
+    if b"The dataset is free to use" not in page:
+        raise ValueError("Official free-use declaration not verified")
+    payload=bounded_get(ASSIST_CORRECTED,100*1024*1024)
+    if not payload.lstrip().startswith(b'"","order_id"'):
+        raise ValueError("Not the corrected ASSISTments CSV; no HTML/consent bypass")
+    (folder/"corrected.csv").write_bytes(payload)
+    return payload,dict(source=ASSIST_CORRECTED,source_page=ASSIST_PAGE,
+        sha256=digest(payload),bytes=len(payload),license="OFFICIAL_FREE_USE_DECLARATION_NO_SPDX",
+        license_page_sha256=digest(page),redistribution="NOT_AUTHORIZED_BY_THIS_LAB",
+        source_version="Corrected Drive file, mutable upstream; bytes SHA recorded BEFORE analysis",
+        decoding="latin-1 byte-preserving transport; only ASCII numeric IDs/skills selected")

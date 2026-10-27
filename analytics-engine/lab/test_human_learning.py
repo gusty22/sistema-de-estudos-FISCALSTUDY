@@ -19,7 +19,7 @@ class PublicAdapterTests(unittest.TestCase):
     def test_fsrs_identity_and_order(self):
         rows,qa=parse_fsrs_tsv(tsv(sample()[::-1]),"fixture-only")
         self.assertEqual([r["sequence"] for r in rows],[1,2])
-        self.assertEqual(qa["origin_type"],"PUBLIC_HUMAN_DATASET")
+        self.assertEqual(qa["origin_type"],"UNVERIFIED_EXTERNAL")
         self.assertEqual(rows[0]["moment"].utcoffset().total_seconds(),0)
         self.assertEqual(qa["eligible_rows"],2)
 

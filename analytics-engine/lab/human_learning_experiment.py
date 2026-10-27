@@ -42,8 +42,8 @@ def run(output,download=False):
             payload=(output/"raw"/record["name"]).read_bytes()
             if digest(payload)!=record["sha256"]:
                 raise ValueError("Source snapshot changed")
-            rows,quality=parse_fsrs_tsv(payload,record["path"])
-            observations,current=replay_fsrs(rows,record["path"])
+            rows,quality=parse_fsrs_tsv(payload,record["path"],origin_type="PUBLIC_HUMAN_DATASET")
+            observations,current=replay_fsrs(rows,record["path"],origin_type="PUBLIC_HUMAN_DATASET")
             if parameters is not None and parameters!=current:
                 raise ValueError("FSRS parameters changed")
             parameters=current;events.extend(observations)
