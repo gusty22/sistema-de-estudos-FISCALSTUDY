@@ -171,3 +171,17 @@ Falhas relevantes: scikit-learn 1.9.1 incompatível com pyBKT 1.4.3 (fixado 1.6.
 ### Evidência remota posterior à desconexão local
 
 CI 40430980241, commit dfed935: SUCESSO; 23 testes do laboratório (sem skips), 600 verificações R, zero falhas; duas execuções de cinco seeds, auditoria de 49 artefatos e 50 arquivos byte a byte idênticos. 2670 eventos e 1904 alvos; pyBKT absteve-se em dois alvos por não finitude. Média móvel e média por tópico foram piores que a média global neste simulador; pyBKT não tem comparação de cobertura completa. Não promover esses modelos ao planejador. Detalhes, intervalos e links em lab/COMPARISON_RESULTS.md; fixture compacta em tests/fixtures/learner_lab/baseline_reference_result.json. CI supera o bloqueio técnico local, mas não valida pedagogia, pessoas, curva individual ou homologação visual. Aviso de conversão textual sob locale C permanece para investigação específica.
+
+
+## Laboratório de memória — referência FSRS oficial
+
+Branch experiment/fsrs-memory-lab, dependente do PR #27. Implementados gerador independente de recordação, referência py-fsrs 6.3.2 (MIT, release oficial, parâmetros inalterados), contrato experimental memory_lab_events_v1 e adaptador para calculate_retrieval_surprise existente. Nenhuma equação FSRS foi reimplementada no R ou alterada no produto.
+
+CI 40432790113, commit f9849b2: 30 testes do laboratório e 600 verificações R, zero falhas; oito arquivos de memória e 50 do laboratório anterior reproduzidos byte a byte. 1120 eventos, 160 cold starts sem previsão inventada, 960 alvos maduros, escores R/Python concordantes. FSRS padrão obteve Brier 0,275057 e log loss 0,870704, versus 0,217010/0,642642 do histórico suavizado; não demonstrou superioridade neste gerador. Não inferir eficácia ou falha pessoal a partir disso; priorizar calibração com treino/teste separados antes de ampliar políticas. Detalhes em lab/MEMORY_PROTOCOL.md e fixture memory_reference_result.json.
+
+Validação sintética e técnica concluída para este incremento; otimização pessoal, causalidade, políticas, dados reais, equivalência Java e homologação visual NÃO executadas. can_apply/can_schedule seguem false; main preservada.
+
+
+## Retomada da integração — 27/10/2026
+
+A main verificada em 4b28bcbd3df53ed158c7b2e7de156a9b10ef190f contém o incremento #27, mas não contém os arquivos de memória da #28, embora a API registre essa PR como merged. Esta frente reaplica somente os dez arquivos do incremento de memória a partir do commit 04320817714c29bc41f61ef9f2766251f1acc499 sobre a main atual. Não presume a causa da diferença de árvore e não altera #29/#30, Java ou dados operacionais. Resultados históricos acima não substituem o novo gate de CI desta branch; seu resultado deve ser conferido na PR antes de integrar. O laboratório continua sintético, não prescreve atividades e não demonstra eficácia pessoal.

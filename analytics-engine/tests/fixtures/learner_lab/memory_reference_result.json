@@ -1,0 +1,222 @@
+{
+  "schema_version": "memory_lab_reference_v1",
+  "tested_commit": "f9849b29f7d3184fbda3adf7e7307e29bef26d96",
+  "workflow_run_url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40432790113",
+  "tests": {
+    "laboratory": 30,
+    "failures": 0,
+    "r_assertions": 600,
+    "r_failures": 0
+  },
+  "replay": {
+    "files": 8,
+    "differences": 0
+  },
+  "artifact": {
+    "id": 12702842479,
+    "digest": "sha256:120ac8183467e550d50f3b7b05d497c7b2913a9cf10300f46392243cef46b1ee",
+    "expires_at": "2026-11-03T01:32:15Z"
+  },
+  "can_apply": false,
+  "can_schedule": false,
+  "cold_start_count": 160,
+  "comparison": "NO_SUPERIORITY_ESTABLISHED",
+  "events": 1120,
+  "human_validation": "NOT_EXECUTED",
+  "limitation": "Known acquisition; hypothetical forgetting/restudy; fixed calendar; unoptimized FSRS defaults.",
+  "metrics": {
+    "FIXED_050": {
+      "brier": 0.25,
+      "calibration_bias": -0.08229166666666667,
+      "log_loss": 0.6931471805599453,
+      "n": 960,
+      "probability_rmse": 0.3214270660618322,
+      "reliability": [
+        {
+          "bin": 5,
+          "binomial_wilson_interval": [
+            0.5508267250390508,
+            0.613100649690524
+          ],
+          "mean_prediction": 0.5,
+          "n": 960,
+          "observed_accuracy": 0.5822916666666667
+        }
+      ]
+    },
+    "FSRS_OFFICIAL": {
+      "brier": 0.2750574933405298,
+      "calibration_bias": 0.27011044366344755,
+      "log_loss": 0.8707044797508919,
+      "n": 960,
+      "probability_rmse": 0.35787240036637274,
+      "reliability": [
+        {
+          "bin": 4,
+          "binomial_wilson_interval": [
+            0.0073934561655057685,
+            0.20241806478655938
+          ],
+          "mean_prediction": 0.4789844405498449,
+          "n": 24,
+          "observed_accuracy": 0.041666666666666664
+        },
+        {
+          "bin": 5,
+          "binomial_wilson_interval": [
+            0.12875685189029118,
+            0.3207180650688247
+          ],
+          "mean_prediction": 0.552033582692918,
+          "n": 67,
+          "observed_accuracy": 0.208955223880597
+        },
+        {
+          "bin": 6,
+          "binomial_wilson_interval": [
+            0.2040180222120727,
+            0.3719529141139197
+          ],
+          "mean_prediction": 0.6469940324522669,
+          "n": 107,
+          "observed_accuracy": 0.2803738317757009
+        },
+        {
+          "bin": 7,
+          "binomial_wilson_interval": [
+            0.36319408004572507,
+            0.5255723428536364
+          ],
+          "mean_prediction": 0.7737644851636925,
+          "n": 140,
+          "observed_accuracy": 0.44285714285714284
+        },
+        {
+          "bin": 8,
+          "binomial_wilson_interval": [
+            0.3860261849109117,
+            0.6293960467628898
+          ],
+          "mean_prediction": 0.8771725218266021,
+          "n": 61,
+          "observed_accuracy": 0.5081967213114754
+        },
+        {
+          "bin": 9,
+          "binomial_wilson_interval": [
+            0.7130133477402294,
+            0.7844713811369439
+          ],
+          "mean_prediction": 0.9603587095838781,
+          "n": 561,
+          "observed_accuracy": 0.750445632798574
+        }
+      ]
+    },
+    "HISTORICAL_BETA11": {
+      "brier": 0.21700961172109415,
+      "calibration_bias": 0.19935906713112594,
+      "log_loss": 0.6426422590635644,
+      "n": 960,
+      "probability_rmse": 0.27035204529509715,
+      "reliability": [
+        {
+          "bin": 4,
+          "binomial_wilson_interval": [
+            0.06290800375101355,
+            0.1966856386718577
+          ],
+          "mean_prediction": 0.44519480519480514,
+          "n": 88,
+          "observed_accuracy": 0.11363636363636363
+        },
+        {
+          "bin": 5,
+          "binomial_wilson_interval": [
+            0.16665575133182917,
+            0.31655447075814613
+          ],
+          "mean_prediction": 0.5444725992961287,
+          "n": 120,
+          "observed_accuracy": 0.23333333333333334
+        },
+        {
+          "bin": 6,
+          "binomial_wilson_interval": [
+            0.1652822121585541,
+            0.33392382318398534
+          ],
+          "mean_prediction": 0.6569255907491202,
+          "n": 96,
+          "observed_accuracy": 0.23958333333333334
+        },
+        {
+          "bin": 7,
+          "binomial_wilson_interval": [
+            0.39774166700838975,
+            0.6022583329916102
+          ],
+          "mean_prediction": 0.7463644851880147,
+          "n": 88,
+          "observed_accuracy": 0.5
+        },
+        {
+          "bin": 8,
+          "binomial_wilson_interval": [
+            0.6294527317183394,
+            0.7763874194720621
+          ],
+          "mean_prediction": 0.8620702754036087,
+          "n": 144,
+          "observed_accuracy": 0.7083333333333334
+        },
+        {
+          "bin": 9,
+          "binomial_wilson_interval": [
+            0.7915229653305864,
+            0.8629250649556661
+          ],
+          "mean_prediction": 0.926858015581656,
+          "n": 424,
+          "observed_accuracy": 0.8301886792452831
+        }
+      ]
+    }
+  },
+  "paired_seed_differences": {
+    "brier": [
+      0.06386255940614047,
+      0.04629170559341672,
+      0.051753990720604576,
+      0.060935620690734854,
+      0.06739553168628168
+    ],
+    "log_loss": [
+      0.23925329334090517,
+      0.19441514910434432,
+      0.19393672123937755,
+      0.23355168315834895,
+      0.2791542565936618
+    ]
+  },
+  "paired_seed_intervals": {
+    "brier": [
+      0.051405402663755484,
+      0.06469036057511583
+    ],
+    "log_loss": [
+      0.2020510847691585,
+      0.25521367864200784
+    ]
+  },
+  "policy_effectiveness": "NOT_EXECUTED",
+  "r_python_score_agreement": true,
+  "seeds": [
+    601,
+    631,
+    661,
+    691,
+    721
+  ],
+  "source_kind": "SYNTHETIC_BENCHMARK"
+}
