@@ -87,7 +87,7 @@ def summarize(rows):
         values=[metrics([r for r in rows if r["model_name"]==m and r["student_id"]==id]) for id in students]
         report["macro_by_student"][m]={key:sum(v[key] for v in values)/len(values) for key in ("brier","log_loss")}
     report["comparisons"]=[paired_comparison(rows,"INDIVIDUAL_CALIBRATION",ref)
-        for ref in ("GLOBAL_CALIBRATION","FSRS_DEFAULT","PERSONAL_ONLINE_BETA11") if ref in names]
+        for ref in ("GLOBAL_CALIBRATION","FSRS_DEFAULT","FSRS_NUMERICAL_GUARD","PERSONAL_ONLINE_BETA11") if ref in names]
     strata={}
     for label,lo,hi in (("LT_1_DAY",0,1),("1_TO_7_DAYS",1,7),("7_TO_30_DAYS",7,30),("GE_30_DAYS",30,float("inf"))):
         strata[label]={m:metrics([r for r in rows if r["model_name"]==m and lo<=float(r["elapsed_days"])<hi])

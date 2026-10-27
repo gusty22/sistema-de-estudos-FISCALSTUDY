@@ -10,27 +10,14 @@ if(!requireNamespace("jsonlite",quietly=TRUE)) stop("jsonlite unavailable")
 load_module("R/descriptive_analysis.R")
 load_module("R/provenance.R")
 load_module("lab/individual_calibration.R")
-args <- commandArgs(trailingOnly=TRUE)
-if(length(args)!=3L) stop("Expected observations.csv result.json snapshot.json")
-allowed <- paste0(normalizePath("lab/runs",winslash="/",mustWork=TRUE),"/")
-for(path in args) {
-  full <- if(file.exists(path)) normalizePath(path,winslash="/",mustWork=TRUE) else
-    paste0(normalizePath(dirname(path),winslash="/",mustWork=TRUE),"/",basename(path))
-  if(!startsWith(tolower(full),tolower(allowed))) stop("External run confinement violation")
-}
-if(file.exists(args[2])) stop("Refusing existing result")
-manifest <- jsonlite::fromJSON(args[3])
-if(!identical(manifest$contract_version,"public_memory_v1") ||
-   !identical(manifest$origin_type,"PUBLIC_HUMAN_DATASET") ||
-   !identical(manifest$can_apply,FALSE) || !identical(manifest$can_schedule,FALSE) ||
-   !identical(manifest$input_sha256,compute_file_sha256(args[1]))) stop("Invalid external snapshot")
-d <- read.csv(args[1],colClasses="character",na.strings="",stringsAsFactors=FALSE)
+analyze_public_memory <- function(d,origin="PUBLIC_HUMAN_DATASET",input_sha256="NOT_SUPPLIED") {
+if(!origin %in% c("PUBLIC_HUMAN_DATASET","AUTOMATED_TEST")) stop("Invalid analysis origin")
 expected <- c("event_id","student_id","question_id","occurred_at","is_correct",
   "predicted_probability","elapsed_days","rating","origin_type","fsrs_model_version")
-if(!identical(names(d),expected) || nrow(d)!=manifest$row_count || !nrow(d)) stop("Invalid external schema")
+if(!identical(names(d),expected) || !nrow(d)) stop("Invalid external schema")
 for(field in c("event_id","student_id","question_id"))
   if(anyNA(d[[field]]) || any(!nzchar(trimws(d[[field]])))) stop("Missing identity")
-if(anyDuplicated(d$event_id) || any(!d$origin_type %in% "PUBLIC_HUMAN_DATASET") ||
+if(anyDuplicated(d$event_id) || any(!d$origin_type %in% origin) ||
    any(!d$is_correct %in% c("0","1")) || any(!d$rating %in% as.character(1:4)) ||
    length(unique(d$fsrs_model_version))!=1L || anyNA(d$fsrs_model_version)) stop("Invalid external evidence")
 d$t <- parse_evidence_timestamp(d$occurred_at)
@@ -97,7 +84,7 @@ for(id in sort(unique(d$student_id))) {
     observed <- remaining[remaining$t==moment,,drop=FALSE]
     target <- test[test$t==moment,,drop=FALSE]
     if(nrow(target)) {
-      models <- list(FSRS_DEFAULT=target$p,PERSONAL_ONLINE_BETA11=rep((k+1)/(n+2),nrow(target)))
+      models <- list(FSRS_DEFAULT=target$p,FSRS_NUMERICAL_GUARD=cal_clip(target$p),PERSONAL_ONLINE_BETA11=rep((k+1)/(n+2),nrow(target)))
       if(available) {
         models$GLOBAL_CALIBRATION <- cal_shift(target$p,global)
         models$INDIVIDUAL_CALIBRATION <- cal_shift(target$p,individual)
@@ -114,10 +101,33 @@ for(id in sort(unique(d$student_id))) {
 out <- if(length(predictions)) do.call(rbind,predictions) else data.frame()
 scores <- if(nrow(out)) lapply(split(out,out$model_name),function(rows)
   cal_metrics(rows$observed_correct,rows$predicted_probability)) else list()
-result <- list(contract_version="public_memory_results_v1",origin_type="PUBLIC_HUMAN_DATASET",
-  input_sha256=manifest$input_sha256,n_input=nrow(d),n_cold=nrow(d)-nrow(mature),
+result <- list(contract_version="public_memory_results_v1",origin_type=origin,
+  input_sha256=input_sha256,n_input=nrow(d),n_cold=nrow(d)-nrow(mature),
   students=students,predictions=out,scores=scores,r_version=R.version.string,
   target="SELF_REPORTED_RECALL",conceptual_knowledge="NOT_IDENTIFIED",
   global_generalization="Leave-one-student-out calibration transfer, with prior own FSRS history; NOT zero-shot",
   personal_validation="NOT_EXECUTED",can_apply=FALSE,can_schedule=FALSE)
+
+result
+}
+if(sys.nframe()==0L) {
+args <- commandArgs(trailingOnly=TRUE)
+if(length(args)!=3L) stop("Expected observations.csv result.json snapshot.json")
+allowed <- paste0(normalizePath("lab/runs",winslash="/",mustWork=TRUE),"/")
+for(path in args) {
+  full <- if(file.exists(path)) normalizePath(path,winslash="/",mustWork=TRUE) else
+    paste0(normalizePath(dirname(path),winslash="/",mustWork=TRUE),"/",basename(path))
+  if(!startsWith(tolower(full),tolower(allowed))) stop("External run confinement violation")
+}
+if(file.exists(args[2])) stop("Refusing existing result")
+manifest <- jsonlite::fromJSON(args[3])
+if(!identical(manifest$contract_version,"public_memory_v1") ||
+   !identical(manifest$origin_type,"PUBLIC_HUMAN_DATASET") ||
+   !identical(manifest$can_apply,FALSE) || !identical(manifest$can_schedule,FALSE) ||
+   !identical(manifest$input_sha256,compute_file_sha256(args[1]))) stop("Invalid external snapshot")
+
+d <- read.csv(args[1],colClasses="character",na.strings="",stringsAsFactors=FALSE)
+if(nrow(d)!=manifest$row_count) stop("Snapshot count mismatch")
+result <- analyze_public_memory(d,input_sha256=manifest$input_sha256)
 writeLines(jsonlite::toJSON(result,auto_unbox=TRUE,pretty=TRUE,na="null",digits=16),args[2])
+}

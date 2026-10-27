@@ -4,6 +4,9 @@ import io
 import json
 import math
 import unittest
+import subprocess
+from pathlib import Path
+from run_experiment import resolve_rscript
 from public_data_adapters import parse_fsrs_tsv,FSRS_FIELDS,parse_assistments_csv
 from human_metrics import metrics,paired_comparison,auc_roc,failure_average_precision
 
@@ -79,6 +82,39 @@ class HumanMetricsTests(unittest.TestCase):
         self.assertEqual(metrics([])["status"],"NO_PREDICTIONS")
         with self.assertRaises(ValueError):
             metrics(self.rows()+self.rows())
+
+
+class HumanRIntegrationTests(unittest.TestCase):
+    def test_future_labels_do_not_change_frozen_calibration_or_use_future_donors(self):
+        engine=Path(__file__).resolve().parents[1]
+        code=r'''
+source("lab/human_memory_adapter.R")
+n<-300L
+d<-data.frame(event_id=paste0("fixture-event-",seq_len(n)),student_id=rep(c("test-a","test-b","test-c"),each=100),
+ question_id=rep(paste0("fixture-card-",rep(seq_len(30),length.out=100)),3),
+ occurred_at=rep(format(as.POSIXct("2020-01-01",tz="UTC")+seq_len(100)*86400,"%Y-%m-%dT%H:%M:%SZ",tz="UTC"),3),
+ is_correct=as.character(as.integer(seq_len(n)%%4!=0)),predicted_probability="0.7",elapsed_days="7",
+ rating=ifelse(seq_len(n)%%4!=0,"3","1"),origin_type="AUTOMATED_TEST",fsrs_model_version="SOFTWARE_FIXTURE",
+ stringsAsFactors=FALSE)
+a<-analyze_public_memory(d,origin="AUTOMATED_TEST")
+changed<-d
+future<-parse_evidence_timestamp(changed$occurred_at)>as.POSIXct("2020-01-01",tz="UTC")+80*86400
+changed$is_correct[future]<-ifelse(changed$is_correct[future]=="1","0","1")
+changed$rating[future]<-ifelse(changed$is_correct[future]=="1","3","1")
+b<-analyze_public_memory(changed,origin="AUTOMATED_TEST")
+stopifnot(identical(a$students,b$students),all(vapply(a$students,function(s) !s$donor_identity_overlap && !s$donor_future_overlap,logical(1))))
+x<-a$predictions[a$predictions$model_name=="INDIVIDUAL_CALIBRATION",]
+y<-b$predictions[b$predictions$model_name=="INDIVIDUAL_CALIBRATION",]
+stopifnot(identical(x$predicted_probability,y$predicted_probability))
+shuffled<-analyze_public_memory(d[nrow(d):1,,drop=FALSE],origin="AUTOMATED_TEST")
+stopifnot(identical(a$predictions,shuffled$predictions))
+bad<-d;bad$origin_type<-"REAL_STUDY"
+stopifnot(inherits(try(analyze_public_memory(bad),silent=TRUE),"try-error"))
+short<-d[rep(seq_len(100)<=8,3),]
+stopifnot(!length(analyze_public_memory(short,origin="AUTOMATED_TEST")$predictions))
+'''
+        result=subprocess.run([resolve_rscript(),"-e",code],cwd=engine,capture_output=True,text=True,timeout=120)
+        self.assertEqual(result.returncode,0,result.stdout+result.stderr)
 
 if __name__=="__main__":
     unittest.main()
