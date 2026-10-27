@@ -40,6 +40,8 @@ for (data in list(memory,probes)) {
       any(!nzchar(trimws(data$student_id))) || any(!nzchar(trimws(data$event_id))) ||
       any(!nzchar(trimws(data$question_id))) || anyDuplicated(data$event_id)) stop("Invalid synthetic identity/source")
 }
+if (length(unique(memory$fsrs_model_version))!=1L || anyNA(memory$fsrs_model_version) ||
+    any(!nzchar(trimws(memory$fsrs_model_version)))) stop("Mixed/missing FSRS versions")
 observed <- parse_evidence_timestamp(memory$occurred_at)
 predicted <- parse_evidence_timestamp(memory$fsrs_prediction_timestamp)
 if (anyNA(observed) || anyNA(predicted) || any(predicted>observed) ||

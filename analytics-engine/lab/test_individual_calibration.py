@@ -98,6 +98,12 @@ c<-evaluate_individual_calibration(d[nrow(d):1,,drop=FALSE])
 stopifnot(identical(a$predictions,c$predictions),identical(a$students,c$students))
 cold<-d[d$fsrs_evidence_status=="COLD_START_NO_PREVIOUS_REVIEW",,drop=FALSE]
 stopifnot(evaluate_individual_calibration(cold)$status=="INSUFFICIENT_EVIDENCE")
+short<-d[parse_evidence_timestamp(d$occurred_at)<as.POSIXct("2026-01-20",tz="UTC"),,drop=FALSE]
+stopifnot(evaluate_individual_calibration(short)$status=="INSUFFICIENT_EVIDENCE")
+overlap<-d
+idx<-overlap$student_id==overlap$student_id[1]
+overlap$occurred_at[idx]<-format(parse_evidence_timestamp(overlap$occurred_at[idx])+100*86400,"%Y-%m-%dT%H:%M:%SZ",tz="UTC")
+stopifnot(inherits(try(evaluate_individual_calibration(overlap),silent=TRUE),"try-error"))
 for (y in list(rep(0,8),rep(1,8))) {
  value<-fit_shift(rep(.8,8),y)
  stopifnot(is.finite(value),all(cal_shift(c(0,1),value)>0),all(cal_shift(c(0,1),value)<1))
@@ -114,7 +120,7 @@ for (y in list(rep(0,8),rep(1,8))) {
         from run_experiment import dump
         events,_=generate_memory(107,FSRSReference(),items=1)
         probes,_=generate_probes([107],items=2,pairs=1)
-        for kind in ("latent","duplicate","future","origin"):
+        for kind in ("latent","duplicate","future","origin","mixed_version"):
             with self.subTest(kind=kind),tempfile.TemporaryDirectory(prefix="calibration-",dir=ROOT) as temporary:
                 folder=Path(temporary)
                 rows=copy.deepcopy(events);fields=list(MEMORY_FIELDS)
@@ -126,6 +132,8 @@ for (y in list(rep(0,8),rep(1,8))) {
                     rows[1]["event_id"]=rows[0]["event_id"]
                 elif kind=="future":
                     rows[1]["fsrs_prediction_timestamp"]="2035-01-01T00:00:00Z"
+                elif kind=="mixed_version":
+                    rows[0]["fsrs_model_version"]="OTHER_VERSION"
                 else:
                     rows[0]["origin_type"]="REAL_STUDY"
                 obs,probe=folder/"memory.csv",folder/"probes.csv"

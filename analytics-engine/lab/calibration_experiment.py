@@ -146,8 +146,13 @@ def run(output,seeds=None,items=8,probe_items=64,pairs=4):
     try:
         dump(output/"criteria.json",dict(CRITERIA,seeds=seeds,memory_items=items,probe_items=probe_items,probe_pairs=pairs))
         events,truth=[],[]
+        parameters=None
         for seed in seeds:
             reference=FSRSReference()
+            current=list(reference.scheduler.parameters)
+            if parameters is not None and parameters!=current:
+                raise ValueError("Reference parameters changed across seeds")
+            parameters=current
             rows,hidden=generate_memory(seed,reference,items)
             events.extend(rows);truth.extend(dict(r,seed=seed) for r in hidden)
         validate_memory(events)
@@ -182,9 +187,12 @@ def run(output,seeds=None,items=8,probe_items=64,pairs=4):
             "calibration_adapter.R","identifiability_simulator.py","memory_benchmark.py","memory_simulator.py",
             "memory_adapter.R","simulator.py","run_experiment.py")]
         sources += [engine/"R"/name for name in ("descriptive_analysis.R","provenance.R","retrieval_diagnostics.R","baselines.R")]
+        import fsrs
+        package_root=Path(next(iter(fsrs.__path__)))
         dump(output/"manifest.json",dict(status="SUCCEEDED",source_kind="SYNTHETIC_BENCHMARK",
             artifacts=artifacts,code_hashes={p.relative_to(engine).as_posix():sha(p) for p in sources},
             python_version=platform.python_version(),fsrs_version=version("fsrs"),fsrs_model=MODEL_VERSION,
+            fsrs_parameters=parameters,fsrs_package_source_hashes={p.relative_to(package_root).as_posix():sha(p) for p in sorted(package_root.rglob("*.py"))},
             can_apply=False,can_schedule=False))
         audit(output)
         return summary
