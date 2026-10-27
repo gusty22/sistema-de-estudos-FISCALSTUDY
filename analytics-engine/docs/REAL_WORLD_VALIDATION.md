@@ -134,3 +134,19 @@ Horizon inspection of the executed report identified 1,265 final targets below 2
 The dataset's prepared delta_t is not necessarily the number of complete UTC 24-hour periods. Therefore source-study-day versus actual-UTC clock alignment is unresolved, including intervals beyond the subday bin. The new QA reports mismatch counts and positive source intervals under 24 hours, without changing outcomes, deleting subday cases, tuning the test, or replacing the canonical formula. Technical tests exercise the difference explicitly.
 
 Any earlier statement of individual-global improvement remains a conditional comparison of the chosen adapters on these observations, not demonstrated personal retention calibration. The numerical guard finding is strongly affected by this time basis. Review source preparation/day boundaries, pre-register an alternative verified temporal adapter and evaluate it on a separate held-out cohort before interpreting FSRS predictive validity. No post-hoc target exclusion or new forgetting equation is authorized by these results.
+
+
+## Current verification after temporal QA — supersedes earlier validation interpretations
+
+Code 10f9be32215284b20ec10b20f7bd9bbdefb8937b:
+[human CI 40543215399](https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40543215399) and
+[regression CI 40543214868](https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40543214868) SUCCESS.
+48 total laboratory tests (12 human subset), 640 R checks, zero failures/skips; all offline/synthetic replays still byte-identical (21/10 and 50/8/13 files). Complete current aggregate reports/manifests were recovered from SHA-verified ZIP fc33b8fd588202c009dd3b6c765e8b1fcfea7456a1ac39f786d798655536a42e and archived, replacing the previous historical-only summary.
+
+Across ALL eligible source histories, 40,841 of 82,161 repeat intervals differed between recorded source days and floored UTC 24-hour periods; 9,026 had a positive source interval but elapsed UTC time under 24 hours. These are source-wide counts, NOT counts of final test targets. Final test targets under 24h were 1,265, including 257 observed failures. No row was removed or rescored to improve a model.
+
+The report now retains statistical contrast values but labels memory comparisons INCONCLUSIVE_TEMPORAL_COMPATIBILITY and validation_status=BLOCKED_BY_CLOCK_ALIGNMENT. Earlier positive individual/global statistical comparisons are NOT validated memory inference. Review the source time basis and pre-register a verified adapter/new held-out cohort before personal interpretation. The next personal implementation remains a prospectively precommitted prediction ledger and complete versioned evidence transport, validated with isolated SQLite.
+
+Minor report-label limitation: the shared comparison uncertainty text mentions donor/overlapping folds; that qualification applies to memory calibration. ASSISTments actually uses only within-student prequential models and a paired-student bootstrap. The computation is unchanged and documented separately; no ASSISTments donor fit is claimed.
+
+The final documentation/archive commit changes no analytical code or workflow after these executions. No production data, FSRS equation, planner authority, credentials or main merge were changed.

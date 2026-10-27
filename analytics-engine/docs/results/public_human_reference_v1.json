@@ -1,25 +1,15 @@
 {
   "contract_version": "public_human_reference_v1",
   "source_kind": "PUBLIC_HUMAN_DATASET",
-  "evaluated_commit": "d48ae4fdd7d4f052d8205ed973ba0cb7fe87da6b",
+  "evaluated_commit": "10f9be32215284b20ec10b20f7bd9bbdefb8937b",
   "ci": {
-    "human": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40540737927",
-    "regression": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40540737980"
+    "human": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40543215399",
+    "regression": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40543214868"
   },
-  "evidence_zip_sha256": "06aec87939ce056628a75b5f8073ae90273051c3694955d6a7c803ba7083fa96",
-  "versions_from_successful_ci": {
-    "R": "4.5.1",
-    "Python": "3.13.7",
-    "fsrs": "6.3.2",
-    "typing_extensions": "4.15.0",
-    "R_packages_from_installer_log": {
-      "jsonlite": "2.0.0",
-      "digest": "0.6.39"
-    }
-  },
+  "evidence_zip_sha256": "fc33b8fd588202c009dd3b6c765e8b1fcfea7456a1ac39f786d798655536a42e",
   "tests": {
-    "laboratory": 46,
-    "human_subset": 10,
+    "laboratory": 48,
+    "human_subset": 12,
     "R_checks": 640,
     "failures": 0,
     "replays": {
@@ -30,6 +20,11 @@
       "assistments": 10
     },
     "byte_differences": 0
+  },
+  "temporal_qa_totals": {
+    "comparisons": 82161,
+    "source_interval_vs_utc_whole_day_mismatches": 40841,
+    "positive_source_interval_under_24h": 9026
   },
   "aggregate_artifacts": {
     "lab/runs/human-ci/summary.json": {
@@ -109,7 +104,8 @@
           "paired_students": 12,
           "right": "GLOBAL_CALIBRATION",
           "right_total": 16438,
-          "status": "BETTER_ONLY_IN_THIS_RETROSPECTIVE_SAMPLE",
+          "statistical_comparison_status": "BETTER_ONLY_IN_THIS_RETROSPECTIVE_SAMPLE",
+          "status": "INCONCLUSIVE_TEMPORAL_COMPATIBILITY",
           "uncertainty": "Paired student-cluster bootstrap, conditional on fitted donor models; overlapping folds"
         },
         {
@@ -190,7 +186,8 @@
           "paired_students": 12,
           "right": "FSRS_DEFAULT",
           "right_total": 16438,
-          "status": "INCONCLUSIVE_OR_NO_SUPERIORITY",
+          "statistical_comparison_status": "INCONCLUSIVE_OR_NO_SUPERIORITY",
+          "status": "INCONCLUSIVE_TEMPORAL_COMPATIBILITY",
           "uncertainty": "Paired student-cluster bootstrap, conditional on fitted donor models; overlapping folds"
         },
         {
@@ -271,7 +268,8 @@
           "paired_students": 12,
           "right": "FSRS_NUMERICAL_GUARD",
           "right_total": 16438,
-          "status": "INCONCLUSIVE_OR_NO_SUPERIORITY",
+          "statistical_comparison_status": "INCONCLUSIVE_OR_NO_SUPERIORITY",
+          "status": "INCONCLUSIVE_TEMPORAL_COMPATIBILITY",
           "uncertainty": "Paired student-cluster bootstrap, conditional on fitted donor models; overlapping folds"
         },
         {
@@ -352,7 +350,8 @@
           "paired_students": 12,
           "right": "PERSONAL_ONLINE_BETA11",
           "right_total": 16438,
-          "status": "INCONCLUSIVE_OR_NO_SUPERIORITY",
+          "statistical_comparison_status": "INCONCLUSIVE_OR_NO_SUPERIORITY",
+          "status": "INCONCLUSIVE_TEMPORAL_COMPATIBILITY",
           "uncertainty": "Paired student-cluster bootstrap, conditional on fitted donor models; overlapping folds"
         }
       ],
@@ -2327,7 +2326,13 @@
           "origin_type": "PUBLIC_HUMAN_DATASET",
           "raw_rows": 978,
           "source_file": "v4/revlog_history-e37d9b3.tsv",
-          "target": "SELF_REPORTED_RECALL_RATING_GT_1"
+          "target": "SELF_REPORTED_RECALL_RATING_GT_1",
+          "time_basis": {
+            "comparisons": 850,
+            "positive_source_interval_under_24h": 54,
+            "source_interval_vs_utc_whole_day_mismatches": 440,
+            "status": "UNRESOLVED_CLOCK_ALIGNMENT"
+          }
         },
         {
           "eligible_rows": 2492,
@@ -2346,7 +2351,13 @@
           "origin_type": "PUBLIC_HUMAN_DATASET",
           "raw_rows": 2492,
           "source_file": "v4/revlog_history-937810d.tsv",
-          "target": "SELF_REPORTED_RECALL_RATING_GT_1"
+          "target": "SELF_REPORTED_RECALL_RATING_GT_1",
+          "time_basis": {
+            "comparisons": 1576,
+            "positive_source_interval_under_24h": 103,
+            "source_interval_vs_utc_whole_day_mismatches": 682,
+            "status": "UNRESOLVED_CLOCK_ALIGNMENT"
+          }
         },
         {
           "eligible_rows": 3323,
@@ -2365,7 +2376,13 @@
           "origin_type": "PUBLIC_HUMAN_DATASET",
           "raw_rows": 3323,
           "source_file": "v4/revlog_history-7c3a69d.tsv",
-          "target": "SELF_REPORTED_RECALL_RATING_GT_1"
+          "target": "SELF_REPORTED_RECALL_RATING_GT_1",
+          "time_basis": {
+            "comparisons": 2156,
+            "positive_source_interval_under_24h": 162,
+            "source_interval_vs_utc_whole_day_mismatches": 1108,
+            "status": "UNRESOLVED_CLOCK_ALIGNMENT"
+          }
         },
         {
           "eligible_rows": 4493,
@@ -2384,7 +2401,13 @@
           "origin_type": "PUBLIC_HUMAN_DATASET",
           "raw_rows": 4493,
           "source_file": "v4/revlog_history-46b2aa1.tsv",
-          "target": "SELF_REPORTED_RECALL_RATING_GT_1"
+          "target": "SELF_REPORTED_RECALL_RATING_GT_1",
+          "time_basis": {
+            "comparisons": 3640,
+            "positive_source_interval_under_24h": 493,
+            "source_interval_vs_utc_whole_day_mismatches": 1769,
+            "status": "UNRESOLVED_CLOCK_ALIGNMENT"
+          }
         },
         {
           "eligible_rows": 5502,
@@ -2403,7 +2426,13 @@
           "origin_type": "PUBLIC_HUMAN_DATASET",
           "raw_rows": 5502,
           "source_file": "v4/revlog_history-03659d3.tsv",
-          "target": "SELF_REPORTED_RECALL_RATING_GT_1"
+          "target": "SELF_REPORTED_RECALL_RATING_GT_1",
+          "time_basis": {
+            "comparisons": 4242,
+            "positive_source_interval_under_24h": 812,
+            "source_interval_vs_utc_whole_day_mismatches": 2353,
+            "status": "UNRESOLVED_CLOCK_ALIGNMENT"
+          }
         },
         {
           "eligible_rows": 8314,
@@ -2422,7 +2451,13 @@
           "origin_type": "PUBLIC_HUMAN_DATASET",
           "raw_rows": 8314,
           "source_file": "v4/revlog_history-06a3422.tsv",
-          "target": "SELF_REPORTED_RECALL_RATING_GT_1"
+          "target": "SELF_REPORTED_RECALL_RATING_GT_1",
+          "time_basis": {
+            "comparisons": 4291,
+            "positive_source_interval_under_24h": 878,
+            "source_interval_vs_utc_whole_day_mismatches": 1749,
+            "status": "UNRESOLVED_CLOCK_ALIGNMENT"
+          }
         },
         {
           "eligible_rows": 6994,
@@ -2441,7 +2476,13 @@
           "origin_type": "PUBLIC_HUMAN_DATASET",
           "raw_rows": 6994,
           "source_file": "v4/revlog_history-7948290.tsv",
-          "target": "SELF_REPORTED_RECALL_RATING_GT_1"
+          "target": "SELF_REPORTED_RECALL_RATING_GT_1",
+          "time_basis": {
+            "comparisons": 5959,
+            "positive_source_interval_under_24h": 751,
+            "source_interval_vs_utc_whole_day_mismatches": 2868,
+            "status": "UNRESOLVED_CLOCK_ALIGNMENT"
+          }
         },
         {
           "eligible_rows": 9603,
@@ -2460,7 +2501,13 @@
           "origin_type": "PUBLIC_HUMAN_DATASET",
           "raw_rows": 9603,
           "source_file": "v4/revlog_history-d1260ae.tsv",
-          "target": "SELF_REPORTED_RECALL_RATING_GT_1"
+          "target": "SELF_REPORTED_RECALL_RATING_GT_1",
+          "time_basis": {
+            "comparisons": 8203,
+            "positive_source_interval_under_24h": 281,
+            "source_interval_vs_utc_whole_day_mismatches": 4108,
+            "status": "UNRESOLVED_CLOCK_ALIGNMENT"
+          }
         },
         {
           "eligible_rows": 11950,
@@ -2479,7 +2526,13 @@
           "origin_type": "PUBLIC_HUMAN_DATASET",
           "raw_rows": 11950,
           "source_file": "v4/revlog_history-77e570b.tsv",
-          "target": "SELF_REPORTED_RECALL_RATING_GT_1"
+          "target": "SELF_REPORTED_RECALL_RATING_GT_1",
+          "time_basis": {
+            "comparisons": 9783,
+            "positive_source_interval_under_24h": 1061,
+            "source_interval_vs_utc_whole_day_mismatches": 4794,
+            "status": "UNRESOLVED_CLOCK_ALIGNMENT"
+          }
         },
         {
           "eligible_rows": 16930,
@@ -2498,7 +2551,13 @@
           "origin_type": "PUBLIC_HUMAN_DATASET",
           "raw_rows": 16930,
           "source_file": "v4/revlog_history-f0feefe.tsv",
-          "target": "SELF_REPORTED_RECALL_RATING_GT_1"
+          "target": "SELF_REPORTED_RECALL_RATING_GT_1",
+          "time_basis": {
+            "comparisons": 12141,
+            "positive_source_interval_under_24h": 2060,
+            "source_interval_vs_utc_whole_day_mismatches": 5697,
+            "status": "UNRESOLVED_CLOCK_ALIGNMENT"
+          }
         },
         {
           "eligible_rows": 18170,
@@ -2517,7 +2576,13 @@
           "origin_type": "PUBLIC_HUMAN_DATASET",
           "raw_rows": 18170,
           "source_file": "v4/revlog_history-a7932bc.tsv",
-          "target": "SELF_REPORTED_RECALL_RATING_GT_1"
+          "target": "SELF_REPORTED_RECALL_RATING_GT_1",
+          "time_basis": {
+            "comparisons": 14544,
+            "positive_source_interval_under_24h": 1048,
+            "source_interval_vs_utc_whole_day_mismatches": 7298,
+            "status": "UNRESOLVED_CLOCK_ALIGNMENT"
+          }
         },
         {
           "eligible_rows": 17206,
@@ -2536,10 +2601,22 @@
           "origin_type": "PUBLIC_HUMAN_DATASET",
           "raw_rows": 17206,
           "source_file": "v4/revlog_history-df33889.tsv",
-          "target": "SELF_REPORTED_RECALL_RATING_GT_1"
+          "target": "SELF_REPORTED_RECALL_RATING_GT_1",
+          "time_basis": {
+            "comparisons": 14776,
+            "positive_source_interval_under_24h": 1323,
+            "source_interval_vs_utc_whole_day_mismatches": 7975,
+            "status": "UNRESOLVED_CLOCK_ALIGNMENT"
+          }
         }
       ],
       "r_python_score_agreement": true,
+      "reference_settings": {
+        "enable_fuzzing": false,
+        "learning_steps": [],
+        "relearning_steps": [],
+        "retrieval_clock": "Official py-fsrs timedelta.days (whole 24h periods)"
+      },
       "revision": "ae96575728d364265a75f2447fe7b7fa389ba96c",
       "source_kind": "PUBLIC_HUMAN_DATASET",
       "students": [
@@ -2880,7 +2957,9 @@
           "validation_max": "2023-04-13 00:32:54.593"
         }
       ],
-      "total_cold": 23794
+      "temporal_compatibility": "UNRESOLVED",
+      "total_cold": 23794,
+      "validation_status": "BLOCKED_BY_CLOCK_ALIGNMENT"
     },
     "lab/runs/human-ci/manifest.json": {
       "artifacts": {
@@ -2903,16 +2982,16 @@
         "raw/revlog_history-f0feefe.tsv": "0e06b87dfe2dfd2de9777672e4c6c21994d8189e2bb258977646f0f40169b9a2",
         "snapshot.json": "f7fed878d66f3efa6c3a4f782dca3258e1314e4702d5897b0e430779d5f2fbae",
         "source-manifest.json": "e9416407d501216bd719263235ef6b3d8c46f41b901ac058757b9d501a1731e3",
-        "summary.json": "06cd70bc9ca6ba0cd905f374df1a73fe465f6f319289ca0f8a3854caae76616b"
+        "summary.json": "4d36e654afa516d476d0a03268c6dfdd0f27eb3f8e5b971611ee5fd90e9c2d9f"
       },
       "can_apply": false,
       "can_schedule": false,
       "code_hashes": {
-        "human_learning_experiment.py": "dd66859941ff279b9912602c2c00a5c709fb15cf8de5c13d95facee30da1c2f8",
+        "human_learning_experiment.py": "164c659db2a1c694e4fc9d31c6fa803f22004e68968e7a2429d651d06a9fd98a",
         "human_memory_adapter.R": "739d90046ccbebb96d52c872d0e4aec51cf1762da35ec8e12e4ddfb4ec614f4b",
         "human_metrics.py": "03ad0586dffb521281ebf1f971be744a4092f64ff12e10950481782be0de7bbd",
         "individual_calibration.R": "6068f78d2c869f02c755c380bc9ff9a8a4b43dd94f3af087f33111006136291f",
-        "public_data_adapters.py": "6d267eb27836fc3387be9cd9ede3d9bef7b5c2a2ea2cfab555a7120767030c3d"
+        "public_data_adapters.py": "e90029177c02940ad2f71f454f986f70f4882d8f0c992a8c2dc5e7215dc0eea9"
       },
       "fsrs_parameters": [
         0.212,
@@ -3895,7 +3974,7 @@
         "bytes": 64412812,
         "decoding": "latin-1 byte-preserving transport; only ASCII numeric IDs/skills selected",
         "license": "OFFICIAL_FREE_USE_DECLARATION_NO_SPDX",
-        "license_page_sha256": "03257cf0a9f1ccb936c07847c74eb654481b7bcd9f0835f94b82a912a7fb3a90",
+        "license_page_sha256": "73de2f78bd75a51ee91c68f71ce0ee4b9de04121fec6e8318600f6cd9c94c1be",
         "redistribution": "NOT_AUTHORIZED_BY_THIS_LAB",
         "sha256": "162ef8d2d28bcbfea6591a282994062bd8d5eaa00636544292a0d268dca6e5da",
         "source": "https://drive.google.com/uc?export=download&id=1NNXHFRxcArrU0ZJSb9BIL56vmUt5FhlE",
@@ -3913,10 +3992,10 @@
         "r-results.json": "6891f8734de7ee7df967b9013adc4ad1ef68499dc2031bc4d6ffe369d2b38547",
         "r.log": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
         "raw/corrected.csv": "162ef8d2d28bcbfea6591a282994062bd8d5eaa00636544292a0d268dca6e5da",
-        "raw/license-source.html": "03257cf0a9f1ccb936c07847c74eb654481b7bcd9f0835f94b82a912a7fb3a90",
+        "raw/license-source.html": "73de2f78bd75a51ee91c68f71ce0ee4b9de04121fec6e8318600f6cd9c94c1be",
         "snapshot.json": "851fe1ae47dfc8bcd25b6513ed73419e119796b3e08cfed6a5ae7ce9c27e6404",
-        "source-manifest.json": "3ce893e3df3633e7818afe1089a08e8d7065ffff199f685719d68e45610aafdc",
-        "summary.json": "1f61787f5a5dad58ccb10ddc5f947f1d231c99586d5aab2a8562078f45acec63"
+        "source-manifest.json": "d9c81f380123523d6f5a64999935498383f44aedbacac1c01add93eab8da403e",
+        "summary.json": "e01c28da71d1a21fe64770ffa50b534bee8173b05a44115edb5d31febb0de036"
       },
       "can_apply": false,
       "can_schedule": false,
@@ -3924,7 +4003,7 @@
         "assistments_adapter.R": "a82d8701956ed240002e1ca3531bda564124a599a46c2f4066973a8cff926b07",
         "assistments_experiment.py": "dc0d7f2edcc02758ee7d994b6628725dbc196b7f077e5e815dd43c4821541912",
         "human_metrics.py": "03ad0586dffb521281ebf1f971be744a4092f64ff12e10950481782be0de7bbd",
-        "public_data_adapters.py": "6d267eb27836fc3387be9cd9ede3d9bef7b5c2a2ea2cfab555a7120767030c3d"
+        "public_data_adapters.py": "e90029177c02940ad2f71f454f986f70f4882d8f0c992a8c2dc5e7215dc0eea9"
       },
       "r_baselines_sha256": "f8a75d6c593b8781c5f404148809ac3d18cb8502bcbe47112f7e0b5b98535689",
       "r_version": "R version 4.5.1 (2025-06-13)",
@@ -3935,7 +4014,7 @@
       "bytes": 64412812,
       "decoding": "latin-1 byte-preserving transport; only ASCII numeric IDs/skills selected",
       "license": "OFFICIAL_FREE_USE_DECLARATION_NO_SPDX",
-      "license_page_sha256": "03257cf0a9f1ccb936c07847c74eb654481b7bcd9f0835f94b82a912a7fb3a90",
+      "license_page_sha256": "73de2f78bd75a51ee91c68f71ce0ee4b9de04121fec6e8318600f6cd9c94c1be",
       "redistribution": "NOT_AUTHORIZED_BY_THIS_LAB",
       "sha256": "162ef8d2d28bcbfea6591a282994062bd8d5eaa00636544292a0d268dca6e5da",
       "source": "https://drive.google.com/uc?export=download&id=1NNXHFRxcArrU0ZJSb9BIL56vmUt5FhlE",
@@ -3943,7 +4022,11 @@
       "source_version": "Corrected Drive file, mutable upstream; bytes SHA recorded BEFORE analysis"
     }
   },
-  "caution": "No raw/per-event human data. Human recall is self-reported, ASSISTments target includes help. Retrospective source sample, not personal or causal validation.",
+  "interpretation_notes": {
+    "identity": "Source collection/user pseudonyms, independence as described by sources, not personally authenticated learners",
+    "assistments_uncertainty_label": "The generic comparison text mentions donors/overlapping folds; ASSISTments uses within-student prequential histories and paired student bootstrap, no donor fit. Dataset-specific methods in protocol take precedence.",
+    "scientific_status": "Memory validation BLOCKED_BY_CLOCK_ALIGNMENT; ASSISTments superiority inconclusive; no personal or causal validation"
+  },
   "personal_validation": "NOT_EXECUTED",
   "policy_effectiveness": "NOT_EXECUTED",
   "can_apply": false,
