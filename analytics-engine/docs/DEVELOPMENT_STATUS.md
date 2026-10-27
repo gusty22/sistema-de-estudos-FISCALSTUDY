@@ -171,3 +171,8 @@ Falhas relevantes: scikit-learn 1.9.1 incompatível com pyBKT 1.4.3 (fixado 1.6.
 ### Evidência remota posterior à desconexão local
 
 CI 40430980241, commit dfed935: SUCESSO; 23 testes do laboratório (sem skips), 600 verificações R, zero falhas; duas execuções de cinco seeds, auditoria de 49 artefatos e 50 arquivos byte a byte idênticos. 2670 eventos e 1904 alvos; pyBKT absteve-se em dois alvos por não finitude. Média móvel e média por tópico foram piores que a média global neste simulador; pyBKT não tem comparação de cobertura completa. Não promover esses modelos ao planejador. Detalhes, intervalos e links em lab/COMPARISON_RESULTS.md; fixture compacta em tests/fixtures/learner_lab/baseline_reference_result.json. CI supera o bloqueio técnico local, mas não valida pedagogia, pessoas, curva individual ou homologação visual. Aviso de conversão textual sob locale C permanece para investigação específica.
+
+
+## Transporte UTF-8 — integridade do pipeline
+
+PR #29: problema de CSV corrompido sob locale C reproduzido na CI 40435204718; corrigidos bootstrap de módulos UTF-8, leitura declarada sem conversão nativa, BOM opcional e serialização binária UTF-8 com regras CSV padrão. Sem modificar fontes, checksums, banco ou equações. CI 40439080064, commit 3a8d074: 23 testes do laboratório, 614 verificações R, zero falhas; rótulos de disciplina/tópico e CSV de métricas preservados sob C; replay de 50 arquivos passou. Detalhes e tentativas anteriores em docs/UTF8_TRANSPORT_VALIDATION.md. Windows local, visual e Java E2E não foram homologados; integrar junto do #30 sem perder os dois conjuntos de testes.
