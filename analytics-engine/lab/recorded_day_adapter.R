@@ -42,8 +42,8 @@ if(any(eligible & is.na(d$predicted_probability)) ||
 if(basis=="SOURCE_RECORDED_DAYS" && any(repeat_rows & model!=delta)) stop("Source clock mismatch")
 if(basis=="UTC_WHOLE_24H" && any(repeat_rows & model!=floor(actual))) stop("UTC clock mismatch")
 # Coordinate differences are checked per card; they are NEVER interpreted as event instants.
-for(id in unique(paste(d$student_id,d$question_id,sep=":"))) {
- group <- which(paste(d$student_id,d$question_id,sep=":")==id)
+groups <- split(seq_len(nrow(d)),paste(d$student_id,d$question_id,sep=":"))
+for(group in groups) {
  group <- group[order(i[group])]
  if(!identical(as.integer(i[group]),seq_along(group))) stop("Missing/duplicate source prefix")
  if(length(group)>1L) {
