@@ -2,6 +2,7 @@
 const {chromium}=require(process.env.FISCALSTUDY_PLAYWRIGHT_MODULE);
 const assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path'),{spawnSync}=require('node:child_process');
+let runningBrowser, activePage;
 const root=process.env.FISCALSTUDY_BROWSER_DIR;
 const db=path.join(root,'data','fiscalstudy.db');
 assert(root && path.resolve(root).startsWith(path.resolve(process.env.RUNNER_TEMP)+path.sep));
@@ -14,8 +15,8 @@ const count=type=>sql("SELECT count(*) n FROM event_store WHERE event_type=?",[t
 const memory=()=>sql("SELECT count(*) n FROM learning_evidence_projection")[0].n;
 async function waitFor(fn) { for(let n=0;n<100;n++){if(await fn())return;await new Promise(r=>setTimeout(r,100));}throw Error('Condition not reached'); }
 (async()=>{
- const browser=await chromium.launch({headless:true});
- const page=await browser.newPage({viewport:{width:1440,height:1000}});
+ const browser=await chromium.launch({headless:true}); runningBrowser=browser;
+ const page=await browser.newPage({viewport:{width:1440,height:1000}}); activePage=page;
  const external=[];
  await page.route('**/*',async route=>{
   const u=new URL(route.request().url());
@@ -99,4 +100,11 @@ async function waitFor(fn) { for(let n=0;n<100;n++){if(await fn())return;await n
  fs.writeFileSync(path.join(root,'browser-summary.json'),JSON.stringify({source_kind:'SYNTHETIC_FIXTURE',checks:['preparation_before_answer','lost_preparation_ack_reload','lost_answer_ack_reload','double_click','completed_reload','rapid_question_switch','no_grade_leak','export_authorization','ineligible_fsrs_exclusion'],attempts:count('ANSWER_SUBMITTED'),memory_evidence:memory(),can_apply:false,can_schedule:false},null,2));
  await browser.close();
  console.log('Real-browser synthetic homolocation passed; personal validation NOT_EXECUTED.');
-})().catch(error=>{console.error(error.message);process.exitCode=1;});
+})().catch(async error=>{
+ const message=String(error.message).split(process.env.FISCALSTUDY_ADMIN_TOKEN || 'NEVER_A_TOKEN').join('[REDACTED]');
+ console.error(message);
+ fs.writeFileSync(path.join(root,'browser-failure.json'),JSON.stringify({source_kind:'SYNTHETIC_FIXTURE',status:'FAILED',message}));
+ if(activePage) await activePage.screenshot({path:path.join(root,'browser-failure.png'),fullPage:true,timeout:5000}).catch(()=>{});
+ if(runningBrowser) await runningBrowser.close().catch(()=>{});
+ process.exitCode=1;
+});
