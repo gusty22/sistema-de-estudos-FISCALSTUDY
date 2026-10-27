@@ -41,3 +41,6 @@ A antiga asserção do pipeline assumia o mesmo denominador para todas as métri
 Confiança ordinal não é probabilidade contínua declarada. Os escores dependem do mapeamento assumido; não são prova de calibração, personalidade ou falsa aprendizagem. Intervalos binomiais são descritivos com repetições dependentes. A origem real/sintética continua governada pelos contratos existentes, sem reclassificação histórica.
 
 Mudança somente de código e testes; nenhum banco, evento ou arquivo do estudante foi alterado. Reverter o commit restaura a implementação anterior sem migração de dados, mas também restaura os defeitos descritos. Integrar depois de #27 e revisar junto da correção UTF-8 #29, preservando as duas adições de testes; não fazer merge automático.
+
+
+O gráfico plot_calibration_curve foi alinhado à mesma semântica: eixo/legenda identificam probabilidade assumida e Brier/ECE condicionais ao mapeamento; a diagonal é referência, não alegação de calibração perfeita medida. O eixo permite todo o intervalo [0,1] aceito pelo contrato. O texto explicita dependência entre repetições. Testes de geração PNG existentes devem passar; isso não equivale a homologação visual.
