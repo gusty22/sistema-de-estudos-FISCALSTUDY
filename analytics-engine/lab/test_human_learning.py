@@ -1,6 +1,7 @@
 """External-data adapter/metric tests use explicit software fixtures, not human evidence."""
 import csv
 import io
+import importlib.util
 import json
 import math
 import unittest
@@ -34,6 +35,7 @@ class PublicAdapterTests(unittest.TestCase):
         self.assertEqual(qa["time_basis"]["positive_source_interval_under_24h"],1)
         self.assertEqual(len(rows),2)
 
+    @unittest.skipUnless(importlib.util.find_spec("fsrs"),"NOT_EXECUTED: optional official FSRS dependency unavailable")
     def test_official_helper_flooring_is_declared_not_reimplemented(self):
         from public_data_adapters import replay_fsrs
         records=sample()

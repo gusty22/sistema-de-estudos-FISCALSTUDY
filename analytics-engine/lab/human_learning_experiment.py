@@ -82,6 +82,13 @@ def run(output,download=False,source_run=None):
             generalization=analytical["global_generalization"],
             fsrs_pretraining_overlap="UNKNOWN",policy_effectiveness="NOT_EXECUTED",
             conceptual_knowledge="NOT_IDENTIFIED",personal_validation="NOT_EXECUTED",can_schedule=False))
+        if report["temporal_compatibility"]=="UNRESOLVED":
+            for contrast in report["comparisons"]:
+                contrast["statistical_comparison_status"]=contrast["status"]
+                contrast["status"]="INCONCLUSIVE_TEMPORAL_COMPATIBILITY"
+            report["validation_status"]="BLOCKED_BY_CLOCK_ALIGNMENT"
+        else:
+            report["validation_status"]="RETROSPECTIVE_ONLY_NOT_PERSONAL_VALIDATION"
         dump(output/"summary.json",report)
         sources=["public_data_adapters.py","human_learning_experiment.py","human_metrics.py",
             "human_memory_adapter.R","individual_calibration.R"]
