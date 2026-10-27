@@ -4,7 +4,7 @@ import json
 import subprocess
 from pathlib import Path
 from collections import defaultdict
-from public_data_adapters import acquire_assistments,parse_assistments_csv,clone_public_snapshot
+from public_data_adapters import acquire_assistments,parse_assistments_csv,clone_public_snapshot,validate_prediction_join
 from human_metrics import metrics,paired_comparison
 from run_experiment import dump,sha,resolve_rscript
 
@@ -64,6 +64,7 @@ def run(output,download=False,source_run=None):
         rows=actual["predictions"]
         if not rows:
             raise ValueError("No ASSISTments predictions")
+        validate_prediction_join(rows,normalized)
         names=sorted({r["model_name"] for r in rows})
         report=dict(source_kind="PUBLIC_HUMAN_DATASET",source=source,qa=qa,
             selected_students=len(chosen),selected_events=len(normalized),eligible_students=len(frame),

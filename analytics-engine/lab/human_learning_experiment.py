@@ -6,7 +6,7 @@ import platform
 import subprocess
 from pathlib import Path
 from importlib.metadata import version
-from public_data_adapters import acquire_fsrs,parse_fsrs_tsv,replay_fsrs,NORMAL_FIELDS,digest,clone_public_snapshot
+from public_data_adapters import acquire_fsrs,parse_fsrs_tsv,replay_fsrs,NORMAL_FIELDS,digest,clone_public_snapshot,validate_prediction_join
 from human_metrics import summarize,metrics
 from run_experiment import dump,sha,resolve_rscript
 
@@ -68,6 +68,7 @@ def run(output,download=False,source_run=None):
         predictions=analytical["predictions"]
         if not isinstance(predictions,list) or not predictions:
             raise ValueError("No human predictions; not a successful validation")
+        validate_prediction_join(predictions,events)
         report=summarize(predictions)
         for model,rs in analytical["scores"].items():
             ps=report["metrics"][model]

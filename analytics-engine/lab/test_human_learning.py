@@ -7,7 +7,7 @@ import unittest
 import subprocess
 from pathlib import Path
 from run_experiment import resolve_rscript
-from public_data_adapters import parse_fsrs_tsv,FSRS_FIELDS,parse_assistments_csv
+from public_data_adapters import parse_fsrs_tsv,FSRS_FIELDS,parse_assistments_csv,validate_prediction_join
 from human_metrics import metrics,paired_comparison,auc_roc,failure_average_precision
 
 def tsv(rows):
@@ -49,6 +49,19 @@ class PublicAdapterTests(unittest.TestCase):
         data=b"order_id,user_id,problem_id,skill_id,correct\n5,1,7,10,0\n5,1,7,11,1\n"
         with self.assertRaises(ValueError):
             parse_assistments_csv(data)
+
+class PredictionJoinTests(unittest.TestCase):
+    def test_original_source_identity_and_label(self):
+        source=[dict(event_id="fixture-1",student_id="fixture-student",question_id="fixture-item",
+            is_correct=1,event_order=5)]
+        prediction=dict(event_id="fixture-1",student_id="fixture-student",question_id="fixture-item",
+            observed_correct=1,event_order=5,model_name="fixture-model",predicted_probability=.7)
+        self.assertTrue(validate_prediction_join([prediction],source))
+        for field,value in (("observed_correct",0),("student_id","other"),("event_order",6),("event_id","unknown")):
+            with self.assertRaises(ValueError):
+                validate_prediction_join([dict(prediction,**{field:value})],source)
+        with self.assertRaises(ValueError):
+            validate_prediction_join([prediction,prediction],source)
 
 class HumanMetricsTests(unittest.TestCase):
     def rows(self,p=(.2,.8)):

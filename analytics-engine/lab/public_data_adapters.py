@@ -227,3 +227,26 @@ def clone_public_snapshot(source_run,target,kind):
             raise ValueError("Raw source replay hash mismatch")
         (target/name).write_bytes(path.read_bytes())
     return source
+
+
+def validate_prediction_join(predictions,observations):
+    """Cross-language outputs must reference the ORIGINAL observed outcome, not R's copy alone."""
+    originals={r["event_id"]:r for r in observations}
+    if len(originals)!=len(observations):
+        raise ValueError("Duplicate source event for scoring")
+    seen=set()
+    for row in predictions:
+        key=(row["model_name"],row["event_id"])
+        source=originals.get(row["event_id"])
+        if key in seen or source is None:
+            raise ValueError("Duplicate/unknown predicted event")
+        seen.add(key)
+        if any(row[k]!=source[k] for k in ("student_id","question_id")) or int(row["observed_correct"])!=int(source["is_correct"]):
+            raise ValueError("Prediction identity/outcome differs from source")
+        for key in ("occurred_at","event_order"):
+            if key in source and source[key] is not None and row.get(key)!=source[key]:
+                raise ValueError("Prediction chronology differs from source")
+        probability=float(row["predicted_probability"])
+        if not math.isfinite(probability) or not 0<=probability<=1:
+            raise ValueError("Invalid prediction probability")
+    return True
