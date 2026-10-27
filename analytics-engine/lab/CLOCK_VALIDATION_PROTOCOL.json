@@ -37,5 +37,14 @@
   "personal_validation": "NOT_EXECUTED",
   "causal_policy_effectiveness": "NOT_EXECUTED",
   "can_apply": false,
-  "can_schedule": false
+  "can_schedule": false,
+  "exploratory_amendment": {
+    "timing": "Added after first CI execution started, BEFORE retrieving new-cohort scores; not part of original confirmatory primary",
+    "reason": "PR33 already showed numerical clipping and online-personal means are strong references; do not compare only to unguarded UTC",
+    "contrasts": [
+      "SOURCE_RECORDED_DAYS::FSRS_DEFAULT vs UTC_WHOLE_24H::FSRS_NUMERICAL_GUARD",
+      "SOURCE_RECORDED_DAYS::FSRS_DEFAULT vs SOURCE_RECORDED_DAYS::PERSONAL_ONLINE_BETA11"
+    ],
+    "unchanged": "No changes to primary contrast, cohort selection, source, domain, model parameters, splits or acceptance thresholds"
+  }
 }

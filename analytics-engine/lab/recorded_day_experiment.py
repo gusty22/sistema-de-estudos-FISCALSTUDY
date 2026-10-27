@@ -84,9 +84,15 @@ def run(output,download=False,source_run=None):
             raise ValueError("Arms differ in observed identity/outcome/time/domain")
         comparison=paired_comparison(joined,"SOURCE_RECORDED_DAYS::FSRS_DEFAULT","UTC_WHOLE_24H::FSRS_DEFAULT")
         comparison["uncertainty"]="Paired source-collection bootstrap; conditional on this selected cohort"
+        secondary_clocks=[paired_comparison(joined,"SOURCE_RECORDED_DAYS::FSRS_DEFAULT",right)
+            for right in ("UTC_WHOLE_24H::FSRS_NUMERICAL_GUARD","SOURCE_RECORDED_DAYS::PERSONAL_ONLINE_BETA11")]
+        for contrast in secondary_clocks:
+            contrast["uncertainty"]="Paired source-collection bootstrap; conditional on this selected cohort"
+            contrast["analysis_role"]="EXPLORATORY_AMENDMENT_BEFORE_SCORE_INSPECTION"
         summary=dict(source_kind="PUBLIC_HUMAN_DATASET",protocol_version=protocol["version"],
             data_revision=source["revision"],new_source_files=len(source["files"]),
             prior_cohort_overlap=0,qa=qa,arms=reports,primary_clock_comparison=comparison,
+            secondary_clock_comparisons=secondary_clocks,
             causal_policy_effectiveness="NOT_EXECUTED",original_timezone="NOT_RECOVERED",
             memory_curve_validity="NOT_IDENTIFIED",personal_validation="NOT_EXECUTED",
             source_day_transport="TECHNICALLY_CHECKED_NOT_EMPIRICAL_PERSONAL_VALIDATION",
@@ -115,6 +121,6 @@ if __name__=="__main__":
     parser.add_argument("--source-run",type=Path)
     opts=parser.parse_args()
     result=run(opts.output,opts.download,opts.source_run)
-    print(json.dumps(dict(primary=result["primary_clock_comparison"],cohort=result["new_source_files"],
+    print(json.dumps(dict(primary=result["primary_clock_comparison"],secondary=result["secondary_clock_comparisons"],cohort=result["new_source_files"],
         arms={name:{key:value for key,value in report.items() if key not in ("students","horizons")} for name,report in result["arms"].items()},
         can_apply=False,can_schedule=False),sort_keys=True))

@@ -172,3 +172,5 @@ Run from analytics-engine:
     python lab/recorded_day_experiment.py --source-run lab/runs/recorded-day-first --output lab/runs/recorded-day-replay
 
 Choose NEW run directories. Raw human files are not committed/uploaded; aggregate manifests and scores are retained. Current execution is pending and must not be replaced by historical PR33 results.
+
+Exploratory amendment (before retrieving any new-cohort scores, after the first CI execution started): compare source-clock raw FSRS also against UTC numerical-guard and source-clock online-personal mean. This comes from PR33's already-known baseline finding. It is not retroactively described as the original preregistered primary, and changes no models, intervals, selection, domain or thresholds. The original primary remains fixed; strong-reference comparisons must be reported even if they do not favor recorded-day transport.
