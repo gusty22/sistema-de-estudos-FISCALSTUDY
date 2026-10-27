@@ -1,0 +1,50 @@
+{
+  "protocol_version": "personal-prospective-pilot-v1",
+  "status": "PREREGISTERED_NOT_PERSONALLY_EXECUTED",
+  "target": "QUESTION_CORRECTNESS_WITHOUT_DECLARED_HELP",
+  "scope": "LOCAL_SINGLE_USER",
+  "current_model": "PERSONAL_BETA11_PREFIX_V1",
+  "strong_reference": "ONLINE_PERSONAL_BETA11_IDENTICAL_TO_CURRENT_MODEL",
+  "secondary_reference": "FIXED_050",
+  "authority": {
+    "can_apply": false,
+    "can_schedule": false
+  },
+  "eligibility": [
+    "REAL_STUDY server origin",
+    "Boolean definitive answer",
+    "Explicit usedHelp=false",
+    "Precommitted prediction, valid identity, rowid, timestamps and SHA",
+    "Frozen prefix only; no retrospective predictions"
+  ],
+  "horizon": "First submission of reserved attempt; response delay is not a retention horizon",
+  "novelty": {
+    "zero_attempts": "NO_PRIOR_RECORDED_ATTEMPT_NOT_PROOF_OF_NOVELTY",
+    "repeated": "PRIOR_RECORDED_QUESTION",
+    "variants": "NOT_IDENTIFIABLE_WITH_CURRENT_EXACT_CONTENT_FAMILY_ALONE",
+    "holdout_reservation": "NOT_ENABLED_PENDING_ALL_CONSUMER_LEAKAGE_AUDIT"
+  },
+  "evaluation": {
+    "scheme": "PREQUENTIAL_FROZEN_BEFORE_OUTCOME",
+    "hyperparameter_tuning": "NONE_IN_CURRENT_BASELINE",
+    "final_outcomes_for_fit": "FORBIDDEN",
+    "metrics": [
+      "Brier",
+      "log loss",
+      "BSS on same events",
+      "reliability and bias",
+      "coverage, pending and exclusions",
+      "response-delay strata",
+      "question/session counts not assumed independent",
+      "harms compared with same-event references"
+    ],
+    "uncertainty": "Dependence and model parameter uncertainty not established; Wilson assumptions explicit"
+  },
+  "missing_data": "Absent stays absent; invalid integrity fails run; pending and ineligible targets explicitly unscored",
+  "activity_policy": "UNCHANGED_NO_EXPERIMENTAL_AUTOMATIC_ACTION",
+  "later_phase": {
+    "recall": "Separate FSRS-aligned target and preregistered delayed probes required",
+    "novel_question_evaluation": "Items must be reserved before exposure and all consumers blocked",
+    "causal_interventions": "Separate prospective randomized/counterbalanced N-of-1 protocol required"
+  }
+}

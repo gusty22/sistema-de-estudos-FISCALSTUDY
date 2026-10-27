@@ -106,7 +106,11 @@ evaluate_prospective <- function(path) {
   names(horizons) <- levels(groups)
   list(contract_version="prospective-evaluation-v1",input_sha256=envelope$inputSha256,
     source_kind=input$sourceKind,target="QUESTION_CORRECTNESS_WITHOUT_DECLARED_HELP",
-    model="PERSONAL_BETA11_PREFIX_V1",metrics=metric(y,p),calibration_bins=bins,
+    model="PERSONAL_BETA11_PREFIX_V1",metrics=metric(y,p),
+    strong_reference=list(model="ONLINE_PERSONAL_BETA11_SAME_PREFIX",n=length(y),
+      status="IDENTICAL_TO_CURRENT_BASELINE_NOT_AN_INDEPENDENT_COMPETITOR",
+      brier_skill_score=if(length(y))0 else NULL),
+    protocol_version="personal-prospective-pilot-v1",calibration_bins=bins,
     response_delay_metrics_NOT_memory_retention_horizons=horizons,
     attempt_count=sum(vapply(rows,function(e)identical(e$event_type,"ANSWER_SUBMITTED"),logical(1))),
     unforecasted_attempt_count=sum(vapply(ids,function(key) {

@@ -535,7 +535,8 @@ const QuestionViewer: React.FC = () => {
       prospectiveRef.current = intent;
     }
     setProspectiveStatus('PREPARING');
-    intent.prepare().then(() => {
+    const preparedIntent = intent;
+    preparedIntent.prepare().then(() => {
       if (!active) return;
       const saved = readAttemptJournal(question.questionId, sessionId);
       if (saved?.payload) {
@@ -547,7 +548,7 @@ const QuestionViewer: React.FC = () => {
         setSelectedOption(restored); setConfidence(Number(saved.payload.confidenceLevel));
         setActiveTimeMs(Number(saved.payload.activeTimeMs));
       }
-      if (intent.recoveredResult) setFeedback(intent.recoveredResult);
+      if (preparedIntent.recoveredResult) setFeedback(preparedIntent.recoveredResult);
       setProspectiveStatus('READY');
     })
       .catch(() => { if (active) setProspectiveStatus('ERROR'); });
