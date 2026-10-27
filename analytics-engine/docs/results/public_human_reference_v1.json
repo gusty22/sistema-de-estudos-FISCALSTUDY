@@ -1,10 +1,37 @@
 {
   "contract_version": "public_human_reference_v1",
   "source_kind": "PUBLIC_HUMAN_DATASET",
-  "evaluated_commit": "0f9d8cb0454fd0bef543f6027e2ae5af2dd05d20",
-  "ci_run": 40536145013,
-  "artifact_sha256": "837fa96e9b4af6a04c9d1be54f154129b09b7649708f3d423d4b109ebf7c86fd",
-  "summaries": {
+  "evaluated_commit": "d48ae4fdd7d4f052d8205ed973ba0cb7fe87da6b",
+  "ci": {
+    "human": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40540737927",
+    "regression": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40540737980"
+  },
+  "evidence_zip_sha256": "06aec87939ce056628a75b5f8073ae90273051c3694955d6a7c803ba7083fa96",
+  "versions_from_successful_ci": {
+    "R": "4.5.1",
+    "Python": "3.13.7",
+    "fsrs": "6.3.2",
+    "typing_extensions": "4.15.0",
+    "R_packages_from_installer_log": {
+      "jsonlite": "2.0.0",
+      "digest": "0.6.39"
+    }
+  },
+  "tests": {
+    "laboratory": 46,
+    "human_subset": 10,
+    "R_checks": 640,
+    "failures": 0,
+    "replays": {
+      "synthetic_questions": 50,
+      "synthetic_memory": 8,
+      "synthetic_calibration": 13,
+      "human_memory": 21,
+      "assistments": 10
+    },
+    "byte_differences": 0
+  },
+  "aggregate_artifacts": {
     "lab/runs/human-ci/summary.json": {
       "can_apply": false,
       "can_schedule": false,
@@ -167,6 +194,87 @@
           "uncertainty": "Paired student-cluster bootstrap, conditional on fitted donor models; overlapping folds"
         },
         {
+          "brier_skill_score": 0.0063227820314745165,
+          "can_apply": false,
+          "complete_coverage": true,
+          "estimand": "Equal-weight student mean difference; aggregate BSS weights events",
+          "harmed_students_descriptive": [
+            {
+              "brier_difference": 0.000703868974547342,
+              "n": 1192,
+              "student_id": "3a3b552740058e8f2ed3bb78"
+            },
+            {
+              "brier_difference": 0.004356929426868911,
+              "n": 849,
+              "student_id": "449b0404ce05e0acf021d863"
+            },
+            {
+              "brier_difference": 0.014562697354988732,
+              "n": 170,
+              "student_id": "c2a5bac93e663f455bb13d4b"
+            },
+            {
+              "brier_difference": 0.013484690115821318,
+              "n": 2429,
+              "student_id": "e8536850a3c5654adc189502"
+            },
+            {
+              "brier_difference": 0.0007380734955174384,
+              "n": 1957,
+              "student_id": "f682471938471e2ce93a343c"
+            }
+          ],
+          "left": "INDIVIDUAL_CALIBRATION",
+          "left_total": 16438,
+          "paired_events": 16438,
+          "paired_student_differences": {
+            "brier": [
+              0.000703868974547342,
+              -0.0007063075728398066,
+              0.004356929426868911,
+              -0.014921807637776036,
+              -0.00441543556892815,
+              -0.006834522148945421,
+              -0.001591430653040779,
+              0.014562697354988732,
+              -0.05263337423935774,
+              0.013484690115821318,
+              -0.0027568840766989955,
+              0.0007380734955174384
+            ],
+            "log_loss": [
+              0.000336546706182439,
+              0.00031565851607534556,
+              0.020154656498521994,
+              -0.03733659585963345,
+              -0.006987392442721729,
+              -0.03747970483001195,
+              -0.0003857169621394041,
+              0.032837602145899425,
+              -0.11640894601164664,
+              -0.02685295841570401,
+              -0.015318310644484245,
+              0.00207026450212372
+            ]
+          },
+          "paired_student_intervals": {
+            "brier": [
+              -0.014046300463909402,
+              0.0034976955944764515
+            ],
+            "log_loss": [
+              -0.03826960508735935,
+              0.0019043408153689805
+            ]
+          },
+          "paired_students": 12,
+          "right": "FSRS_NUMERICAL_GUARD",
+          "right_total": 16438,
+          "status": "INCONCLUSIVE_OR_NO_SUPERIORITY",
+          "uncertainty": "Paired student-cluster bootstrap, conditional on fitted donor models; overlapping folds"
+        },
+        {
           "brier_skill_score": 0.034871379241870115,
           "can_apply": false,
           "complete_coverage": true,
@@ -255,6 +363,83 @@
       "horizons": {
         "1_TO_7_DAYS": {
           "FSRS_DEFAULT": {
+            "auc_roc": 0.7126703861350879,
+            "brier": 0.12670107410068374,
+            "calibration_bias": 0.01146321757667573,
+            "conceptual_mastery": "NOT_IDENTIFIED",
+            "failure_average_precision": 0.3482600103496074,
+            "high_predicted_recall_failures": 240,
+            "high_predicted_recall_n": 2809,
+            "log_loss": 0.412269755280446,
+            "n": 6500,
+            "n_items": 4426,
+            "n_students": 12,
+            "observed_failure_rate": 0.1676923076923077,
+            "reliability": [
+              {
+                "bin": 4,
+                "binomial_wilson_interval": [
+                  0.26799202452413634,
+                  0.7320079754758637
+                ],
+                "mean_prediction": 0.4817358702299699,
+                "n": 14,
+                "observed_accuracy": 0.5
+              },
+              {
+                "bin": 5,
+                "binomial_wilson_interval": [
+                  0.39685107788188795,
+                  0.5423221621940694
+                ],
+                "mean_prediction": 0.5655298153846274,
+                "n": 177,
+                "observed_accuracy": 0.4689265536723164
+              },
+              {
+                "bin": 6,
+                "binomial_wilson_interval": [
+                  0.6018289358488654,
+                  0.666285874452084
+                ],
+                "mean_prediction": 0.6566321958441006,
+                "n": 854,
+                "observed_accuracy": 0.6346604215456675
+              },
+              {
+                "bin": 7,
+                "binomial_wilson_interval": [
+                  0.7264724191786028,
+                  0.7824270098033564
+                ],
+                "mean_prediction": 0.7518920800055087,
+                "n": 904,
+                "observed_accuracy": 0.7555309734513275
+              },
+              {
+                "bin": 8,
+                "binomial_wilson_interval": [
+                  0.859695407286781,
+                  0.8906590956271877
+                ],
+                "mean_prediction": 0.8566144657938815,
+                "n": 1742,
+                "observed_accuracy": 0.8760045924225028
+              },
+              {
+                "bin": 9,
+                "binomial_wilson_interval": [
+                  0.9036484161558329,
+                  0.9243399486688422
+                ],
+                "mean_prediction": 0.9416059450883981,
+                "n": 2809,
+                "observed_accuracy": 0.914560341758633
+              }
+            ],
+            "true_probability_rmse": "NOT_OBSERVABLE"
+          },
+          "FSRS_NUMERICAL_GUARD": {
             "auc_roc": 0.7126703861350879,
             "brier": 0.12670107410068374,
             "calibration_bias": 0.01146321757667573,
@@ -575,6 +760,93 @@
         },
         "7_TO_30_DAYS": {
           "FSRS_DEFAULT": {
+            "auc_roc": 0.7693799168152109,
+            "brier": 0.09434623472382192,
+            "calibration_bias": -0.01941851036475465,
+            "conceptual_mastery": "NOT_IDENTIFIED",
+            "failure_average_precision": 0.3853710944430075,
+            "high_predicted_recall_failures": 75,
+            "high_predicted_recall_n": 1822,
+            "log_loss": 0.3235523159503532,
+            "n": 4375,
+            "n_items": 3574,
+            "n_students": 11,
+            "observed_failure_rate": 0.12571428571428567,
+            "reliability": [
+              {
+                "bin": 3,
+                "binomial_wilson_interval": [
+                  0.13684428582359742,
+                  0.6942576053973727
+                ],
+                "mean_prediction": 0.38123345493704425,
+                "n": 8,
+                "observed_accuracy": 0.375
+              },
+              {
+                "bin": 4,
+                "binomial_wilson_interval": [
+                  0.22335119798553627,
+                  0.45278193686463364
+                ],
+                "mean_prediction": 0.46887396989186025,
+                "n": 61,
+                "observed_accuracy": 0.32786885245901637
+              },
+              {
+                "bin": 5,
+                "binomial_wilson_interval": [
+                  0.39369476773028084,
+                  0.5367275267537519
+                ],
+                "mean_prediction": 0.5655249576774282,
+                "n": 183,
+                "observed_accuracy": 0.4644808743169399
+              },
+              {
+                "bin": 6,
+                "binomial_wilson_interval": [
+                  0.627032516187624,
+                  0.7747613673234626
+                ],
+                "mean_prediction": 0.6558516787169049,
+                "n": 143,
+                "observed_accuracy": 0.7062937062937062
+              },
+              {
+                "bin": 7,
+                "binomial_wilson_interval": [
+                  0.7518476816919836,
+                  0.8234854124708265
+                ],
+                "mean_prediction": 0.7607651347344608,
+                "n": 495,
+                "observed_accuracy": 0.7898989898989899
+              },
+              {
+                "bin": 8,
+                "binomial_wilson_interval": [
+                  0.8727378045921376,
+                  0.9029808416880009
+                ],
+                "mean_prediction": 0.8586536479123248,
+                "n": 1663,
+                "observed_accuracy": 0.888755261575466
+              },
+              {
+                "bin": 9,
+                "binomial_wilson_interval": [
+                  0.9487074264776885,
+                  0.9670347328004452
+                ],
+                "mean_prediction": 0.9366603852184728,
+                "n": 1822,
+                "observed_accuracy": 0.9588364434687157
+              }
+            ],
+            "true_probability_rmse": "NOT_OBSERVABLE"
+          },
+          "FSRS_NUMERICAL_GUARD": {
             "auc_roc": 0.7693799168152109,
             "brier": 0.09434623472382192,
             "calibration_bias": -0.01941851036475465,
@@ -1011,6 +1283,103 @@
             ],
             "true_probability_rmse": "NOT_OBSERVABLE"
           },
+          "FSRS_NUMERICAL_GUARD": {
+            "auc_roc": 0.76525654527802,
+            "brier": 0.10787782674784838,
+            "calibration_bias": -0.010977606968269214,
+            "conceptual_mastery": "NOT_IDENTIFIED",
+            "failure_average_precision": 0.4835802812406501,
+            "high_predicted_recall_failures": 114,
+            "high_predicted_recall_n": 1982,
+            "log_loss": 0.361163235794664,
+            "n": 4298,
+            "n_items": 3993,
+            "n_students": 11,
+            "observed_failure_rate": 0.15588645881805496,
+            "reliability": [
+              {
+                "bin": 2,
+                "binomial_wilson_interval": [
+                  0,
+                  0.2775327998628892
+                ],
+                "mean_prediction": 0.2789618373378506,
+                "n": 10,
+                "observed_accuracy": 0
+              },
+              {
+                "bin": 3,
+                "binomial_wilson_interval": [
+                  0.09052122983132334,
+                  0.24163565199593867
+                ],
+                "mean_prediction": 0.3612399830114924,
+                "n": 86,
+                "observed_accuracy": 0.1511627906976744
+              },
+              {
+                "bin": 4,
+                "binomial_wilson_interval": [
+                  0.25117092535112345,
+                  0.420660770531687
+                ],
+                "mean_prediction": 0.4506043700987767,
+                "n": 115,
+                "observed_accuracy": 0.33043478260869563
+              },
+              {
+                "bin": 5,
+                "binomial_wilson_interval": [
+                  0.6689359870890924,
+                  0.7679920859867851
+                ],
+                "mean_prediction": 0.5539115863086382,
+                "n": 312,
+                "observed_accuracy": 0.7211538461538461
+              },
+              {
+                "bin": 6,
+                "binomial_wilson_interval": [
+                  0.5358800921257674,
+                  0.677419453018673
+                ],
+                "mean_prediction": 0.6517790088486295,
+                "n": 179,
+                "observed_accuracy": 0.6089385474860335
+              },
+              {
+                "bin": 7,
+                "binomial_wilson_interval": [
+                  0.6789643210483267,
+                  0.7769606247699803
+                ],
+                "mean_prediction": 0.75543052067761,
+                "n": 312,
+                "observed_accuracy": 0.7307692307692307
+              },
+              {
+                "bin": 8,
+                "binomial_wilson_interval": [
+                  0.8622313525756056,
+                  0.8974320761654879
+                ],
+                "mean_prediction": 0.8605419775721828,
+                "n": 1302,
+                "observed_accuracy": 0.8809523809523809
+              },
+              {
+                "bin": 9,
+                "binomial_wilson_interval": [
+                  0.9313503743482264,
+                  0.951902411119162
+                ],
+                "mean_prediction": 0.9331653133269711,
+                "n": 1982,
+                "observed_accuracy": 0.9424823410696267
+              }
+            ],
+            "true_probability_rmse": "NOT_OBSERVABLE"
+          },
           "GLOBAL_CALIBRATION": {
             "auc_roc": 0.7378404285079564,
             "brier": 0.11568245011019261,
@@ -1291,6 +1660,33 @@
             ],
             "true_probability_rmse": "NOT_OBSERVABLE"
           },
+          "FSRS_NUMERICAL_GUARD": {
+            "auc_roc": 0.5,
+            "brier": 0.2031616490128577,
+            "calibration_bias": 0.20316105533596834,
+            "conceptual_mastery": "NOT_IDENTIFIED",
+            "failure_average_precision": 0.20316205533596837,
+            "high_predicted_recall_failures": 257,
+            "high_predicted_recall_n": 1265,
+            "log_loss": 2.806788317304294,
+            "n": 1265,
+            "n_items": 1132,
+            "n_students": 12,
+            "observed_failure_rate": 0.20316205533596843,
+            "reliability": [
+              {
+                "bin": 9,
+                "binomial_wilson_interval": [
+                  0.7737823966553937,
+                  0.8180961195920228
+                ],
+                "mean_prediction": 0.999999,
+                "n": 1265,
+                "observed_accuracy": 0.7968379446640316
+              }
+            ],
+            "true_probability_rmse": "NOT_OBSERVABLE"
+          },
           "GLOBAL_CALIBRATION": {
             "auc_roc": 0.3334356278179235,
             "brier": 0.2031616725108603,
@@ -1409,6 +1805,10 @@
           "brier": 0.13880147546552601,
           "log_loss": 0.9575001587403721
         },
+        "FSRS_NUMERICAL_GUARD": {
+          "brier": 0.13880144253118396,
+          "log_loss": 0.6162458771493948
+        },
         "GLOBAL_CALIBRATION": {
           "brier": 0.1459965832089503,
           "log_loss": 0.6369051775117099
@@ -1514,6 +1914,103 @@
                 0.9189485736066099
               ],
               "mean_prediction": 0.9477151526574543,
+              "n": 7878,
+              "observed_accuracy": 0.9129220614369129
+            }
+          ],
+          "true_probability_rmse": "NOT_OBSERVABLE"
+        },
+        "FSRS_NUMERICAL_GUARD": {
+          "auc_roc": 0.6882651282588632,
+          "brier": 0.1190522048871324,
+          "calibration_bias": 0.012128720747838516,
+          "conceptual_mastery": "NOT_IDENTIFIED",
+          "failure_average_precision": 0.373660420656118,
+          "high_predicted_recall_failures": 686,
+          "high_predicted_recall_n": 7878,
+          "log_loss": 0.5595669546441837,
+          "n": 16438,
+          "n_items": 9525,
+          "n_students": 12,
+          "observed_failure_rate": 0.15616255018858738,
+          "reliability": [
+            {
+              "bin": 2,
+              "binomial_wilson_interval": [
+                0,
+                0.2775327998628892
+              ],
+              "mean_prediction": 0.2789618373378506,
+              "n": 10,
+              "observed_accuracy": 0
+            },
+            {
+              "bin": 3,
+              "binomial_wilson_interval": [
+                0.10757621191020425,
+                0.2587455830906018
+              ],
+              "mean_prediction": 0.36294155509026277,
+              "n": 94,
+              "observed_accuracy": 0.1702127659574468
+            },
+            {
+              "bin": 4,
+              "binomial_wilson_interval": [
+                0.2783754827394286,
+                0.41209321077416705
+              ],
+              "mean_prediction": 0.4587637731999072,
+              "n": 190,
+              "observed_accuracy": 0.34210526315789475
+            },
+            {
+              "bin": 5,
+              "binomial_wilson_interval": [
+                0.5471865236929999,
+                0.6214920894819357
+              ],
+              "mean_prediction": 0.5601343147415827,
+              "n": 672,
+              "observed_accuracy": 0.5848214285714286
+            },
+            {
+              "bin": 6,
+              "binomial_wilson_interval": [
+                0.6115998427690805,
+                0.6664036106168101
+              ],
+              "mean_prediction": 0.6557985781388469,
+              "n": 1176,
+              "observed_accuracy": 0.6394557823129252
+            },
+            {
+              "bin": 7,
+              "binomial_wilson_interval": [
+                0.740179323303178,
+                0.7805685250804976
+              ],
+              "mean_prediction": 0.7551043275686454,
+              "n": 1711,
+              "observed_accuracy": 0.760958503798948
+            },
+            {
+              "bin": 8,
+              "binomial_wilson_interval": [
+                0.8723448414309296,
+                0.890788461064028
+              ],
+              "mean_prediction": 0.8584213024623156,
+              "n": 4707,
+              "observed_accuracy": 0.881878053962184
+            },
+            {
+              "bin": 9,
+              "binomial_wilson_interval": [
+                0.9064930486324458,
+                0.9189485736066099
+              ],
+              "mean_prediction": 0.9477149920837046,
               "n": 7878,
               "observed_accuracy": 0.9129220614369129
             }
@@ -1787,6 +2284,11 @@
       "policy_effectiveness": "NOT_EXECUTED",
       "prediction_coverage": {
         "FSRS_DEFAULT": {
+          "coverage": 1,
+          "n": 16438,
+          "reference_targets": 16438
+        },
+        "FSRS_NUMERICAL_GUARD": {
           "coverage": 1,
           "n": 16438,
           "reference_targets": 16438
@@ -2379,6 +2881,165 @@
         }
       ],
       "total_cold": 23794
+    },
+    "lab/runs/human-ci/manifest.json": {
+      "artifacts": {
+        "criteria.json": "1428005c527441a276acf9e89d09be3463f682d01f70abca75c4a18720877a9d",
+        "observations.csv": "3b886e8de0244e59ecd1193eb113d7ad8ced925cd496dfe0c258303488553aa3",
+        "r-results.json": "b6884cdb0f17746a2804c917e4b47263a979494f26fe734a7bd2909b18d87271",
+        "r.log": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+        "raw/dataset-card.txt": "3e0e15fa0c5cc81675bd69af8eb469d128a725c1a7bfc71f03b7877b7b650567",
+        "raw/revlog_history-03659d3.tsv": "34a17f450eae93cb05492bbcca3633ba67b47035cfea86139b0ed92ba3b6e0c9",
+        "raw/revlog_history-06a3422.tsv": "7668109c314cc93d7d0c2bf519f019a49eb2b95dcee2016d91b42832e59c9b90",
+        "raw/revlog_history-46b2aa1.tsv": "0fe9e28998e3e6f2e827c83edf2fcadaff7680d1718fb5c73e364d5dcdbcfab3",
+        "raw/revlog_history-77e570b.tsv": "c4ba6175586f9aff5ab4063e9f058c162076077bac5ff256513c58691a3d384c",
+        "raw/revlog_history-7948290.tsv": "104c94fd7e3bec4804e997a77707620fd2a0414b628c9b27283362a64abcbb2f",
+        "raw/revlog_history-7c3a69d.tsv": "840a26ec6245ae0a5e7a6de7d5bbd103297d44ff56112fcfcf5f7adf8c31f6a1",
+        "raw/revlog_history-937810d.tsv": "ce946162004f1e2f53361ab640b0feb0bc310be51631ba3b59fdef3bcc55302c",
+        "raw/revlog_history-a7932bc.tsv": "6284f103f33d9c9a121c9e266942a2fe6a37a756711fe8d3ca63050270906b76",
+        "raw/revlog_history-d1260ae.tsv": "85ca4da3efa607cf1a47b74d50c678a7726f1cb70142783db98bb6222a4cbffa",
+        "raw/revlog_history-df33889.tsv": "45cabb5d07e578c4fea57faa549b38a4087bb8f0c8f240bd36ba147c686be11d",
+        "raw/revlog_history-e37d9b3.tsv": "3e325264d6faa7f25cfc6c45e10dc69597e03b9706a6bf2f42a669fc216d8e29",
+        "raw/revlog_history-f0feefe.tsv": "0e06b87dfe2dfd2de9777672e4c6c21994d8189e2bb258977646f0f40169b9a2",
+        "snapshot.json": "f7fed878d66f3efa6c3a4f782dca3258e1314e4702d5897b0e430779d5f2fbae",
+        "source-manifest.json": "e9416407d501216bd719263235ef6b3d8c46f41b901ac058757b9d501a1731e3",
+        "summary.json": "06cd70bc9ca6ba0cd905f374df1a73fe465f6f319289ca0f8a3854caae76616b"
+      },
+      "can_apply": false,
+      "can_schedule": false,
+      "code_hashes": {
+        "human_learning_experiment.py": "dd66859941ff279b9912602c2c00a5c709fb15cf8de5c13d95facee30da1c2f8",
+        "human_memory_adapter.R": "739d90046ccbebb96d52c872d0e4aec51cf1762da35ec8e12e4ddfb4ec614f4b",
+        "human_metrics.py": "03ad0586dffb521281ebf1f971be744a4092f64ff12e10950481782be0de7bbd",
+        "individual_calibration.R": "6068f78d2c869f02c755c380bc9ff9a8a4b43dd94f3af087f33111006136291f",
+        "public_data_adapters.py": "6d267eb27836fc3387be9cd9ede3d9bef7b5c2a2ea2cfab555a7120767030c3d"
+      },
+      "fsrs_parameters": [
+        0.212,
+        1.2931,
+        2.3065,
+        8.2956,
+        6.4133,
+        0.8334,
+        3.0194,
+        0.001,
+        1.8722,
+        0.1666,
+        0.796,
+        1.4835,
+        0.0614,
+        0.2629,
+        1.6483,
+        0.6014,
+        1.8729,
+        0.5425,
+        0.0912,
+        0.0658,
+        0.1542
+      ],
+      "fsrs_source_hashes": {
+        "__init__.py": "79e8c6c2fc444115fbd2a1f5f9d52593d3e3ef81adfaef1d172e663882cd6f87",
+        "card.py": "be433000a1b839b222420233b9019e905f88efda3901e2efd51c3fdb5754f0ab",
+        "optimizer.py": "e7c4afd63c252b4ca2442d476f996832961bc976fa41307fd765d17dfb500917",
+        "rating.py": "01bc939a22f7e728ebd9a999dda77a9dc2b7fcfec4f392beea4b11ea7019b85e",
+        "review_log.py": "79a4afdc25fcf1abf764b50fdce0e52d37fc7656b8894eda6630b60b0ece1047",
+        "scheduler.py": "dd04d86ba98ee22106f6bbdb7eede00fa3c848dbf15d18e33db4584f333bac46",
+        "state.py": "3ed5d9c98cad65f3fd8e3a31d1904eddc88ee3b6a7ead22585d850ce27fc51f4"
+      },
+      "fsrs_version": "6.3.2",
+      "python_version": "3.13.7",
+      "r_source_hashes": {
+        "descriptive_analysis.R": "e9adac4dc126ef562d57a73575bb5d365e6523d94cfa1ff898694f65032681a1",
+        "provenance.R": "181bcdf6d423474aa39bad4979d1a1c1ff65d7c69f5110f3fe8eadd8a2cf5acd"
+      },
+      "r_version": "R version 4.5.1 (2025-06-13)",
+      "source_kind": "PUBLIC_HUMAN_DATASET",
+      "status": "SUCCEEDED"
+    },
+    "lab/runs/human-ci/source-manifest.json": {
+      "benchmark_revision": "f63af1caf6e658b390809583e00931e31776590a",
+      "dataset": "open-spaced-repetition/fsrs-dataset",
+      "eligible_frame_files": 36,
+      "files": [
+        {
+          "bytes": 61401,
+          "name": "revlog_history-e37d9b3.tsv",
+          "path": "v4/revlog_history-e37d9b3.tsv",
+          "sha256": "3e325264d6faa7f25cfc6c45e10dc69597e03b9706a6bf2f42a669fc216d8e29"
+        },
+        {
+          "bytes": 105194,
+          "name": "revlog_history-937810d.tsv",
+          "path": "v4/revlog_history-937810d.tsv",
+          "sha256": "ce946162004f1e2f53361ab640b0feb0bc310be51631ba3b59fdef3bcc55302c"
+        },
+        {
+          "bytes": 154356,
+          "name": "revlog_history-7c3a69d.tsv",
+          "path": "v4/revlog_history-7c3a69d.tsv",
+          "sha256": "840a26ec6245ae0a5e7a6de7d5bbd103297d44ff56112fcfcf5f7adf8c31f6a1"
+        },
+        {
+          "bytes": 216804,
+          "name": "revlog_history-46b2aa1.tsv",
+          "path": "v4/revlog_history-46b2aa1.tsv",
+          "sha256": "0fe9e28998e3e6f2e827c83edf2fcadaff7680d1718fb5c73e364d5dcdbcfab3"
+        },
+        {
+          "bytes": 246911,
+          "name": "revlog_history-03659d3.tsv",
+          "path": "v4/revlog_history-03659d3.tsv",
+          "sha256": "34a17f450eae93cb05492bbcca3633ba67b47035cfea86139b0ed92ba3b6e0c9"
+        },
+        {
+          "bytes": 341631,
+          "name": "revlog_history-06a3422.tsv",
+          "path": "v4/revlog_history-06a3422.tsv",
+          "sha256": "7668109c314cc93d7d0c2bf519f019a49eb2b95dcee2016d91b42832e59c9b90"
+        },
+        {
+          "bytes": 375615,
+          "name": "revlog_history-7948290.tsv",
+          "path": "v4/revlog_history-7948290.tsv",
+          "sha256": "104c94fd7e3bec4804e997a77707620fd2a0414b628c9b27283362a64abcbb2f"
+        },
+        {
+          "bytes": 515728,
+          "name": "revlog_history-d1260ae.tsv",
+          "path": "v4/revlog_history-d1260ae.tsv",
+          "sha256": "85ca4da3efa607cf1a47b74d50c678a7726f1cb70142783db98bb6222a4cbffa"
+        },
+        {
+          "bytes": 584688,
+          "name": "revlog_history-77e570b.tsv",
+          "path": "v4/revlog_history-77e570b.tsv",
+          "sha256": "c4ba6175586f9aff5ab4063e9f058c162076077bac5ff256513c58691a3d384c"
+        },
+        {
+          "bytes": 769987,
+          "name": "revlog_history-f0feefe.tsv",
+          "path": "v4/revlog_history-f0feefe.tsv",
+          "sha256": "0e06b87dfe2dfd2de9777672e4c6c21994d8189e2bb258977646f0f40169b9a2"
+        },
+        {
+          "bytes": 869469,
+          "name": "revlog_history-a7932bc.tsv",
+          "path": "v4/revlog_history-a7932bc.tsv",
+          "sha256": "6284f103f33d9c9a121c9e266942a2fe6a37a756711fe8d3ca63050270906b76"
+        },
+        {
+          "bytes": 976043,
+          "name": "revlog_history-df33889.tsv",
+          "path": "v4/revlog_history-df33889.tsv",
+          "sha256": "45cabb5d07e578c4fea57faa549b38a4087bb8f0c8f240bd36ba147c686be11d"
+        }
+      ],
+      "full_v4_files": 71,
+      "license": "MIT_DECLARED_IN_DATASET_CARD",
+      "license_sha256": "3e0e15fa0c5cc81675bd69af8eb469d128a725c1a7bfc71f03b7877b7b650567",
+      "not_representative_of": "Large/excluded collections or all Anki users",
+      "revision": "ae96575728d364265a75f2447fe7b7fa389ba96c",
+      "selection": "12 midpoint rank strata by file bytes in eligible 50KB..1MB frame; full selected files"
     },
     "lab/runs/assistments-ci/summary.json": {
       "can_apply": false,
@@ -3234,7 +3895,7 @@
         "bytes": 64412812,
         "decoding": "latin-1 byte-preserving transport; only ASCII numeric IDs/skills selected",
         "license": "OFFICIAL_FREE_USE_DECLARATION_NO_SPDX",
-        "license_page_sha256": "01b445026d35c2f68e736d1479316929b8cda781fc909ee52962d30909a2463a",
+        "license_page_sha256": "03257cf0a9f1ccb936c07847c74eb654481b7bcd9f0835f94b82a912a7fb3a90",
         "redistribution": "NOT_AUTHORIZED_BY_THIS_LAB",
         "sha256": "162ef8d2d28bcbfea6591a282994062bd8d5eaa00636544292a0d268dca6e5da",
         "source": "https://drive.google.com/uc?export=download&id=1NNXHFRxcArrU0ZJSb9BIL56vmUt5FhlE",
@@ -3244,9 +3905,47 @@
       "source_kind": "PUBLIC_HUMAN_DATASET",
       "time_horizons": "NOT_AVAILABLE",
       "transfer": "First observed item is NOT proof of conceptual transfer"
+    },
+    "lab/runs/assistments-ci/manifest.json": {
+      "artifacts": {
+        "criteria.json": "fd720c90b83f5a8435cce27fdaf12060b992386af19cd905f8792358d936c774",
+        "events.json": "c74661f1c3307c8cb2bc5bd16a253c24b29ce52c950b8165246d4169e71a5e10",
+        "r-results.json": "6891f8734de7ee7df967b9013adc4ad1ef68499dc2031bc4d6ffe369d2b38547",
+        "r.log": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+        "raw/corrected.csv": "162ef8d2d28bcbfea6591a282994062bd8d5eaa00636544292a0d268dca6e5da",
+        "raw/license-source.html": "03257cf0a9f1ccb936c07847c74eb654481b7bcd9f0835f94b82a912a7fb3a90",
+        "snapshot.json": "851fe1ae47dfc8bcd25b6513ed73419e119796b3e08cfed6a5ae7ce9c27e6404",
+        "source-manifest.json": "3ce893e3df3633e7818afe1089a08e8d7065ffff199f685719d68e45610aafdc",
+        "summary.json": "1f61787f5a5dad58ccb10ddc5f947f1d231c99586d5aab2a8562078f45acec63"
+      },
+      "can_apply": false,
+      "can_schedule": false,
+      "code_hashes": {
+        "assistments_adapter.R": "a82d8701956ed240002e1ca3531bda564124a599a46c2f4066973a8cff926b07",
+        "assistments_experiment.py": "dc0d7f2edcc02758ee7d994b6628725dbc196b7f077e5e815dd43c4821541912",
+        "human_metrics.py": "03ad0586dffb521281ebf1f971be744a4092f64ff12e10950481782be0de7bbd",
+        "public_data_adapters.py": "6d267eb27836fc3387be9cd9ede3d9bef7b5c2a2ea2cfab555a7120767030c3d"
+      },
+      "r_baselines_sha256": "f8a75d6c593b8781c5f404148809ac3d18cb8502bcbe47112f7e0b5b98535689",
+      "r_version": "R version 4.5.1 (2025-06-13)",
+      "source_kind": "PUBLIC_HUMAN_DATASET",
+      "status": "SUCCEEDED"
+    },
+    "lab/runs/assistments-ci/source-manifest.json": {
+      "bytes": 64412812,
+      "decoding": "latin-1 byte-preserving transport; only ASCII numeric IDs/skills selected",
+      "license": "OFFICIAL_FREE_USE_DECLARATION_NO_SPDX",
+      "license_page_sha256": "03257cf0a9f1ccb936c07847c74eb654481b7bcd9f0835f94b82a912a7fb3a90",
+      "redistribution": "NOT_AUTHORIZED_BY_THIS_LAB",
+      "sha256": "162ef8d2d28bcbfea6591a282994062bd8d5eaa00636544292a0d268dca6e5da",
+      "source": "https://drive.google.com/uc?export=download&id=1NNXHFRxcArrU0ZJSb9BIL56vmUt5FhlE",
+      "source_page": "https://sites.google.com/site/assistmentsdata/home/2009-2010-assistment-data",
+      "source_version": "Corrected Drive file, mutable upstream; bytes SHA recorded BEFORE analysis"
     }
   },
-  "notes": "Full aggregate reports recovered from a SHA-verified CI ZIP, no raw or per-event records. Later guard/replay changes require own CI.",
+  "caution": "No raw/per-event human data. Human recall is self-reported, ASSISTments target includes help. Retrospective source sample, not personal or causal validation.",
+  "personal_validation": "NOT_EXECUTED",
+  "policy_effectiveness": "NOT_EXECUTED",
   "can_apply": false,
   "can_schedule": false
 }

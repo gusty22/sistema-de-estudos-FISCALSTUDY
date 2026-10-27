@@ -105,3 +105,23 @@ An earlier unrelated synthetic gate (40536144628) timed out while INSTALLING the
 The ten-minute retry also stalled in Ubuntu apt BEFORE R execution: setup-r installs gdebi-core/qpdf/devscripts/ghostscript and the Azure Ubuntu mirror was downloading small system dependencies slowly. The workflow now changes ONLY the disposable runner's Azure Ubuntu mirror to the official archive.ubuntu.com HTTPS mirror, preserving signed repositories, R 4.5.1, pinned actions, package requirements and all assertions. This is an infrastructure recovery, not a relaxed scientific gate. A final run is required. Offline replay also checks the stored licensing document and raw-source hashes; fixtures default to UNVERIFIED_EXTERNAL until acquisition verifies provenance.
 
 Identity in the Anki source is a collection pseudonym, not an independently authenticated human identity. Source independence relies on the upstream contributor description. Reference settings are explicitly fuzzing off and no learning/relearning steps: results are a filtered-log benchmark configuration, not a reconstruction of every original Anki state. Unknown within-day actions and pretraining overlap limit generalization. The Java Bridge consumes its own current successful run manifest under the configured output root (AnalyticsBridgeService), not lab/runs; these experiments do not publish an operational manifest.
+
+
+## Final executed validation
+
+Implementation commit d48ae4fdd7d4f052d8205ed973ba0cb7fe87da6b:
+- [Human CI 40540737927](https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40540737927): SUCCESS. Ten external integration/metric tests, 640 R checks, actual Anki and corrected ASSISTments processing and OFFLINE replay.
+- [Regression CI 40540737980](https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40540737980): SUCCESS. 46 total laboratory tests (the ten human tests are a SUBSET), 640 R checks, zero failures.
+- Byte-identical replays: 50 question / eight synthetic-memory / 13 synthetic-calibration files; 21 human-memory and ten ASSISTments files. No network download during the two human replays.
+- The final ZIP was downloaded and independently SHA-256 verified as 06aec87939ce056628a75b5f8073ae90273051c3694955d6a7c803ba7083fa96. Complete aggregate summaries, per-horizon metrics, parameter intervals, source/analysis manifests and code hashes are permanently archived in docs/results/public_human_reference_v1.json; no raw/per-event data are committed.
+- Successful installer logs record Python 3.13.7, FSRS 6.3.2, typing_extensions 4.15.0, R 4.5.1, jsonlite 2.0.0 and digest 0.6.39. R packages are currently fetched from CRAN rather than an R lockfile: bitwise replay here is within the same validated environment, not a promise across arbitrary future environments.
+
+### Numerical guard finding and decision
+
+The fixed 1e-6 numerical guard alone changed raw-FSRS log loss from 0.883565 to 0.559567 with essentially unchanged Brier (0.119052). Individual calibration remained 0.547752 log loss / 0.118299 Brier. Against this guard, BOTH intervals crossed zero: Brier [-0.014046,0.003498], log loss [-0.038270,0.001904]. Thus much of the apparent log-loss gain against unguarded defaults was numerical saturation handling, not learned individual structure. This secondary contrast was added after initial results and is exploratory; it does not establish a new confirmatory finding or optimize a model on the test.
+
+The online personal mean's log loss remained lower, 0.398297; individual-minus-baseline interval was positive [0.037058,0.312681]. Conditional improvement against the global calibrator does not establish superiority against strong simple references. The online baseline uses previous test outcomes only after their batch; calibration coefficients remain frozen. Comparing their predictions is legitimate prequential evaluation, not evidence that either study policy is causally better.
+
+ASSISTments results and inconclusive intervals were unchanged by integrity/replay hardening. Newly observed items are not validated transfer, ordinal ordering is not a retention interval, and six of twelve histories had worse skill-set Brier.
+
+**Decision: keep all planner authority blocked.** There is no personal prospective validation, validated cognitive twin, estimated conceptual mastery, identified personal forgetting curve, causal intervention effect or demonstrated operational planner benefit. The next justified implementation is the versioned personal evidence transport and an independently precommitted prediction ledger, with isolated SQLite integration tests, before a randomized/counterbalanced delayed-outcome N-of-1 experiment.
