@@ -15,7 +15,9 @@ run_pipeline_fixture <- function(input, output, run_id, manifest = "") {
   log <- tempfile(fileext = ".log")
   rscript <- file.path(R.home("bin"), if (.Platform$OS.type == "windows") "Rscript.exe" else "Rscript")
   exit <- system2(rscript, c("run_analytics.R", shQuote(input)), stdout = log, stderr = log)
-  list(exit = exit, log = readLines(log, warn = FALSE))
+  contents <- readLines(log, warn=FALSE)
+  if (exit!=0L) cat(paste(tail(contents,15L),collapse="\n"),"\n")
+  list(exit = exit, log = contents)
 }
 
 pipeline_dir <- tempfile("pipeline-contract-")
