@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { ProspectivePreparation } from '../src/utils/prospectivePreparation.ts';
 import { AttemptSubmission } from '../src/utils/attemptSubmission.ts';
-import { reserveAttempt, readAttemptJournal, saveQuestionSession, restoreQuestionSession } from '../src/utils/attemptJournal.ts';
+import { reserveAttempt, readAttemptJournal, saveQuestionSession, restoreQuestionSession, freezeAttemptPayload, confirmAttempt } from '../src/utils/attemptJournal.ts';
 
 function storage() { const data=new Map();globalThis.localStorage={getItem:k=>data.get(k)??null,setItem:(k,v)=>data.set(k,String(v)),removeItem:k=>data.delete(k)};return data; }
 function ack(intent) { return new Response(JSON.stringify({contractVersion:'prospective-question-v1',predictionId:crypto.randomUUID(),attemptId:intent.attemptId,questionId:intent.questionId,sessionId:intent.sessionId,can_apply:false,can_schedule:false}),{status:200}); }
@@ -36,4 +36,14 @@ test('damaged storage fails closed without generating another intent',()=>{
  const key=[...map.keys()][0];map.set(key,'broken json');
  assert.throws(()=>reserveAttempt('q','s'));assert.equal(map.get(key),'broken json');
  assert.ok(entry.attemptId);
+});
+
+test('a cached success is never accepted without current server confirmation',async()=>{
+ storage();const intent=reserveAttempt('q','s');
+ freezeAttemptPayload('q',{sessionId:'s',attemptId:intent.attemptId,selectedOption:'A'},intent.attemptId);
+ confirmAttempt('q','s',intent.attemptId,{attemptId:intent.attemptId,isCorrect:true});
+ let calls=0;
+ globalThis.fetch=async(url,init)=>{calls++;assert(!init.method);return new Response(JSON.stringify({state:'PENDING_ANSWER'}),{status:200});};
+ await assert.rejects(new ProspectivePreparation('q','s').prepare(),/não confirmou/);
+ assert.equal(calls,1);assert(readAttemptJournal('q','s').result);
 });

@@ -121,6 +121,34 @@ public class ProspectivePredictionService {
         if(!CONTRACT.equals(node.path("contractVersion").asText())) throw conflict("Unsupported forecast contract");
         return node;
     }
+    /** Consults only committed events; never computes/backfills a forecast or reveals an unanswered key. */
+    public Map<String,Object> recover(String questionId,String sessionId,String attemptId) {
+        uuid(attemptId);
+        var event=events.findByEventId("prediction:"+attemptId)
+            .orElseThrow(()->new ResponseStatusException(HttpStatus.NOT_FOUND,"Committed forecast not found"));
+        var prediction=validateIdentity(event,questionId,sessionId);
+        var result=new LinkedHashMap<String,Object>();
+        result.put("prediction",prediction);result.put("state","PENDING_ANSWER");
+        var answer=events.findByEventId("attempt:"+attemptId);
+        if(answer.isPresent()) {
+            var stored=answer.get();
+            if(!questionId.equals(stored.getAggregateId()) || !Objects.equals(sessionId,stored.getSessionId()))
+                throw conflict("Stored answer identity conflict");
+            var node=read(stored.getPayloadJson());
+            boolean eligible="REAL_STUDY".equals(node.path("origin").asText()) &&
+                node.path("isCorrect").isBoolean() && !node.path("usedHelp").asBoolean(true) &&
+                node.path("confidenceLevel").asInt()!=1;
+            boolean projected=jdbc.queryForObject("SELECT count(*) FROM learning_evidence_projection WHERE attempt_id=?",Integer.class,attemptId)>0;
+            result.put("state",eligible&&!projected?"PROJECTION_PENDING":"ANSWER_RECORDED");
+            if(!eligible || projected) {
+                var feedback=new LinkedHashMap<String,Object>();
+                for(String field:List.of("attemptId","isCorrect","gabaritoStatus","concursoPoint","correctOption"))
+                    feedback.put(field,node.get(field));
+                result.put("feedback",feedback);
+            }
+        }
+        return result;
+    }
     /** Sidecar export preserves complete raw event payloads without widening the operational CSV. */
     public Map<String,Object> exportSnapshot() {
         return transaction.execute(tx -> {

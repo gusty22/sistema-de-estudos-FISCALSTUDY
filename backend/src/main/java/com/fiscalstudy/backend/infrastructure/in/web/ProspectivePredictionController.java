@@ -15,6 +15,10 @@ public class ProspectivePredictionController {
         return ResponseEntity.ok().cacheControl(CacheControl.noStore())
             .body(service.prepare(questionId,request.sessionId(),request.attemptId()));
     }
+    @GetMapping("/questions/{questionId}/predictions/{attemptId}")
+    public ResponseEntity<?> recover(@PathVariable String questionId,@PathVariable String attemptId,@RequestParam String sessionId) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(service.recover(questionId,sessionId,attemptId));
+    }
     @GetMapping("/learning-lab/prospective-export")
     public ResponseEntity<Map<String,Object>> export() {
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(service.exportSnapshot());

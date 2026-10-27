@@ -72,6 +72,17 @@ class ProspectivePredictionIntegrationTest {
         Path output=Path.of("target/prospective-delayed-fixture.json");
         Files.createDirectories(output.getParent());Files.writeString(output,json.writeValueAsString(ledger.exportSnapshot()));
     }
+    @Test void recoveryOnlyRevealsAnAlreadyPersistedAnswer() {
+        String id=UUID.randomUUID().toString();ledger.prepare("q1","personal-session",id);
+        var before=ledger.recover("q1","personal-session",id);
+        assertEquals("PENDING_ANSWER",before.get("state"));assertFalse(before.containsKey("feedback"));
+        answer(id,"A",false,4);
+        var after=ledger.recover("q1","personal-session",id);
+        assertEquals("ANSWER_RECORDED",after.get("state"));
+        assertEquals(id,((Map<?,?>)after.get("feedback")).get("attemptId").toString().replace("\"",""));
+        assertThrows(org.springframework.web.server.ResponseStatusException.class,()->ledger.recover("q1","wrong-session",id));
+        assertEquals(1,events.getAllEvents("PREDICTION_COMMITTED").size());
+    }
     @Test void cannotBackfillACompletedAttempt() {
         String id=UUID.randomUUID().toString();answer(id,"A",false,4);
         assertThrows(org.springframework.web.server.ResponseStatusException.class,()->ledger.prepare("q1","personal-session",id));

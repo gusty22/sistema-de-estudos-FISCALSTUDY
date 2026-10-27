@@ -547,7 +547,7 @@ const QuestionViewer: React.FC = () => {
         setSelectedOption(restored); setConfidence(Number(saved.payload.confidenceLevel));
         setActiveTimeMs(Number(saved.payload.activeTimeMs));
       }
-      if (saved?.result) setFeedback(saved.result);
+      if (intent.recoveredResult) setFeedback(intent.recoveredResult);
       setProspectiveStatus('READY');
     })
       .catch(() => { if (active) setProspectiveStatus('ERROR'); });
@@ -1060,6 +1060,7 @@ const QuestionViewer: React.FC = () => {
         }
       }
     } catch (error) {
+      if (submissionScopeRef.current !== submissionScope) return;
       console.error("Failed to submit attempt:", error);
       alert("Não foi possível confirmar a gravação. Reenvie a mesma tentativa. " + (error instanceof Error ? error.message : ""));
     } finally {

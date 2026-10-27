@@ -56,12 +56,11 @@ async function waitFor(fn) { for(let n=0;n<100;n++){if(await fn())return;await n
  });
  await page.getByRole('radio').first().click();
  await page.locator('.conf-btn').nth(3).click();
- await page.locator('.submit-btn').click();
+ await page.locator('.submit-btn').evaluate(el=>{el.click();el.click();});
  await waitFor(()=>count('ANSWER_SUBMITTED')===1 && memory()===1);
  await page.screenshot({path:path.join(root,'02-answer-ack-lost.png'),fullPage:true});
  await page.reload();await gotoStudy();
- await page.getByRole('button',{name:'Reenviar tentativa',exact:true}).waitFor();
- await page.locator('.submit-btn').evaluate(el=>{el.click();el.click();});
+ await page.locator('.option-card.correct').waitFor();
  await waitFor(async()=>await page.locator('.option-card.correct').count()===1);
  assert.equal(count('ANSWER_SUBMITTED'),1);assert.equal(memory(),1);
  const attempt=sql("SELECT rowid,occurred_at,payload_json FROM event_store WHERE event_type='ANSWER_SUBMITTED'")[0];
