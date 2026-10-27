@@ -244,3 +244,7 @@ Independent branch from main be43082 after PR34 HEAD1ddc6c0 CI passed. Reuses ap
 
 
 PR35 follow-up: main121d7bf reconciled without losing PR34 history/results. Durable pre-answer UUID/payload journal, server-verified recovery, loopback+token export security, exact-origin checks and real Chromium/full Spring isolated homologation added. See REAL_WORLD_VALIDATION.md and lab/PERSONAL_PILOT_PROTOCOL.json. CI results apply only to their actual HEAD. Current model equals online Beta11 reference; no personal validation or automatic authority. Diagnostic holdouts remain gated by verified browser run and all-consumer/variant leakage audit.
+
+
+## Prospective scientific scorecard v1 — 27/10/2026
+New independent branch from merged main16bcb58. Adds tie-aware ROC AUC/AP(error), same-event paired temporal reference RECENT_20_ELIGIBLE_BETA11_V1, harms/ties and explicit abstention. Existing model remains online personal Beta11; no claimed improvement over itself. Source event contract unchanged; additive report field scientific_scorecard with its own version. CI evidence must match actual branch HEAD. No personal/causal validation, new FSRS equation, database write or operational authority. See current checkpoint in LEARNER_MODEL_EXECUTION_PLAN.md.

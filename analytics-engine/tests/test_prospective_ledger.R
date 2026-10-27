@@ -60,3 +60,32 @@ stopifnot(delayed$scored_count==1,delayed$unforecasted_attempt_count==1,
           delayed$metrics$brier==0.25,delayed$metrics$brier_skill_score==0,
           delayed$predictions[[1]]$p==0.5)
 cat("Prospective R: 11 integrity/scoring scenarios passed; fixture-only, no personal validation.\n")
+
+# Scorecard v1: closed-form checks including tied scores and single-class abstention.
+d <- prospective_discrimination(c(0,1),c(0.1,0.9))
+stopifnot(d$roc_auc==1,d$average_precision_error==1)
+d <- prospective_discrimination(c(0,1),c(0.5,0.5))
+stopifnot(d$roc_auc==0.5,d$average_precision_error==0.5)
+d <- prospective_discrimination(c(0,1),c(0.9,0.1))
+stopifnot(d$roc_auc==0,d$average_precision_error==0.5)
+stopifnot(prospective_discrimination(c(1,1),c(0.2,0.8))$status=="INSUFFICIENT_EVIDENCE")
+expect_error(prospective_discrimination(c(0,1),c(NA,0.5)))
+stopifnot(identical(result$scientific_scorecard,replay$scientific_scorecard),
+  zero$scientific_scorecard$status=="INSUFFICIENT_EVIDENCE",
+  result$scientific_scorecard$temporal_reference$same_event_count==result$scored_count,
+  result$scientific_scorecard$temporal_reference$identical_prediction_count==2,
+  identical(result$scientific_scorecard$can_apply,FALSE))
+toy <- list(list(y=0,p=0.9,recent20_probability=0.2),
+            list(y=1,p=0.1,recent20_probability=0.8))
+s <- prospective_scorecard(toy)
+stopifnot(abs(s$paired_comparison$mean_brier_difference-0.77)<1e-12,
+          s$paired_comparison$worse_events==2,
+          abs(s$temporal_reference$brier_skill_score+19.25)<1e-10,
+          s$high_confidence$unexpected_errors==1,
+          is.null(s$paired_comparison$confidence_interval))
+cat("Prospective scorecard: closed-form, ties, abstention, harms and replay checks passed.\\n")
+
+stopifnot(prospective_recent20(numeric())==0.5,
+          prospective_recent20(c(rep(1,5),rep(0,20)))==1/22,
+          prospective_recent20(c(rep(0,5),rep(1,20)))==21/22)
+expect_error(prospective_recent20(c(0,NA)))

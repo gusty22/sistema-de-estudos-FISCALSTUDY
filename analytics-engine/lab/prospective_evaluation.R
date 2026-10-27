@@ -1,6 +1,7 @@
 # Experimental sidecar evaluator. No scheduling, FSRS fitting or database writes.
 source("R/descriptive_analysis.R")
 source("lab/individual_calibration.R")
+source("lab/prospective_scorecard.R")
 
 evaluate_prospective <- function(path) {
   envelope <- jsonlite::fromJSON(path, simplifyVector=FALSE)
@@ -59,6 +60,13 @@ evaluate_prospective <- function(path) {
     },logical(1))]
     evidence <- as.character(unlist(f$evidenceEventIds,use.names=FALSE))
     if (anyDuplicated(evidence) || !setequal(expected,evidence)) stop("Future/missing/ineligible forecast evidence")
+    # Temporal reference uses exactly the same eligible frozen prefix.
+    # Presentation order is irrelevant; equal times use append-only rowid.
+    recent_ids <- expected[order(vapply(expected,function(key)
+      as.numeric(times[[key]]),numeric(1)),vapply(expected,function(key)
+      rows[[key]]$snapshot_rowid,numeric(1)))]
+    recent_probability <- prospective_recent20(vapply(recent_ids,function(key)
+      as.integer(isTRUE(payload[[key]]$isCorrect)),integer(1)))
     n <- length(expected)
     k <- sum(vapply(expected,function(key)isTRUE(payload[[key]]$isCorrect),logical(1)))
     if (!identical(as.numeric(f$nEvidence),as.numeric(n)) || f$nCorrect!=k ||
@@ -79,6 +87,7 @@ evaluate_prospective <- function(path) {
     }
     scored[[id]] <- list(prediction_id=f$predictionId,attempt_id=f$attemptId,
       question_id=f$questionId,session_id=f$sessionId,p=f$probability,y=as.integer(y$isCorrect),
+      recent20_probability=recent_probability,
       response_delay_seconds=as.numeric(difftime(times[[attempt_key]],created,units="secs")),
       novelty_status=f$noveltyStatus,confidence_capture="UNVERIFIED_NOT_SCORED",
       retained_evidence_fields=names(y))
@@ -107,6 +116,7 @@ evaluate_prospective <- function(path) {
   list(contract_version="prospective-evaluation-v1",input_sha256=envelope$inputSha256,
     source_kind=input$sourceKind,target="QUESTION_CORRECTNESS_WITHOUT_DECLARED_HELP",
     model="PERSONAL_BETA11_PREFIX_V1",metrics=metric(y,p),
+    scientific_scorecard=prospective_scorecard(scored),
     strong_reference=list(model="ONLINE_PERSONAL_BETA11_SAME_PREFIX",n=length(y),
       status="IDENTICAL_TO_CURRENT_BASELINE_NOT_AN_INDEPENDENT_COMPETITOR",
       brier_skill_score=if(length(y))0 else NULL),

@@ -99,3 +99,30 @@ Manifesto do Bridge é frente separada fix/analytics-bridge-provenance, reutiliz
 
 
 Fechamento: R 574/0; Java 22/0/0/0, incluindo transporte real, bloqueio de aplicação/recarga e respostas HTTP explícitas. Novas observações R21/R22 estão registradas. Próximos trabalhos permanecem dados curriculares/condições da resposta e consumidores cognitivos Java concorrentes, não algoritmos mais complexos.
+
+
+## Retomada após PR35 — 27/10/2026 — Onda A/C
+Base verificada: main `16bcb5831c56810dbf30ec4e16150e5a20036ea9`.
+PR34 e PR35 integradas. Compare entre main e PR35 `3c223be`: zero arquivos diferentes.
+Workflows históricos 40588309369 e 40588309402 aprovados nesse conteúdo; Chromium/Spring/R executaram no head da PR, não em um novo run do merge. A nova branch precisa de seus próprios checks.
+Workspace desta sessão não é checkout Git; alterações remotas via API com parent e lease explícitos. Nenhum banco pessoal acessado.
+Graphify não disponível neste workspace; localização feita pela árvore remota e leitura seletiva.
+
+| Lacuna / evidência | Implementado/testado | Validação humana/pessoal/autoridade | Próximo critério |
+| --- | --- | --- | --- |
+| Ledger e recuperação PR35; prospective_evaluation.R | Implementado; CI histórica completa | Transporte sintético apenas; pessoal pendente; autoridade bloqueada | Reexecutar Java/SQLite/R/Chromium no novo HEAD |
+| Placar probabilístico: faltavam discriminação e comparação pareada | Incremento desta branch; testes closed-form e integração existentes | Descritivo, sem superioridade nem eficácia | CI do novo HEAD; previsões futuras pessoais autênticas |
+| Baseline atual igual à referência online pessoal | Preservado e explicitamente rotulado | Não é concorrente independente | Comparar mesma população de eventos com referência temporal predefinida |
+| Referência temporal RECENT_20_ELIGIBLE_BETA11_V1 | Prefixo elegível estritamente anterior ao corte; máximo20; sem ajuste | Exploratório; janela20 é escolha experimental, não constante cognitiva | Nenhum resultado final pode selecionar janela; declarar empates e prejuízos |
+| Reserva: QuestionClassificationService.family inclui correct_option | Correspondência exata existente; reserva segura NÃO implementada | Sem equivalência semântica nem novidade externa comprovada | Auditar TODOS consumidores antes de habilitar quarentena |
+| AnalyticsBridgeService executa pipeline operacional distinto | Sidecar não inserido no Bridge/planejador | Sem nova autoridade | Homologação separada para qualquer consumo futuro |
+| Conceito/disciplina históricos e unidades independentes | Não fabricados a partir de classificação atual | Estratos e IC dependentes ainda pendentes | Transporte histórico confiável e desenho analítico predefinido |
+| Avaliações tardias e N-de-1 | Protocolo anterior preservado; não executados | NÃO validados pessoalmente/causalmente | Reserva, exposições intermediárias e alocação predefinidas |
+
+Escopo: scorecard v1 aditivo ao relatório v1; contrato de eventos prospective-question-v1 inalterado.
+ROC usa midranks; AP de erros agrupa empates para invariância à ordem. Sem ambas as classes: INSUFFICIENT_EVIDENCE.
+Comparação pareada reporta Brier/log-loss, BSS, empates e prejuízos nos MESMOS eventos. Não calcula IC pseudorreplicados; nenhuma contagem de questão/sessão é declarada unidade independente.
+Reversão: reverter somente os commits desta branch; sem migração ou alteração de FSRS, frontend, SQLite ou políticas.
+Estado de testes: comandos executados e resultados devem constar na PR e checks do HEAD exato, nunca inferidos dos testes históricos.
+Comandos: workflow prospective-ledger (Java isolado, R sidecar/replay, frontend e Chromium completo); workflow learner-lab (Python/R e replays).
+Próxima retomada: conferir SHA e checks desta PR; depois auditar quarentena de itens em todos consumidores. Não liberar reservas incompletas.
