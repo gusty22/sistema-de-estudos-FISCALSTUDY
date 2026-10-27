@@ -1,5 +1,5 @@
 import { requestJson } from './attemptSubmission.ts';
-import { reserveAttempt, readAttemptJournal } from './attemptJournal.ts';
+import { reserveAttempt, readAttemptJournal, confirmAttempt } from './attemptJournal.ts';
 
 /** Prepare before allowing an answer. A lost acknowledgment retries the SAME intent UUID. */
 export class ProspectivePreparation {
@@ -32,6 +32,7 @@ export class ProspectivePreparation {
           data.can_apply !== false || data.can_schedule !== false || !data.predictionId) {
         throw new Error('A previsão não foi confirmada com a identidade esperada.');
       }
+      if (this.recoveredResult) confirmAttempt(this.questionId, this.sessionId, this.attemptId, this.recoveredResult);
       this.ready = true;
     }).finally(() => { this.pending = null; });
     return this.pending;

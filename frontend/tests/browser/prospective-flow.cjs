@@ -16,7 +16,7 @@ const memory=()=>sql("SELECT count(*) n FROM learning_evidence_projection")[0].n
 async function waitFor(fn) { for(let n=0;n<100;n++){if(await fn())return;await new Promise(r=>setTimeout(r,100));}throw Error('Condition not reached'); }
 (async()=>{
  const browser=await chromium.launch({headless:true}); runningBrowser=browser;
- const page=await browser.newPage({viewport:{width:1440,height:1000}}); activePage=page;
+ let page=await browser.newPage({viewport:{width:1440,height:1000}}); activePage=page;
  const external=[];
  await page.route('**/*',async route=>{
   const u=new URL(route.request().url());
@@ -37,7 +37,7 @@ async function waitFor(fn) { for(let n=0;n<100;n++){if(await fn())return;await n
  await page.getByRole('button',{name:'Tentar novamente',exact:true}).waitFor();
  assert.equal(count('PREDICTION_COMMITTED'),1);
  assert.equal(count('ANSWER_SUBMITTED'),0);assert.equal(memory(),0);
- await page.getByRole('radio').first().click();
+ await page.getByRole('radio').first().click({force:true});
  assert.equal(await page.getByRole('radio').first().getAttribute('aria-checked'),'false');
  const frozen=sql("SELECT event_id,payload_json FROM event_store WHERE event_type='PREDICTION_COMMITTED'")[0];
  await page.screenshot({path:path.join(root,'01-preparation-ack-lost.png'),fullPage:true});
@@ -74,6 +74,22 @@ async function waitFor(fn) { for(let n=0;n<100;n++){if(await fn())return;await n
  await page.locator('.option-card.correct').waitFor();
  assert.equal(count('PREDICTION_COMMITTED'),1);assert.equal(count('ANSWER_SUBMITTED'),1);
  await page.screenshot({path:path.join(root,'03-restored-completed-answer.png'),fullPage:true});
+ // New frontend/browser runtime without sessionStorage: local journal must restore the same session.
+ const persisted=await page.context().storageState();
+ const priorSession=await page.evaluate(()=>localStorage.getItem('fiscalstudy_active_question_session'));
+ await page.close();
+ page=await browser.newPage({storageState:persisted,viewport:{width:1440,height:1000}});activePage=page;
+ page.on('dialog',dialog=>dialog.dismiss());
+ await page.route('**/*',async route=>{
+  const u=new URL(route.request().url());
+  if(!['127.0.0.1','localhost'].includes(u.hostname)){external.push(u.origin);await route.abort();return;}
+  await route.continue();
+ });
+ await page.goto('http://127.0.0.1:5173');await gotoStudy();
+ await page.locator('.option-card.correct').waitFor();
+ assert.equal(await page.evaluate(()=>localStorage.getItem('fiscalstudy_active_question_session')),priorSession);
+ assert.equal(count('PREDICTION_COMMITTED'),1);assert.equal(count('ANSWER_SUBMITTED'),1);
+ await page.screenshot({path:path.join(root,'04-new-runtime-recovery.png'),fullPage:true});
  // Switch quickly while preparation is pending. The response must not select/complete another item.
  await page.getByRole('button',{name:'Próxima ➔',exact:true}).click();
  await page.getByRole('button',{name:'⬅ Anterior',exact:true}).click();
@@ -97,7 +113,7 @@ async function waitFor(fn) { for(let n=0;n<100;n++){if(await fn())return;await n
  const answer=await page.request.post('http://127.0.0.1:8080/api/v1/questions/'+qid+'/attempts',{data:{attemptId:id,sessionId:sid,selectedOption:'A',confidenceLevel:4,activeTimeMs:1000,usedHelp:false}});
  assert.equal(answer.status(),200);assert.equal(memory(),1);
  assert.equal(external.length,0);
- fs.writeFileSync(path.join(root,'browser-summary.json'),JSON.stringify({source_kind:'SYNTHETIC_FIXTURE',checks:['preparation_before_answer','lost_preparation_ack_reload','lost_answer_ack_reload','double_click','completed_reload','rapid_question_switch','no_grade_leak','export_authorization','ineligible_fsrs_exclusion'],attempts:count('ANSWER_SUBMITTED'),memory_evidence:memory(),can_apply:false,can_schedule:false},null,2));
+ fs.writeFileSync(path.join(root,'browser-summary.json'),JSON.stringify({source_kind:'SYNTHETIC_FIXTURE',checks:['preparation_before_answer','lost_preparation_ack_reload','lost_answer_ack_reload','double_click','completed_reload','frontend_runtime_restart','rapid_question_switch','no_grade_leak','export_authorization','ineligible_fsrs_exclusion'],attempts:count('ANSWER_SUBMITTED'),memory_evidence:memory(),can_apply:false,can_schedule:false},null,2));
  await browser.close();
  console.log('Real-browser synthetic homolocation passed; personal validation NOT_EXECUTED.');
 })().catch(async error=>{

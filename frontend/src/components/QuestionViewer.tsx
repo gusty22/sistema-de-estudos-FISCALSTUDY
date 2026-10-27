@@ -162,7 +162,7 @@ const ERROR_TAXONOMIES = METACON_FEEDBACK_OPTIONS;
 
 const QuestionViewer: React.FC = () => {
   const { isSimplifiedMode } = useSimplifiedMode();
-  const [sessionStarted, setSessionStarted] = useState(() => sessionStorage.getItem('fiscalstudy_sessionStarted') === 'true');
+  const [sessionStarted, setSessionStarted] = useState(() => sessionStorage.getItem('fiscalstudy_sessionStarted') === 'true' || localStorage.getItem('fiscalstudy_active_question_session') !== null);
   const [sessionEnded, setSessionEnded] = useState(false);
   const [summary, setSummary] = useState<SessionSummary | null>(null);
   const [question, setQuestion] = useState<Question | null>(null);
@@ -173,6 +173,7 @@ const QuestionViewer: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const pendingAttemptRef = useRef<AttemptSubmission | null>(null);
   const submittingRef = useRef(false);
+  const questionLoadRef = useRef(false);
   const submissionScopeRef = useRef('');
   const prospectiveRef = useRef<ProspectivePreparation | null>(null);
   const [prospectiveStatus, setProspectiveStatus] = useState<'PREPARING' | 'READY' | 'ERROR'>('PREPARING');
@@ -515,7 +516,7 @@ const QuestionViewer: React.FC = () => {
   };
 
   const getInitialSessionId = () => {
-    let stored = sessionStorage.getItem('fiscalstudy_sessionId');
+    let stored = sessionStorage.getItem('fiscalstudy_sessionId') || localStorage.getItem('fiscalstudy_active_question_session');
     if (!stored) {
       stored = generateNewSessionId();
     }
@@ -727,6 +728,8 @@ const QuestionViewer: React.FC = () => {
 
   const fetchNextQuestion = useCallback(async (overrideSessionId?: string) => {
     const currentSession = overrideSessionId || sessionId;
+    if (questionLoadRef.current) return;
+    questionLoadRef.current = true;
     setLoading(true);
     resetQuestionInteractions();
 
@@ -768,6 +771,7 @@ const QuestionViewer: React.FC = () => {
       console.error("Failed to fetch questions:", error);
       setQuestion(null);
     } finally {
+      questionLoadRef.current = false;
       setLoading(false);
     }
   }, [sessionId, selectedConcursoId, selectedDiscipline, selectedAssunto, includeAnswered, questionCountLimit, loadQuestionAtIndex]);
@@ -785,11 +789,13 @@ const QuestionViewer: React.FC = () => {
     try {
       const freshSessionId = generateNewSessionId();
       setSessionId(freshSessionId);
-      await fetch(`/api/v1/sessions/start`, {
+      const started = await fetch(`/api/v1/sessions/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sessionId: freshSessionId })
       });
+      if (!started.ok) throw new Error('O início da sessão não foi confirmado pelo servidor.');
+      localStorage.setItem('fiscalstudy_active_question_session', freshSessionId);
       sessionStorage.setItem('fiscalstudy_sessionStarted', 'true');
       setSessionStarted(true);
       fetchNextQuestion(freshSessionId);
@@ -814,6 +820,10 @@ const QuestionViewer: React.FC = () => {
         await handleSubmit();
       }
 
+      const pending = question ? readAttemptJournal(question.questionId, sessionId) : null;
+      if (pending?.payload && !pending.result) {
+        alert('Confirme ou recupere a resposta pendente antes de encerrar.'); return;
+      }
       // 2. Finaliza no backend
       await fetch(`/api/v1/sessions/end`, {
         method: 'POST',
@@ -895,6 +905,7 @@ const QuestionViewer: React.FC = () => {
       setSummary(summaryData);
       sessionStorage.removeItem('fiscalstudy_sessionStarted');
       sessionStorage.removeItem('fiscalstudy_sessionId');
+      if (localStorage.getItem('fiscalstudy_active_question_session') === sessionId) localStorage.removeItem('fiscalstudy_active_question_session');
       setSessionEnded(true);
     } catch (err) {
       console.error("Failed to end session", err);
