@@ -198,7 +198,19 @@ export_metrics_package <- function(consolidated_package, json_output_path, csv_o
   })
   
   csv_df <- do.call(rbind, csv_rows)
-  utils::write.csv(csv_df, file = csv_output_path, row.names = FALSE, fileEncoding = "UTF-8")
+  # write.table translates marked strings through LC_CTYPE before writing.
+  # Serialize a local UTF-8 byte copy to a binary connection; retain standard
+  # CSV quoting/numeric/NA rules without changing the process locale.
+  encoded_csv <- csv_df
+  for (column in names(encoded_csv)[vapply(encoded_csv,is.character,logical(1))]) {
+    values <- enc2utf8(encoded_csv[[column]])
+    if (any(!is.na(values) & !validUTF8(values))) stop("Metric text is not valid UTF-8")
+    Encoding(values) <- "unknown"
+    encoded_csv[[column]] <- values
+  }
+  connection <- file(csv_output_path,open="wb")
+  on.exit(close(connection),add=TRUE)
+  utils::write.csv(encoded_csv, file=connection, row.names=FALSE)
   
   invisible(list(json = json_output_path, csv = csv_output_path))
 }

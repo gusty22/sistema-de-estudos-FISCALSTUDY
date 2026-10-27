@@ -173,6 +173,11 @@ Falhas relevantes: scikit-learn 1.9.1 incompatível com pyBKT 1.4.3 (fixado 1.6.
 CI 40430980241, commit dfed935: SUCESSO; 23 testes do laboratório (sem skips), 600 verificações R, zero falhas; duas execuções de cinco seeds, auditoria de 49 artefatos e 50 arquivos byte a byte idênticos. 2670 eventos e 1904 alvos; pyBKT absteve-se em dois alvos por não finitude. Média móvel e média por tópico foram piores que a média global neste simulador; pyBKT não tem comparação de cobertura completa. Não promover esses modelos ao planejador. Detalhes, intervalos e links em lab/COMPARISON_RESULTS.md; fixture compacta em tests/fixtures/learner_lab/baseline_reference_result.json. CI supera o bloqueio técnico local, mas não valida pedagogia, pessoas, curva individual ou homologação visual. Aviso de conversão textual sob locale C permanece para investigação específica.
 
 
+## Transporte UTF-8 — integridade do pipeline
+
+PR #29: problema de CSV corrompido sob locale C reproduzido na CI 40435204718; corrigidos bootstrap de módulos UTF-8, leitura declarada sem conversão nativa, BOM opcional e serialização binária UTF-8 com regras CSV padrão. Sem modificar fontes, checksums, banco ou equações. CI 40439080064, commit 3a8d074: 23 testes do laboratório, 614 verificações R, zero falhas; rótulos de disciplina/tópico e CSV de métricas preservados sob C; replay de 50 arquivos passou. Detalhes e tentativas anteriores em docs/UTF8_TRANSPORT_VALIDATION.md. Windows local, visual e Java E2E não foram homologados; integrar junto do #30 sem perder os dois conjuntos de testes.
+
+
 ## Laboratório de memória — referência FSRS oficial
 
 Branch experiment/fsrs-memory-lab, dependente do PR #27. Implementados gerador independente de recordação, referência py-fsrs 6.3.2 (MIT, release oficial, parâmetros inalterados), contrato experimental memory_lab_events_v1 e adaptador para calculate_retrieval_surprise existente. Nenhuma equação FSRS foi reimplementada no R ou alterada no produto.
@@ -185,3 +190,5 @@ Validação sintética e técnica concluída para este incremento; otimização 
 ## Retomada da integração — 27/10/2026
 
 A main verificada em 4b28bcbd3df53ed158c7b2e7de156a9b10ef190f contém o incremento #27, mas não contém os arquivos de memória da #28, embora a API registre essa PR como merged. Esta frente reaplica somente os dez arquivos do incremento de memória a partir do commit 04320817714c29bc41f61ef9f2766251f1acc499 sobre a main atual. Não presume a causa da diferença de árvore e não altera #29/#30, Java ou dados operacionais. Resultados históricos acima não substituem o novo gate de CI desta branch; seu resultado deve ser conferido na PR antes de integrar. O laboratório continua sintético, não prescreve atividades e não demonstra eficácia pessoal.
+
+Validação da recuperação 3b5942b: CI 40500031291 aprovada, 30 testes de laboratório, 600 verificações R e replays 50+8 idênticos. Durante essa execução a main recebeu #29 (28a43c1). Esta atualização preserva integralmente essa correção UTF-8 e seus testes, combina somente as adições de memória e retém os timeouts do workflow. Novo gate da composição obrigatório; nenhuma validação científica adicional é inferida.
