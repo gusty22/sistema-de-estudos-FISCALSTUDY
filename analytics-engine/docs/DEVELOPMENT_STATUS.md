@@ -173,8 +173,15 @@ Falhas relevantes: scikit-learn 1.9.1 incompatível com pyBKT 1.4.3 (fixado 1.6.
 CI 40430980241, commit dfed935: SUCESSO; 23 testes do laboratório (sem skips), 600 verificações R, zero falhas; duas execuções de cinco seeds, auditoria de 49 artefatos e 50 arquivos byte a byte idênticos. 2670 eventos e 1904 alvos; pyBKT absteve-se em dois alvos por não finitude. Média móvel e média por tópico foram piores que a média global neste simulador; pyBKT não tem comparação de cobertura completa. Não promover esses modelos ao planejador. Detalhes, intervalos e links em lab/COMPARISON_RESULTS.md; fixture compacta em tests/fixtures/learner_lab/baseline_reference_result.json. CI supera o bloqueio técnico local, mas não valida pedagogia, pessoas, curva individual ou homologação visual. Aviso de conversão textual sob locale C permanece para investigação específica.
 
 
+## Transporte UTF-8 — integridade do pipeline
+
+PR #29: problema de CSV corrompido sob locale C reproduzido na CI 40435204718; corrigidos bootstrap de módulos UTF-8, leitura declarada sem conversão nativa, BOM opcional e serialização binária UTF-8 com regras CSV padrão. Sem modificar fontes, checksums, banco ou equações. CI 40439080064, commit 3a8d074: 23 testes do laboratório, 614 verificações R, zero falhas; rótulos de disciplina/tópico e CSV de métricas preservados sob C; replay de 50 arquivos passou. Detalhes e tentativas anteriores em docs/UTF8_TRANSPORT_VALIDATION.md. Windows local, visual e Java E2E não foram homologados; integrar junto do #30 sem perder os dois conjuntos de testes.
+
+
 ## Confiança ordinal — correção estatística isolada
 
 PR #30, branch fix/r-ordinal-confidence-contract: nível fracionário não é truncado; mapeamentos inválidos falham explicitamente; ausência da faixa retorna taxa NA; denominador máximo de confiança é o subconjunto observado, com n_level5 explícito. Perfil, pacote e rótulos gráficos distinguem escala ordinal, hipótese de probabilidade e instante de confiança não estabelecido. Sem novos modelos de memória ou autoridade decisória.
 
 CI 40437888763 no commit 68dea90: 23 testes do laboratório e 626 verificações R sem falhas; cinco seeds e replay de 50 arquivos passaram. Alterações posteriores de documentação e rótulos devem ser validadas no novo head. Ver docs/CONFIDENCE_METRICS_VALIDATION.md. Homologação visual e Java E2E não executadas. A correção textual sob locale C permanece na branch independente do PR #29; integrar preservando os testes de ambas.
+
+Atualização de integração: main 28a43c1 (#29) incorporada nesta branch preservando o transporte UTF-8, os testes e timeouts existentes. Exportador e testes compartilhados usam a composição previamente verificada em CI 40440103059; novo gate desta branch obrigatório. Não inclui arquivos do laboratório de memória.
