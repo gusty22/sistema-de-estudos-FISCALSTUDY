@@ -151,6 +151,61 @@ Minor report-label limitation: the shared comparison uncertainty text mentions d
 
 The final documentation/archive commit changes no analytical code or workflow after these executions. No production data, FSRS equation, planner authority, credentials or main merge were changed.
 
+
+## Registered continuation after PR33: untouched-cohort clock comparison
+
+This protocol is fixed in lab/CLOCK_VALIDATION_PROTOCOL.json BEFORE new outcomes. Existing PR33 data remain diagnostic and are NOT retuned. Twelve complete files are selected by midpoint size ranks after excluding all twelve PR33 files from the same pinned source/license frame. Source selection metadata are saved before outcome files. Full per-item sequences and the declared t_history/r_history prefixes must agree; fractional intervals are rejected by this recorded-whole-day protocol.
+
+Two SDK arms use identical observed events and actual UTC chronology:
+- UTC_WHOLE_24H reproduces the prior SDK behavior.
+- SOURCE_RECORDED_DAYS anchors a model-only coordinate at each item's first observed instant, then advances it by that item's recorded delta_t. This coordinate is DERIVED, not an observed timestamp or recovered timezone. Both get_card_retrievability and review_card remain official py-fsrs 6.3.2 with unchanged default parameters. No R forgetting formula is added.
+
+Primary target domain is repeat events with recorded delta_t>=1, registered before reading the new cohort. Both arms score the SAME domain and use the same actual-time train/validation/test batches. All cold-start and zero-day events still update canonical states and the historical baseline after their event, but zero-day events are explicitly outside this long-term scoring domain. This is not post-hoc removal of the prior cohort's difficult events.
+
+The primary paired comparison is SOURCE_RECORDED_DAYS raw FSRS versus UTC_WHOLE_24H raw FSRS on identical future targets. At least five paired collection IDs, complete coverage and negative upper bounds for both Brier and log-loss differences are required for conditional improvement. This does not establish personal calibration, conceptual understanding, correct original timezone, causal learning, or equivalence with Java/Anki scheduling. Default-weight pretraining overlap remains unknown.
+
+Within each arm the existing R individual/global/guard/online-baseline experiment remains available, with prior-only donor fits, frozen coefficients and validation-only regularization. Semantic conformance and predictive quality are assessed separately. can_apply and can_schedule remain false. Data, formulas and labels are never changed to obtain a passing metric.
+
+Run from analytics-engine:
+
+    python lab/recorded_day_experiment.py --download --output lab/runs/recorded-day-first
+    python lab/recorded_day_experiment.py --source-run lab/runs/recorded-day-first --output lab/runs/recorded-day-replay
+
+Choose NEW run directories. Raw human files are not committed/uploaded; aggregate manifests and scores are retained. Executed evidence is recorded below; historical PR33 results remain unchanged.
+
+Exploratory amendment (before retrieving any new-cohort scores, after the first CI execution started): compare source-clock raw FSRS also against UTC numerical-guard and source-clock online-personal mean. This comes from PR33's already-known baseline finding. It is not retroactively described as the original preregistered primary, and changes no models, intervals, selection, domain or thresholds. The original primary remains fixed; strong-reference comparisons must be reported even if they do not favor recorded-day transport.
+
+## Executed untouched-cohort clock validation (2026-10-27, PR34)
+
+The registered primary used 12 source collections disjoint from every PR33 file at the same pinned dataset revision. Selection was recorded before downloading their outcomes. The source contains 108,339 events: 22,511 cold starts and 85,828 eligible repeats; no repeat in this cohort fell outside the registered positive-recorded-day domain. Both clock arms preserve exactly the same actual event identities, UTC timestamps, grades and scoring targets.
+
+Final raw/baseline evaluation covers 17,169 targets; calibration covers 16,628. These denominators must not be pooled or silently treated as equal.
+
+| Clock / model | Final targets | Brier | Log loss |
+| --- | ---: | ---: | ---: |
+| UTC whole-24h / official FSRS defaults | 17,169 | 0.146431 | 1.060626 |
+| UTC whole-24h / numerical guard | 17,169 | 0.146431 | 0.664724 |
+| Source recorded days / official FSRS defaults | 17,169 | 0.140832 | 0.442046 |
+| Source recorded days / online personal Beta(1,1) | 17,169 | 0.148309 | 0.458750 |
+| Source recorded days / global calibration | 16,628 | 0.140482 | 0.441507 |
+| Source recorded days / individual calibration | 16,628 | 0.139542 | 0.434069 |
+
+The registered raw-FSRS clock contrast has complete matched coverage, pooled Brier Skill Score 0.038237, paired collection-bootstrap Brier interval [-0.014050, -0.002380] and log-loss interval [-1.627854, -0.338861]. One collection has worse Brier under the source clock. This supports only a conditional comparison in this retrospective sample. It does not recover the original timezone, establish production Java/Anki equivalence or validate a personal forgetting curve.
+
+Individual versus global calibration remains INCONCLUSIVE: Brier difference interval [-0.002633, 0.000944] and log-loss difference interval [-0.013901, 0.000464]; three collections have worse individual Brier. Comparisons involving the calibrated subset cannot establish full-cohort superiority with incomplete prediction coverage. No latent knowledge/forgetting decomposition has been identified.
+
+The original PR33 cohort and report remain unchanged. The new transport uses the SDK's unchanged default equations and weights; its derived model coordinate is explicitly separate from actual observed chronology. Unknown default-weight pretraining overlap, bounded collection-size selection and a small number of source collections restrict external validity.
+
+Exploratory contrasts (amended before retrieving new-cohort scores, not the original primary) confirm conditional improvement over UTC numerical-guard on these matched events: Brier interval [-0.014050, -0.002380], log-loss [-0.589253, -0.119180]. Against the online personal mean, superiority is NOT established: Brier interval [-0.014426, 0.028258], log-loss [-0.032592, 0.073086], with five collections worse in Brier despite a lower event-weighted pooled score. The collection-weighted inferential estimand differs explicitly from event-weighted pooled BSS.
+
+The 541 calibration abstentions come from one collection with zero strictly earlier other-collection donor events at its training cutoff, despite 1,620 own training events and 510 own items. Future donors were not imported to manufacture a global fit. These 541 events remain evaluated for raw FSRS and online baseline.
+
+CI at code commit 078be59faee36c9c74c7192cf5aefaab44f249de: clock workflow 40562265950 succeeded (6 focused tests, 640 R checks, complete offline replay of 28 files with zero differences). Learner laboratory 40562265799 succeeded (54 Python tests, 640 R checks, synthetic experiment replay: 50/8/13 files, zero differences). Counts overlap; they are not independent scientific replications. Tests were executed in GitHub Actions, not locally. Java/SQLite/frontend end-to-end tests were NOT_EXECUTED in this R-only increment.
+
+Verified aggregate ZIP SHA-256: d8d70b20164aa5b8d28e6c26d448091b7e8177cc07ada70e0154c25f50383047. Permanent aggregate evidence, manifests, code hashes, per-collection calibration/abstention details and horizon metrics: results/recorded_day_validation_v1.json. No raw human records are archived. Base-parser QA retains its original UTC mismatch and ignored-history annotations; the new layer separately verifies every declared history prefix and recorded-day model coordinate. Original timezone remains unknown.
+
+Personal prospective forecast ledger and its frontend → Java → isolated SQLite → R transport, held-out novel-question allocation, N-of-1 outcomes and active information selection remain PENDING. No human causal policy comparison, personal calibration, conceptual mastery or forgetting-curve identification was demonstrated. can_apply=false and can_schedule=false remain mandatory.
+
 ## Prospective question ledger v1 (independent increment after PR34 CI repair)
 
 Operational path: QuestionViewer → separate preparation POST → existing SQLite event_store PREDICTION_COMMITTED → answer POST with the reserved attempt UUID → ANSWER_SUBMITTED → snapshot sidecar export → experimental R evaluator. There is no new database, migration, scheduler, event mutation or automatic model authority.
