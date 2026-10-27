@@ -114,6 +114,28 @@ public class AttemptSubmissionService {
         var existing=eventStoreRepository.findByEventId("attempt:"+attemptId);
         if(existing.isPresent()) return replay(existing.get(),questionId,sessionId,selectedOption,confidenceLevel,activeTimeMs,Boolean.TRUE.equals(usedHelp));
 
+        // A forecast may only be linked if it was already committed in an earlier request.
+        var prospectiveEvent=eventStoreRepository.findByEventId("prediction:"+attemptId);
+        String prospectivePredictionId=null;
+        if(prospectiveEvent.isPresent()) {
+            var committed=prospectiveEvent.get();
+            if(!"PREDICTION_COMMITTED".equals(committed.getEventType()) ||
+               !questionId.equals(committed.getAggregateId()) || !java.util.Objects.equals(sessionId,committed.getSessionId()))
+                throw new AttemptConflictException("Forecast identity conflict");
+            try {
+                var frozen=objectMapper.readTree(committed.getPayloadJson());
+                if(!"prospective-question-v1".equals(frozen.path("contractVersion").asText()) ||
+                   !attemptId.equals(frozen.path("attemptId").asText()) ||
+                   frozen.path("predictionId").asText().isBlank())
+                    throw new IllegalArgumentException("Invalid prospective prediction");
+                prospectivePredictionId=requireUuid(frozen.path("predictionId").asText());
+                if(java.time.Instant.parse(committed.getOccurredAt()).isAfter(java.time.Instant.now()))
+                    throw new IllegalArgumentException("Invalid future prospective prediction");
+            } catch(com.fasterxml.jackson.core.JsonProcessingException e) {
+                throw new IllegalArgumentException("Invalid prospective prediction",e);
+            }
+        }
+
         if (sessionId == null || sessionId.isBlank()) {
             throw new IllegalArgumentException("Session ID is required");
         }
@@ -238,6 +260,7 @@ public class AttemptSubmissionService {
         fields.put("fluenciaNeurologica",fluenciaVal); fields.put("usedHelp",usedHelpVal); fields.put("helpType",helpTypeVal);
         fields.put("exposicaoAnteriorCount",exposicaoAnteriorCount); fields.put("diasDesdeUltimaExposicao",diasDesdeUltimaExposicao);
         fields.put("resultadoAnterior",resultadoAnterior); fields.put("interventionType",interventionVal); fields.put("memoryPrediction",prediction);
+        if(prospectivePredictionId!=null) fields.put("prospectivePredictionId",prospectivePredictionId);
         String payload=json(fields);
         if(!eventStoreRepository.appendEventOnce("attempt:"+attemptId,"ANSWER_SUBMITTED","QUESTION",questionId,sessionId,occurredAt.toString(),payload)) {
             return replay(eventStoreRepository.findByEventId("attempt:"+attemptId).orElseThrow(),questionId,sessionId,selectedOption,confidenceLevel,activeTimeMs,usedHelpVal);

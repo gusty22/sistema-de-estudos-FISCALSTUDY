@@ -1,0 +1,124 @@
+name: Prospective question ledger
+on:
+  pull_request:
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - 'analytics-engine/lab/prospective_evaluation.R'
+      - 'analytics-engine/tests/test_prospective_ledger.R'
+      - '.github/scripts/**'
+      - '.github/workflows/prospective-ledger.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: prospective-ledger-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  isolated-ledger:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Bound and verify disposable runner APT
+        timeout-minutes: 4
+        run: |
+          python3 -m unittest discover -s .github/scripts -p 'test_prepare_ubuntu_apt.py' -v
+          sudo python3 .github/scripts/prepare_ubuntu_apt.py
+          sudo timeout 150 apt-get update -o APT::Update::Error-Mode=any
+      - uses: r-lib/actions/setup-r@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05
+        timeout-minutes: 10
+        with:
+          r-version: '4.5.1'
+          use-public-rspm: true
+      - name: Existing R dependencies
+        timeout-minutes: 5
+        run: Rscript -e 'install.packages(c("jsonlite","digest"),repos="https://cloud.r-project.org")'
+      - name: Compile and test Java with isolated SQLite
+        working-directory: backend
+        timeout-minutes: 8
+        run: |
+          mvn -B -ntp test-compile
+          mvn -B -ntp -Dtest=ProspectivePredictionIntegrationTest,AttemptIdentityRegressionTest,LearningEvidenceServiceTest,FsrsReferenceConformanceTest,QuestionControllerTest,ProspectiveExportSecurityTest test
+      - name: Evaluate the actual Java export in R and replay
+        working-directory: analytics-engine
+        run: |
+          Rscript tests/test_prospective_ledger.R
+          Rscript lab/prospective_evaluation.R ../backend/target/prospective-fixture.json ../backend/target/prospective-metrics.json
+          Rscript lab/prospective_evaluation.R ../backend/target/prospective-fixture.json ../backend/target/prospective-metrics-replay.json
+          cmp ../backend/target/prospective-metrics.json ../backend/target/prospective-metrics-replay.json
+          Rscript tests/test_runner.R
+      - name: Frontend tests and production build
+        working-directory: frontend
+        timeout-minutes: 5
+        run: |
+          npm ci --ignore-scripts
+          npm test
+          npm run build
+      - name: Full Spring and Chromium prospective homologation
+        timeout-minutes: 10
+        env:
+          FISCALSTUDY_BIND: 127.0.0.1
+          FISCALSTUDY_PORT: '8080'
+          FISCALSTUDY_ANKI_NETWORK_ALLOWED: 'false'
+        run: |
+          set -euo pipefail
+          export FISCALSTUDY_BROWSER_DIR="$(mktemp -d "$RUNNER_TEMP/fiscalstudy-browser-XXXXXX")"
+          export FISCALSTUDY_DATA_DIR="$FISCALSTUDY_BROWSER_DIR/data"
+          export FISCALSTUDY_PROJECT_ROOT="$GITHUB_WORKSPACE"
+          export FISCALSTUDY_ADMIN_TOKEN="$(python3 -c 'import secrets; print(secrets.token_hex(24))')"
+          echo "::add-mask::$FISCALSTUDY_ADMIN_TOKEN"
+          echo "FISCALSTUDY_BROWSER_DIR=$FISCALSTUDY_BROWSER_DIR" >> "$GITHUB_ENV"
+          npm install --prefix "$FISCALSTUDY_BROWSER_DIR/tools" --no-package-lock playwright@1.56.1
+          export FISCALSTUDY_PLAYWRIGHT_MODULE="$FISCALSTUDY_BROWSER_DIR/tools/node_modules/playwright"
+          "$FISCALSTUDY_BROWSER_DIR/tools/node_modules/.bin/playwright" install --with-deps chromium
+          mvn -B -ntp -f backend/pom.xml package -DskipTests
+          java -jar backend/target/backend-0.0.1-SNAPSHOT.jar --spring.profiles.active=isolated --fiscalstudy.event-origin=REAL_STUDY --fiscalstudy.prospective.source-kind=SYNTHETIC_FIXTURE > "$FISCALSTUDY_BROWSER_DIR/backend.log" 2>&1 &
+          backend_pid=$!
+          (cd frontend && npm run dev -- --host 127.0.0.1 --strictPort) > "$FISCALSTUDY_BROWSER_DIR/frontend.log" 2>&1 &
+          frontend_pid=$!
+          trap 'kill "$backend_pid" "$frontend_pid" 2>/dev/null || true' EXIT
+          python3 - <<'PY'
+          import urllib.request,time,os,pathlib
+          for url in ("http://127.0.0.1:8080/","http://127.0.0.1:5173/"):
+              for attempt in range(90):
+                  try:
+                      with urllib.request.urlopen(url,timeout=2) as response:
+                          assert response.status==200
+                      break
+                  except Exception:
+                      time.sleep(1)
+              else:
+                  log=pathlib.Path(os.environ["FISCALSTUDY_BROWSER_DIR"])/"backend.log"
+                  print(log.read_text()[-14000:] if log.is_file() else "No backend log")
+                  raise RuntimeError("Isolated application failed readiness: "+url)
+          PY
+          python3 .github/scripts/seed_browser_fixture.py
+          node frontend/tests/browser/prospective-flow.cjs
+          cd analytics-engine
+          Rscript lab/prospective_evaluation.R "$FISCALSTUDY_BROWSER_DIR/browser-export.json" "$FISCALSTUDY_BROWSER_DIR/browser-metrics.json"
+          Rscript lab/prospective_evaluation.R "$FISCALSTUDY_BROWSER_DIR/browser-export.json" "$FISCALSTUDY_BROWSER_DIR/browser-metrics-replay.json"
+          cmp "$FISCALSTUDY_BROWSER_DIR/browser-metrics.json" "$FISCALSTUDY_BROWSER_DIR/browser-metrics-replay.json"
+          Rscript -e 'x<-jsonlite::fromJSON(file.path(Sys.getenv("FISCALSTUDY_BROWSER_DIR"),"browser-metrics.json"));stopifnot(x$source_kind=="SYNTHETIC_FIXTURE",x$scored_count==1,!x$can_apply,!x$can_schedule)'
+      - name: Retain explicitly synthetic integration evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: prospective-SYNTHETIC-FIXTURE-${{ github.run_id }}
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            backend/target/surefire-reports/
+            backend/target/prospective*fixture.json
+            backend/target/prospective-metrics*.json
+            ${{ env.FISCALSTUDY_BROWSER_DIR }}/*.png
+            ${{ env.FISCALSTUDY_BROWSER_DIR }}/browser-*.json

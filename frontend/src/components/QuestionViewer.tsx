@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { AttemptSubmission, annotateAttempt } from '../utils/attemptSubmission';
+import { AttemptSubmission, annotateAttempt, requestJson } from '../utils/attemptSubmission';
+import { ProspectivePreparation } from '../utils/prospectivePreparation';
+import { readAttemptJournal, restoreQuestionSession, saveQuestionSession } from '../utils/attemptJournal';
 import { cachedStudyPreferences } from '../utils/studyPreferences';
 import { handleKeyActivate } from '../utils/accessibility';
 import './QuestionViewer.css';
@@ -160,7 +162,7 @@ const ERROR_TAXONOMIES = METACON_FEEDBACK_OPTIONS;
 
 const QuestionViewer: React.FC = () => {
   const { isSimplifiedMode } = useSimplifiedMode();
-  const [sessionStarted, setSessionStarted] = useState(() => sessionStorage.getItem('fiscalstudy_sessionStarted') === 'true');
+  const [sessionStarted, setSessionStarted] = useState(() => sessionStorage.getItem('fiscalstudy_sessionStarted') === 'true' || localStorage.getItem('fiscalstudy_active_question_session') !== null);
   const [sessionEnded, setSessionEnded] = useState(false);
   const [summary, setSummary] = useState<SessionSummary | null>(null);
   const [question, setQuestion] = useState<Question | null>(null);
@@ -171,6 +173,12 @@ const QuestionViewer: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const pendingAttemptRef = useRef<AttemptSubmission | null>(null);
   const submittingRef = useRef(false);
+  const questionLoadRef = useRef(false);
+  const submissionScopeRef = useRef('');
+  const prospectiveRef = useRef<ProspectivePreparation | null>(null);
+  const [prospectiveStatus, setProspectiveStatus] = useState<'PREPARING' | 'READY' | 'ERROR'>('PREPARING');
+  const [prospectiveRetry, setProspectiveRetry] = useState(0);
+  const [partialHistoryRecovery, setPartialHistoryRecovery] = useState(false);
 
   // Configuração da Sessão Personalizada (Fase 8)
   const [concursos, setConcursos] = useState<ConcursoOption[]>([]);
@@ -389,16 +397,16 @@ const QuestionViewer: React.FC = () => {
       const isInput = activeEl instanceof HTMLInputElement || activeEl instanceof HTMLTextAreaElement || activeEl?.getAttribute('contenteditable') === 'true';
       if (isInput) return;
 
-      if (!feedback && !pendingAttemptRef.current && ['1', '2', '3', '4', '5'].includes(e.key)) {
+      if (!feedback && !pendingAttemptRef.current && prospectiveRef.current?.ready && prospectiveRef.current.questionId === question?.questionId && ['1', '2', '3', '4', '5'].includes(e.key)) {
         setConfidence(Number(e.key));
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [feedback]);
+  }, [feedback, question?.questionId]);
 
   const handleSelectOption = (opt: string) => {
-    if (feedback || pendingAttemptRef.current) return;
+    if (feedback || pendingAttemptRef.current || !prospectiveRef.current?.ready || prospectiveRef.current.questionId !== question?.questionId) return;
     if (selectedOption && selectedOption !== opt) {
       setOptionSwitchCount((prev) => prev + 1);
       const fromLetter = selectedOption.match(/^([A-E])\)?/)?.[1] || selectedOption.charAt(0);
@@ -509,13 +517,78 @@ const QuestionViewer: React.FC = () => {
   };
 
   const getInitialSessionId = () => {
-    let stored = sessionStorage.getItem('fiscalstudy_sessionId');
+    let stored = sessionStorage.getItem('fiscalstudy_sessionId') || localStorage.getItem('fiscalstudy_active_question_session');
     if (!stored) {
       stored = generateNewSessionId();
     }
     return stored;
   };
   const [sessionId, setSessionId] = useState<string>(getInitialSessionId);
+  submissionScopeRef.current = sessionId + '|' + (question?.questionId || '');
+
+  // The answer controls unlock only after a separate pre-answer request has committed.
+  useEffect(() => {
+    if (!question || feedback) return;
+    let active = true;
+    let intent = prospectiveRef.current;
+    if (!intent || intent.questionId !== question.questionId || intent.sessionId !== sessionId) {
+      try { intent = new ProspectivePreparation(question.questionId, sessionId); }
+      catch { setProspectiveStatus('ERROR'); return; }
+      prospectiveRef.current = intent;
+    }
+    setProspectiveStatus('PREPARING');
+    const preparedIntent = intent;
+    preparedIntent.prepare().then(() => {
+      if (!active) return;
+      const saved = readAttemptJournal(question.questionId, sessionId);
+      if (saved?.payload) {
+        pendingAttemptRef.current = new AttemptSubmission(saved.payload, saved.attemptId);
+        const letter = String(saved.payload.selectedOption);
+        const options = question.options.map(o => typeof o === 'string' ? o : (o.label + ') ' + o.text));
+        const restored = options.find(o => o.startsWith(letter)) ||
+          (options.length === 2 && (letter === 'C' || letter === 'E') ? options[letter === 'C' ? 0 : 1] : letter);
+        setSelectedOption(restored); setConfidence(Number(saved.payload.confidenceLevel));
+        setActiveTimeMs(Number(saved.payload.activeTimeMs));
+      }
+      if (preparedIntent.recoveredResult) setFeedback(preparedIntent.recoveredResult);
+      setProspectiveStatus('READY');
+    })
+      .catch(() => { if (active) setProspectiveStatus('ERROR'); });
+    return () => { active = false; };
+  }, [question?.questionId, sessionId, feedback, prospectiveRetry]);
+
+  // Rebuild the whole visible session map from SERVER-confirmed outcomes after a restart.
+  useEffect(() => {
+    if (!sessionQuestions.length) return;
+    let active = true;
+    Promise.all(sessionQuestions.map(async item => {
+      const saved = readAttemptJournal(item.questionId, sessionId);
+      if (!saved?.payload) return null;
+      const state = await requestJson('/api/v1/questions/' + encodeURIComponent(item.questionId) +
+        '/predictions/' + encodeURIComponent(saved.attemptId) + '?sessionId=' + encodeURIComponent(sessionId));
+      if (state.state !== 'ANSWER_RECORDED') return null;
+      const raw = String(saved.payload.selectedOption);
+      const options = item.options.map(o => typeof o === 'string' ? o : (o.label + ') ' + o.text));
+      const selected = options.find(o => o.startsWith(raw)) ||
+        (options.length === 2 && (raw === 'C' || raw === 'E') ? options[raw === 'C' ? 0 : 1] : raw);
+      return { id: item.questionId, value: { selectedOption: selected, confidence: Number(saved.payload.confidenceLevel),
+        feedback: state.feedback as AttemptFeedback, biometricResult: null, activeTimeMs: Number(saved.payload.activeTimeMs) } };
+    })).then(rows => {
+      if (!active) return;
+      setAnsweredMap(previous => {
+        const restored = { ...previous };
+        for (const row of rows) if (row) restored[row.id] = row.value;
+        return restored;
+      });
+      setPartialHistoryRecovery(false);
+    }).catch(() => { if (active) setPartialHistoryRecovery(true); });
+    return () => { active = false; };
+  }, [sessionId, sessionQuestions]);
+
+  const prospectiveReady = prospectiveStatus === 'READY' &&
+    prospectiveRef.current?.questionId === question?.questionId &&
+    prospectiveRef.current?.sessionId === sessionId && prospectiveRef.current.ready;
+
 
   // Carrega Concursos e Disciplinas disponíveis
   useEffect(() => {
@@ -550,6 +623,9 @@ const QuestionViewer: React.FC = () => {
 
   const resetQuestionInteractions = () => {
     pendingAttemptRef.current = null;
+    prospectiveRef.current = null;
+    setProspectiveStatus('PREPARING');
+    setProspectiveRetry(value => value + 1);
     submittingRef.current = false;
     setFeedback(null);
     setSelectedOption(null);
@@ -575,11 +651,12 @@ const QuestionViewer: React.FC = () => {
     setAuditSuccessMsg('');
   };
 
-  const loadQuestionAtIndex = useCallback((idx: number, list: Question[] = sessionQuestions) => {
+  const loadQuestionAtIndex = useCallback((idx: number, list: Question[] = sessionQuestions, targetSessionId = sessionId) => {
     const targetQ = list[idx];
     if (!targetQ) return;
 
     resetQuestionInteractions();
+    saveQuestionSession(targetSessionId, list, idx);
     setQuestion(targetQ);
     setCurrentQuestionIndex(idx);
 
@@ -600,7 +677,7 @@ const QuestionViewer: React.FC = () => {
       fetch(`/api/v1/questions/${targetQ.questionId}/presented`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId })
+        body: JSON.stringify({ sessionId: targetSessionId })
       }).catch(() => {});
     }
 
@@ -680,10 +757,18 @@ const QuestionViewer: React.FC = () => {
 
   const fetchNextQuestion = useCallback(async (overrideSessionId?: string) => {
     const currentSession = overrideSessionId || sessionId;
+    if (questionLoadRef.current) return;
+    questionLoadRef.current = true;
     setLoading(true);
     resetQuestionInteractions();
 
     try {
+      const recovered = restoreQuestionSession(currentSession);
+      if (recovered) {
+        setSessionQuestions(recovered.questions);
+        loadQuestionAtIndex(recovered.index, recovered.questions, currentSession);
+        return;
+      }
       let batchUrl = `/api/v1/questions/batch?sessionId=${currentSession}&limit=${questionCountLimit || 15}`;
       if (selectedConcursoId) batchUrl += `&concursoId=${encodeURIComponent(selectedConcursoId)}`;
       if (selectedDiscipline) batchUrl += `&disciplina=${encodeURIComponent(selectedDiscipline)}`;
@@ -696,7 +781,7 @@ const QuestionViewer: React.FC = () => {
         if (Array.isArray(batchData) && batchData.length > 0) {
           setSessionQuestions(batchData);
           setCurrentQuestionIndex(0);
-          loadQuestionAtIndex(0, batchData);
+          loadQuestionAtIndex(0, batchData, currentSession);
           return;
         }
       }
@@ -707,7 +792,7 @@ const QuestionViewer: React.FC = () => {
         const singleQ = await nextRes.json();
         setSessionQuestions([singleQ]);
         setCurrentQuestionIndex(0);
-        loadQuestionAtIndex(0, [singleQ]);
+        loadQuestionAtIndex(0, [singleQ], currentSession);
       } else {
         setQuestion(null);
       }
@@ -715,6 +800,7 @@ const QuestionViewer: React.FC = () => {
       console.error("Failed to fetch questions:", error);
       setQuestion(null);
     } finally {
+      questionLoadRef.current = false;
       setLoading(false);
     }
   }, [sessionId, selectedConcursoId, selectedDiscipline, selectedAssunto, includeAnswered, questionCountLimit, loadQuestionAtIndex]);
@@ -732,11 +818,13 @@ const QuestionViewer: React.FC = () => {
     try {
       const freshSessionId = generateNewSessionId();
       setSessionId(freshSessionId);
-      await fetch(`/api/v1/sessions/start`, {
+      const started = await fetch(`/api/v1/sessions/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sessionId: freshSessionId })
       });
+      if (!started.ok) throw new Error('O início da sessão não foi confirmado pelo servidor.');
+      localStorage.setItem('fiscalstudy_active_question_session', freshSessionId);
       sessionStorage.setItem('fiscalstudy_sessionStarted', 'true');
       setSessionStarted(true);
       fetchNextQuestion(freshSessionId);
@@ -761,6 +849,10 @@ const QuestionViewer: React.FC = () => {
         await handleSubmit();
       }
 
+      const pending = question ? readAttemptJournal(question.questionId, sessionId) : null;
+      if (pending?.payload && !pending.result) {
+        alert('Confirme ou recupere a resposta pendente antes de encerrar.'); return;
+      }
       // 2. Finaliza no backend
       await fetch(`/api/v1/sessions/end`, {
         method: 'POST',
@@ -842,6 +934,7 @@ const QuestionViewer: React.FC = () => {
       setSummary(summaryData);
       sessionStorage.removeItem('fiscalstudy_sessionStarted');
       sessionStorage.removeItem('fiscalstudy_sessionId');
+      if (localStorage.getItem('fiscalstudy_active_question_session') === sessionId) localStorage.removeItem('fiscalstudy_active_question_session');
       setSessionEnded(true);
     } catch (err) {
       console.error("Failed to end session", err);
@@ -866,7 +959,8 @@ const QuestionViewer: React.FC = () => {
   }, [lastFocusTime, sessionStarted, sessionEnded]);
 
   const handleSubmit = async () => {
-    if (!question || !selectedOption || confidence === 0 || isSubmitting || submittingRef.current || feedback) return;
+    if (!question || !selectedOption || confidence === 0 || isSubmitting || submittingRef.current || feedback || !prospectiveReady) return;
+    const submissionScope = submissionScopeRef.current;
     submittingRef.current = true;
     setIsSubmitting(true);
 
@@ -940,8 +1034,9 @@ const QuestionViewer: React.FC = () => {
           interventionType: currentIntervention,
           origin: 'REAL_STUDY',
           ...bioPayload
-        });
+        }, prospectiveRef.current!.attemptId);
       const result = await pendingAttemptRef.current.send(question.questionId);
+      if (submissionScopeRef.current !== submissionScope) return;
       {
         setFeedback(result);
 
@@ -1006,11 +1101,14 @@ const QuestionViewer: React.FC = () => {
         }
       }
     } catch (error) {
+      if (submissionScopeRef.current !== submissionScope) return;
       console.error("Failed to submit attempt:", error);
       alert("Não foi possível confirmar a gravação. Reenvie a mesma tentativa. " + (error instanceof Error ? error.message : ""));
     } finally {
-      submittingRef.current = false;
-      setIsSubmitting(false);
+      if (submissionScopeRef.current === submissionScope) {
+        submittingRef.current = false;
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -1534,7 +1632,7 @@ const QuestionViewer: React.FC = () => {
 
       {/* MAPA DA SESSÃO E NAVEGAÇÃO DE QUESTÕES */}
       {sessionQuestions.length > 0 && (
-        <div className="session-map-bar glass animate-fade-in">
+        <div className="session-map-bar glass animate-fade-in" data-answered-count={Object.values(answeredMap).filter(item => item.feedback).length}>
           <div className="map-info">
             <div className="map-badge-counter">
               <span className="map-title-label">🗺️ Mapa da Sessão:</span>
@@ -1542,7 +1640,7 @@ const QuestionViewer: React.FC = () => {
                 Questão <strong>{currentQuestionIndex + 1}</strong> de <strong>{sessionQuestions.length}</strong>
               </span>
               <span className="map-progress-pct">
-                ({Math.round((Object.keys(answeredMap).length / Math.max(sessionQuestions.length, 1)) * 100)}% respondido)
+                ({Math.round((Object.values(answeredMap).filter(item => item.feedback).length / Math.max(sessionQuestions.length, 1)) * 100)}% respondido)
               </span>
             </div>
 
@@ -1723,7 +1821,8 @@ const QuestionViewer: React.FC = () => {
           </div>
         )}
 
-        <div className="options" role="radiogroup" aria-label="Alternativas da questão">
+        {partialHistoryRecovery && <p role="alert">Parte do histórico ainda não foi confirmada pelo servidor. O progresso mostrado pode estar incompleto.</p>}
+        <div className="options" aria-busy={!prospectiveReady && !feedback} role="radiogroup" aria-label="Alternativas da questão">
           {optionsList.map((opt, idx) => {
             const isSelected = selectedOption === opt;
             const letter = isCertoErrado 
@@ -1735,6 +1834,7 @@ const QuestionViewer: React.FC = () => {
                 key={idx}
                 role="radio"
                 aria-checked={isSelected}
+                aria-disabled={Boolean(feedback) || !prospectiveReady}
                 tabIndex={feedback ? -1 : 0}
                 aria-label={`Alternativa ${letter}: ${opt.replace(/^([A-Ea-e])\)?\s*/, '')}`}
                 className={`option-card ${isSelected ? 'selected' : ''} ${feedback && isSelected ? (isUnverifiedGabarito ? 'selected' : (feedback.isCorrect ? 'correct' : 'incorrect')) : ''} ${feedback ? 'disabled' : ''}`}
@@ -1745,7 +1845,7 @@ const QuestionViewer: React.FC = () => {
                 }}
                 onClick={() => handleSelectOption(opt)}
                 onKeyDown={(e) => {
-                  if (!feedback && !pendingAttemptRef.current) {
+                  if (!feedback && !pendingAttemptRef.current && prospectiveReady) {
                     handleKeyActivate(e, () => handleSelectOption(opt));
                   }
                 }}
@@ -1803,7 +1903,7 @@ const QuestionViewer: React.FC = () => {
                   aria-pressed={confidence === lvl}
                   aria-label={`Nível de certeza ${lvl}: ${label}`}
                   className={`conf-btn ${confidence === lvl ? 'active' : ''}`}
-                  onClick={() => !pendingAttemptRef.current && setConfidence(lvl)}
+                  onClick={() => prospectiveReady && !pendingAttemptRef.current && setConfidence(lvl)}
                   title={`Nível ${lvl} — ${label} (tecla ${lvl})`}
                 >
                   <span className="conf-num">{lvl}</span>
@@ -1835,7 +1935,7 @@ const QuestionViewer: React.FC = () => {
 
             <button 
               className="btn submit-btn" 
-              disabled={!selectedOption || confidence === 0 || isSubmitting}
+              disabled={!selectedOption || confidence === 0 || isSubmitting || !prospectiveReady}
               aria-busy={isSubmitting}
               onClick={handleSubmit}
               title={
@@ -1852,6 +1952,12 @@ const QuestionViewer: React.FC = () => {
             >
               {isSubmitting ? 'Gravando...' : pendingAttemptRef.current ? 'Reenviar tentativa' : 'Responder'}
             </button>
+            {!prospectiveReady && !feedback && (
+              <p role={prospectiveStatus === 'ERROR' ? 'alert' : 'status'}>
+                {prospectiveStatus === 'ERROR' ? 'Não foi possível preparar a questão. Sua resposta ainda não foi enviada.' : 'Preparando questão...'}
+                {prospectiveStatus === 'ERROR' && <button type="button" onClick={() => setProspectiveRetry(value => value + 1)}>Tentar novamente</button>}
+              </p>
+            )}
           </div>
         </div>
       ) : (
