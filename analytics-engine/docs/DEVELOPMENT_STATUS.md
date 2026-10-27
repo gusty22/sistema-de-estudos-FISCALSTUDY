@@ -185,3 +185,23 @@ PR #30, branch fix/r-ordinal-confidence-contract: nível fracionário não é tr
 CI 40437888763 no commit 68dea90: 23 testes do laboratório e 626 verificações R sem falhas; cinco seeds e replay de 50 arquivos passaram. Alterações posteriores de documentação e rótulos devem ser validadas no novo head. Ver docs/CONFIDENCE_METRICS_VALIDATION.md. Homologação visual e Java E2E não executadas. A correção textual sob locale C permanece na branch independente do PR #29; integrar preservando os testes de ambas.
 
 Atualização de integração: main 28a43c1 (#29) incorporada nesta branch preservando o transporte UTF-8, os testes e timeouts existentes. Exportador e testes compartilhados usam a composição previamente verificada em CI 40440103059; novo gate desta branch obrigatório. Não inclui arquivos do laboratório de memória.
+
+
+## Laboratório de memória — referência FSRS oficial
+
+Branch experiment/fsrs-memory-lab, dependente do PR #27. Implementados gerador independente de recordação, referência py-fsrs 6.3.2 (MIT, release oficial, parâmetros inalterados), contrato experimental memory_lab_events_v1 e adaptador para calculate_retrieval_surprise existente. Nenhuma equação FSRS foi reimplementada no R ou alterada no produto.
+
+CI 40432790113, commit f9849b2: 30 testes do laboratório e 600 verificações R, zero falhas; oito arquivos de memória e 50 do laboratório anterior reproduzidos byte a byte. 1120 eventos, 160 cold starts sem previsão inventada, 960 alvos maduros, escores R/Python concordantes. FSRS padrão obteve Brier 0,275057 e log loss 0,870704, versus 0,217010/0,642642 do histórico suavizado; não demonstrou superioridade neste gerador. Não inferir eficácia ou falha pessoal a partir disso; priorizar calibração com treino/teste separados antes de ampliar políticas. Detalhes em lab/MEMORY_PROTOCOL.md e fixture memory_reference_result.json.
+
+Validação sintética e técnica concluída para este incremento; otimização pessoal, causalidade, políticas, dados reais, equivalência Java e homologação visual NÃO executadas. can_apply/can_schedule seguem false; main preservada.
+
+
+## Retomada da integração — 27/10/2026
+
+A main verificada em 4b28bcbd3df53ed158c7b2e7de156a9b10ef190f contém o incremento #27, mas não contém os arquivos de memória da #28, embora a API registre essa PR como merged. Esta frente reaplica somente os dez arquivos do incremento de memória a partir do commit 04320817714c29bc41f61ef9f2766251f1acc499 sobre a main atual. Não presume a causa da diferença de árvore e não altera #29/#30, Java ou dados operacionais. Resultados históricos acima não substituem o novo gate de CI desta branch; seu resultado deve ser conferido na PR antes de integrar. O laboratório continua sintético, não prescreve atividades e não demonstra eficácia pessoal.
+
+Validação da recuperação 3b5942b: CI 40500031291 aprovada, 30 testes de laboratório, 600 verificações R e replays 50+8 idênticos. Durante essa execução a main recebeu #29 (28a43c1). Esta atualização preserva integralmente essa correção UTF-8 e seus testes, combina somente as adições de memória e retém os timeouts do workflow. Novo gate da composição obrigatório; nenhuma validação científica adicional é inferida.
+
+## Resolução do conflito #31 após integração #30 — 27/10/2026
+
+A main 35f046a recebeu a correção de confiança #30 após a última atualização da #31. Preservados integralmente os arquivos de código/testes da main e os registros históricos de confiança; acrescentados os arquivos e registros do laboratório de memória da #31. Sem migrações, alterações de dados ou habilitação decisória. CI desta nova composição deve ser conferida na PR; evidências anteriores continuam históricas.

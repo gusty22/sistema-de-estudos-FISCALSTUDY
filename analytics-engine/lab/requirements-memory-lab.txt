@@ -1,0 +1,3 @@
+# Optional official FSRS reference; no optimizer or production scheduler replacement.
+fsrs==6.3.2
+typing_extensions==4.15.0
