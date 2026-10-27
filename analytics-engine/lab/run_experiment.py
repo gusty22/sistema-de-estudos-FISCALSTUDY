@@ -13,12 +13,12 @@ import subprocess
 import sys
 from simulator import COLUMNS, generate, identifiability_probe, validate, write_events
 
-VERSION = "learner-lab-mvp-2"
-ENGINE_BASE_COMMIT = "4db0ac08c70e0c651b9bc345e6e9d6b634b2a6e7"
+VERSION = "learner-lab-baselines-3"
+ENGINE_BASE_COMMIT = "f77b3a4a3faa3a9beecbc231be2eedbdc2790196"
 CRITERIA = dict(
     registered_before_results=True, target="graded unassisted objective answer",
     warmup=10, minimum_independent_seeds=5, bootstrap_replicates=2000,
-    comparators=[["GLOBAL_HISTORICAL_MEAN","FIXED_050"],["GLOBAL_HISTORICAL_MEAN","FIXED_020"],["SMOOTHED_TOPIC_MEAN","GLOBAL_HISTORICAL_MEAN"]],
+    comparators=[["GLOBAL_HISTORICAL_MEAN","FIXED_050"],["GLOBAL_HISTORICAL_MEAN","FIXED_020"],["SMOOTHED_TOPIC_MEAN","GLOBAL_HISTORICAL_MEAN"],["MOVING_AVERAGE_5","GLOBAL_HISTORICAL_MEAN"]],
     development_run="run-002 motivated adding the stronger global comparator; no model parameters were tuned",
     task_assumption="five-choice synthetic tasks; fixed .20 is the declared chance baseline",
     scientific_superiority="Both paired Brier and log-loss mean-difference bootstrap upper bounds < 0.",
@@ -106,21 +106,24 @@ def evaluate(predictions, truth):
             scored.append(dict(r, model_name=name, predicted_probability=probability))
     return scored
 
-def report_html(path, summary, rows):
+def report_html(path, summary, rows, history=None):
     # The dashboard is created from executed output, never a demo data fallback.
-    payload = json.dumps(dict(summary=summary, rows=rows), allow_nan=False).replace("<", "\\u003c")
+    payload = json.dumps(dict(summary=summary, rows=rows, history=history or []), allow_nan=False).replace("<", "\\u003c")
     html = """<!doctype html><meta charset="utf-8"><title>FiscalStudy Synthetic Laboratory</title>
 <style>body{font:16px system-ui;margin:2rem;max-width:1100px;background:#f6f6f2;color:#222}table{border-collapse:collapse;width:100%}td,th{padding:.5rem;border-bottom:1px solid #ccc;text-align:left}.warn{background:#fff0c2;padding:1rem}select{padding:.6rem;margin:.5rem}pre{white-space:pre-wrap}svg{background:white}small{color:#555}</style>
 <h1>FiscalStudy — laboratório executado</h1><p class="warn">DADOS SINTÉTICOS. Resultados condicionais ao simulador. Sem validação humana; sem autoridade de planejamento.</p>
 <label>Perfil <select id="profile"></select></label><label>Modelo <select id="model"></select></label><label>Habilidade <select id="skill"></select></label>
-<p id="metrics"></p><svg id="chart" viewBox="0 0 400 280" width="600" role="img" aria-label="Reliability diagram"></svg>
+<p id="metrics"></p><p id="coverage"></p><svg id="chart" viewBox="0 0 400 280" width="600" role="img" aria-label="Reliability diagram"></svg>
 <p><small>Curva: probabilidade de acerto versus frequência observada. Não é curva de memória. K/R são estados verdadeiros apenas no simulador; não entram no Motor R. Estimativa mnemônica do Motor: indisponível neste adaptador.</small></p>
 <table><thead><tr><th>Evento observado</th><th>Previsão P(acerto)</th><th>Resultado posterior</th><th>K verdadeiro</th><th>R verdadeiro</th><th>Item</th></tr></thead><tbody id="events"></tbody></table>
-<h2>Escopo e critérios</h2><pre id="details"></pre>
+<h2>Histórico observado completo</h2><p>Inclui eventos sem previsão, ajuda e sessões incompletas. Ausência de previsão não é zero de conhecimento. Modelos não alteram este histórico.</p><table><thead><tr><th>Estudante / réplica</th><th>Instante</th><th>Atividade</th><th>Resultado registrado</th><th>Ajuda</th><th>Sessão completa</th></tr></thead><tbody id="history"></tbody></table><h2>Escopo e critérios</h2><pre id="details"></pre>
 <script>const data=PAYLOAD;
 const controls=['profile','model','skill'];
-for(const field of controls){const el=document.getElementById(field);for(const v of [...(field==='model'?[]:['ALL']),...new Set(data.rows.map(r=>r[field==='model'?'model_name':field]))]){const o=document.createElement('option');o.value=v;o.textContent=v;el.appendChild(o);}el.onchange=draw;}
+for(const field of controls){const el=document.getElementById(field);for(const v of [...(field==='model'?[]:['ALL']),...new Set((field==='model'?data.rows:(data.history.length?data.history:data.rows)).map(r=>r[field==='model'?'model_name':field]))]){const o=document.createElement('option');o.value=v;o.textContent=v;el.appendChild(o);}el.onchange=draw;}
 function draw(){const rows=data.rows.filter(r=>controls.every(f=>document.getElementById(f).value==='ALL'||r[f==='model'?'model_name':f]===document.getElementById(f).value));
+const history=data.history.filter(r=>['profile','skill'].every(f=>document.getElementById(f).value==='ALL'||r[f]===document.getElementById(f).value));
+document.getElementById('coverage').textContent='Eventos observados: '+history.length+' | Previsões do modelo selecionado: '+rows.length;
+const historyBody=document.getElementById('history');historyBody.replaceChildren();for(const r of history.slice(-60)){const tr=document.createElement('tr');for(const value of [r.seed+':'+r.student_id,r.occurred_at,r.activity_id,r.is_correct===''?'Sem resultado avaliável':r.is_correct,r.used_help,r.session_complete]){const td=document.createElement('td');td.textContent=value;tr.appendChild(td);}historyBody.appendChild(tr);}
 document.getElementById('metrics').textContent='N='+rows.length+' | '+(rows.length?'Brier='+ (rows.reduce((s,r)=>s+(+r.predicted_probability-+r.observed_correct)**2,0)/rows.length).toFixed(4):'Sem evidência');
 const tbody=document.getElementById('events');tbody.replaceChildren();for(const r of rows.slice(-30)){const tr=document.createElement('tr');for(const v of [r.event_id,(+r.predicted_probability).toFixed(3),r.observed_correct,(+r.true_knowledge).toFixed(3),(+r.true_retrieval).toFixed(3),r.question_id]){const td=document.createElement('td');td.textContent=v;tr.appendChild(td);}tbody.appendChild(tr);}
 let svg='<line x1="35" y1="240" x2="360" y2="20" stroke="#aaa"/>';for(let b=0;b<10;b++){const bin=rows.filter(r=>Math.min(9,Math.floor(+r.predicted_probability*10))===b);if(bin.length){const x=bin.reduce((s,r)=>s+(+r.predicted_probability),0)/bin.length;const y=bin.reduce((s,r)=>s+(+r.observed_correct),0)/bin.length;svg+='<circle cx="'+(35+325*x)+'" cy="'+(240-220*y)+'" r="5" fill="#176783"><title>N='+bin.length+'</title></circle>';}}
@@ -128,21 +131,27 @@ svg+='<text x="100" y="270">Probabilidade de acerto prevista</text>';document.ge
 document.getElementById('details').textContent=JSON.stringify(data.summary,null,2);draw();</script>"""
     path.write_text(html.replace("PAYLOAD",payload), encoding="utf-8")
 
-def run(engine, output, seeds, interactions):
+def run(engine, output, seeds, interactions, with_pybkt=False):
     engine, output = engine.resolve(), output.resolve()
     allowed = engine/"tests"/"fixtures"/"learner_lab"
     if not output.is_relative_to(allowed.resolve()):
         raise ValueError("Output must be confined to tests/fixtures/learner_lab")
     output.mkdir(parents=True, exist_ok=False)  # Never overwrite a previous experiment.
     rscript = resolve_rscript()
-    dump(output/"criteria.json", CRITERIA)  # Frozen before observing outcomes.
+    criteria = dict(CRITERIA, comparators=list(CRITERIA["comparators"]))
+    if with_pybkt:
+        criteria["comparators"].append(["PYBKT_FROZEN_WARMUP", "GLOBAL_HISTORICAL_MEAN"])
+    criteria["external_baseline"] = "pyBKT==1.4.3 frozen first ten eligible responses per student" if with_pybkt else "NOT_REQUESTED"
+    dump(output/"criteria.json", criteria)  # Frozen before observing outcomes.
     all_scored, seed_results, input_records, pending_truth, support = [], [], [], [], []
+    history = []
     for replicate_index, seed in enumerate(seeds):
         folder = output/("replicate-%02d" % replicate_index)
         input_dir = folder/"input"
         input_dir.mkdir(parents=True)
         events, truth, profiles = generate(seed, interactions)
         validate(events)
+        history.extend(dict(e,seed=seed,skill=e["skill_id"]) for e in events)
         observations = input_dir/"observations.csv"
         write_events(observations, events)
         manifest = dict(contract_version="learner_lab_events_v1", source_kind="SYNTHETIC_BENCHMARK",
@@ -157,10 +166,26 @@ def run(engine, output, seeds, interactions):
             raise RuntimeError("Real R execution failed; inspect "+str(folder/"r.log"))
         with predicted.open(encoding="utf-8-sig",newline="") as stream:
             predictions = list(csv.DictReader(stream))
-        # Hold every latent artifact until all R processes have exited.
+        if with_pybkt:
+            external = folder/"pybkt-predictions.csv"
+            external_run = subprocess.run([sys.executable, str(engine/"lab"/"pybkt_adapter.py"),
+                str(observations), str(external), str(input_dir/"manifest.json")],
+                cwd=engine, capture_output=True, text=True, errors="replace", timeout=180)
+            (folder/"pybkt.log").write_text(external_run.stdout+"\\n"+external_run.stderr, encoding="utf-8")
+            if external_run.returncode:
+                raise RuntimeError("Real pyBKT execution failed; inspect "+str(folder/"pybkt.log"))
+            with external.open(encoding="utf-8-sig", newline="") as stream:
+                predictions.extend(csv.DictReader(stream))
+        # Hold every latent artifact until all model processes have exited.
         pending_truth.append((folder,dict(states=truth,profiles=profiles)))
         support.append(json.loads(Path(str(predicted)+".status.json").read_text(encoding="utf-8")))
         scored = evaluate(predictions,truth)
+        observed_by_id = {e["event_id"]:e for e in events}
+        for row in scored:
+            observation = observed_by_id[row["event_id"]]
+            lag = observation["elapsed_hours"]
+            row["observed_lag_stratum"] = ("NO_RECORDED_PRIOR_EXPOSURE" if lag == "" else
+                "UP_TO_24H" if float(lag) <= 24 else "ONE_TO_SEVEN_DAYS" if float(lag) <= 168 else "OVER_SEVEN_DAYS")
         for row in scored:
             row["seed"] = seed
         all_scored.extend(scored)
@@ -174,34 +199,52 @@ def run(engine, output, seeds, interactions):
     metrics={m:dict(**score([r for r in all_scored if r["model_name"]==m]),
                     reliability=reliability([r for r in all_scored if r["model_name"]==m])) for m in models}
     comparisons={}
-    for model, comparator in CRITERIA["comparators"]:
-        diffs={key:[s["models"][model][key]-s["models"][comparator][key] for s in seed_results] for key in ("brier","log_loss")}
+    for model, comparator in criteria["comparators"]:
+        paired = []
+        coverage = []
+        for seed in seeds:
+            left = {r["event_id"]:r for r in all_scored if r["seed"]==seed and r["model_name"]==model}
+            right = {r["event_id"]:r for r in all_scored if r["seed"]==seed and r["model_name"]==comparator}
+            common = sorted(set(left) & set(right))
+            coverage.append(dict(seed=seed,left=len(left),right=len(right),common=len(common)))
+            if common:
+                paired.append({key:score([left[k] for k in common])[key]-score([right[k] for k in common])[key]
+                    for key in ("brier","log_loss")})
+        diffs={key:[p[key] for p in paired] for key in ("brier","log_loss")}
         bounds={key:interval(values) for key,values in diffs.items()}
-        enough=len(seeds)>=CRITERIA["minimum_independent_seeds"]
-        superior=enough and all(bound[1] is not None and bound[1]<0 for bound in bounds.values())
-        worse=enough and all(bound[0] is not None and bound[0]>0 for bound in bounds.values())
+        complete = all(c["left"]==c["right"]==c["common"] and c["common"]>0 for c in coverage)
+        enough=len(paired)>=criteria["minimum_independent_seeds"]
+        superior=complete and enough and all(bound[1] is not None and bound[1]<0 for bound in bounds.values())
+        worse=complete and enough and all(bound[0] is not None and bound[0]>0 for bound in bounds.values())
         comparisons[model+"__VS__"+comparator]=dict(seed_paired_differences=diffs,seed_cluster_bootstrap_intervals=bounds,
+            coverage=coverage,paired_seed_count=len(paired),complete_event_coverage=complete,
             classification="APROVADO_SOMENTE_NESTE_SIMULADOR" if superior else "REPROVADO_NESTE_SIMULADOR" if worse else "INCONCLUSIVO")
     summary=dict(version=VERSION,source_kind="SYNTHETIC_BENCHMARK",seeds=seeds,interactions=interactions,
         event_count=sum(x["rows"] for x in input_records),prediction_count=len(all_scored),
         unique_evaluated_event_count=len({r["event_id"] for r in all_scored}),
         metrics=metrics,comparisons=comparisons,independent_seed_count=len(seeds),engine_base_commit=ENGINE_BASE_COMMIT,
         support=support,by_profile={profile:{m:score([r for r in all_scored if r["model_name"]==m and r["profile"]==profile]) for m in models} for profile in sorted({r["profile"] for r in all_scored})},
-        criteria=CRITERIA,can_apply=False,can_schedule=False,is_empirically_validated=False,
+        diagnostic_breakdown={dimension:{value:{m:score([r for r in all_scored if r["model_name"]==m and r[dimension]==value])
+            for m in models} for value in sorted({r[dimension] for r in all_scored})}
+            for dimension in ("item_exposure","observed_lag_stratum")},
+        criteria=criteria,can_apply=False,can_schedule=False,is_empirically_validated=False,
         limitations=["Repeated attempts are dependent; binomial bin intervals are descriptive, not independence-adjusted.",
                       "Bootstrap uses seed clusters; only the specified generator population is covered.",
-                      "No retention estimator, FSRS scheduler, pyBKT, causal policy evaluation or human data was executed.",
+                      "No retention estimator, FSRS scheduler, causal policy evaluation or human data was executed.",
+                      "pyBKT is optional; see external_baseline and per-replicate status for actual execution.",
                       "First-seen question_id does not establish conceptual transfer."],
         experiments={k:({"A":"EXECUTED_SYNTHETIC_PREQUENTIAL","B":"EXECUTED_DESCRIPTIVE_CALIBRATION","G":"PARTIAL_COLD_START_GATE","I":"PARTIAL_WITHIN_STUDENT_TEMPORAL"}.get(k,"NOT_EXECUTED")) for k in "ABCDEFGHIJ"})
     dump(output/"summary.json",summary)
     dump(output/"identifiability.json",identifiability_probe())
-    engine_files=sorted((engine/"R").glob("*.R"))+[engine/"lab"/"engine_adapter.R",engine/"lab"/"event_contract.json"]
-    report_html(output/"report.html",summary,all_scored)
-    artifacts={str(p.relative_to(output)):sha(p) for p in sorted(output.rglob("*")) if p.is_file()}
+    engine_files=sorted((engine/"R").glob("*.R"))+[engine/"lab"/"engine_adapter.R",engine/"lab"/"temporal_extensions.R",engine/"lab"/"event_contract.json"]
+    profile_by_event={s["event_id"]:s["profile"] for _,latent in pending_truth for s in latent["states"]}
+    history=[dict(e,profile=profile_by_event[e["event_id"]]) for e in history]
+    report_html(output/"report.html",summary,all_scored,history)
+    artifacts={p.relative_to(output).as_posix():sha(p) for p in sorted(output.rglob("*")) if p.is_file()}
     dump(output/"run-manifest.json",dict(version=VERSION,source_kind="SYNTHETIC_BENCHMARK",status="SUCCEEDED",
         python_version=platform.python_version(),engine_base_commit=ENGINE_BASE_COMMIT,
         r_version=support[0]["r_version"],jsonlite_version=support[0]["jsonlite_version"],seeds=seeds,inputs=input_records,
-        engine_hashes={str(p.relative_to(engine)):sha(p) for p in engine_files},
+        engine_hashes={p.relative_to(engine).as_posix():sha(p) for p in engine_files},
         lab_hashes={p.name:sha(p) for p in sorted((engine/"lab").glob("*.py"))},
         artifacts=artifacts,can_apply=False,can_schedule=False))
     return summary
@@ -211,13 +254,14 @@ if __name__=="__main__":
     parser.add_argument("--output",required=True,type=Path)
     parser.add_argument("--seeds",default="11,23,37,53,71")
     parser.add_argument("--interactions",type=int,default=48)
+    parser.add_argument("--with-pybkt",action="store_true",help="Execute installed pyBKT==1.4.3, never a substitute")
     options=parser.parse_args()
     seeds=[int(x) for x in options.seeds.split(",")]
     if len(set(seeds))!=len(seeds) or not seeds or not 12<=options.interactions<=500:
         parser.error("Unique seeds and 12..500 interactions required")
     engine=Path(__file__).resolve().parents[1]
     try:
-        result=run(engine,options.output,seeds,options.interactions)
+        result=run(engine,options.output,seeds,options.interactions,options.with_pybkt)
     except Exception as error:
         folder=options.output.resolve()
         if not isinstance(error,FileExistsError) and folder.is_relative_to((engine/"tests"/"fixtures"/"learner_lab").resolve()) and folder.is_dir():
