@@ -68,6 +68,32 @@ if (fixture_run$exit == 0) {
   assert_true(all(vapply(summary$metrics, function(m) identical(m$n_observations, 2L) || identical(m$n_observations, 2), logical(1))), "Non-evaluable attempt does not enter effective metric denominators")
 }
 
+
+# A locale-C subprocess must preserve Unicode and emit warning-free metric CSV.
+unicode_df <- pipeline_df
+unicode_label <- "Direito Tribut\u00e1rio: exce\u00e7\u00e3o"
+unicode_df$discipline <- rep(unicode_label,nrow(unicode_df))
+unicode_df$assunto <- rep("Cr\u00e9dito tribut\u00e1rio",nrow(unicode_df))
+unicode_input <- file.path(pipeline_dir,"unicode-attempts.csv")
+unicode_output <- file.path(pipeline_dir,"unicode-results")
+utils::write.csv(unicode_df,unicode_input,row.names=FALSE,fileEncoding="UTF-8")
+unicode_manifest <- pipeline_manifest
+unicode_manifest$checksum <- compute_file_sha256(unicode_input)
+unicode_manifest_path <- file.path(pipeline_dir,"unicode-manifest.json")
+writeLines(jsonlite::toJSON(unicode_manifest,auto_unbox=TRUE),unicode_manifest_path,useBytes=TRUE)
+unicode_run <- run_pipeline_fixture(unicode_input,unicode_output,"fixture-unicode",unicode_manifest_path)
+assert_equal(unicode_run$exit,0L,"UTF-8 operational fixture runs under locale C")
+assert_false(any(grepl("invalid char|invalid input|conversion",unicode_run$log,ignore.case=TRUE)),
+             "Locale C pipeline reports no character conversion warning")
+if (unicode_run$exit==0L) {
+  unicode_metrics <- utils::read.csv(file.path(unicode_output,"metrics/metrics_summary_v1.csv"),encoding="UTF-8",stringsAsFactors=FALSE)
+  time_limitations <- unicode_metrics$limitations[unicode_metrics$metric_name=="median_active_time_seconds"]
+  assert_true(grepl("n\u00e3o mede aten\u00e7\u00e3o",time_limitations,fixed=TRUE),
+              "Locale C export preserves full UTF-8 metric limitations")
+  unicode_summary <- jsonlite::fromJSON(file.path(unicode_output,"metrics/metrics_summary_v1.json"))
+  assert_false(unicode_summary$is_real_student_data,"Unicode fixture never gains real-student provenance")
+}
+
 # Mixed origins are never laundered by a valid checksum or a later eligibility filter.
 pipeline_df$origin_type[2] <- "AUTOMATED_TEST"
 write.csv(pipeline_df, pipeline_csv, row.names = FALSE)
