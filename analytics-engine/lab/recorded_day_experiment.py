@@ -38,7 +38,7 @@ def run(output,download=False,source_run=None):
             folder=output/basis;folder.mkdir()
             records=[]
             for source_id,rows in observed.items():
-                events,current=replay_recorded_clock(rows,source_id,basis)
+                events,current=replay_recorded_clock(rows,source_id,basis,origin_type="PUBLIC_HUMAN_DATASET")
                 records.extend(events)
                 if parameters is not None and parameters!=current:
                     raise ValueError("Canonical reference parameters changed")

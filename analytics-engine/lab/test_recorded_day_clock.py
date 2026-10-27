@@ -63,6 +63,7 @@ class OfficialClockTests(unittest.TestCase):
         self.assertEqual(utc[1]["predicted_probability"],1.)
         self.assertLess(source[1]["predicted_probability"],1.)
         self.assertEqual(source[1]["model_elapsed_days"],1)
+        self.assertEqual(source[1]["origin_type"],"UNVERIFIED_EXTERNAL")
         self.assertNotEqual(source[1]["model_clock_coordinate"],source[1]["occurred_at"])
 
     def test_current_rating_does_not_enter_its_own_prediction(self):

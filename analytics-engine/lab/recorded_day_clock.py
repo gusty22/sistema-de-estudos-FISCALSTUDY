@@ -96,7 +96,7 @@ def validate_declared_prefixes(payload,rows):
             times.append(row["source_delta_t"]);ratings.append(row["rating"])
     return True
 
-def replay_recorded_clock(rows,source_id,basis):
+def replay_recorded_clock(rows,source_id,basis,origin_type="UNVERIFIED_EXTERNAL"):
     if basis not in CLOCKS or version("fsrs")!="6.3.2":
         raise ValueError("Unregistered clock or official package version")
     from fsrs import Scheduler,Card,Rating
@@ -120,7 +120,7 @@ def replay_recorded_clock(rows,source_id,basis):
             question_id=pseudonym(source_id,key),occurred_at=actual.isoformat().replace("+00:00","Z"),
             is_correct=row["outcome"],predicted_probability="" if probability is None else probability,
             elapsed_days="" if elapsed is None else elapsed,rating=row["rating"],
-            origin_type="PUBLIC_HUMAN_DATASET",fsrs_model_version="py-fsrs-6.3.2-defaults-"+basis,
+            origin_type=origin_type,fsrs_model_version="py-fsrs-6.3.2-defaults-"+basis,
             source_event_index=row["sequence"],source_interval_days=int(delta),
             model_elapsed_days="" if model_elapsed is None else model_elapsed,prediction_status=status,
             clock_basis=basis,model_clock_coordinate=model_time.isoformat().replace("+00:00","Z")))
