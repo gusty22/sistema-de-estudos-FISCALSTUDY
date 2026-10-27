@@ -6,8 +6,16 @@ if (!requireNamespace("jsonlite", quietly = TRUE)) stop("jsonlite unavailable; c
 source("R/descriptive_analysis.R")
 source("R/baselines.R")
 source("R/provenance.R")
+source("lab/temporal_extensions.R")
 args <- commandArgs(trailingOnly = TRUE)
 if (length(args) != 3L) stop("Expected observations.csv predictions.csv input-manifest.json")
+allowed <- paste0(normalizePath("tests/fixtures/learner_lab", winslash="/", mustWork=TRUE), "/")
+for (path in args) {
+  resolved <- if (file.exists(path)) normalizePath(path, winslash="/", mustWork=TRUE) else
+    paste0(normalizePath(dirname(path), winslash="/", mustWork=TRUE), "/", basename(path))
+  if (!startsWith(tolower(resolved), tolower(allowed))) stop("Adapter paths must remain in synthetic fixtures")
+}
+if (file.exists(args[2]) || file.exists(paste0(args[2], ".status.json"))) stop("Refusing to overwrite experimental predictions")
 contract <- jsonlite::fromJSON("lab/event_contract.json")
 input <- utils::read.csv(args[1], colClasses = "character", na.strings = "", stringsAsFactors = FALSE)
 manifest <- jsonlite::fromJSON(args[3])
@@ -48,12 +56,16 @@ for (student in sort(unique(input$student_id))) {
   selected <- input[input$student_id == student & eligible, , drop = FALSE]
   # Reuses the actual production R baseline helper, without passing latent states.
   result <- evaluate_baselines_temporally(selected, initial_training_observations = 10L)
+  result <- append_temporal_moving_average(result, selected)
   statuses[[student]] <- list(status = result$status, observed = sum(input$student_id == student),
     eligible = nrow(selected), excluded = sum(input$student_id == student & !eligible),
     prediction_count = result$prediction_count, is_validated = FALSE, can_apply = FALSE)
   if (nrow(result$predictions) > 0L) {
     rows <- result$predictions
     rows$student_id <- student
+    rows$model_history_item_exposure <- rows$item_exposure
+    prior <- as.numeric(input$prior_exposures[match(rows$event_id, input$event_id)])
+    rows$item_exposure <- ifelse(prior == 0, "RECORDED_FIRST_EXPOSURE", "RECORDED_PREVIOUS_EXPOSURE")
     predictions[[length(predictions) + 1L]] <- rows
   }
 }

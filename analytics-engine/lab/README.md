@@ -8,7 +8,7 @@ Requisitos já usados nesta sessão: Python 3.13.7 (somente biblioteca padrão),
 
 A partir de analytics-engine:
 
-    python -m unittest discover -s lab -p test_lab.py -v
+    python -m unittest discover -s lab -p "test_*.py" -v
     python lab/run_experiment.py --seeds 101,131,151,181,211 --output tests/fixtures/learner_lab/minha-execucao
 
 No Windows, se necessário, defina FISCALSTUDY_RSCRIPT com o caminho do Rscript.exe e FISCALSTUDY_R_LIBS com a biblioteca R já existente. O adaptador não instala pacotes. Um alias python da Windows Store pode não funcionar no sandbox: utilize o executável real.
@@ -69,4 +69,18 @@ O simulador tem populações e parâmetros escolhidos, apenas duas habilidades e
 3. Amostras públicas autorizadas, mapeamento e inspeção de duplicatas/ausência antes de validação retrospectiva.
 4. Somente depois: modelos complementares e validação futura pessoal.
 
-Não fazer merge automático. Esta branch é empilhada sobre #23. As alterações Java de #24 permanecem separadas; o laboratório não habilita autoridade decisória nem depende de injetar pesos no planejador.
+Os PRs #25 e #26 foram integrados à main; a continuação parte de f77b3a4. Não fazer merge automático das novas alterações. O laboratório não habilita autoridade decisória nem depende de injetar pesos no planejador.
+
+## Comparação ampliada (incremento 2)
+
+Consulte BASELINE_PROTOCOL.md para hipóteses, treinamento, cobertura e limites. A extensão R inclui a média móvel existente de cinco observações. pybkt_adapter.py usa a biblioteca pyBKT real com parâmetros congelados no warmup individual e histórico estritamente anterior. Não interpreta esse estado como domínio conceitual ou retenção.
+
+Instalação opcional, em ambiente virtual exclusivo:
+
+    python -m pip install -r lab/requirements-lab-lock.txt
+    python lab/run_experiment.py --with-pybkt --seeds 401,431,461,491,521 --output tests/fixtures/learner_lab/run-comparison
+    python lab/audit_run.py tests/fixtures/learner_lab/run-comparison
+
+Não há download ou instalação automática ao rodar experimentos. O lock registra o ambiente efetivamente usado; requirements-lab.txt registra as dependências diretas. pyBKT 1.4.3 falhou com scikit-learn 1.9.1 durante importação, por AttributeError na descoberta de métricas. O protocolo fixa scikit-learn 1.6.1 e não altera o código da biblioteca para ocultar a incompatibilidade.
+
+O manifesto inclui os arquivos da extensão R; o status externo inclui versões e hashes das fontes pyBKT instaladas. audit_run.py verifica arquivos e vínculos dos eventos em modo somente leitura. Não confundir integridade de hashes com autenticidade ou validade científica. Os dois adapters recusam saídas existentes e caminhos fora das fixtures sintéticas. A comparação informa cobertura e usa pares de eventos; cobertura incompleta impede declarar superioridade. summary.json inclui estratos de intervalo registrado e de familiaridade por identidade do item, sem alegar transferência.

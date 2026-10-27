@@ -1,0 +1,480 @@
+{
+  "schema_version": "learner_lab_reference_v1",
+  "source_kind": "SYNTHETIC_BENCHMARK",
+  "tested_commit": "dfed9359010f93ad68853bfa20522fe29ae2a361",
+  "workflow_run_url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40430980241",
+  "tests": {
+    "laboratory": 23,
+    "laboratory_failures": 0,
+    "r_assertions": 600,
+    "r_failures": 0
+  },
+  "replay": {
+    "files_compared": 50,
+    "differences": 0,
+    "manifest_sha256": "07af6256fe87a9cb9a1f0ddfb44c26e38c31bdf842a09a8bb53371ca63b0e9ba"
+  },
+  "artifact": {
+    "id": 12701638935,
+    "digest": "sha256:794805f19b5c0ca2d01ce1cbd2b1ca4d8648a9a15dd768b7d35d1e63dba38a82",
+    "expires_at": "2026-11-03T01:13:55Z"
+  },
+  "can_apply": false,
+  "comparisons": {
+    "GLOBAL_HISTORICAL_MEAN__VS__FIXED_020": {
+      "classification": "APROVADO_SOMENTE_NESTE_SIMULADOR",
+      "complete_event_coverage": true,
+      "coverage": [
+        {
+          "common": 382,
+          "left": 382,
+          "right": 382,
+          "seed": 401
+        },
+        {
+          "common": 390,
+          "left": 390,
+          "right": 390,
+          "seed": 431
+        },
+        {
+          "common": 373,
+          "left": 373,
+          "right": 373,
+          "seed": 461
+        },
+        {
+          "common": 382,
+          "left": 382,
+          "right": 382,
+          "seed": 491
+        },
+        {
+          "common": 377,
+          "left": 377,
+          "right": 377,
+          "seed": 521
+        }
+      ],
+      "paired_seed_count": 5,
+      "seed_cluster_bootstrap_intervals": {
+        "brier": [
+          -0.20713083292433354,
+          -0.1837688129492791
+        ],
+        "log_loss": [
+          -0.4867921761830595,
+          -0.4380954661888098
+        ]
+      },
+      "seed_paired_differences": {
+        "brier": [
+          -0.2094304723744694,
+          -0.20600872989462365,
+          -0.1769621988149944,
+          -0.18318170821793078,
+          -0.2047757600834816
+        ],
+        "log_loss": [
+          -0.48883854723728937,
+          -0.4862042684407487,
+          -0.42308858752623946,
+          -0.43733631880610946,
+          -0.48387524955922123
+        ]
+      }
+    },
+    "GLOBAL_HISTORICAL_MEAN__VS__FIXED_050": {
+      "classification": "APROVADO_SOMENTE_NESTE_SIMULADOR",
+      "complete_event_coverage": true,
+      "coverage": [
+        {
+          "common": 382,
+          "left": 382,
+          "right": 382,
+          "seed": 401
+        },
+        {
+          "common": 390,
+          "left": 390,
+          "right": 390,
+          "seed": 431
+        },
+        {
+          "common": 373,
+          "left": 373,
+          "right": 373,
+          "seed": 461
+        },
+        {
+          "common": 382,
+          "left": 382,
+          "right": 382,
+          "seed": 491
+        },
+        {
+          "common": 377,
+          "left": 377,
+          "right": 377,
+          "seed": 521
+        }
+      ],
+      "paired_seed_count": 5,
+      "seed_cluster_bootstrap_intervals": {
+        "brier": [
+          -0.02161305699368531,
+          -0.0038796281908313303
+        ],
+        "log_loss": [
+          -0.04345587437867413,
+          -0.006626524326325933
+        ]
+      },
+      "seed_paired_differences": {
+        "brier": [
+          -0.022048273421589742,
+          -0.020624114510008174,
+          -0.0009032175817502985,
+          0.0010591294784043637,
+          -0.021672311807619443
+        ],
+        "log_loss": [
+          -0.04069434045335918,
+          -0.0426754597177359,
+          -0.0011065688664154694,
+          0.0035498023175072335,
+          -0.04561705600226984
+        ]
+      }
+    },
+    "MOVING_AVERAGE_5__VS__GLOBAL_HISTORICAL_MEAN": {
+      "classification": "REPROVADO_NESTE_SIMULADOR",
+      "complete_event_coverage": true,
+      "coverage": [
+        {
+          "common": 382,
+          "left": 382,
+          "right": 382,
+          "seed": 401
+        },
+        {
+          "common": 390,
+          "left": 390,
+          "right": 390,
+          "seed": 431
+        },
+        {
+          "common": 373,
+          "left": 373,
+          "right": 373,
+          "seed": 461
+        },
+        {
+          "common": 382,
+          "left": 382,
+          "right": 382,
+          "seed": 491
+        },
+        {
+          "common": 377,
+          "left": 377,
+          "right": 377,
+          "seed": 521
+        }
+      ],
+      "paired_seed_count": 5,
+      "seed_cluster_bootstrap_intervals": {
+        "brier": [
+          0.008272817841446779,
+          0.02204553358315691
+        ],
+        "log_loss": [
+          0.8803299308888952,
+          1.3463197307465897
+        ]
+      },
+      "seed_paired_differences": {
+        "brier": [
+          0.009744608500123791,
+          0.02354719143308509,
+          0.018356300691669908,
+          0.003076996176045954,
+          0.022388492178972236
+        ],
+        "log_loss": [
+          1.258587402910372,
+          1.5189381719493764,
+          0.8078367309426989,
+          1.1765475040134512,
+          0.8047143442728139
+        ]
+      }
+    },
+    "PYBKT_FROZEN_WARMUP__VS__GLOBAL_HISTORICAL_MEAN": {
+      "classification": "INCONCLUSIVO",
+      "complete_event_coverage": false,
+      "coverage": [
+        {
+          "common": 382,
+          "left": 382,
+          "right": 382,
+          "seed": 401
+        },
+        {
+          "common": 388,
+          "left": 388,
+          "right": 390,
+          "seed": 431
+        },
+        {
+          "common": 373,
+          "left": 373,
+          "right": 373,
+          "seed": 461
+        },
+        {
+          "common": 382,
+          "left": 382,
+          "right": 382,
+          "seed": 491
+        },
+        {
+          "common": 377,
+          "left": 377,
+          "right": 377,
+          "seed": 521
+        }
+      ],
+      "paired_seed_count": 5,
+      "seed_cluster_bootstrap_intervals": {
+        "brier": [
+          0.06579299917102588,
+          0.10864146053154751
+        ],
+        "log_loss": [
+          2.5499070129345056,
+          4.226871705479757
+        ]
+      },
+      "seed_paired_differences": {
+        "brier": [
+          0.07314138031356285,
+          0.13312130195561855,
+          0.06778507629668815,
+          0.06012673147409514,
+          0.0837166653167867
+        ],
+        "log_loss": [
+          4.732962734272868,
+          3.88947768628435,
+          1.8818218220200151,
+          3.360821200573934,
+          3.552034799306241
+        ]
+      }
+    },
+    "SMOOTHED_TOPIC_MEAN__VS__GLOBAL_HISTORICAL_MEAN": {
+      "classification": "REPROVADO_NESTE_SIMULADOR",
+      "complete_event_coverage": true,
+      "coverage": [
+        {
+          "common": 382,
+          "left": 382,
+          "right": 382,
+          "seed": 401
+        },
+        {
+          "common": 390,
+          "left": 390,
+          "right": 390,
+          "seed": 431
+        },
+        {
+          "common": 373,
+          "left": 373,
+          "right": 373,
+          "seed": 461
+        },
+        {
+          "common": 382,
+          "left": 382,
+          "right": 382,
+          "seed": 491
+        },
+        {
+          "common": 377,
+          "left": 377,
+          "right": 377,
+          "seed": 521
+        }
+      ],
+      "paired_seed_count": 5,
+      "seed_cluster_bootstrap_intervals": {
+        "brier": [
+          0.0004835151413089045,
+          0.0034269535861226885
+        ],
+        "log_loss": [
+          0.0029875005307643753,
+          0.010098770662526246
+        ]
+      },
+      "seed_paired_differences": {
+        "brier": [
+          -0.000052701653194459075,
+          0.0008426612330846295,
+          0.005015031820248289,
+          0.0010448362349342877,
+          0.001530844431193612
+        ],
+        "log_loss": [
+          0.0036123175736316737,
+          0.004354154703110735,
+          0.012851243036956173,
+          0.00832780662813104,
+          0.001679356401723897
+        ]
+      }
+    }
+  },
+  "events": 2670,
+  "external": [
+    {
+      "numerical_unavailable": 0,
+      "replicate": "replicate-00",
+      "statuses": {
+        "s00": "EXPLORATORY_FROZEN_PREFIX",
+        "s01": "EXPLORATORY_FROZEN_PREFIX",
+        "s02": "EXPLORATORY_FROZEN_PREFIX",
+        "s03": "EXPLORATORY_FROZEN_PREFIX",
+        "s04": "EXPLORATORY_FROZEN_PREFIX",
+        "s05": "EXPLORATORY_FROZEN_PREFIX",
+        "s06": "EXPLORATORY_FROZEN_PREFIX",
+        "s07": "INSUFFICIENT_HISTORY",
+        "s08": "EXPLORATORY_FROZEN_PREFIX",
+        "s09": "EXPLORATORY_FROZEN_PREFIX",
+        "s10": "EXPLORATORY_FROZEN_PREFIX",
+        "s11": "EXPLORATORY_FROZEN_PREFIX"
+      }
+    },
+    {
+      "numerical_unavailable": 2,
+      "replicate": "replicate-01",
+      "statuses": {
+        "s00": "EXPLORATORY_FROZEN_PREFIX",
+        "s01": "EXPLORATORY_FROZEN_PREFIX",
+        "s02": "EXPLORATORY_FROZEN_PREFIX",
+        "s03": "EXPLORATORY_FROZEN_PREFIX",
+        "s04": "EXPLORATORY_FROZEN_PREFIX",
+        "s05": "EXPLORATORY_FROZEN_PREFIX",
+        "s06": "EXPLORATORY_FROZEN_PREFIX",
+        "s07": "EXPLORATORY_FROZEN_PREFIX",
+        "s08": "INSUFFICIENT_HISTORY",
+        "s09": "EXPLORATORY_FROZEN_PREFIX",
+        "s10": "EXPLORATORY_FROZEN_PREFIX",
+        "s11": "PARTIAL_NUMERICAL_UNAVAILABILITY"
+      }
+    },
+    {
+      "numerical_unavailable": 0,
+      "replicate": "replicate-02",
+      "statuses": {
+        "s00": "EXPLORATORY_FROZEN_PREFIX",
+        "s01": "EXPLORATORY_FROZEN_PREFIX",
+        "s02": "EXPLORATORY_FROZEN_PREFIX",
+        "s03": "EXPLORATORY_FROZEN_PREFIX",
+        "s04": "INSUFFICIENT_HISTORY",
+        "s05": "EXPLORATORY_FROZEN_PREFIX",
+        "s06": "EXPLORATORY_FROZEN_PREFIX",
+        "s07": "EXPLORATORY_FROZEN_PREFIX",
+        "s08": "EXPLORATORY_FROZEN_PREFIX",
+        "s09": "EXPLORATORY_FROZEN_PREFIX",
+        "s10": "EXPLORATORY_FROZEN_PREFIX",
+        "s11": "EXPLORATORY_FROZEN_PREFIX"
+      }
+    },
+    {
+      "numerical_unavailable": 0,
+      "replicate": "replicate-03",
+      "statuses": {
+        "s00": "EXPLORATORY_FROZEN_PREFIX",
+        "s01": "EXPLORATORY_FROZEN_PREFIX",
+        "s02": "INSUFFICIENT_HISTORY",
+        "s03": "EXPLORATORY_FROZEN_PREFIX",
+        "s04": "EXPLORATORY_FROZEN_PREFIX",
+        "s05": "EXPLORATORY_FROZEN_PREFIX",
+        "s06": "EXPLORATORY_FROZEN_PREFIX",
+        "s07": "EXPLORATORY_FROZEN_PREFIX",
+        "s08": "EXPLORATORY_FROZEN_PREFIX",
+        "s09": "EXPLORATORY_FROZEN_PREFIX",
+        "s10": "EXPLORATORY_FROZEN_PREFIX",
+        "s11": "EXPLORATORY_FROZEN_PREFIX"
+      }
+    },
+    {
+      "numerical_unavailable": 0,
+      "replicate": "replicate-04",
+      "statuses": {
+        "s00": "EXPLORATORY_FROZEN_PREFIX",
+        "s01": "EXPLORATORY_FROZEN_PREFIX",
+        "s02": "EXPLORATORY_FROZEN_PREFIX",
+        "s03": "EXPLORATORY_FROZEN_PREFIX",
+        "s04": "EXPLORATORY_FROZEN_PREFIX",
+        "s05": "EXPLORATORY_FROZEN_PREFIX",
+        "s06": "EXPLORATORY_FROZEN_PREFIX",
+        "s07": "EXPLORATORY_FROZEN_PREFIX",
+        "s08": "INSUFFICIENT_HISTORY",
+        "s09": "EXPLORATORY_FROZEN_PREFIX",
+        "s10": "EXPLORATORY_FROZEN_PREFIX",
+        "s11": "EXPLORATORY_FROZEN_PREFIX"
+      }
+    }
+  ],
+  "metrics": {
+    "FIXED_020": {
+      "brier": 0.43327731092436983,
+      "calibration_bias": -0.4554621848739496,
+      "log_loss": 1.1318070821322892,
+      "n": 1904,
+      "probability_rmse": 0.48669414463577637
+    },
+    "FIXED_050": {
+      "brier": 0.25,
+      "calibration_bias": -0.15546218487394958,
+      "log_loss": 0.6931471805599453,
+      "n": 1904,
+      "probability_rmse": 0.23739337784286324
+    },
+    "GLOBAL_HISTORICAL_MEAN": {
+      "brier": 0.23709631336414633,
+      "calibration_bias": -0.12095798052656255,
+      "log_loss": 0.6677044162963732,
+      "n": 1904,
+      "probability_rmse": 0.2108717143004228
+    },
+    "MOVING_AVERAGE_5": {
+      "brier": 0.25252100840336134,
+      "calibration_bias": -0.020168067226890747,
+      "log_loss": 1.7849879404232825,
+      "n": 1904,
+      "probability_rmse": 0.24915605067999638
+    },
+    "PYBKT_FROZEN_WARMUP": {
+      "brier": 0.3209489365561965,
+      "calibration_bias": -0.134512067610477,
+      "log_loss": 4.159895928471208,
+      "n": 1902,
+      "probability_rmse": 0.3567514975423018
+    },
+    "SMOOTHED_TOPIC_MEAN": {
+      "brier": 0.2387535447247767,
+      "calibration_bias": -0.12700937401772516,
+      "log_loss": 0.6738419576805755,
+      "n": 1904,
+      "probability_rmse": 0.21902579628672003
+    }
+  },
+  "targets": 1904,
+  "is_empirically_validated": false,
+  "can_schedule": false
+}

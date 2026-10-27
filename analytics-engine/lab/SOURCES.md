@@ -29,3 +29,7 @@ Nenhuma estatística de missingness, duplicidade ou identificabilidade individua
 | [Adaptive E-Learning](https://github.com/Bentheghost/Adaptive-Learning-System) | README: agentes Gemini, BKT e prioridade days_since*(1-level). | MIT no repo; dependência de serviço generativo. | Essa prioridade não é probabilidade de esquecimento calibrada. Não copiar como Memory Twin; maturidade empírica/testes não foram homologados. NOT_EXECUTED. |
 
 A ausência de pacote não foi convertida em sucesso por substituição silenciosa. Versões descritas são as dos arquivos oficiais consultados, não versões instaladas nem garantias de compatibilidade. A consulta às fontes não autoriza redistribuir dados ou pesos sob outras licenças.
+
+## Atualização de execução — incremento 2
+
+O inventário acima registra a investigação inicial. A continuação BASELINE_PROTOCOL.md adiciona o adaptador real pyBKT, distribuição PyPI 1.4.3 (MIT), executado em ambiente isolado com scikit-learn 1.6.1. O commit upstream anteriormente consultado não é declarado idêntico a essa distribuição. O status de cada execução registra versão e hashes das fontes instaladas; parâmetros permanecem exploratórios. A combinação com scikit-learn 1.9.1 falhou na importação e não produziu resultados válidos. Dados públicos e demais projetos não foram executados por esta atualização.
