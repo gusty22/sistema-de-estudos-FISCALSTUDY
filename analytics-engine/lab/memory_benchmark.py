@@ -85,6 +85,11 @@ def validate_memory(rows):
         if row["fsrs_evidence_status"]=="UNCALIBRATED_ITEM_ESTIMATE":
             if p=="" or not row["fsrs_model_version"]:
                 raise ValueError("Mature state missing pre-update prediction")
+            stability=float(row["fsrs_stability_pre_update"])
+            difficulty=float(row["fsrs_difficulty_pre_update"])
+            if (not math.isfinite(stability) or stability<=0 or
+                not math.isfinite(difficulty) or not 1<=difficulty<=10):
+                raise ValueError("Invalid official memory state")
         elif row["fsrs_evidence_status"]!="COLD_START_NO_PREVIOUS_REVIEW" or p!="":
             raise ValueError("Ambiguous cold start")
     return True

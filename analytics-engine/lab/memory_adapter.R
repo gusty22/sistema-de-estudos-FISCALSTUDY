@@ -24,6 +24,7 @@ fields <- c("event_id","student_id","question_id","occurred_at","origin_type",
 if (!identical(names(input),fields)) stop("Forbidden/missing memory column")
 if (!identical(manifest$contract_version,"memory_lab_events_v1") ||
     !identical(manifest$source_kind,"SYNTHETIC_BENCHMARK") ||
+    !identical(manifest$can_apply,FALSE) || !identical(manifest$can_schedule,FALSE) ||
     !identical(manifest$input_sha256,compute_file_sha256(args[1])) ||
     nrow(input)!=manifest$row_count || nrow(input)==0L) stop("Invalid memory snapshot")
 for (field in c("event_id","student_id","question_id")) {
@@ -36,6 +37,11 @@ if (any(!input$origin_type %in% "SYNTHETIC_BENCHMARK") ||
 event_time <- parse_evidence_timestamp(input$occurred_at)
 prediction_time <- parse_evidence_timestamp(input$fsrs_prediction_timestamp)
 if (any(is.na(event_time) | is.na(prediction_time) | prediction_time>event_time)) stop("Invalid prediction time")
+mature <- input$fsrs_evidence_status %in% "UNCALIBRATED_ITEM_ESTIMATE"
+if (any(!input$fsrs_evidence_status %in% c("UNCALIBRATED_ITEM_ESTIMATE","COLD_START_NO_PREVIOUS_REVIEW"))) stop("Invalid memory evidence status")
+stability <- suppressWarnings(as.numeric(input$fsrs_stability_pre_update))
+difficulty <- suppressWarnings(as.numeric(input$fsrs_difficulty_pre_update))
+if (any(mature & (!is.finite(stability) | stability<=0 | !is.finite(difficulty) | difficulty<1 | difficulty>10))) stop("Invalid official memory state")
 aggregate <- calculate_retrieval_surprise(input)
 students <- lapply(sort(unique(input$student_id)),function(id)
   calculate_retrieval_surprise(input[input$student_id==id,,drop=FALSE]))

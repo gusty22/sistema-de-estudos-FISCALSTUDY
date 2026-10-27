@@ -40,12 +40,13 @@ class MemoryTests(unittest.TestCase):
         self.assertTrue(all(known[r["event_id"]]["retrieval"]==1 for r in cold))
 
     def test_bad_id_future_time_and_latent_column_rejected(self):
-        events,_,=generate_memory(23,FSRSReference(),items=1)
+        events,_=generate_memory(23,FSRSReference(),items=1)
         duplicate=copy.deepcopy(events);duplicate[1]["event_id"]=duplicate[0]["event_id"]
         future=copy.deepcopy(events);future[1]["fsrs_prediction_timestamp"]="2030-01-01T00:00:00Z"
         latent=copy.deepcopy(events);latent[1]["retrieval"]=.99
         naive=copy.deepcopy(events);naive[1]["occurred_at"]="2026-01-02T00:00:00"
-        for rows in (duplicate,future,latent,naive):
+        invalid_state=copy.deepcopy(events);invalid_state[1]["fsrs_stability_pre_update"]=-1
+        for rows in (duplicate,future,latent,naive,invalid_state):
             with self.assertRaises(ValueError):
                 validate_memory(rows)
 

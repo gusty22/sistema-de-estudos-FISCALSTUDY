@@ -38,7 +38,7 @@ Caminhos confinados a tests/fixtures/learner_lab; recusa sobrescrever execução
 | gabarito_status, is_correct | Resultado observado binário | DEFINITIVO e true/false; recordação experimental |
 | fsrs_model_version | Procedência de modelo | Identifica biblioteca/referência; não implica calibração |
 | fsrs_prediction_timestamp | Instante da estimativa | Anterior ou igual ao evento; captura antes do resultado |
-| fsrs_evidence_status | Estado do modelo | UNCAlIBRATED_ITEM_ESTIMATE (grafia no CSV: UNCALIBRATED_ITEM_ESTIMATE) ou COLD_START_NO_PREVIOUS_REVIEW |
+| fsrs_evidence_status | Estado do modelo | UNCALIBRATED_ITEM_ESTIMATE ou COLD_START_NO_PREVIOUS_REVIEW |
 | fsrs_retrievability_pre_update | Estimativa oficial [0,1] | Ausente no cold start; nunca igualar a domínio |
 | fsrs_stability_pre_update | Estimativa oficial; dias | Ausente no cold start; não é meia-vida verdadeira do gerador |
 | fsrs_difficulty_pre_update | Estimativa oficial; escala FSRS | Ausente no cold start; não é dificuldade conceitual medida |
