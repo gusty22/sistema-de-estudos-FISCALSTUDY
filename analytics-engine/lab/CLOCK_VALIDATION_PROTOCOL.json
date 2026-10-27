@@ -1,0 +1,41 @@
+{
+  "version": "recorded-day-clock-v1",
+  "source_kind": "PUBLIC_HUMAN_DATASET",
+  "dataset": "open-spaced-repetition/fsrs-dataset",
+  "revision": "ae96575728d364265a75f2447fe7b7fa389ba96c",
+  "prior_excluded_files": [
+    "v4/revlog_history-e37d9b3.tsv",
+    "v4/revlog_history-937810d.tsv",
+    "v4/revlog_history-7c3a69d.tsv",
+    "v4/revlog_history-46b2aa1.tsv",
+    "v4/revlog_history-03659d3.tsv",
+    "v4/revlog_history-06a3422.tsv",
+    "v4/revlog_history-7948290.tsv",
+    "v4/revlog_history-d1260ae.tsv",
+    "v4/revlog_history-77e570b.tsv",
+    "v4/revlog_history-f0feefe.tsv",
+    "v4/revlog_history-a7932bc.tsv",
+    "v4/revlog_history-df33889.tsv"
+  ],
+  "selection": "12 midpoint byte-size ranks in remaining eligible 50000..1000000-byte frame, after excluding all PR33 files; full histories",
+  "clocks": [
+    "UTC_WHOLE_24H",
+    "SOURCE_RECORDED_DAYS"
+  ],
+  "model": "Official py-fsrs 6.3.2 defaults; no parameter optimization, fuzzing disabled, learning/relearning steps empty as previous benchmark",
+  "actual_time": "occurred_at always original epoch timestamp converted to UTC, never changed",
+  "model_time": "SOURCE clock coordinate anchored at first observed timestamp per item plus cumulative recorded delta_t; coordinate is DERIVED, not an observed timestamp",
+  "scoring_domain": "i>1 and recorded delta_t>=1; chosen before new outcomes; all preceding outcomes still update FSRS and online baseline",
+  "same_events": "Both arms have identical scoring eligibility and temporal train/validation/test batches",
+  "split": "Per student: 60% TRAIN,20% VALIDATION,20% TEST on eligible timestamps; no test fitting",
+  "primary": "SOURCE_RECORDED_DAYS::FSRS_DEFAULT vs UTC_WHOLE_24H::FSRS_DEFAULT",
+  "acceptance": "At least five paired collection IDs; complete target coverage; both paired-collection bootstrap upper bounds <0 for Brier and log loss",
+  "technical_conformance": "Source-arm API integer elapsed days must equal the recorded interval; does not prove original timezone or personal predictive calibration",
+  "secondaries": "Within-source-clock individual vs global, numerical-guard and online-personal baselines; descriptive and conditional",
+  "uncertainty": "Paired source-collection bootstrap; item bootstrap for calibration coefficients remains conditional on selected penalty/global fit",
+  "pretraining_overlap": "UNKNOWN",
+  "personal_validation": "NOT_EXECUTED",
+  "causal_policy_effectiveness": "NOT_EXECUTED",
+  "can_apply": false,
+  "can_schedule": false
+}

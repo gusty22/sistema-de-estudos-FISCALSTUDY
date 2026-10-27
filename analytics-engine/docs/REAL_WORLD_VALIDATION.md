@@ -150,3 +150,25 @@ The report now retains statistical contrast values but labels memory comparisons
 Minor report-label limitation: the shared comparison uncertainty text mentions donor/overlapping folds; that qualification applies to memory calibration. ASSISTments actually uses only within-student prequential models and a paired-student bootstrap. The computation is unchanged and documented separately; no ASSISTments donor fit is claimed.
 
 The final documentation/archive commit changes no analytical code or workflow after these executions. No production data, FSRS equation, planner authority, credentials or main merge were changed.
+
+
+## Registered continuation after PR33: untouched-cohort clock comparison
+
+This protocol is fixed in lab/CLOCK_VALIDATION_PROTOCOL.json BEFORE new outcomes. Existing PR33 data remain diagnostic and are NOT retuned. Twelve complete files are selected by midpoint size ranks after excluding all twelve PR33 files from the same pinned source/license frame. Source selection metadata are saved before outcome files. Full per-item sequences and the declared t_history/r_history prefixes must agree; fractional intervals are rejected by this recorded-whole-day protocol.
+
+Two SDK arms use identical observed events and actual UTC chronology:
+- UTC_WHOLE_24H reproduces the prior SDK behavior.
+- SOURCE_RECORDED_DAYS anchors a model-only coordinate at each item's first observed instant, then advances it by that item's recorded delta_t. This coordinate is DERIVED, not an observed timestamp or recovered timezone. Both get_card_retrievability and review_card remain official py-fsrs 6.3.2 with unchanged default parameters. No R forgetting formula is added.
+
+Primary target domain is repeat events with recorded delta_t>=1, registered before reading the new cohort. Both arms score the SAME domain and use the same actual-time train/validation/test batches. All cold-start and zero-day events still update canonical states and the historical baseline after their event, but zero-day events are explicitly outside this long-term scoring domain. This is not post-hoc removal of the prior cohort's difficult events.
+
+The primary paired comparison is SOURCE_RECORDED_DAYS raw FSRS versus UTC_WHOLE_24H raw FSRS on identical future targets. At least five paired collection IDs, complete coverage and negative upper bounds for both Brier and log-loss differences are required for conditional improvement. This does not establish personal calibration, conceptual understanding, correct original timezone, causal learning, or equivalence with Java/Anki scheduling. Default-weight pretraining overlap remains unknown.
+
+Within each arm the existing R individual/global/guard/online-baseline experiment remains available, with prior-only donor fits, frozen coefficients and validation-only regularization. Semantic conformance and predictive quality are assessed separately. can_apply and can_schedule remain false. Data, formulas and labels are never changed to obtain a passing metric.
+
+Run from analytics-engine:
+
+    python lab/recorded_day_experiment.py --download --output lab/runs/recorded-day-first
+    python lab/recorded_day_experiment.py --source-run lab/runs/recorded-day-first --output lab/runs/recorded-day-replay
+
+Choose NEW run directories. Raw human files are not committed/uploaded; aggregate manifests and scores are retained. Current execution is pending and must not be replaced by historical PR33 results.
