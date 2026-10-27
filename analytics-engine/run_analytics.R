@@ -13,20 +13,31 @@ output_root <- Sys.getenv("FISCALSTUDY_ANALYTICS_OUTPUT", "output")
 # Pipeline Principal de Execução Analítica
 # Projeto: FiscalStudy Analytics (R >= 4.0.0)
 
+# source(file, encoding=...) transcodes through the native locale, which can
+# truncate UTF-8 modules under LC_ALL=C. Parse declared UTF-8 text directly.
+source_utf8 <- function(path) {
+  contents <- withCallingHandlers(readLines(path,warn=FALSE,encoding="UTF-8"),
+    warning=function(w) stop("Invalid UTF-8 R module: ",conditionMessage(w),call.=FALSE))
+  if (any(!validUTF8(contents))) stop("R module is not valid UTF-8: ",path)
+  expressions <- parse(text=contents,encoding="UTF-8",keep.source=FALSE)
+  for (expression in expressions) eval(expression,envir=.GlobalEnv)
+  invisible(NULL)
+}
+
 suppressPackageStartupMessages({
-  source("R/validation.R")
-  source("R/descriptive_analysis.R")
-  source("R/retention_analysis.R")
-  source("R/retrieval_diagnostics.R")
-  source("R/visualization.R")
-  source("R/export_results.R")
-  source("R/learning_profile.R")
-  source("R/analytical_signals.R")
-  source("R/intervention_analysis.R")
-  source("R/recommendation_evaluation.R")
-  source("R/adapter.R")
-  source("R/baselines.R")
-  if (file.exists("R/provenance.R")) source("R/provenance.R")
+  source_utf8("R/validation.R")
+  source_utf8("R/descriptive_analysis.R")
+  source_utf8("R/retention_analysis.R")
+  source_utf8("R/retrieval_diagnostics.R")
+  source_utf8("R/visualization.R")
+  source_utf8("R/export_results.R")
+  source_utf8("R/learning_profile.R")
+  source_utf8("R/analytical_signals.R")
+  source_utf8("R/intervention_analysis.R")
+  source_utf8("R/recommendation_evaluation.R")
+  source_utf8("R/adapter.R")
+  source_utf8("R/baselines.R")
+  if (file.exists("R/provenance.R")) source_utf8("R/provenance.R")
 })
 
 main <- function() {
@@ -60,11 +71,11 @@ main <- function() {
   # Processamento de argumentos de linha de comando
   if (length(args) == 1 && file.exists(args[1])) {
     # Suporte a arquivo único de exportação operacional
-    test_hdr <- utils::read.csv(args[1], nrows = 1, stringsAsFactors = FALSE)
+    test_hdr <- read_utf8_csv(args[1], nrows = 1, stringsAsFactors = FALSE)
     if ("gabarito_status" %in% names(test_hdr)) {
       cat(sprintf(">>> Detectada exportacao operacional do FiscalStudy: %s\n", args[1]))
       cat(">>> Auditando procedencia e adaptando esquema via R/adapter.R...\n")
-      op_raw <- utils::read.csv(args[1], stringsAsFactors = FALSE)
+      op_raw <- read_utf8_csv(args[1], stringsAsFactors = FALSE)
       manifest_path <- Sys.getenv("FISCALSTUDY_EXPORT_MANIFEST", "")
       explicit_manifest <- nzchar(manifest_path)
       if (!explicit_manifest) manifest_path <- file.path(dirname(args[1]), "export_manifest.json")
@@ -126,9 +137,9 @@ main <- function() {
       stop("Arquivos de entrada nao encontrados. Abortando pipeline.")
     }
     
-    events_df <- utils::read.csv(events_path, stringsAsFactors = FALSE)
-    questions_df <- utils::read.csv(questions_path, stringsAsFactors = FALSE)
-    interventions_df <- if (file.exists(interventions_path)) utils::read.csv(interventions_path, stringsAsFactors = FALSE) else NULL
+    events_df <- read_utf8_csv(events_path, stringsAsFactors = FALSE)
+    questions_df <- read_utf8_csv(questions_path, stringsAsFactors = FALSE)
+    interventions_df <- if (file.exists(interventions_path)) read_utf8_csv(interventions_path, stringsAsFactors = FALSE) else NULL
     
     # Anexar metadados de procedência
     prov_evt <- if (is_demo) {

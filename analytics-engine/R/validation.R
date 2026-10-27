@@ -3,7 +3,8 @@
 # Projeto: FiscalStudy Analytics (R >= 4.0.0)
 
 if (file.exists("R/provenance.R")) {
-  source("R/provenance.R")
+  if (exists("source_utf8",mode="function")) source_utf8("R/provenance.R") else
+    source("R/provenance.R", encoding="UTF-8")
 }
 
 #' Cria uma estrutura vazia de issues de validação
@@ -419,4 +420,26 @@ validate_events_dataset <- function(events_df, questions_df = NULL) {
       infos = sum(issues$severity == "INFO")
     )
   )
+}
+
+
+# Read the declared UTF-8 CSV contract without converting text to the host locale.
+# Keep the source file unchanged so its manifest checksum remains meaningful.
+read_utf8_csv <- function(path, ...) {
+  connection <- file(path, open="rt")
+  on.exit(close(connection), add=TRUE)
+  repeat {
+    lines <- withCallingHandlers(
+      readLines(connection, n=1000L, warn=FALSE, encoding="UTF-8"),
+      warning=function(w) stop("Invalid UTF-8 CSV input: ", conditionMessage(w), call.=FALSE))
+    if (length(lines)==0L) break
+    if (any(!validUTF8(lines))) stop("CSV input is not valid UTF-8", call.=FALSE)
+  }
+  seek(connection, where=0, origin="start")
+  header <- readLines(connection, n=1L, warn=FALSE, encoding="UTF-8")
+  if (length(header)>0L) {
+    if (startsWith(header[1],intToUtf8(65279L))) header[1] <- substring(header[1],2L)
+    pushBack(header,connection,encoding="UTF-8")
+  }
+  utils::read.csv(connection, encoding="UTF-8", ...)
 }

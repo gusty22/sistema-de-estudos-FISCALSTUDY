@@ -15,7 +15,9 @@ run_pipeline_fixture <- function(input, output, run_id, manifest = "") {
   log <- tempfile(fileext = ".log")
   rscript <- file.path(R.home("bin"), if (.Platform$OS.type == "windows") "Rscript.exe" else "Rscript")
   exit <- system2(rscript, c("run_analytics.R", shQuote(input)), stdout = log, stderr = log)
-  list(exit = exit, log = readLines(log, warn = FALSE))
+  contents <- readLines(log, warn=FALSE)
+  if (exit!=0L) cat(paste(tail(contents,15L),collapse="\n"),"\n")
+  list(exit = exit, log = contents)
 }
 
 pipeline_dir <- tempfile("pipeline-contract-")
@@ -66,6 +68,37 @@ if (fixture_run$exit == 0) {
   assert_false(retrieval$can_apply, "FSRS diagnostic cannot change memory scheduling")
   assert_equal(length(weights$weights), 0L, "Unvalidated model emits no discipline overrides")
   assert_true(all(vapply(summary$metrics, function(m) identical(m$n_observations, 2L) || identical(m$n_observations, 2), logical(1))), "Non-evaluable attempt does not enter effective metric denominators")
+}
+
+
+# A locale-C subprocess must preserve Unicode and emit warning-free metric CSV.
+unicode_df <- pipeline_df
+unicode_label <- "Direito Tribut\u00e1rio: exce\u00e7\u00e3o"
+unicode_df$discipline <- rep(unicode_label,nrow(unicode_df))
+unicode_df$assunto <- rep("Cr\u00e9dito tribut\u00e1rio",nrow(unicode_df))
+unicode_input <- file.path(pipeline_dir,"unicode-attempts.csv")
+unicode_output <- file.path(pipeline_dir,"unicode-results")
+utils::write.csv(unicode_df,unicode_input,row.names=FALSE,fileEncoding="UTF-8")
+unicode_manifest <- pipeline_manifest
+unicode_manifest$checksum <- compute_file_sha256(unicode_input)
+unicode_manifest_path <- file.path(pipeline_dir,"unicode-manifest.json")
+writeLines(jsonlite::toJSON(unicode_manifest,auto_unbox=TRUE),unicode_manifest_path,useBytes=TRUE)
+unicode_run <- run_pipeline_fixture(unicode_input,unicode_output,"fixture-unicode",unicode_manifest_path)
+assert_equal(unicode_run$exit,0L,"UTF-8 operational fixture runs under locale C")
+assert_false(any(grepl("invalid char|invalid input|conversion",unicode_run$log,ignore.case=TRUE)),
+             "Locale C pipeline reports no character conversion warning")
+if (unicode_run$exit==0L) {
+  unicode_metrics <- utils::read.csv(file.path(unicode_output,"metrics/metrics_summary_v1.csv"),encoding="UTF-8",stringsAsFactors=FALSE)
+  time_limitations <- unicode_metrics$limitations[unicode_metrics$metric_name=="median_active_time_seconds"]
+  assert_true(grepl("n\u00e3o mede aten\u00e7\u00e3o",time_limitations,fixed=TRUE),
+              "Locale C export preserves full UTF-8 metric limitations")
+  unicode_profile <- jsonlite::fromJSON(file.path(unicode_output,"metrics/learning_profile_v1.json"))
+  assert_true(unicode_label %in% unicode_profile$mastery_by_discipline$disciplina,
+              "Locale C preserves recorded discipline labels through the full pipeline")
+  assert_true("Cr\u00e9dito tribut\u00e1rio" %in% unicode_profile$mastery_by_topic$assunto,
+              "Locale C preserves recorded topic labels through the full pipeline")
+  unicode_summary <- jsonlite::fromJSON(file.path(unicode_output,"metrics/metrics_summary_v1.json"))
+  assert_false(unicode_summary$is_real_student_data,"Unicode fixture never gains real-student provenance")
 }
 
 # Mixed origins are never laundered by a valid checksum or a later eligibility filter.
