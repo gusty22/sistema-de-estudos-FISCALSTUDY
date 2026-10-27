@@ -1,10 +1,11 @@
 {
   "contract_version": "public_human_reference_v1",
   "source_kind": "PUBLIC_HUMAN_DATASET",
-  "fsrs": {
-    "commit": "a009e9d7e8b651a78bfa689566d90f0c5108ac8b",
-    "ci": 40535216294,
-    "summary": {
+  "evaluated_commit": "0f9d8cb0454fd0bef543f6027e2ae5af2dd05d20",
+  "ci_run": 40536145013,
+  "artifact_sha256": "837fa96e9b4af6a04c9d1be54f154129b09b7649708f3d423d4b109ebf7c86fd",
+  "summaries": {
+    "lab/runs/human-ci/summary.json": {
       "can_apply": false,
       "can_schedule": false,
       "comparisons": [
@@ -251,6 +252,1158 @@
       "dataset": "open-spaced-repetition/fsrs-dataset",
       "fsrs_pretraining_overlap": "UNKNOWN",
       "generalization": "Leave-one-student-out calibration transfer, with prior own FSRS history; NOT zero-shot",
+      "horizons": {
+        "1_TO_7_DAYS": {
+          "FSRS_DEFAULT": {
+            "auc_roc": 0.7126703861350879,
+            "brier": 0.12670107410068374,
+            "calibration_bias": 0.01146321757667573,
+            "conceptual_mastery": "NOT_IDENTIFIED",
+            "failure_average_precision": 0.3482600103496074,
+            "high_predicted_recall_failures": 240,
+            "high_predicted_recall_n": 2809,
+            "log_loss": 0.412269755280446,
+            "n": 6500,
+            "n_items": 4426,
+            "n_students": 12,
+            "observed_failure_rate": 0.1676923076923077,
+            "reliability": [
+              {
+                "bin": 4,
+                "binomial_wilson_interval": [
+                  0.26799202452413634,
+                  0.7320079754758637
+                ],
+                "mean_prediction": 0.4817358702299699,
+                "n": 14,
+                "observed_accuracy": 0.5
+              },
+              {
+                "bin": 5,
+                "binomial_wilson_interval": [
+                  0.39685107788188795,
+                  0.5423221621940694
+                ],
+                "mean_prediction": 0.5655298153846274,
+                "n": 177,
+                "observed_accuracy": 0.4689265536723164
+              },
+              {
+                "bin": 6,
+                "binomial_wilson_interval": [
+                  0.6018289358488654,
+                  0.666285874452084
+                ],
+                "mean_prediction": 0.6566321958441006,
+                "n": 854,
+                "observed_accuracy": 0.6346604215456675
+              },
+              {
+                "bin": 7,
+                "binomial_wilson_interval": [
+                  0.7264724191786028,
+                  0.7824270098033564
+                ],
+                "mean_prediction": 0.7518920800055087,
+                "n": 904,
+                "observed_accuracy": 0.7555309734513275
+              },
+              {
+                "bin": 8,
+                "binomial_wilson_interval": [
+                  0.859695407286781,
+                  0.8906590956271877
+                ],
+                "mean_prediction": 0.8566144657938815,
+                "n": 1742,
+                "observed_accuracy": 0.8760045924225028
+              },
+              {
+                "bin": 9,
+                "binomial_wilson_interval": [
+                  0.9036484161558329,
+                  0.9243399486688422
+                ],
+                "mean_prediction": 0.9416059450883981,
+                "n": 2809,
+                "observed_accuracy": 0.914560341758633
+              }
+            ],
+            "true_probability_rmse": "NOT_OBSERVABLE"
+          },
+          "GLOBAL_CALIBRATION": {
+            "auc_roc": 0.6808088148009971,
+            "brier": 0.13027060917734598,
+            "calibration_bias": 0.013300863712740347,
+            "conceptual_mastery": "NOT_IDENTIFIED",
+            "failure_average_precision": 0.31170261805772564,
+            "high_predicted_recall_failures": 254,
+            "high_predicted_recall_n": 2697,
+            "log_loss": 0.4296301919369373,
+            "n": 6500,
+            "n_items": 4426,
+            "n_students": 12,
+            "observed_failure_rate": 0.1676923076923077,
+            "reliability": [
+              {
+                "bin": 4,
+                "binomial_wilson_interval": [
+                  0.06149194472039621,
+                  0.7923403991979522
+                ],
+                "mean_prediction": 0.45812178493142436,
+                "n": 3,
+                "observed_accuracy": 0.3333333333333333
+              },
+              {
+                "bin": 5,
+                "binomial_wilson_interval": [
+                  0.5342592265235552,
+                  0.6770379918663759
+                ],
+                "mean_prediction": 0.571361886749401,
+                "n": 176,
+                "observed_accuracy": 0.6079545454545454
+              },
+              {
+                "bin": 6,
+                "binomial_wilson_interval": [
+                  0.5719095078201639,
+                  0.6489265499867161
+                ],
+                "mean_prediction": 0.6502804972806238,
+                "n": 612,
+                "observed_accuracy": 0.6111111111111112
+              },
+              {
+                "bin": 7,
+                "binomial_wilson_interval": [
+                  0.7115871293499102,
+                  0.7618041085883928
+                ],
+                "mean_prediction": 0.7516182589805167,
+                "n": 1177,
+                "observed_accuracy": 0.7374681393372983
+              },
+              {
+                "bin": 8,
+                "binomial_wilson_interval": [
+                  0.8655926686756781,
+                  0.8952124530976922
+                ],
+                "mean_prediction": 0.850465763352541,
+                "n": 1835,
+                "observed_accuracy": 0.8811989100817439
+              },
+              {
+                "bin": 9,
+                "binomial_wilson_interval": [
+                  0.8942136663846627,
+                  0.9162744845769317
+                ],
+                "mean_prediction": 0.9459734986289956,
+                "n": 2697,
+                "observed_accuracy": 0.9058212829069336
+              }
+            ],
+            "true_probability_rmse": "NOT_OBSERVABLE"
+          },
+          "INDIVIDUAL_CALIBRATION": {
+            "auc_roc": 0.7366520544692974,
+            "brier": 0.12932457969219746,
+            "calibration_bias": -0.022150678407167147,
+            "conceptual_mastery": "NOT_IDENTIFIED",
+            "failure_average_precision": 0.33335389934202914,
+            "high_predicted_recall_failures": 134,
+            "high_predicted_recall_n": 2423,
+            "log_loss": 0.40908119384675634,
+            "n": 6500,
+            "n_items": 4426,
+            "n_students": 12,
+            "observed_failure_rate": 0.1676923076923077,
+            "reliability": [
+              {
+                "bin": 2,
+                "binomial_wilson_interval": [
+                  0.30963235060004424,
+                  0.7383489355759056
+                ],
+                "mean_prediction": 0.27809745389005996,
+                "n": 17,
+                "observed_accuracy": 0.5294117647058824
+              },
+              {
+                "bin": 3,
+                "binomial_wilson_interval": [
+                  0.5209344049834946,
+                  0.6656734200144877
+                ],
+                "mean_prediction": 0.3624698636728318,
+                "n": 173,
+                "observed_accuracy": 0.5953757225433526
+              },
+              {
+                "bin": 4,
+                "binomial_wilson_interval": [
+                  0.5534745568773302,
+                  0.6518742753490653
+                ],
+                "mean_prediction": 0.45907910510676747,
+                "n": 376,
+                "observed_accuracy": 0.6037234042553191
+              },
+              {
+                "bin": 5,
+                "binomial_wilson_interval": [
+                  0.6112639197866091,
+                  0.7092118702125146
+                ],
+                "mean_prediction": 0.5505987990608415,
+                "n": 355,
+                "observed_accuracy": 0.6619718309859155
+              },
+              {
+                "bin": 6,
+                "binomial_wilson_interval": [
+                  0.6922650876396322,
+                  0.7742684656781454
+                ],
+                "mean_prediction": 0.6577918434023713,
+                "n": 442,
+                "observed_accuracy": 0.7352941176470589
+              },
+              {
+                "bin": 7,
+                "binomial_wilson_interval": [
+                  0.7197735557911458,
+                  0.7764291840174491
+                ],
+                "mean_prediction": 0.7573504491541426,
+                "n": 897,
+                "observed_accuracy": 0.7491638795986622
+              },
+              {
+                "bin": 8,
+                "binomial_wilson_interval": [
+                  0.8360304187681376,
+                  0.8685888624904083
+                ],
+                "mean_prediction": 0.8616502072487989,
+                "n": 1817,
+                "observed_accuracy": 0.8530544854155201
+              },
+              {
+                "bin": 9,
+                "binomial_wilson_interval": [
+                  0.9348716610294768,
+                  0.9531138281615669
+                ],
+                "mean_prediction": 0.9470918513367552,
+                "n": 2423,
+                "observed_accuracy": 0.9446966570367313
+              }
+            ],
+            "true_probability_rmse": "NOT_OBSERVABLE"
+          },
+          "PERSONAL_ONLINE_BETA11": {
+            "auc_roc": 0.6522039546202242,
+            "brier": 0.13838498037638,
+            "calibration_bias": -0.06024011586208292,
+            "conceptual_mastery": "NOT_IDENTIFIED",
+            "failure_average_precision": 0.24112071717987654,
+            "high_predicted_recall_failures": 49,
+            "high_predicted_recall_n": 1099,
+            "log_loss": 0.43970029171539865,
+            "n": 6500,
+            "n_items": 4426,
+            "n_students": 12,
+            "observed_failure_rate": 0.1676923076923077,
+            "reliability": [
+              {
+                "bin": 5,
+                "binomial_wilson_interval": [
+                  0.6402543214534572,
+                  0.7484565658936256
+                ],
+                "mean_prediction": 0.5884639683442635,
+                "n": 274,
+                "observed_accuracy": 0.6970802919708029
+              },
+              {
+                "bin": 6,
+                "binomial_wilson_interval": [
+                  0.7488489340500463,
+                  0.7828160390508464
+                ],
+                "mean_prediction": 0.6446377594445735,
+                "n": 2383,
+                "observed_accuracy": 0.766261015526647
+              },
+              {
+                "bin": 7,
+                "binomial_wilson_interval": [
+                  0.6109540886544522,
+                  0.6978479936201041
+                ],
+                "mean_prediction": 0.7219615500742833,
+                "n": 456,
+                "observed_accuracy": 0.6557017543859649
+              },
+              {
+                "bin": 8,
+                "binomial_wilson_interval": [
+                  0.8800433893970544,
+                  0.905351251699202
+                ],
+                "mean_prediction": 0.8535733803122499,
+                "n": 2288,
+                "observed_accuracy": 0.8933566433566433
+              },
+              {
+                "bin": 9,
+                "binomial_wilson_interval": [
+                  0.9415437397487787,
+                  0.9661116553162592
+                ],
+                "mean_prediction": 0.9452574866473278,
+                "n": 1099,
+                "observed_accuracy": 0.9554140127388535
+              }
+            ],
+            "true_probability_rmse": "NOT_OBSERVABLE"
+          }
+        },
+        "7_TO_30_DAYS": {
+          "FSRS_DEFAULT": {
+            "auc_roc": 0.7693799168152109,
+            "brier": 0.09434623472382192,
+            "calibration_bias": -0.01941851036475465,
+            "conceptual_mastery": "NOT_IDENTIFIED",
+            "failure_average_precision": 0.3853710944430075,
+            "high_predicted_recall_failures": 75,
+            "high_predicted_recall_n": 1822,
+            "log_loss": 0.3235523159503532,
+            "n": 4375,
+            "n_items": 3574,
+            "n_students": 11,
+            "observed_failure_rate": 0.12571428571428567,
+            "reliability": [
+              {
+                "bin": 3,
+                "binomial_wilson_interval": [
+                  0.13684428582359742,
+                  0.6942576053973727
+                ],
+                "mean_prediction": 0.38123345493704425,
+                "n": 8,
+                "observed_accuracy": 0.375
+              },
+              {
+                "bin": 4,
+                "binomial_wilson_interval": [
+                  0.22335119798553627,
+                  0.45278193686463364
+                ],
+                "mean_prediction": 0.46887396989186025,
+                "n": 61,
+                "observed_accuracy": 0.32786885245901637
+              },
+              {
+                "bin": 5,
+                "binomial_wilson_interval": [
+                  0.39369476773028084,
+                  0.5367275267537519
+                ],
+                "mean_prediction": 0.5655249576774282,
+                "n": 183,
+                "observed_accuracy": 0.4644808743169399
+              },
+              {
+                "bin": 6,
+                "binomial_wilson_interval": [
+                  0.627032516187624,
+                  0.7747613673234626
+                ],
+                "mean_prediction": 0.6558516787169049,
+                "n": 143,
+                "observed_accuracy": 0.7062937062937062
+              },
+              {
+                "bin": 7,
+                "binomial_wilson_interval": [
+                  0.7518476816919836,
+                  0.8234854124708265
+                ],
+                "mean_prediction": 0.7607651347344608,
+                "n": 495,
+                "observed_accuracy": 0.7898989898989899
+              },
+              {
+                "bin": 8,
+                "binomial_wilson_interval": [
+                  0.8727378045921376,
+                  0.9029808416880009
+                ],
+                "mean_prediction": 0.8586536479123248,
+                "n": 1663,
+                "observed_accuracy": 0.888755261575466
+              },
+              {
+                "bin": 9,
+                "binomial_wilson_interval": [
+                  0.9487074264776885,
+                  0.9670347328004452
+                ],
+                "mean_prediction": 0.9366603852184728,
+                "n": 1822,
+                "observed_accuracy": 0.9588364434687157
+              }
+            ],
+            "true_probability_rmse": "NOT_OBSERVABLE"
+          },
+          "GLOBAL_CALIBRATION": {
+            "auc_roc": 0.7478516934046345,
+            "brier": 0.09900616889380942,
+            "calibration_bias": -0.031457969689652636,
+            "conceptual_mastery": "NOT_IDENTIFIED",
+            "failure_average_precision": 0.33006472781771906,
+            "high_predicted_recall_failures": 70,
+            "high_predicted_recall_n": 1501,
+            "log_loss": 0.3386115338511656,
+            "n": 4375,
+            "n_items": 3574,
+            "n_students": 11,
+            "observed_failure_rate": 0.12571428571428567,
+            "reliability": [
+              {
+                "bin": 3,
+                "binomial_wilson_interval": [
+                  0.06149194472039621,
+                  0.7923403991979522
+                ],
+                "mean_prediction": 0.36346979309785493,
+                "n": 3,
+                "observed_accuracy": 0.3333333333333333
+              },
+              {
+                "bin": 4,
+                "binomial_wilson_interval": [
+                  0.4078552239138171,
+                  0.7784237720752205
+                ],
+                "mean_prediction": 0.4627255353018439,
+                "n": 23,
+                "observed_accuracy": 0.6086956521739131
+              },
+              {
+                "bin": 5,
+                "binomial_wilson_interval": [
+                  0.41799338272235786,
+                  0.6111777320634655
+                ],
+                "mean_prediction": 0.5659865358672918,
+                "n": 99,
+                "observed_accuracy": 0.5151515151515151
+              },
+              {
+                "bin": 6,
+                "binomial_wilson_interval": [
+                  0.5528822267211307,
+                  0.6631784194903375
+                ],
+                "mean_prediction": 0.6435229175609571,
+                "n": 297,
+                "observed_accuracy": 0.6094276094276094
+              },
+              {
+                "bin": 7,
+                "binomial_wilson_interval": [
+                  0.7658735347975852,
+                  0.826100010660162
+                ],
+                "mean_prediction": 0.7606946939445917,
+                "n": 682,
+                "observed_accuracy": 0.7976539589442815
+              },
+              {
+                "bin": 8,
+                "binomial_wilson_interval": [
+                  0.8911396581081014,
+                  0.9184028141682531
+                ],
+                "mean_prediction": 0.8531301907140258,
+                "n": 1770,
+                "observed_accuracy": 0.9056497175141243
+              },
+              {
+                "bin": 9,
+                "binomial_wilson_interval": [
+                  0.9414909636622772,
+                  0.9629232468995323
+                ],
+                "mean_prediction": 0.9324750789580484,
+                "n": 1501,
+                "observed_accuracy": 0.9533644237175216
+              }
+            ],
+            "true_probability_rmse": "NOT_OBSERVABLE"
+          },
+          "INDIVIDUAL_CALIBRATION": {
+            "auc_roc": 0.7760584670231729,
+            "brier": 0.09325720321002316,
+            "calibration_bias": -0.009118799723959153,
+            "conceptual_mastery": "NOT_IDENTIFIED",
+            "failure_average_precision": 0.37996998870369825,
+            "high_predicted_recall_failures": 116,
+            "high_predicted_recall_n": 2434,
+            "log_loss": 0.31766129842417373,
+            "n": 4375,
+            "n_items": 3574,
+            "n_students": 11,
+            "observed_failure_rate": 0.12571428571428567,
+            "reliability": [
+              {
+                "bin": 1,
+                "binomial_wilson_interval": [
+                  0.13684428582359742,
+                  0.6942576053973727
+                ],
+                "mean_prediction": 0.1839204441192503,
+                "n": 8,
+                "observed_accuracy": 0.375
+              },
+              {
+                "bin": 2,
+                "binomial_wilson_interval": [
+                  0.2989013173655036,
+                  0.5895947277789392
+                ],
+                "mean_prediction": 0.24977364873372565,
+                "n": 41,
+                "observed_accuracy": 0.43902439024390244
+              },
+              {
+                "bin": 3,
+                "binomial_wilson_interval": [
+                  0.349570237528785,
+                  0.6299553535541681
+                ],
+                "mean_prediction": 0.3591704317075524,
+                "n": 45,
+                "observed_accuracy": 0.4888888888888889
+              },
+              {
+                "bin": 4,
+                "binomial_wilson_interval": [
+                  0.43063465303197157,
+                  0.6346953196954221
+                ],
+                "mean_prediction": 0.4487375990882972,
+                "n": 88,
+                "observed_accuracy": 0.5340909090909091
+              },
+              {
+                "bin": 5,
+                "binomial_wilson_interval": [
+                  0.3714363125029202,
+                  0.5241676686753693
+                ],
+                "mean_prediction": 0.5194690979567285,
+                "n": 159,
+                "observed_accuracy": 0.44654088050314467
+              },
+              {
+                "bin": 6,
+                "binomial_wilson_interval": [
+                  0.6466970973041132,
+                  0.800001519045351
+                ],
+                "mean_prediction": 0.6615562119713068,
+                "n": 126,
+                "observed_accuracy": 0.7301587301587301
+              },
+              {
+                "bin": 7,
+                "binomial_wilson_interval": [
+                  0.7412137621093802,
+                  0.8373015779060837
+                ],
+                "mean_prediction": 0.754602084091825,
+                "n": 271,
+                "observed_accuracy": 0.7933579335793358
+              },
+              {
+                "bin": 8,
+                "binomial_wilson_interval": [
+                  0.8431227851862114,
+                  0.881910311418736
+                ],
+                "mean_prediction": 0.8650372562875572,
+                "n": 1203,
+                "observed_accuracy": 0.8636741479634248
+              },
+              {
+                "bin": 9,
+                "binomial_wilson_interval": [
+                  0.943142169427985,
+                  0.9601159124430231
+                ],
+                "mean_prediction": 0.9476799246194377,
+                "n": 2434,
+                "observed_accuracy": 0.952341824157765
+              }
+            ],
+            "true_probability_rmse": "NOT_OBSERVABLE"
+          },
+          "PERSONAL_ONLINE_BETA11": {
+            "auc_roc": 0.7064672608437315,
+            "brier": 0.10159832540938134,
+            "calibration_bias": -0.025476953185930726,
+            "conceptual_mastery": "NOT_IDENTIFIED",
+            "failure_average_precision": 0.3205923033798982,
+            "high_predicted_recall_failures": 65,
+            "high_predicted_recall_n": 1458,
+            "log_loss": 0.346861017359003,
+            "n": 4375,
+            "n_items": 3574,
+            "n_students": 11,
+            "observed_failure_rate": 0.12571428571428567,
+            "reliability": [
+              {
+                "bin": 6,
+                "binomial_wilson_interval": [
+                  0.589964960843137,
+                  0.6656908410295872
+                ],
+                "mean_prediction": 0.6525377921892802,
+                "n": 622,
+                "observed_accuracy": 0.6286173633440515
+              },
+              {
+                "bin": 7,
+                "binomial_wilson_interval": [
+                  0.8585923223880217,
+                  0.9344605055397438
+                ],
+                "mean_prediction": 0.7222450716077763,
+                "n": 237,
+                "observed_accuracy": 0.9029535864978903
+              },
+              {
+                "bin": 8,
+                "binomial_wilson_interval": [
+                  0.8733880947657072,
+                  0.9006772404579136
+                ],
+                "mean_prediction": 0.8534925170753247,
+                "n": 2058,
+                "observed_accuracy": 0.8877551020408163
+              },
+              {
+                "bin": 9,
+                "binomial_wilson_interval": [
+                  0.9435744671082648,
+                  0.9648687788996385
+                ],
+                "mean_prediction": 0.9465021542920162,
+                "n": 1458,
+                "observed_accuracy": 0.9554183813443072
+              }
+            ],
+            "true_probability_rmse": "NOT_OBSERVABLE"
+          }
+        },
+        "GE_30_DAYS": {
+          "FSRS_DEFAULT": {
+            "auc_roc": 0.76525654527802,
+            "brier": 0.10787782674784838,
+            "calibration_bias": -0.010977606968269214,
+            "conceptual_mastery": "NOT_IDENTIFIED",
+            "failure_average_precision": 0.4835802812406501,
+            "high_predicted_recall_failures": 114,
+            "high_predicted_recall_n": 1982,
+            "log_loss": 0.361163235794664,
+            "n": 4298,
+            "n_items": 3993,
+            "n_students": 11,
+            "observed_failure_rate": 0.15588645881805496,
+            "reliability": [
+              {
+                "bin": 2,
+                "binomial_wilson_interval": [
+                  0,
+                  0.2775327998628892
+                ],
+                "mean_prediction": 0.2789618373378506,
+                "n": 10,
+                "observed_accuracy": 0
+              },
+              {
+                "bin": 3,
+                "binomial_wilson_interval": [
+                  0.09052122983132334,
+                  0.24163565199593867
+                ],
+                "mean_prediction": 0.3612399830114924,
+                "n": 86,
+                "observed_accuracy": 0.1511627906976744
+              },
+              {
+                "bin": 4,
+                "binomial_wilson_interval": [
+                  0.25117092535112345,
+                  0.420660770531687
+                ],
+                "mean_prediction": 0.4506043700987767,
+                "n": 115,
+                "observed_accuracy": 0.33043478260869563
+              },
+              {
+                "bin": 5,
+                "binomial_wilson_interval": [
+                  0.6689359870890924,
+                  0.7679920859867851
+                ],
+                "mean_prediction": 0.5539115863086382,
+                "n": 312,
+                "observed_accuracy": 0.7211538461538461
+              },
+              {
+                "bin": 6,
+                "binomial_wilson_interval": [
+                  0.5358800921257674,
+                  0.677419453018673
+                ],
+                "mean_prediction": 0.6517790088486295,
+                "n": 179,
+                "observed_accuracy": 0.6089385474860335
+              },
+              {
+                "bin": 7,
+                "binomial_wilson_interval": [
+                  0.6789643210483267,
+                  0.7769606247699803
+                ],
+                "mean_prediction": 0.75543052067761,
+                "n": 312,
+                "observed_accuracy": 0.7307692307692307
+              },
+              {
+                "bin": 8,
+                "binomial_wilson_interval": [
+                  0.8622313525756056,
+                  0.8974320761654879
+                ],
+                "mean_prediction": 0.8605419775721828,
+                "n": 1302,
+                "observed_accuracy": 0.8809523809523809
+              },
+              {
+                "bin": 9,
+                "binomial_wilson_interval": [
+                  0.9313503743482264,
+                  0.951902411119162
+                ],
+                "mean_prediction": 0.9331653133269711,
+                "n": 1982,
+                "observed_accuracy": 0.9424823410696267
+              }
+            ],
+            "true_probability_rmse": "NOT_OBSERVABLE"
+          },
+          "GLOBAL_CALIBRATION": {
+            "auc_roc": 0.7378404285079564,
+            "brier": 0.11568245011019261,
+            "calibration_bias": -0.016261538844556157,
+            "conceptual_mastery": "NOT_IDENTIFIED",
+            "failure_average_precision": 0.37560219456138805,
+            "high_predicted_recall_failures": 100,
+            "high_predicted_recall_n": 1607,
+            "log_loss": 0.38138094892505764,
+            "n": 4298,
+            "n_items": 3993,
+            "n_students": 11,
+            "observed_failure_rate": 0.15588645881805496,
+            "reliability": [
+              {
+                "bin": 3,
+                "binomial_wilson_interval": [
+                  0.02567962434474355,
+                  0.5131278292743189
+                ],
+                "mean_prediction": 0.3701965783073881,
+                "n": 7,
+                "observed_accuracy": 0.14285714285714285
+              },
+              {
+                "bin": 4,
+                "binomial_wilson_interval": [
+                  0.310021966016566,
+                  0.5015634649936711
+                ],
+                "mean_prediction": 0.45832190571367787,
+                "n": 97,
+                "observed_accuracy": 0.4020618556701031
+              },
+              {
+                "bin": 5,
+                "binomial_wilson_interval": [
+                  0.5849130023451584,
+                  0.6902233115163087
+                ],
+                "mean_prediction": 0.536391532999616,
+                "n": 316,
+                "observed_accuracy": 0.6392405063291139
+              },
+              {
+                "bin": 6,
+                "binomial_wilson_interval": [
+                  0.45267331801393645,
+                  0.5824388167196102
+                ],
+                "mean_prediction": 0.651844322595399,
+                "n": 224,
+                "observed_accuracy": 0.5178571428571429
+              },
+              {
+                "bin": 7,
+                "binomial_wilson_interval": [
+                  0.7271345705104243,
+                  0.8056395118071357
+                ],
+                "mean_prediction": 0.7574540939371764,
+                "n": 441,
+                "observed_accuracy": 0.7687074829931972
+              },
+              {
+                "bin": 8,
+                "binomial_wilson_interval": [
+                  0.8702401450330965,
+                  0.9012643985943485
+                ],
+                "mean_prediction": 0.856448726722297,
+                "n": 1606,
+                "observed_accuracy": 0.8866749688667497
+              },
+              {
+                "bin": 9,
+                "binomial_wilson_interval": [
+                  0.9248854115599789,
+                  0.9485711240261316
+                ],
+                "mean_prediction": 0.9247371138221328,
+                "n": 1607,
+                "observed_accuracy": 0.9377722464219042
+              }
+            ],
+            "true_probability_rmse": "NOT_OBSERVABLE"
+          },
+          "INDIVIDUAL_CALIBRATION": {
+            "auc_roc": 0.7929417137027103,
+            "brier": 0.10213991863861405,
+            "calibration_bias": 0.010964694228518609,
+            "conceptual_mastery": "NOT_IDENTIFIED",
+            "failure_average_precision": 0.5212646618085496,
+            "high_predicted_recall_failures": 178,
+            "high_predicted_recall_n": 2634,
+            "log_loss": 0.3449070792987612,
+            "n": 4298,
+            "n_items": 3993,
+            "n_students": 11,
+            "observed_failure_rate": 0.15588645881805496,
+            "reliability": [
+              {
+                "bin": 1,
+                "binomial_wilson_interval": [
+                  0,
+                  0.32440756488388023
+                ],
+                "mean_prediction": 0.18870042179216298,
+                "n": 8,
+                "observed_accuracy": 0
+              },
+              {
+                "bin": 2,
+                "binomial_wilson_interval": [
+                  0.10998169662501704,
+                  0.26398442682212747
+                ],
+                "mean_prediction": 0.2615651452379925,
+                "n": 92,
+                "observed_accuracy": 0.17391304347826086
+              },
+              {
+                "bin": 3,
+                "binomial_wilson_interval": [
+                  0.2347704609230304,
+                  0.39890370387434176
+                ],
+                "mean_prediction": 0.3497446221303703,
+                "n": 119,
+                "observed_accuracy": 0.31092436974789917
+              },
+              {
+                "bin": 4,
+                "binomial_wilson_interval": [
+                  0.46058696847698255,
+                  0.6318334349056653
+                ],
+                "mean_prediction": 0.45025564212278374,
+                "n": 126,
+                "observed_accuracy": 0.5476190476190477
+              },
+              {
+                "bin": 5,
+                "binomial_wilson_interval": [
+                  0.5205939201961683,
+                  0.7121019573679593
+                ],
+                "mean_prediction": 0.5535971945487836,
+                "n": 95,
+                "observed_accuracy": 0.6210526315789474
+              },
+              {
+                "bin": 6,
+                "binomial_wilson_interval": [
+                  0.5189689089302262,
+                  0.6812578352422715
+                ],
+                "mean_prediction": 0.6525073534742378,
+                "n": 136,
+                "observed_accuracy": 0.6029411764705882
+              },
+              {
+                "bin": 7,
+                "binomial_wilson_interval": [
+                  0.7481558199650179,
+                  0.832841664528935
+                ],
+                "mean_prediction": 0.763919054965299,
+                "n": 349,
+                "observed_accuracy": 0.7936962750716332
+              },
+              {
+                "bin": 8,
+                "binomial_wilson_interval": [
+                  0.8280012816202559,
+                  0.878744409221326
+                ],
+                "mean_prediction": 0.8704349919994463,
+                "n": 739,
+                "observed_accuracy": 0.8552097428958051
+              },
+              {
+                "bin": 9,
+                "binomial_wilson_interval": [
+                  0.9221924990640902,
+                  0.9413923810592326
+                ],
+                "mean_prediction": 0.9491301804448916,
+                "n": 2634,
+                "observed_accuracy": 0.932422171602126
+              }
+            ],
+            "true_probability_rmse": "NOT_OBSERVABLE"
+          },
+          "PERSONAL_ONLINE_BETA11": {
+            "auc_roc": 0.7693807698003916,
+            "brier": 0.1118691659700163,
+            "calibration_bias": 0.02908509887115174,
+            "conceptual_mastery": "NOT_IDENTIFIED",
+            "failure_average_precision": 0.4418272566460609,
+            "high_predicted_recall_failures": 171,
+            "high_predicted_recall_n": 2367,
+            "log_loss": 0.36753898147472547,
+            "n": 4298,
+            "n_items": 3993,
+            "n_students": 11,
+            "observed_failure_rate": 0.15588645881805496,
+            "reliability": [
+              {
+                "bin": 6,
+                "binomial_wilson_interval": [
+                  0.42452932277912114,
+                  0.5060071132706229
+                ],
+                "mean_prediction": 0.635799828679977,
+                "n": 572,
+                "observed_accuracy": 0.46503496503496505
+              },
+              {
+                "bin": 7,
+                "binomial_wilson_interval": [
+                  0.8793566952341543,
+                  0.9999999999999998
+                ],
+                "mean_prediction": 0.7217905105729072,
+                "n": 28,
+                "observed_accuracy": 1
+              },
+              {
+                "bin": 8,
+                "binomial_wilson_interval": [
+                  0.8350581873078483,
+                  0.8728910554695589
+                ],
+                "mean_prediction": 0.8572543877392547,
+                "n": 1331,
+                "observed_accuracy": 0.8549962434259955
+              },
+              {
+                "bin": 9,
+                "binomial_wilson_interval": [
+                  0.9166194582008428,
+                  0.9375076671984562
+                ],
+                "mean_prediction": 0.9413242621741756,
+                "n": 2367,
+                "observed_accuracy": 0.9277566539923955
+              }
+            ],
+            "true_probability_rmse": "NOT_OBSERVABLE"
+          }
+        },
+        "LT_1_DAY": {
+          "FSRS_DEFAULT": {
+            "auc_roc": 0.5,
+            "brier": 0.20316205533596837,
+            "calibration_bias": 0.20316205533596837,
+            "conceptual_mastery": "NOT_IDENTIFIED",
+            "failure_average_precision": 0.20316205533596837,
+            "high_predicted_recall_failures": 257,
+            "high_predicted_recall_n": 1265,
+            "log_loss": 7.016968801179483,
+            "n": 1265,
+            "n_items": 1132,
+            "n_students": 12,
+            "observed_failure_rate": 0.20316205533596843,
+            "reliability": [
+              {
+                "bin": 9,
+                "binomial_wilson_interval": [
+                  0.7737823966553937,
+                  0.8180961195920228
+                ],
+                "mean_prediction": 1,
+                "n": 1265,
+                "observed_accuracy": 0.7968379446640316
+              }
+            ],
+            "true_probability_rmse": "NOT_OBSERVABLE"
+          },
+          "GLOBAL_CALIBRATION": {
+            "auc_roc": 0.3334356278179235,
+            "brier": 0.2031616725108603,
+            "calibration_bias": 0.20316100607114929,
+            "conceptual_mastery": "NOT_IDENTIFIED",
+            "failure_average_precision": 0.15750425411060776,
+            "high_predicted_recall_failures": 257,
+            "high_predicted_recall_n": 1265,
+            "log_loss": 2.8259870105150715,
+            "n": 1265,
+            "n_items": 1132,
+            "n_students": 12,
+            "observed_failure_rate": 0.20316205533596843,
+            "reliability": [
+              {
+                "bin": 9,
+                "binomial_wilson_interval": [
+                  0.7737823966553937,
+                  0.8180961195920228
+                ],
+                "mean_prediction": 0.999998950735181,
+                "n": 1265,
+                "observed_accuracy": 0.7968379446640316
+              }
+            ],
+            "true_probability_rmse": "NOT_OBSERVABLE"
+          },
+          "INDIVIDUAL_CALIBRATION": {
+            "auc_roc": 0.6745587826570317,
+            "brier": 0.2031614092432899,
+            "calibration_bias": 0.2031608132333647,
+            "conceptual_mastery": "NOT_IDENTIFIED",
+            "failure_average_precision": 0.30315692787048865,
+            "high_predicted_recall_failures": 257,
+            "high_predicted_recall_n": 1265,
+            "log_loss": 2.7452505411068677,
+            "n": 1265,
+            "n_items": 1132,
+            "n_students": 12,
+            "observed_failure_rate": 0.20316205533596843,
+            "reliability": [
+              {
+                "bin": 9,
+                "binomial_wilson_interval": [
+                  0.7737823966553937,
+                  0.8180961195920228
+                ],
+                "mean_prediction": 0.9999987578973962,
+                "n": 1265,
+                "observed_accuracy": 0.7968379446640316
+              }
+            ],
+            "true_probability_rmse": "NOT_OBSERVABLE"
+          },
+          "PERSONAL_ONLINE_BETA11": {
+            "auc_roc": 0.6932786733370391,
+            "brier": 0.15024433432533438,
+            "calibration_bias": -0.017268925756343267,
+            "conceptual_mastery": "NOT_IDENTIFIED",
+            "failure_average_precision": 0.328955301860404,
+            "high_predicted_recall_failures": 15,
+            "high_predicted_recall_n": 228,
+            "log_loss": 0.4679488477332346,
+            "n": 1265,
+            "n_items": 1132,
+            "n_students": 12,
+            "observed_failure_rate": 0.20316205533596843,
+            "reliability": [
+              {
+                "bin": 6,
+                "binomial_wilson_interval": [
+                  0.6432607553287996,
+                  0.7259320947121012
+                ],
+                "mean_prediction": 0.6536706400016786,
+                "n": 481,
+                "observed_accuracy": 0.6860706860706861
+              },
+              {
+                "bin": 7,
+                "binomial_wilson_interval": [
+                  0.6027289441827964,
+                  0.7613446972146379
+                ],
+                "mean_prediction": 0.722130037150638,
+                "n": 128,
+                "observed_accuracy": 0.6875
+              },
+              {
+                "bin": 8,
+                "binomial_wilson_interval": [
+                  0.846710008269287,
+                  0.9081966671811569
+                ],
+                "mean_prediction": 0.8500385967591335,
+                "n": 428,
+                "observed_accuracy": 0.8808411214953271
+              },
+              {
+                "bin": 9,
+                "binomial_wilson_interval": [
+                  0.8943030514743872,
+                  0.9597288417304125
+                ],
+                "mean_prediction": 0.9451318724088926,
+                "n": 228,
+                "observed_accuracy": 0.9342105263157895
+              }
+            ],
+            "true_probability_rmse": "NOT_OBSERVABLE"
+          }
+        }
+      },
       "macro_by_student": {
         "FSRS_DEFAULT": {
           "brier": 0.13880147546552601,
@@ -654,16 +1807,580 @@
           "reference_targets": 16438
         }
       },
+      "qa": [
+        {
+          "eligible_rows": 978,
+          "exclusions": {
+            "MISSING_OR_INCONSISTENT_CARD_PREFIX": 0
+          },
+          "first_timestamp": "2018-11-26T16:12:34.289000Z",
+          "ignored_fields": [
+            "t_history",
+            "r_history"
+          ],
+          "last_timestamp": "2022-10-14T21:13:22.426000Z",
+          "limitation": "Already filtered source; not the complete original within-day Anki log",
+          "local_timezone": "NOT_AVAILABLE",
+          "n_cold": 128,
+          "origin_type": "PUBLIC_HUMAN_DATASET",
+          "raw_rows": 978,
+          "source_file": "v4/revlog_history-e37d9b3.tsv",
+          "target": "SELF_REPORTED_RECALL_RATING_GT_1"
+        },
+        {
+          "eligible_rows": 2492,
+          "exclusions": {
+            "MISSING_OR_INCONSISTENT_CARD_PREFIX": 0
+          },
+          "first_timestamp": "2021-10-15T15:13:04.393000Z",
+          "ignored_fields": [
+            "t_history",
+            "r_history"
+          ],
+          "last_timestamp": "2023-08-02T17:33:05.963000Z",
+          "limitation": "Already filtered source; not the complete original within-day Anki log",
+          "local_timezone": "NOT_AVAILABLE",
+          "n_cold": 916,
+          "origin_type": "PUBLIC_HUMAN_DATASET",
+          "raw_rows": 2492,
+          "source_file": "v4/revlog_history-937810d.tsv",
+          "target": "SELF_REPORTED_RECALL_RATING_GT_1"
+        },
+        {
+          "eligible_rows": 3323,
+          "exclusions": {
+            "MISSING_OR_INCONSISTENT_CARD_PREFIX": 0
+          },
+          "first_timestamp": "2019-07-20T20:56:59.026000Z",
+          "ignored_fields": [
+            "t_history",
+            "r_history"
+          ],
+          "last_timestamp": "2021-11-20T15:20:11.334000Z",
+          "limitation": "Already filtered source; not the complete original within-day Anki log",
+          "local_timezone": "NOT_AVAILABLE",
+          "n_cold": 1167,
+          "origin_type": "PUBLIC_HUMAN_DATASET",
+          "raw_rows": 3323,
+          "source_file": "v4/revlog_history-7c3a69d.tsv",
+          "target": "SELF_REPORTED_RECALL_RATING_GT_1"
+        },
+        {
+          "eligible_rows": 4493,
+          "exclusions": {
+            "MISSING_OR_INCONSISTENT_CARD_PREFIX": 0
+          },
+          "first_timestamp": "2020-08-02T16:16:35.343000Z",
+          "ignored_fields": [
+            "t_history",
+            "r_history"
+          ],
+          "last_timestamp": "2023-08-11T04:59:57.169000Z",
+          "limitation": "Already filtered source; not the complete original within-day Anki log",
+          "local_timezone": "NOT_AVAILABLE",
+          "n_cold": 853,
+          "origin_type": "PUBLIC_HUMAN_DATASET",
+          "raw_rows": 4493,
+          "source_file": "v4/revlog_history-46b2aa1.tsv",
+          "target": "SELF_REPORTED_RECALL_RATING_GT_1"
+        },
+        {
+          "eligible_rows": 5502,
+          "exclusions": {
+            "MISSING_OR_INCONSISTENT_CARD_PREFIX": 0
+          },
+          "first_timestamp": "2023-01-08T10:43:38.062000Z",
+          "ignored_fields": [
+            "t_history",
+            "r_history"
+          ],
+          "last_timestamp": "2023-03-12T08:13:24.945000Z",
+          "limitation": "Already filtered source; not the complete original within-day Anki log",
+          "local_timezone": "NOT_AVAILABLE",
+          "n_cold": 1260,
+          "origin_type": "PUBLIC_HUMAN_DATASET",
+          "raw_rows": 5502,
+          "source_file": "v4/revlog_history-03659d3.tsv",
+          "target": "SELF_REPORTED_RECALL_RATING_GT_1"
+        },
+        {
+          "eligible_rows": 8314,
+          "exclusions": {
+            "MISSING_OR_INCONSISTENT_CARD_PREFIX": 0
+          },
+          "first_timestamp": "2020-04-14T05:35:28.029000Z",
+          "ignored_fields": [
+            "t_history",
+            "r_history"
+          ],
+          "last_timestamp": "2023-06-15T04:54:45.039000Z",
+          "limitation": "Already filtered source; not the complete original within-day Anki log",
+          "local_timezone": "NOT_AVAILABLE",
+          "n_cold": 4023,
+          "origin_type": "PUBLIC_HUMAN_DATASET",
+          "raw_rows": 8314,
+          "source_file": "v4/revlog_history-06a3422.tsv",
+          "target": "SELF_REPORTED_RECALL_RATING_GT_1"
+        },
+        {
+          "eligible_rows": 6994,
+          "exclusions": {
+            "MISSING_OR_INCONSISTENT_CARD_PREFIX": 0
+          },
+          "first_timestamp": "2016-01-13T19:12:28.261000Z",
+          "ignored_fields": [
+            "t_history",
+            "r_history"
+          ],
+          "last_timestamp": "2023-02-14T05:01:46.542000Z",
+          "limitation": "Already filtered source; not the complete original within-day Anki log",
+          "local_timezone": "NOT_AVAILABLE",
+          "n_cold": 1035,
+          "origin_type": "PUBLIC_HUMAN_DATASET",
+          "raw_rows": 6994,
+          "source_file": "v4/revlog_history-7948290.tsv",
+          "target": "SELF_REPORTED_RECALL_RATING_GT_1"
+        },
+        {
+          "eligible_rows": 9603,
+          "exclusions": {
+            "MISSING_OR_INCONSISTENT_CARD_PREFIX": 0
+          },
+          "first_timestamp": "2020-11-15T10:47:15.169000Z",
+          "ignored_fields": [
+            "t_history",
+            "r_history"
+          ],
+          "last_timestamp": "2023-08-13T10:24:50.518000Z",
+          "limitation": "Already filtered source; not the complete original within-day Anki log",
+          "local_timezone": "NOT_AVAILABLE",
+          "n_cold": 1400,
+          "origin_type": "PUBLIC_HUMAN_DATASET",
+          "raw_rows": 9603,
+          "source_file": "v4/revlog_history-d1260ae.tsv",
+          "target": "SELF_REPORTED_RECALL_RATING_GT_1"
+        },
+        {
+          "eligible_rows": 11950,
+          "exclusions": {
+            "MISSING_OR_INCONSISTENT_CARD_PREFIX": 0
+          },
+          "first_timestamp": "2022-01-28T01:42:45.827000Z",
+          "ignored_fields": [
+            "t_history",
+            "r_history"
+          ],
+          "last_timestamp": "2023-06-10T13:20:24.214000Z",
+          "limitation": "Already filtered source; not the complete original within-day Anki log",
+          "local_timezone": "NOT_AVAILABLE",
+          "n_cold": 2167,
+          "origin_type": "PUBLIC_HUMAN_DATASET",
+          "raw_rows": 11950,
+          "source_file": "v4/revlog_history-77e570b.tsv",
+          "target": "SELF_REPORTED_RECALL_RATING_GT_1"
+        },
+        {
+          "eligible_rows": 16930,
+          "exclusions": {
+            "MISSING_OR_INCONSISTENT_CARD_PREFIX": 0
+          },
+          "first_timestamp": "2022-03-11T02:37:07.329000Z",
+          "ignored_fields": [
+            "t_history",
+            "r_history"
+          ],
+          "last_timestamp": "2022-10-15T10:29:57.552000Z",
+          "limitation": "Already filtered source; not the complete original within-day Anki log",
+          "local_timezone": "NOT_AVAILABLE",
+          "n_cold": 4789,
+          "origin_type": "PUBLIC_HUMAN_DATASET",
+          "raw_rows": 16930,
+          "source_file": "v4/revlog_history-f0feefe.tsv",
+          "target": "SELF_REPORTED_RECALL_RATING_GT_1"
+        },
+        {
+          "eligible_rows": 18170,
+          "exclusions": {
+            "MISSING_OR_INCONSISTENT_CARD_PREFIX": 0
+          },
+          "first_timestamp": "2021-09-07T20:15:15.217000Z",
+          "ignored_fields": [
+            "t_history",
+            "r_history"
+          ],
+          "last_timestamp": "2022-12-17T01:36:42.718000Z",
+          "limitation": "Already filtered source; not the complete original within-day Anki log",
+          "local_timezone": "NOT_AVAILABLE",
+          "n_cold": 3626,
+          "origin_type": "PUBLIC_HUMAN_DATASET",
+          "raw_rows": 18170,
+          "source_file": "v4/revlog_history-a7932bc.tsv",
+          "target": "SELF_REPORTED_RECALL_RATING_GT_1"
+        },
+        {
+          "eligible_rows": 17206,
+          "exclusions": {
+            "MISSING_OR_INCONSISTENT_CARD_PREFIX": 0
+          },
+          "first_timestamp": "2023-01-10T08:38:44.149000Z",
+          "ignored_fields": [
+            "t_history",
+            "r_history"
+          ],
+          "last_timestamp": "2023-08-12T09:40:03.904000Z",
+          "limitation": "Already filtered source; not the complete original within-day Anki log",
+          "local_timezone": "NOT_AVAILABLE",
+          "n_cold": 2430,
+          "origin_type": "PUBLIC_HUMAN_DATASET",
+          "raw_rows": 17206,
+          "source_file": "v4/revlog_history-df33889.tsv",
+          "target": "SELF_REPORTED_RECALL_RATING_GT_1"
+        }
+      ],
       "r_python_score_agreement": true,
       "revision": "ae96575728d364265a75f2447fe7b7fa389ba96c",
       "source_kind": "PUBLIC_HUMAN_DATASET",
+      "students": [
+        {
+          "can_apply": false,
+          "donor_future_overlap": false,
+          "donor_identity_overlap": false,
+          "global_shift": -0.16569284724793867,
+          "individual_shift": -0.22605652600273313,
+          "n_prior_donor_events": 44408,
+          "n_test": 1192,
+          "n_train": 3575,
+          "n_train_items": 704,
+          "n_validation": 1192,
+          "selected_penalty": 1,
+          "status": "EXPLORATORY_CALIBRATION_AVAILABLE",
+          "student_id": "3a3b552740058e8f2ed3bb78",
+          "test_min": "2023-01-13 19:43:04.072",
+          "threshold_note": "30 events/20 items are registered experimental eligibility rules, not evidence of sufficiency",
+          "training_max": "2022-12-21 03:48:44.956",
+          "uncertainty": {
+            "coverage": "NOT_EMPIRICALLY_VALIDATED",
+            "does_not_include": "Global fit/selection and between-item dependence uncertainty",
+            "method": "100 item-cluster bootstrap conditional on global fit and selected penalty",
+            "shift_interval": [
+              -0.3054682086084226,
+              0.1420263705545564
+            ]
+          },
+          "validation_max": "2023-01-13 19:42:54.662"
+        },
+        {
+          "can_apply": false,
+          "donor_future_overlap": false,
+          "donor_identity_overlap": false,
+          "global_shift": -0.1753374048616471,
+          "individual_shift": 0.3278950518938692,
+          "n_prior_donor_events": 63261,
+          "n_test": 2956,
+          "n_train": 8865,
+          "n_train_items": 1602,
+          "n_validation": 2955,
+          "selected_penalty": 16,
+          "status": "EXPLORATORY_CALIBRATION_AVAILABLE",
+          "student_id": "3b8dfd6f31dddd21a5dfc782",
+          "test_min": "2023-06-24 07:23:00.929",
+          "threshold_note": "30 events/20 items are registered experimental eligibility rules, not evidence of sufficiency",
+          "training_max": "2023-05-07 10:51:52.7",
+          "uncertainty": {
+            "coverage": "NOT_EMPIRICALLY_VALIDATED",
+            "does_not_include": "Global fit/selection and between-item dependence uncertainty",
+            "method": "100 item-cluster bootstrap conditional on global fit and selected penalty",
+            "shift_interval": [
+              0.2630411669831592,
+              0.4272595357644333
+            ]
+          },
+          "validation_max": "2023-06-24 07:22:45.059"
+        },
+        {
+          "can_apply": false,
+          "donor_future_overlap": false,
+          "donor_identity_overlap": false,
+          "global_shift": -0.16723690317507545,
+          "individual_shift": 0.23172156926271822,
+          "n_prior_donor_events": 55366,
+          "n_test": 849,
+          "n_train": 2545,
+          "n_train_items": 841,
+          "n_validation": 848,
+          "selected_penalty": 16,
+          "status": "EXPLORATORY_CALIBRATION_AVAILABLE",
+          "student_id": "449b0404ce05e0acf021d863",
+          "test_min": "2023-03-05 08:07:15.542",
+          "threshold_note": "30 events/20 items are registered experimental eligibility rules, not evidence of sufficiency",
+          "training_max": "2023-02-24 14:18:12.72",
+          "uncertainty": {
+            "coverage": "NOT_EMPIRICALLY_VALIDATED",
+            "does_not_include": "Global fit/selection and between-item dependence uncertainty",
+            "method": "100 item-cluster bootstrap conditional on global fit and selected penalty",
+            "shift_interval": [
+              -0.2729441980910531,
+              0.3282933941356902
+            ]
+          },
+          "validation_max": "2023-03-05 08:07:02.492"
+        },
+        {
+          "can_apply": false,
+          "donor_future_overlap": false,
+          "donor_identity_overlap": false,
+          "global_shift": 0.5715236792488678,
+          "individual_shift": -0.47427270846818903,
+          "n_prior_donor_events": 2746,
+          "n_test": 728,
+          "n_train": 2184,
+          "n_train_items": 679,
+          "n_validation": 728,
+          "selected_penalty": 1,
+          "status": "EXPLORATORY_CALIBRATION_AVAILABLE",
+          "student_id": "5a8a612a5a11493e0eeec02c",
+          "test_min": "2021-02-20 13:01:13.41",
+          "threshold_note": "30 events/20 items are registered experimental eligibility rules, not evidence of sufficiency",
+          "training_max": "2021-02-08 07:31:42.545",
+          "uncertainty": {
+            "coverage": "NOT_EMPIRICALLY_VALIDATED",
+            "does_not_include": "Global fit/selection and between-item dependence uncertainty",
+            "method": "100 item-cluster bootstrap conditional on global fit and selected penalty",
+            "shift_interval": [
+              -0.5961756364002782,
+              -0.3606281556774684
+            ]
+          },
+          "validation_max": "2021-02-20 13:01:08.86"
+        },
+        {
+          "can_apply": false,
+          "donor_future_overlap": false,
+          "donor_identity_overlap": false,
+          "global_shift": 0.12464544686782238,
+          "individual_shift": -0.579429220522893,
+          "n_prior_donor_events": 79618,
+          "n_test": 316,
+          "n_train": 945,
+          "n_train_items": 501,
+          "n_validation": 315,
+          "selected_penalty": 1,
+          "status": "EXPLORATORY_CALIBRATION_AVAILABLE",
+          "student_id": "8285d9939f8fcc819a2261b6",
+          "test_min": "2023-08-01 16:28:54.159",
+          "threshold_note": "30 events/20 items are registered experimental eligibility rules, not evidence of sufficiency",
+          "training_max": "2023-07-29 11:55:27.707",
+          "uncertainty": {
+            "coverage": "NOT_EMPIRICALLY_VALIDATED",
+            "does_not_include": "Global fit/selection and between-item dependence uncertainty",
+            "method": "100 item-cluster bootstrap conditional on global fit and selected penalty",
+            "shift_interval": [
+              -0.7341246516887472,
+              -0.41690956815532637
+            ]
+          },
+          "validation_max": "2023-08-01 16:28:43.335"
+        },
+        {
+          "can_apply": false,
+          "donor_future_overlap": false,
+          "donor_identity_overlap": false,
+          "global_shift": 0.12183455615909654,
+          "individual_shift": -0.32711910770254665,
+          "n_prior_donor_events": 67192,
+          "n_test": 859,
+          "n_train": 2574,
+          "n_train_items": 1190,
+          "n_validation": 858,
+          "selected_penalty": 16,
+          "status": "EXPLORATORY_CALIBRATION_AVAILABLE",
+          "student_id": "a433838ddd0ff1d34b584e93",
+          "test_min": "2023-05-04 02:26:00.48",
+          "threshold_note": "30 events/20 items are registered experimental eligibility rules, not evidence of sufficiency",
+          "training_max": "2023-04-27 05:40:43.788",
+          "uncertainty": {
+            "coverage": "NOT_EMPIRICALLY_VALIDATED",
+            "does_not_include": "Global fit/selection and between-item dependence uncertainty",
+            "method": "100 item-cluster bootstrap conditional on global fit and selected penalty",
+            "shift_interval": [
+              -0.43150763125499364,
+              -0.22183936131731463
+            ]
+          },
+          "validation_max": "2023-05-04 02:25:50.157"
+        },
+        {
+          "can_apply": false,
+          "donor_future_overlap": false,
+          "donor_identity_overlap": false,
+          "global_shift": -0.2010882238882434,
+          "individual_shift": 0.2435047024484446,
+          "n_prior_donor_events": 41904,
+          "n_test": 1641,
+          "n_train": 4921,
+          "n_train_items": 941,
+          "n_validation": 1641,
+          "selected_penalty": 16,
+          "status": "EXPLORATORY_CALIBRATION_AVAILABLE",
+          "student_id": "af53a2b86ef2516d05ea11e2",
+          "test_min": "2023-04-07 10:28:21.307",
+          "threshold_note": "30 events/20 items are registered experimental eligibility rules, not evidence of sufficiency",
+          "training_max": "2022-12-10 09:42:21.548",
+          "uncertainty": {
+            "coverage": "NOT_EMPIRICALLY_VALIDATED",
+            "does_not_include": "Global fit/selection and between-item dependence uncertainty",
+            "method": "100 item-cluster bootstrap conditional on global fit and selected penalty",
+            "shift_interval": [
+              0.16642699811388012,
+              0.3344888406159824
+            ]
+          },
+          "validation_max": "2023-04-07 10:28:10.511"
+        },
+        {
+          "can_apply": false,
+          "donor_future_overlap": false,
+          "donor_identity_overlap": false,
+          "global_shift": -0.20421622707956227,
+          "individual_shift": -0.3244382710403353,
+          "n_prior_donor_events": 213,
+          "n_test": 170,
+          "n_train": 510,
+          "n_train_items": 92,
+          "n_validation": 170,
+          "selected_penalty": 16,
+          "status": "EXPLORATORY_CALIBRATION_AVAILABLE",
+          "student_id": "c2a5bac93e663f455bb13d4b",
+          "test_min": "2019-11-19 21:37:37.555",
+          "threshold_note": "30 events/20 items are registered experimental eligibility rules, not evidence of sufficiency",
+          "training_max": "2019-05-19 16:04:36.208",
+          "uncertainty": {
+            "coverage": "NOT_EMPIRICALLY_VALIDATED",
+            "does_not_include": "Global fit/selection and between-item dependence uncertainty",
+            "method": "100 item-cluster bootstrap conditional on global fit and selected penalty",
+            "shift_interval": [
+              -0.5189215177108464,
+              -0.09664244648988957
+            ]
+          },
+          "validation_max": "2019-11-17 10:10:51.31"
+        },
+        {
+          "can_apply": false,
+          "donor_future_overlap": false,
+          "donor_identity_overlap": false,
+          "global_shift": -0.15238114712300854,
+          "individual_shift": 1.0137695247742327,
+          "n_prior_donor_events": 2486,
+          "n_test": 432,
+          "n_train": 1293,
+          "n_train_items": 439,
+          "n_validation": 431,
+          "selected_penalty": 16,
+          "status": "EXPLORATORY_CALIBRATION_AVAILABLE",
+          "student_id": "df9430e923d77752d0169a10",
+          "test_min": "2021-06-30 15:21:55.245",
+          "threshold_note": "30 events/20 items are registered experimental eligibility rules, not evidence of sufficiency",
+          "training_max": "2020-11-27 18:31:23.585",
+          "uncertainty": {
+            "coverage": "NOT_EMPIRICALLY_VALIDATED",
+            "does_not_include": "Global fit/selection and between-item dependence uncertainty",
+            "method": "100 item-cluster bootstrap conditional on global fit and selected penalty",
+            "shift_interval": [
+              0.890646945677315,
+              1.2065617283799615
+            ]
+          },
+          "validation_max": "2021-06-30 15:21:49.079"
+        },
+        {
+          "can_apply": false,
+          "donor_future_overlap": false,
+          "donor_identity_overlap": false,
+          "global_shift": 0.41938677412665376,
+          "individual_shift": -1.007624465440831,
+          "n_prior_donor_events": 25115,
+          "n_test": 2429,
+          "n_train": 7284,
+          "n_train_items": 1730,
+          "n_validation": 2428,
+          "selected_penalty": 1,
+          "status": "EXPLORATORY_CALIBRATION_AVAILABLE",
+          "student_id": "e8536850a3c5654adc189502",
+          "test_min": "2022-09-27 02:01:54.287",
+          "threshold_note": "30 events/20 items are registered experimental eligibility rules, not evidence of sufficiency",
+          "training_max": "2022-09-13 01:01:21.976",
+          "uncertainty": {
+            "coverage": "NOT_EMPIRICALLY_VALIDATED",
+            "does_not_include": "Global fit/selection and between-item dependence uncertainty",
+            "method": "100 item-cluster bootstrap conditional on global fit and selected penalty",
+            "shift_interval": [
+              -1.0697590657855671,
+              -0.9358777757272467
+            ]
+          },
+          "validation_max": "2022-09-27 02:01:38.232"
+        },
+        {
+          "can_apply": false,
+          "donor_future_overlap": false,
+          "donor_identity_overlap": false,
+          "global_shift": -0.2615380525817203,
+          "individual_shift": 0.8663651146500471,
+          "n_prior_donor_events": 23125,
+          "n_test": 2909,
+          "n_train": 8726,
+          "n_train_items": 2087,
+          "n_validation": 2909,
+          "selected_penalty": 16,
+          "status": "EXPLORATORY_CALIBRATION_AVAILABLE",
+          "student_id": "e93cb636664bcd2e1bda9439",
+          "test_min": "2022-10-23 16:34:36.475",
+          "threshold_note": "30 events/20 items are registered experimental eligibility rules, not evidence of sufficiency",
+          "training_max": "2022-09-11 14:10:26.235",
+          "uncertainty": {
+            "coverage": "NOT_EMPIRICALLY_VALIDATED",
+            "does_not_include": "Global fit/selection and between-item dependence uncertainty",
+            "method": "100 item-cluster bootstrap conditional on global fit and selected penalty",
+            "shift_interval": [
+              0.7805009213639118,
+              0.961403719878655
+            ]
+          },
+          "validation_max": "2022-10-23 16:31:32.112"
+        },
+        {
+          "can_apply": false,
+          "donor_future_overlap": false,
+          "donor_identity_overlap": false,
+          "global_shift": -0.247151755168528,
+          "individual_shift": 0.4878297214065392,
+          "n_prior_donor_events": 41384,
+          "n_test": 1957,
+          "n_train": 5869,
+          "n_train_items": 1181,
+          "n_validation": 1957,
+          "selected_penalty": 1,
+          "status": "EXPLORATORY_CALIBRATION_AVAILABLE",
+          "student_id": "f682471938471e2ce93a343c",
+          "test_min": "2023-04-13 00:33:39.745",
+          "threshold_note": "30 events/20 items are registered experimental eligibility rules, not evidence of sufficiency",
+          "training_max": "2022-12-13 08:37:18.229",
+          "uncertainty": {
+            "coverage": "NOT_EMPIRICALLY_VALIDATED",
+            "does_not_include": "Global fit/selection and between-item dependence uncertainty",
+            "method": "100 item-cluster bootstrap conditional on global fit and selected penalty",
+            "shift_interval": [
+              0.41149100104514963,
+              0.5693146835814412
+            ]
+          },
+          "validation_max": "2023-04-13 00:32:54.593"
+        }
+      ],
       "total_cold": 23794
-    }
-  },
-  "assistments": {
-    "commit": "0f9d8cb0454fd0bef543f6027e2ae5af2dd05d20",
-    "ci": 40536145013,
-    "summary": {
+    },
+    "lab/runs/assistments-ci/summary.json": {
       "can_apply": false,
       "can_schedule": false,
       "comparisons": [
@@ -1039,8 +2756,478 @@
           "true_probability_rmse": "NOT_OBSERVABLE"
         }
       },
+      "novelty": {
+        "FIRST_OBSERVED_ITEM": {
+          "MOVING_5": {
+            "auc_roc": 0.6262424080443743,
+            "brier": 0.23083929733246586,
+            "calibration_bias": 0.0031229668184775644,
+            "conceptual_mastery": "NOT_IDENTIFIED",
+            "failure_average_precision": 0.42918375612791587,
+            "high_predicted_recall_failures": 69,
+            "high_predicted_recall_n": 335,
+            "log_loss": 2.2838366935954575,
+            "n": 1537,
+            "n_items": 1537,
+            "n_students": 12,
+            "observed_failure_rate": 0.32270657124268054,
+            "reliability": [
+              {
+                "bin": 0,
+                "binomial_wilson_interval": [
+                  0.1584833794013461,
+                  0.43992489997397105
+                ],
+                "mean_prediction": 0,
+                "n": 36,
+                "observed_accuracy": 0.2777777777777778
+              },
+              {
+                "bin": 2,
+                "binomial_wilson_interval": [
+                  0.39740700785165506,
+                  0.5843849309893538
+                ],
+                "mean_prediction": 0.20000000000000004,
+                "n": 106,
+                "observed_accuracy": 0.49056603773584906
+              },
+              {
+                "bin": 4,
+                "binomial_wilson_interval": [
+                  0.5077842843189969,
+                  0.6391115369504489
+                ],
+                "mean_prediction": 0.4,
+                "n": 214,
+                "observed_accuracy": 0.5747663551401869
+              },
+              {
+                "bin": 6,
+                "binomial_wilson_interval": [
+                  0.6092159997042894,
+                  0.706137251590162
+                ],
+                "mean_prediction": 0.6,
+                "n": 364,
+                "observed_accuracy": 0.6593406593406593
+              },
+              {
+                "bin": 8,
+                "binomial_wilson_interval": [
+                  0.6846598476521282,
+                  0.7640461984089915
+                ],
+                "mean_prediction": 0.8,
+                "n": 482,
+                "observed_accuracy": 0.7261410788381742
+              },
+              {
+                "bin": 9,
+                "binomial_wilson_interval": [
+                  0.7475079500849228,
+                  0.8338848956596329
+                ],
+                "mean_prediction": 1,
+                "n": 335,
+                "observed_accuracy": 0.7940298507462686
+              }
+            ],
+            "true_probability_rmse": "NOT_OBSERVABLE"
+          },
+          "PERSONAL_HISTORICAL": {
+            "auc_roc": 0.6067221731585635,
+            "brier": 0.2124023746519193,
+            "calibration_bias": 0.017017826935588808,
+            "conceptual_mastery": "NOT_IDENTIFIED",
+            "failure_average_precision": 0.3939783589788557,
+            "high_predicted_recall_failures": 23,
+            "high_predicted_recall_n": 170,
+            "log_loss": 0.6567540916994833,
+            "n": 1537,
+            "n_items": 1537,
+            "n_students": 12,
+            "observed_failure_rate": 0.32270657124268054,
+            "reliability": [
+              {
+                "bin": 3,
+                "binomial_wilson_interval": [
+                  0.2307242812760128,
+                  0.882379225767352
+                ],
+                "mean_prediction": 0.33233999999999997,
+                "n": 5,
+                "observed_accuracy": 0.6
+              },
+              {
+                "bin": 4,
+                "binomial_wilson_interval": [
+                  0.3856944827051576,
+                  0.6843311439327215
+                ],
+                "mean_prediction": 0.4570871794871795,
+                "n": 39,
+                "observed_accuracy": 0.5384615384615384
+              },
+              {
+                "bin": 5,
+                "binomial_wilson_interval": [
+                  0.5640103783599978,
+                  0.6772600162956771
+                ],
+                "mean_prediction": 0.5669640287769785,
+                "n": 278,
+                "observed_accuracy": 0.6223021582733813
+              },
+              {
+                "bin": 6,
+                "binomial_wilson_interval": [
+                  0.5531782711802115,
+                  0.6376314613824544
+                ],
+                "mean_prediction": 0.6254636893203884,
+                "n": 515,
+                "observed_accuracy": 0.596116504854369
+              },
+              {
+                "bin": 7,
+                "binomial_wilson_interval": [
+                  0.6942976441018432,
+                  0.77645944726565
+                ],
+                "mean_prediction": 0.7518324200913241,
+                "n": 438,
+                "observed_accuracy": 0.7374429223744292
+              },
+              {
+                "bin": 8,
+                "binomial_wilson_interval": [
+                  0.6295814700794521,
+                  0.8086422435075468
+                ],
+                "mean_prediction": 0.854458695652174,
+                "n": 92,
+                "observed_accuracy": 0.7282608695652174
+              },
+              {
+                "bin": 9,
+                "binomial_wilson_interval": [
+                  0.8051674349608805,
+                  0.9081261650882179
+                ],
+                "mean_prediction": 0.9413276470588235,
+                "n": 170,
+                "observed_accuracy": 0.8647058823529412
+              }
+            ],
+            "true_probability_rmse": "NOT_OBSERVABLE"
+          },
+          "SMOOTHED_SKILL_SET": {
+            "auc_roc": 0.6728874221437203,
+            "brier": 0.20375079270006508,
+            "calibration_bias": -0.02664202992843201,
+            "conceptual_mastery": "NOT_IDENTIFIED",
+            "failure_average_precision": 0.5160825398837373,
+            "high_predicted_recall_failures": 30,
+            "high_predicted_recall_n": 225,
+            "log_loss": 0.6405481050478835,
+            "n": 1537,
+            "n_items": 1537,
+            "n_students": 12,
+            "observed_failure_rate": 0.32270657124268054,
+            "reliability": [
+              {
+                "bin": 0,
+                "binomial_wilson_interval": [
+                  0.05915927776244326,
+                  0.3247868542781298
+                ],
+                "mean_prediction": 0.07125555555555556,
+                "n": 27,
+                "observed_accuracy": 0.14814814814814814
+              },
+              {
+                "bin": 1,
+                "binomial_wilson_interval": [
+                  0.12993707017054082,
+                  0.39206812363239807
+                ],
+                "mean_prediction": 0.14648684210526314,
+                "n": 38,
+                "observed_accuracy": 0.23684210526315788
+              },
+              {
+                "bin": 2,
+                "binomial_wilson_interval": [
+                  0.28671719277157315,
+                  0.5908581890983192
+                ],
+                "mean_prediction": 0.2581189189189189,
+                "n": 37,
+                "observed_accuracy": 0.43243243243243246
+              },
+              {
+                "bin": 3,
+                "binomial_wilson_interval": [
+                  0.4176473297995616,
+                  0.6289502007521409
+                ],
+                "mean_prediction": 0.3563317073170732,
+                "n": 82,
+                "observed_accuracy": 0.524390243902439
+              },
+              {
+                "bin": 4,
+                "binomial_wilson_interval": [
+                  0.4711584215549716,
+                  0.6353443094277895
+                ],
+                "mean_prediction": 0.4464890510948905,
+                "n": 137,
+                "observed_accuracy": 0.5547445255474452
+              },
+              {
+                "bin": 5,
+                "binomial_wilson_interval": [
+                  0.6167166988934372,
+                  0.7369732770802677
+                ],
+                "mean_prediction": 0.5489736842105263,
+                "n": 228,
+                "observed_accuracy": 0.6798245614035088
+              },
+              {
+                "bin": 6,
+                "binomial_wilson_interval": [
+                  0.5997869007375226,
+                  0.7018483876635023
+                ],
+                "mean_prediction": 0.6455296072507553,
+                "n": 331,
+                "observed_accuracy": 0.6525679758308157
+              },
+              {
+                "bin": 7,
+                "binomial_wilson_interval": [
+                  0.6766233837156527,
+                  0.7837301714004149
+                ],
+                "mean_prediction": 0.7464911196911196,
+                "n": 259,
+                "observed_accuracy": 0.7335907335907336
+              },
+              {
+                "bin": 8,
+                "binomial_wilson_interval": [
+                  0.7254010989177654,
+                  0.8457319412275747
+                ],
+                "mean_prediction": 0.8471982658959538,
+                "n": 173,
+                "observed_accuracy": 0.791907514450867
+              },
+              {
+                "bin": 9,
+                "binomial_wilson_interval": [
+                  0.8160406625343364,
+                  0.9049825333948756
+                ],
+                "mean_prediction": 0.9505751111111111,
+                "n": 225,
+                "observed_accuracy": 0.8666666666666667
+              }
+            ],
+            "true_probability_rmse": "NOT_OBSERVABLE"
+          }
+        },
+        "REPEATED_ITEM": {
+          "MOVING_5": {
+            "auc_roc": 0.7797619047619048,
+            "brier": 0.1264,
+            "calibration_bias": -0.072,
+            "conceptual_mastery": "NOT_IDENTIFIED",
+            "failure_average_precision": 0.3088235294117647,
+            "high_predicted_recall_failures": 0,
+            "high_predicted_recall_n": 8,
+            "log_loss": 0.37562935271840564,
+            "n": 25,
+            "n_items": 25,
+            "n_students": 5,
+            "observed_failure_rate": 0.16000000000000003,
+            "reliability": [
+              {
+                "bin": 4,
+                "binomial_wilson_interval": [
+                  0.2076596008020477,
+                  0.9385080552796037
+                ],
+                "mean_prediction": 0.4000000000000001,
+                "n": 3,
+                "observed_accuracy": 0.6666666666666666
+              },
+              {
+                "bin": 6,
+                "binomial_wilson_interval": [
+                  0.299993315138392,
+                  0.9032285888942195
+                ],
+                "mean_prediction": 0.6,
+                "n": 6,
+                "observed_accuracy": 0.6666666666666666
+              },
+              {
+                "bin": 8,
+                "binomial_wilson_interval": [
+                  0.5291118177871464,
+                  0.9775825085499433
+                ],
+                "mean_prediction": 0.8,
+                "n": 8,
+                "observed_accuracy": 0.875
+              },
+              {
+                "bin": 9,
+                "binomial_wilson_interval": [
+                  0.6755924351161198,
+                  1
+                ],
+                "mean_prediction": 1,
+                "n": 8,
+                "observed_accuracy": 1
+              }
+            ],
+            "true_probability_rmse": "NOT_OBSERVABLE"
+          },
+          "PERSONAL_HISTORICAL": {
+            "auc_roc": 0.5833333333333334,
+            "brier": 0.16830586279999998,
+            "calibration_bias": -0.195124,
+            "conceptual_mastery": "NOT_IDENTIFIED",
+            "failure_average_precision": 0.2791666666666667,
+            "high_predicted_recall_failures": 0,
+            "high_predicted_recall_n": 1,
+            "log_loss": 0.5168489371094422,
+            "n": 25,
+            "n_items": 25,
+            "n_students": 5,
+            "observed_failure_rate": 0.16000000000000003,
+            "reliability": [
+              {
+                "bin": 5,
+                "binomial_wilson_interval": [
+                  0.5650002944233439,
+                  0.9801091123614551
+                ],
+                "mean_prediction": 0.5762222222222222,
+                "n": 9,
+                "observed_accuracy": 0.8888888888888888
+              },
+              {
+                "bin": 6,
+                "binomial_wilson_interval": [
+                  0.39677814746114537,
+                  0.8922087325936989
+                ],
+                "mean_prediction": 0.62062,
+                "n": 10,
+                "observed_accuracy": 0.7
+              },
+              {
+                "bin": 7,
+                "binomial_wilson_interval": [
+                  0.5655175352168251,
+                  1
+                ],
+                "mean_prediction": 0.7597400000000001,
+                "n": 5,
+                "observed_accuracy": 1
+              },
+              {
+                "bin": 9,
+                "binomial_wilson_interval": [
+                  0.20654931437723745,
+                  1
+                ],
+                "mean_prediction": 0.931,
+                "n": 1,
+                "observed_accuracy": 1
+              }
+            ],
+            "true_probability_rmse": "NOT_OBSERVABLE"
+          },
+          "SMOOTHED_SKILL_SET": {
+            "auc_roc": 0.75,
+            "brier": 0.16083167280000002,
+            "calibration_bias": -0.17912,
+            "conceptual_mastery": "NOT_IDENTIFIED",
+            "failure_average_precision": 0.31101190476190477,
+            "high_predicted_recall_failures": 0,
+            "high_predicted_recall_n": 2,
+            "log_loss": 0.4976259850262943,
+            "n": 25,
+            "n_items": 25,
+            "n_students": 5,
+            "observed_failure_rate": 0.16000000000000003,
+            "reliability": [
+              {
+                "bin": 5,
+                "binomial_wilson_interval": [
+                  0.4385029682449546,
+                  1
+                ],
+                "mean_prediction": 0.5846333333333333,
+                "n": 3,
+                "observed_accuracy": 1
+              },
+              {
+                "bin": 6,
+                "binomial_wilson_interval": [
+                  0.5666572155618583,
+                  0.9149232336708375
+                ],
+                "mean_prediction": 0.6355578947368421,
+                "n": 19,
+                "observed_accuracy": 0.7894736842105263
+              },
+              {
+                "bin": 7,
+                "binomial_wilson_interval": [
+                  0.20654931437723745,
+                  1
+                ],
+                "mean_prediction": 0.7967,
+                "n": 1,
+                "observed_accuracy": 1
+              },
+              {
+                "bin": 9,
+                "binomial_wilson_interval": [
+                  0.34238022750665303,
+                  1
+                ],
+                "mean_prediction": 0.9479,
+                "n": 2,
+                "observed_accuracy": 1
+              }
+            ],
+            "true_probability_rmse": "NOT_OBSERVABLE"
+          }
+        }
+      },
       "personal_validation": "NOT_EXECUTED",
       "policy_effectiveness": "NOT_EXECUTED",
+      "qa": {
+        "chronology": "Official documentation calls order_id chronological; elapsed time not inferred",
+        "collapsed_skill_annotations": 0,
+        "elapsed_time": "NOT_AVAILABLE",
+        "exclusions": {
+          "OPEN_RESPONSE_ALWAYS_CORRECT": 8
+        },
+        "logical_events": 346852,
+        "memory_evaluation": "NOT_SUPPORTED",
+        "physical_rows": 346860,
+        "target": "Correct on first attempt; asking for help counts as incorrect"
+      },
       "selected_events": 1682,
       "selected_students": 12,
       "source": {
@@ -1059,8 +3246,7 @@
       "transfer": "First observed item is NOT proof of conceptual transfer"
     }
   },
-  "personal_validation": "NOT_EXECUTED",
-  "policy_effectiveness": "NOT_EXECUTED",
+  "notes": "Full aggregate reports recovered from a SHA-verified CI ZIP, no raw or per-event records. Later guard/replay changes require own CI.",
   "can_apply": false,
   "can_schedule": false
 }
