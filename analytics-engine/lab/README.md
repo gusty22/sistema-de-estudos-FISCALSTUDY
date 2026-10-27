@@ -84,3 +84,12 @@ Instalação opcional, em ambiente virtual exclusivo:
 Não há download ou instalação automática ao rodar experimentos. O lock registra o ambiente efetivamente usado; requirements-lab.txt registra as dependências diretas. pyBKT 1.4.3 falhou com scikit-learn 1.9.1 durante importação, por AttributeError na descoberta de métricas. O protocolo fixa scikit-learn 1.6.1 e não altera o código da biblioteca para ocultar a incompatibilidade.
 
 O manifesto inclui os arquivos da extensão R; o status externo inclui versões e hashes das fontes pyBKT instaladas. audit_run.py verifica arquivos e vínculos dos eventos em modo somente leitura. Não confundir integridade de hashes com autenticidade ou validade científica. Os dois adapters recusam saídas existentes e caminhos fora das fixtures sintéticas. A comparação informa cobertura e usa pares de eventos; cobertura incompleta impede declarar superioridade. summary.json inclui estratos de intervalo registrado e de familiaridade por identidade do item, sem alegar transferência.
+
+## Referência de memória oficial
+
+MEMORY_PROTOCOL.md documenta um experimento separado de recordação, sem chute e com aquisição conhecida no simulador. Instale apenas no ambiente experimental:
+
+    python -m pip install -r lab/requirements-memory-lab.txt
+    python lab/memory_benchmark.py --output tests/fixtures/learner_lab/run-memory
+
+O gerador é independente do FSRS. O R usa seu diagnóstico de recuperação existente e os escores são conferidos por Python. A biblioteca FSRS 6.3.2 oficial permanece inalterada; não há novo agendador no R ou consumo operacional. Resultados sintéticos, inclusive a ausência de superioridade do FSRS padrão neste gerador, estão documentados com CI, métricas e replay. O HTML do laboratório de questões não é apresentado como dashboard de memória; os artefatos de memória são JSON/CSV. Homologação visual permanece pendente.

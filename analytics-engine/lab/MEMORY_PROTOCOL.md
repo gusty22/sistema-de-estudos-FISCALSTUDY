@@ -61,3 +61,25 @@ Saídas: criteria.json, observations.csv, input-manifest.json, r-diagnostics.jso
 Validar determinismo, cold start, exclusão da verdade latente, tempo pré-atualização, batches, igualdade dos escores R/Python, integridade e replay. CI deve executar e preservar os dados sintéticos antes de relatar métricas.
 
 Permanecem separados: otimização pessoal, comparação de políticas com orçamento equivalente, identificação de aquisição versus esquecimento, dados públicos licenciados, validação pessoal prospectiva, integração Java e homologação visual. Um FSRS bem-sucedido no gerador não demonstra eficácia pessoal.
+
+## Resultado efetivamente executado
+
+[CI 40432790113](https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40432790113), commit f9849b29f7d3184fbda3adf7e7307e29bef26d96: todos os gates passaram. 30 testes do laboratório, sem skips ou falhas; 600 verificações R, zero falhas. Os oito arquivos de memória foram reproduzidos byte a byte. A regressão do laboratório de questões também passou, com 50 arquivos reproduzidos.
+
+Foram gerados 1120 eventos de recordação: 160 estados iniciais sem previsão e 960 alvos maduros avaliados. Escores R/Python concordaram pela tolerância 1e-10.
+
+| Modelo | N | Brier | Log loss | RMSE contra R verdadeiro do gerador |
+|---|---:|---:|---:|---:|
+| FSRS oficial, parâmetros padrão | 960 | 0,275057 | 0,870704 | 0,357872 |
+| Histórico Beta(1,1) | 960 | 0,217010 | 0,642642 | 0,270352 |
+| Constante 0,5 | 960 | 0,250000 | 0,693147 | 0,321427 |
+
+Diferença pareada FSRS menos histórico: intervalo por seed Brier [0,051405;0,064690] e log loss [0,202051;0,255214]. Não foi estabelecida superioridade; neste desenho ambos os escores foram piores. Viés médio previsto menos observado do FSRS: +0,270110. Isso evidencia incompatibilidade/calibração insuficiente para esta população gerada e seus intervalos, não uma conclusão universal sobre o FSRS nem sobre o estudante real.
+
+Não alterar os parâmetros padrão para vencer estas seeds ou substituir a fórmula oficial. Um novo protocolo de otimização/calibração deve separar treino, escolha e teste antes de avaliar benefícios individuais. Não comparar estabilidade FSRS (R=0,9) diretamente com meia-vida geradora (R=0,5): são quantidades diferentes.
+
+Bins de confiabilidade e seus intervalos de Wilson são descritivos; tentativas repetidas não são independentes. O bootstrap usa cinco seeds e é condicionado ao gerador, não à população humana. Não foram otimizados parâmetros, comparadas políticas, medido efeito pedagógico ou estimada compreensão.
+
+Resultado compacto permanente: tests/fixtures/learner_lab/memory_reference_result.json. Artefato de CI 12702842479, SHA-256 120ac8183467e550d50f3b7b05d497c7b2913a9cf10300f46392243cef46b1ee, disponível até 03/11/2026. Os comandos acima reproduzem os dados; o hash do artefato não é assinatura científica.
+
+Próxima etapa: desenho de calibração temporal e identificabilidade antes de comparar políticas. Os quatro perfis são condições geradoras conhecidas, não uma personalidade atribuída ao estudante. Este resultado não modifica o planejador, os modelos operacionais ou os controles de autoridade.
