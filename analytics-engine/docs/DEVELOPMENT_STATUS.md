@@ -214,3 +214,10 @@ Incremento experimental sobre main 63a81c4, após #31. Implementados ajuste glob
 Protocolo e limites adicionados a lab/MEMORY_PROTOCOL.md. Nenhuma melhora é presumida: resultados deste código serão registrados somente após a execução dos gates. Conhecimento versus esquecimento, half-life individual, eficácia pedagógica e validação humana continuam não demonstrados.
 
 Evidência executada do incremento fe9f9b3: CI 40504239066, 36 testes de laboratório, 640 verificações R, zero falhas e replay de 13 arquivos idênticos. O ajuste individual melhorou Brier/log loss futuros em média neste gerador; três de 20 estudantes pioraram no Brier versus global e a calibração não é perfeita. Históricos imediatos não identificaram retenções distintas; sondagens tardias dependeram do intervalo e N. Sumário completo em tests/fixtures/learner_lab/individual_calibration_reference_result.json e matriz científica em lab/MEMORY_PROTOCOL.md. Hardening posterior de versões, proveniência e casos curtos requer a CI do head atual. Planejador continua bloqueado.
+
+
+## External human memory validation — 27/10/2026
+
+Increment on main 525fb13 after #32. Adds a pinned, byte-bounded public FSRS dataset adapter and actual-rating replay; R temporal holdout reuses PR32 calibration helpers with leave-one-user-out past-only donors, personal eligibility/abstention and item-cluster parameter uncertainty. Separate ASSISTments parser preserves ordinal chronology and its first-attempt/help target; no memory interpretation.
+
+Prespecified protocol in docs/REAL_WORLD_VALIDATION.md. Human results are pending the new CI and must not be inferred from fixtures or prior synthetic results. Raw records are not published. can_apply/can_schedule remain false; Java, SQLite, FSRS parameters and production planning untouched. Personal instrumentation/N-of-1/active information selection remain separate pending stages.
