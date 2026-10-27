@@ -157,3 +157,12 @@ Suíte R 4.5.1 em snapshot isolado: main 526/0; incremento 566/0 (verificações
 
 
 Resultado final atualizado: 574 verificações R/0 falhas (22.302s); 22 testes Java/0 falhas/0 erros/0 ignorados (01:04 min). Os 6 testes do gate incluem retorno HTTP 422 para aplicação manual sem contrato válido. Detalhes das tentativas não aprovadas e dos limites estão no relatório de validação.
+
+
+## Laboratório — incremento 2, validação em andamento
+
+Base main f77b3a4 após PRs #25/#26. Implementados adaptador real pyBKT 1.4.3, extensão R com média móvel existente, comparação pareada e cobertura explícita, abstenção numérica, confinamento dos adapters, verificador de artefatos e histórico completo no HTML. Sem alterações de produção ou autoridade.
+
+Evidências desta entrega: 574 verificações R sem falhas; 14 fontes R locais idênticas aos blobs da main; suíte intermediária de 20 testes passou com pyBKT real. A suíte final de 22 testes não teve conclusão recuperada antes da desconexão do ambiente. Smoke sintético de 204 eventos/71 alvos executado e auditado; ensaio corrigido de cinco seeds terminou com código 0, mas métricas finais não foram recuperadas. Replay ampliado e homologação visual não executados.
+
+Falhas relevantes: scikit-learn 1.9.1 incompatível com pyBKT 1.4.3 (fixado 1.6.1); probabilidades não finitas em histórico curto exigem indisponibilidade, não substituição; caminhos de manifestos normalizados. Detalhes e limitações em lab/BASELINE_PROTOCOL.md e lab/COMPARISON_RESULTS.md. CI deve reexecutar e preservar resultados. Não declarar Twin validado nem melhora pedagógica. Próximo gate: coleta remota, revisão dos resultados e, depois, experimento de recordação tardia FSRS.
