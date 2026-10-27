@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { AttemptSubmission, annotateAttempt } from '../utils/attemptSubmission';
+import { AttemptSubmission, annotateAttempt, requestJson } from '../utils/attemptSubmission';
 import { ProspectivePreparation } from '../utils/prospectivePreparation';
 import { readAttemptJournal, restoreQuestionSession, saveQuestionSession } from '../utils/attemptJournal';
 import { cachedStudyPreferences } from '../utils/studyPreferences';
@@ -178,6 +178,7 @@ const QuestionViewer: React.FC = () => {
   const prospectiveRef = useRef<ProspectivePreparation | null>(null);
   const [prospectiveStatus, setProspectiveStatus] = useState<'PREPARING' | 'READY' | 'ERROR'>('PREPARING');
   const [prospectiveRetry, setProspectiveRetry] = useState(0);
+  const [partialHistoryRecovery, setPartialHistoryRecovery] = useState(false);
 
   // Configuração da Sessão Personalizada (Fase 8)
   const [concursos, setConcursos] = useState<ConcursoOption[]>([]);
@@ -555,6 +556,34 @@ const QuestionViewer: React.FC = () => {
       .catch(() => { if (active) setProspectiveStatus('ERROR'); });
     return () => { active = false; };
   }, [question?.questionId, sessionId, feedback, prospectiveRetry]);
+
+  // Rebuild the whole visible session map from SERVER-confirmed outcomes after a restart.
+  useEffect(() => {
+    if (!sessionQuestions.length) return;
+    let active = true;
+    Promise.all(sessionQuestions.map(async item => {
+      const saved = readAttemptJournal(item.questionId, sessionId);
+      if (!saved?.payload) return null;
+      const state = await requestJson('/api/v1/questions/' + encodeURIComponent(item.questionId) +
+        '/predictions/' + encodeURIComponent(saved.attemptId) + '?sessionId=' + encodeURIComponent(sessionId));
+      if (state.state !== 'ANSWER_RECORDED') return null;
+      const raw = String(saved.payload.selectedOption);
+      const options = item.options.map(o => typeof o === 'string' ? o : (o.label + ') ' + o.text));
+      const selected = options.find(o => o.startsWith(raw)) ||
+        (options.length === 2 && (raw === 'C' || raw === 'E') ? options[raw === 'C' ? 0 : 1] : raw);
+      return { id: item.questionId, value: { selectedOption: selected, confidence: Number(saved.payload.confidenceLevel),
+        feedback: state.feedback as AttemptFeedback, biometricResult: null, activeTimeMs: Number(saved.payload.activeTimeMs) } };
+    })).then(rows => {
+      if (!active) return;
+      setAnsweredMap(previous => {
+        const restored = { ...previous };
+        for (const row of rows) if (row) restored[row.id] = row.value;
+        return restored;
+      });
+      setPartialHistoryRecovery(false);
+    }).catch(() => { if (active) setPartialHistoryRecovery(true); });
+    return () => { active = false; };
+  }, [sessionId, sessionQuestions]);
 
   const prospectiveReady = prospectiveStatus === 'READY' &&
     prospectiveRef.current?.questionId === question?.questionId &&
@@ -1792,6 +1821,7 @@ const QuestionViewer: React.FC = () => {
           </div>
         )}
 
+        {partialHistoryRecovery && <p role="alert">Parte do histórico ainda não foi confirmada pelo servidor. O progresso mostrado pode estar incompleto.</p>}
         <div className="options" aria-busy={!prospectiveReady && !feedback} role="radiogroup" aria-label="Alternativas da questão">
           {optionsList.map((opt, idx) => {
             const isSelected = selectedOption === opt;
