@@ -153,3 +153,12 @@ These fixtures are not a reviewed fiscal reference set. Future real reference re
 ### Operational rollback / remaining gates
 Migration7 is additive and transactional, with verified pre-migration backup. Retain read/provenance/COMPROMISED history on recovery. Deploying older readers while holds exist would bypass protections; rollback is not a safe way to clear uncertainty.
 Cache replay authorization/invalidation, unleased non-HTTP readers, complete controlled-source membership, semantic reference review and protected assessment release remain unresolved. Real reserve creation remains disabled. R/FSRS authority flags remain false.
+
+
+### Manual semantic reference protocol (not executed)
+1. Select a small licensed/public set across fiscal subjects; record original source/version/page and stable occurrence IDs before pairing. Keep a separate final set untouched by any rule tuning.
+2. Review each pair independently: exact content, derived copy with source evidence, same concept/different problem, related concept, different application context or inconclusive. Text similarity alone cannot certify a semantic relation.
+3. Record each reviewer's identity/date, proposed label, confidence and concrete reasoning/pre-requisites/solution demands. Leave reviewer fields empty until actual review; no generated HUMAN records.
+4. Resolve disagreements explicitly or retain INCONCLUSIVE. Record raw agreement with denominator; do not infer reliability from a tiny set or fabricate kappa/accuracy.
+5. Keep semantic assertions non-authoritative until adjudicated and tested. This increment persists only deterministic exact capture; no semantic-review database/API was claimed.
+Worksheet fields: pair IDs | source references | reviewer A label/evidence | reviewer B label/evidence | disagreement/adjudication | final status. Current real reference set: NOT_REVIEWED.

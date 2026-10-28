@@ -35,7 +35,8 @@ class PersonalPilotTests(unittest.TestCase):
                 Path(argv[-1]).write_text(json.dumps({"can_apply": False, "can_schedule": False,
                     "contract_version": "prospective-evaluation-v1", "input_sha256": envelope["inputSha256"],
                     "source_kind": "SYNTHETIC_FIXTURE", "forecast_count": 0, "scored_count": 0,
-                    "excluded_count": 0, "metrics": {}, "scientific_scorecard": {}}))
+                    "excluded_count": 0, "metrics": {"status": "INSUFFICIENT_EVIDENCE"},
+                    "scientific_scorecard": {"version": "prospective-scorecard-v1", "n": 0, "can_apply": False, "can_schedule": False}}))
                 return SimpleNamespace(returncode=0, stdout=b"synthetic", stderr=b"")
             with patch("personal_pilot.subprocess.run", side_effect=execute):
                 result = evaluate_local(path, root / "run", synthetic_test=True)

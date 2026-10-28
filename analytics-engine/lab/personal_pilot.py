@@ -80,6 +80,13 @@ def evaluate_local(input_path, output, rscript="Rscript", synthetic_test=False):
                 or not isinstance(metrics.get("metrics"), dict)
                 or not isinstance(metrics.get("scientific_scorecard"), dict)):
             raise RuntimeError("Incomplete or mismatched analytical report")
+        n = metrics["scored_count"]
+        score = metrics["scientific_scorecard"]
+        if (score.get("version") != "prospective-scorecard-v1" or score.get("n") != n
+                or score.get("can_apply") is not False or score.get("can_schedule") is not False
+                or (n == 0 and metrics["metrics"].get("status") != "INSUFFICIENT_EVIDENCE")
+                or (n > 0 and metrics["metrics"].get("n") != n)):
+            raise RuntimeError("Incomplete scientific scorecard")
         if input_path.read_bytes() != raw:
             raise RuntimeError("Input changed during execution")
         manifest["status"] = "SUCCEEDED_SOFTWARE_EVALUATION_ONLY"
