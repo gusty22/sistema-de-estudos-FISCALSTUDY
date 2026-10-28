@@ -149,7 +149,7 @@ public class ConcursoRepositoryImpl implements ConcursoRepository {
         if (cOpt.isEmpty()) return 0;
         Concurso c = cOpt.get();
 
-        String sql = "SELECT count(*) FROM questions WHERE 1=1 ";
+        String sql = "SELECT count(*) FROM study_questions WHERE 1=1 ";
         if (c.getBanca() != null) sql += " AND banca = '" + c.getBanca().replace("'", "''") + "'";
         if (c.getAno() != null) sql += " AND ano = " + c.getAno();
         if (c.getCargo() != null) sql += " AND cargo = '" + c.getCargo().replace("'", "''") + "'";

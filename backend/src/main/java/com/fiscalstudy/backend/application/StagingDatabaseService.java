@@ -978,11 +978,11 @@ public class StagingDatabaseService {
         int reportadas = 0;
 
         try {
-            Integer pub = operationalJdbcTemplate.queryForObject("SELECT COUNT(*) FROM questions WHERE status = 'PUBLISHED' OR status IS NULL", Integer.class);
+            Integer pub = operationalJdbcTemplate.queryForObject("SELECT COUNT(*) FROM study_questions WHERE status = 'PUBLISHED' OR status IS NULL", Integer.class);
             if (pub != null) publicadas = pub;
-            Integer gab = operationalJdbcTemplate.queryForObject("SELECT COUNT(*) FROM questions WHERE gabarito_status != 'DEFINITIVO' AND gabarito_status != 'HOMOLOGADO'", Integer.class);
+            Integer gab = operationalJdbcTemplate.queryForObject("SELECT COUNT(*) FROM study_questions WHERE gabarito_status != 'DEFINITIVO' AND gabarito_status != 'HOMOLOGADO'", Integer.class);
             if (gab != null) gabaritosNaoConfirmados = gab;
-            Integer sem = operationalJdbcTemplate.queryForObject("SELECT COUNT(*) FROM questions WHERE disciplina IS NULL OR disciplina = '' OR assunto IS NULL OR assunto = ''", Integer.class);
+            Integer sem = operationalJdbcTemplate.queryForObject("SELECT COUNT(*) FROM study_questions WHERE disciplina IS NULL OR disciplina = '' OR assunto IS NULL OR assunto = ''", Integer.class);
             if (sem != null) semClassificacao = sem;
         } catch (Exception ignored) {}
 

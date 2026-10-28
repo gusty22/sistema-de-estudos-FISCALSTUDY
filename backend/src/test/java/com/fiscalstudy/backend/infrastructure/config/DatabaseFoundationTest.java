@@ -14,7 +14,7 @@ class DatabaseFoundationTest {
  DatabasePaths paths(Path db) { return new DatabasePaths(new MockEnvironment().withProperty("fiscalstudy.project-root",temp.toString()).withProperty("spring.datasource.url","jdbc:sqlite:"+db).withProperty("fiscalstudy.staging-db",temp.resolve("staging.db").toString())); }
  @Test void newDatabaseHasVersionedSchemaAndRepeatMigrationIsIdempotent() throws Exception {
   var db=temp.resolve("new.db");
-  try(var c=open(db)){SchemaMigration.migrate(c);SchemaMigration.migrate(c);try(var s=c.createStatement();var r=s.executeQuery("SELECT count(*) FROM schema_migrations")){assertTrue(r.next());assertEquals(3,r.getInt(1));}}
+  try(var c=open(db)){SchemaMigration.migrate(c);SchemaMigration.migrate(c);try(var s=c.createStatement();var r=s.executeQuery("SELECT count(*) FROM schema_migrations")){assertTrue(r.next());assertEquals(5,r.getInt(1));}}
   SqliteRecovery.verify(db);
  }
  @Test void legacyNotebookIsUpgradedWithoutLosingDataAndSnapshotIsVerified() throws Exception {

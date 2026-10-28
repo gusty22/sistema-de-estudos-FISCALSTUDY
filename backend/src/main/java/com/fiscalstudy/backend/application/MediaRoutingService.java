@@ -83,7 +83,7 @@ public class MediaRoutingService {
         try {
             // Conta histórico através do event_store (append-only)
             String sql = "SELECT e.payload_json FROM event_store e " +
-                         "JOIN questions q ON e.aggregate_id = q.id " +
+                         "JOIN study_questions q ON e.aggregate_id = q.id " +
                          "WHERE e.event_type = 'ANSWER_SUBMITTED' " +
                          "  AND LOWER(q.assunto) = LOWER(?)";
             List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql, assunto.trim());
@@ -101,7 +101,7 @@ public class MediaRoutingService {
                 try {
                     String sqlCompat = "SELECT COUNT(*) as total, SUM(CASE WHEN is_correct = 1 THEN 1 ELSE 0 END) as acertos " +
                                        "FROM question_attempts a " +
-                                       "JOIN questions q ON a.aggregate_id = q.id " +
+                                       "JOIN study_questions q ON a.aggregate_id = q.id " +
                                        "WHERE LOWER(q.assunto) = LOWER(?)";
                     List<Map<String, Object>> rowsCompat = jdbcTemplate.queryForList(sqlCompat, assunto.trim());
                     if (!rowsCompat.isEmpty() && rowsCompat.get(0).get("total") != null) {
@@ -135,7 +135,7 @@ public class MediaRoutingService {
         try {
             // Busca os últimos 10 eventos de resposta desse assunto
             String sql = "SELECT e.payload_json FROM event_store e " +
-                         "JOIN questions q ON e.aggregate_id = q.id " +
+                         "JOIN study_questions q ON e.aggregate_id = q.id " +
                          "WHERE e.event_type = 'ANSWER_SUBMITTED' " +
                          "  AND LOWER(q.assunto) = LOWER(?) " +
                          "ORDER BY e.recorded_at DESC LIMIT 10";

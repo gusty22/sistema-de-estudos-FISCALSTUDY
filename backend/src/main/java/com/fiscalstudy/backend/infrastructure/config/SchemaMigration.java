@@ -20,7 +20,7 @@ public final class SchemaMigration {
         try(Statement s=c.createStatement();ResultSet r=s.executeQuery("SELECT count(*) FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")){populated=r.next()&&r.getInt(1)>0;}
         if(!populated)return;
         boolean current=false;
-        try(Statement s=c.createStatement();ResultSet r=s.executeQuery("SELECT 1 FROM schema_migrations WHERE version=4")){current=r.next();}catch(SQLException missingVersionTable){/* legacy baseline */}
+        try(Statement s=c.createStatement();ResultSet r=s.executeQuery("SELECT 1 FROM schema_migrations WHERE version=5")){current=r.next();}catch(SQLException missingVersionTable){/* legacy baseline */}
         if(current)return;
         java.nio.file.Path backup=paths.backupDirectory().resolve("before_migration_"+Instant.now().toEpochMilli()+"_"+UUID.randomUUID()+".db");
         int code=c.unwrap(org.sqlite.SQLiteConnection.class).getDatabase().backup("main",backup.toString(),null);
@@ -84,6 +84,10 @@ public final class SchemaMigration {
                 ensureColumn(c,"topic_knowledge_projections","pedagogical_hypotheses_json","TEXT");
                 record(c,4,"Topic knowledge observable indicators and epistemic governance");
             }
+            ScriptUtils.executeSqlScript(c,new org.springframework.core.io.support.EncodedResource(
+                new ClassPathResource("diagnostic-quarantine-triggers.sql"),java.nio.charset.StandardCharsets.UTF_8),
+                false,false,"--",";;","/*","*/");
+            if(!applied(c,5)) record(c,5,"Diagnostic quarantine foundation; operational shared view");
             c.commit();
         } catch(Exception e){c.rollback();throw new SQLException("Migration rolled back",e);}
         finally{c.setAutoCommit(auto);}

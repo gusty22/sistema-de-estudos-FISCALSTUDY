@@ -43,6 +43,8 @@ public class QuestionSelectionService {
     }
 
     public void recordPresentation(String questionId, String sessionId) {
+        if(questionRepository.findById(questionId).isEmpty())
+            throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND,"Question unavailable");
         // Debounce técnico de 5 segundos para absorver StrictMode e retries imediatos sem suprimir reapresentações legítimas
         if (!eventStoreRepository.hasRecentEventSeconds("QUESTION_PRESENTED", questionId, sessionId, 5)) {
             String payload = String.format("{\"questionId\": \"%s\"}", questionId);

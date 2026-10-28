@@ -251,7 +251,7 @@ public class StrategicSummaryService {
         try {
             questoesBanca = jdbcTemplate.queryForList("""
                 SELECT id, enunciado, options_json, correct_option, justificativa, ano, banca, orgao
-                FROM questions
+                FROM study_questions
                 WHERE LOWER(disciplina) = LOWER(?)
                   AND (LOWER(assunto) LIKE LOWER(?) OR LOWER(enunciado) LIKE LOWER(?))
                   AND LOWER(banca) = LOWER(?)
@@ -261,7 +261,7 @@ public class StrategicSummaryService {
             if (questoesBanca.isEmpty()) {
                 questoesBanca = jdbcTemplate.queryForList("""
                     SELECT id, enunciado, options_json, correct_option, justificativa, ano, banca, orgao
-                    FROM questions
+                    FROM study_questions
                     WHERE LOWER(disciplina) = LOWER(?)
                       AND (LOWER(assunto) LIKE LOWER(?) OR LOWER(enunciado) LIKE LOWER(?))
                     ORDER BY ano DESC LIMIT 15
@@ -329,14 +329,14 @@ public class StrategicSummaryService {
 
         try {
             Integer qCount = jdbcTemplate.queryForObject(
-                    "SELECT COUNT(*) FROM questions WHERE LOWER(disciplina) = LOWER(?) AND LOWER(assunto) LIKE LOWER(?)",
+                    "SELECT COUNT(*) FROM study_questions WHERE LOWER(disciplina) = LOWER(?) AND LOWER(assunto) LIKE LOWER(?)",
                     Integer.class, disciplina, "%" + topico + "%"
             );
             totalQuestoesGerais = (qCount != null) ? qCount : 0;
 
             List<Map<String, Object>> studentEvents = jdbcTemplate.queryForList(
                     "SELECT e.payload_json FROM event_store e " +
-                            "INNER JOIN questions q ON q.id = e.aggregate_id " +
+                            "INNER JOIN study_questions q ON q.id = e.aggregate_id " +
                             "WHERE e.event_type = 'ANSWER_SUBMITTED' AND e.origin = 'REAL_STUDY' AND LOWER(q.disciplina) = LOWER(?) " +
                             "AND LOWER(q.assunto) LIKE LOWER(?)",
                     disciplina, "%" + topico + "%"

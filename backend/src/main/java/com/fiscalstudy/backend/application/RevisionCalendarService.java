@@ -441,7 +441,7 @@ public class RevisionCalendarService {
 
         if (disc == null || top == null) throw new IllegalArgumentException("Informe disciplina e tópico da revisão");
         List<Map<String, Object>> questions = jdbcTemplate.queryForList(
-                "SELECT id, enunciado AS statement, justificativa AS commentary, texto_apoio AS support_text, banca AS board, ano AS year FROM questions WHERE disciplina = ? AND assunto = ? AND status = 'VALIDADA' ORDER BY id LIMIT 2", disc, top);
+                "SELECT id, enunciado AS statement, justificativa AS commentary, texto_apoio AS support_text, banca AS board, ano AS year FROM study_questions WHERE disciplina = ? AND assunto = ? AND status = 'VALIDADA' ORDER BY id LIMIT 2", disc, top);
 
         Map<String, Object> primeiraQuestao = new HashMap<>();
         Map<String, Object> segundaQuestao = new HashMap<>();

@@ -126,3 +126,11 @@ Reversão: reverter somente os commits desta branch; sem migração ou alteraç�
 Estado de testes: comandos executados e resultados devem constar na PR e checks do HEAD exato, nunca inferidos dos testes históricos.
 Comandos: workflow prospective-ledger (Java isolado, R sidecar/replay, frontend e Chromium completo); workflow learner-lab (Python/R e replays).
 Próxima retomada: conferir SHA e checks desta PR; depois auditar quarentena de itens em todos consumidores. Não liberar reservas incompletas.
+
+
+## Quarantine foundation checkpoint — 27/10/2026
+Base7a56221 (PR36 merged); branch feature/diagnostic-quarantine-foundation. Remote Git API with explicit parent and lease; local cwd has no checkout, no local work discarded. Physical questions unchanged; migration5 transactional additive schema/views/guards, verified pre-migration backup required.
+Implementation and known-path matrix: [QUARANTINE_EXPOSURE_AUDIT.md](QUARANTINE_EXPOSURE_AUDIT.md).
+State: policy implemented; tests in current PR must pass before technically tested. Not human/personal validated; not authorized for experiments. Creation/release APIs absent and status explicitly disabled until staging/cache/variant gates are complete.
+No late-assessment contract claimed implemented; no changes to R scorecard/FSRS/operational authority.
+Next resume: verify branch HEAD and CI, fix actual failures, then address staging/material/cache copies before any reserve activation. Never roll back to unguarded older code if real reservations exist. See matrix for limitations, test commands and recovery.

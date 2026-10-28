@@ -234,7 +234,7 @@ public class StudentKnowledgeStateService {
                     SELECT DISTINCT LOWER(disciplina) || '-' || LOWER(assunto) as id,
                            'default' as concurso_id,
                            disciplina, assunto, 2.0 as peso
-                    FROM questions
+                    FROM study_questions
                     WHERE disciplina IS NOT NULL AND assunto IS NOT NULL
                     ORDER BY disciplina ASC, assunto ASC
                 """);
@@ -297,7 +297,7 @@ public class StudentKnowledgeStateService {
         try {
             attemptRows = jdbcTemplate.queryForList("""
                 SELECT e.aggregate_id AS question_id,e.session_id,e.occurred_at,e.payload_json,t.disciplina,t.assunto
-                FROM event_store e JOIN questions q ON e.aggregate_id=q.id
+                FROM event_store e JOIN study_questions q ON e.aggregate_id=q.id
                 JOIN question_topic_classifications c ON c.question_id=q.id AND c.status='CONFIRMED'
                 JOIN edital_topicos t ON t.id=c.topic_id
                 WHERE e.event_type='ANSWER_SUBMITTED' AND json_valid(e.payload_json)

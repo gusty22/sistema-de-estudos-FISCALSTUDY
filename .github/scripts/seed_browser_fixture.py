@@ -14,4 +14,8 @@ with sqlite3.connect(db) as c:
         c.execute("insert into questions(id,enunciado,options_json,correct_option,disciplina,assunto,banca,ano,orgao,cargo,status) values(?,?,?,?,?,?,?,?,?,?,?)",
           ("fixture-q"+str(n),"SYNTHETIC_FIXTURE "+str(n)+": selecione a alternativa A.",
            json.dumps(["A) Correta","B) Outra","C) Terceira","D) Quarta","E) Quinta"]),"A","Matemática","Frações","FIXTURE",2026,"Fixture","Fiscal","VALIDADA"))
-print("Seeded 3 explicitly synthetic questions in disposable CI database.")
+    c.execute("insert into questions(id,enunciado,options_json,correct_option,disciplina,assunto,banca,ano,status) values(?,?,?,?,?,?,?,?,?)",
+      ("fixture-held","SYNTHETIC_HELD_ITEM_NEVER_DISPLAY",json.dumps(["A) Held","B) Other"]),"A","Matemática","Frações","FIXTURE",2026,"VALIDADA"))
+    c.execute("insert into diagnostic_reservation_events values(?,?,?,?,?,?,?,?,?,?,?,?)",
+      ("fixture-res-event","fixture-reservation","fixture-held",None,"RESERVED","synthetic-protocol","CI quarantine only","2026-10-27T00:00:00Z","{}","EXTERNAL_EXPOSURE_UNKNOWN","Synthetic fixture only","diagnostic-quarantine-v1"))
+print("Seeded 3 study items and 1 quarantined synthetic item; production reservation creation remains disabled.")

@@ -403,7 +403,7 @@ public class TopicKnowledgeAggregatorService {
 
     private Map<String, QuestionMetadata> loadQuestionMetadata() {
         Map<String, QuestionMetadata> map = new HashMap<>();
-        String sql = "SELECT id, disciplina, assunto, banca, ano FROM questions";
+        String sql = "SELECT id, disciplina, assunto, banca, ano FROM study_questions";
         try {
             jdbcTemplate.query(sql, rs -> {
                 String id = rs.getString("id");
@@ -437,7 +437,7 @@ public class TopicKnowledgeAggregatorService {
                 SELECT q.assunto, AVG(m.stability) as avg_stab, 
                        AVG(EXP(- (julianday('now') - julianday(m.last_reviewed_at)) / MAX(1.0, m.stability))) as avg_retrieval
                 FROM learning_memory_state m
-                JOIN questions q ON q.id = m.question_id
+                JOIN study_questions q ON q.id = m.question_id
                 GROUP BY q.assunto
             """;
             jdbcTemplate.query(sql, rs -> {

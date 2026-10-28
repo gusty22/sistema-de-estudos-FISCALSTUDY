@@ -61,7 +61,7 @@ public class AnswerSwitchTrackerService {
 
         // Mapear gabarito oficial por questionId a partir do banco de questões
         Map<String, String> officialAnswers = new HashMap<>();
-        List<Map<String, Object>> rows = jdbcTemplate.queryForList("SELECT id, correct_option FROM questions");
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList("SELECT id, correct_option FROM study_questions");
         for (Map<String, Object> r : rows) {
             String qid = (String) r.get("id");
             String ans = (String) r.get("correct_option");

@@ -48,7 +48,7 @@ jobs:
         timeout-minutes: 8
         run: |
           mvn -B -ntp test-compile
-          mvn -B -ntp -Dtest=ProspectivePredictionIntegrationTest,AttemptIdentityRegressionTest,LearningEvidenceServiceTest,FsrsReferenceConformanceTest,QuestionControllerTest,ProspectiveExportSecurityTest test
+          mvn -B -ntp -Dtest=ProspectivePredictionIntegrationTest,AttemptIdentityRegressionTest,LearningEvidenceServiceTest,FsrsReferenceConformanceTest,QuestionControllerTest,ProspectiveExportSecurityTest,DiagnosticQuarantineIntegrationTest,DiagnosticQuarantineArchitectureTest,DatabaseFoundationTest test
       - name: Evaluate the actual Java export in R and replay
         working-directory: analytics-engine
         run: |

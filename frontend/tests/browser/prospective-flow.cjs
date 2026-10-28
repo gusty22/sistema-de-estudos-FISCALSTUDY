@@ -32,6 +32,19 @@ async function waitFor(fn) { for(let n=0;n<100;n++){if(await fn())return;await n
   else await route.fulfill({response});
  });
  await page.goto('http://127.0.0.1:5173');
+ // Actual HTTP through Vite/Spring; seeded quarantine state is persisted, not mocked.
+ const batch=await page.request.get('http://127.0.0.1:5173/api/v1/questions/batch?limit=100');
+ assert.equal(batch.status(),200);assert(!(await batch.text()).includes('SYNTHETIC_HELD_ITEM_NEVER_DISPLAY'));
+ const bank=await page.request.get('http://127.0.0.1:5173/api/v1/bank/questions?limit=100');
+ assert.equal(bank.status(),200);assert(!(await bank.text()).includes('SYNTHETIC_HELD_ITEM_NEVER_DISPLAY'));
+ const held=await page.request.post('http://127.0.0.1:5173/api/v1/questions/fixture-held/predictions',
+   {data:{sessionId:'synthetic-quarantine',attemptId:'00000000-0000-4000-8000-000000000037'}});
+ assert.equal(held.status(),404);
+ const readiness=await page.request.get('http://127.0.0.1:5173/api/v1/learning-lab/diagnostic-quarantine/status');
+ assert.equal(readiness.status(),200);assert.equal((await readiness.json()).reservationCreationEnabled,false);
+ assert.equal(sql("SELECT count(*) n FROM diagnostic_reservation_events")[0].n,1);
+ console.log('Synthetic quarantine: real batch/bank/direct prediction denied; creation disabled.');
+
  await gotoStudy();
  await page.getByRole('button',{name:/Iniciar Sessão de Estudo/}).click();
  await page.getByRole('button',{name:'Tentar novamente',exact:true}).waitFor();
@@ -114,7 +127,7 @@ async function waitFor(fn) { for(let n=0;n<100;n++){if(await fn())return;await n
  const answer=await page.request.post('http://127.0.0.1:8080/api/v1/questions/'+qid+'/attempts',{data:{attemptId:id,sessionId:sid,selectedOption:'A',confidenceLevel:4,activeTimeMs:1000,usedHelp:false}});
  assert.equal(answer.status(),200);assert.equal(memory(),1);
  assert.equal(external.length,0);
- fs.writeFileSync(path.join(root,'browser-summary.json'),JSON.stringify({source_kind:'SYNTHETIC_FIXTURE',checks:['preparation_before_answer','lost_preparation_ack_reload','lost_answer_ack_reload','double_click','completed_reload','frontend_runtime_restart','rapid_question_switch','no_grade_leak','export_authorization','ineligible_fsrs_exclusion'],attempts:count('ANSWER_SUBMITTED'),memory_evidence:memory(),can_apply:false,can_schedule:false},null,2));
+ fs.writeFileSync(path.join(root,'browser-summary.json'),JSON.stringify({source_kind:'SYNTHETIC_FIXTURE',checks:['quarantine_batch_bank_direct_prediction','quarantine_creation_disabled','preparation_before_answer','lost_preparation_ack_reload','lost_answer_ack_reload','double_click','completed_reload','frontend_runtime_restart','rapid_question_switch','no_grade_leak','export_authorization','ineligible_fsrs_exclusion'],attempts:count('ANSWER_SUBMITTED'),memory_evidence:memory(),can_apply:false,can_schedule:false},null,2));
  await browser.close();
  console.log('Real-browser synthetic homolocation passed; personal validation NOT_EXECUTED.');
 })().catch(async error=>{
