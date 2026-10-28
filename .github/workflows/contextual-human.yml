@@ -1,0 +1,67 @@
+name: Contextual human correctness
+on:
+  pull_request:
+    paths:
+      - 'analytics-engine/lab/contextual*'
+      - 'analytics-engine/lab/test_contextual*'
+      - '.github/workflows/contextual-human.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: contextual-human-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  human-replication:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: analytics-engine
+        shell: bash
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.13.7'
+      - name: Bounded APT configuration
+        timeout-minutes: 4
+        run: |
+          sudo python3 ../.github/scripts/prepare_ubuntu_apt.py
+          sudo timeout 150 apt-get update -o APT::Update::Error-Mode=any
+      - uses: r-lib/actions/setup-r@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05
+        timeout-minutes: 10
+        with:
+          r-version: '4.5.1'
+          use-public-rspm: true
+      - name: Existing minimal R dependencies
+        run: Rscript -e 'install.packages(c("jsonlite","digest"),repos="https://cloud.r-project.org")'
+      - name: Software metamorphic gates
+        run: Rscript lab/test_contextual_prequential.R
+      - name: Human sample and byte-identical replay
+        timeout-minutes: 6
+        run: |
+          python lab/contextual_experiment.py --download --output lab/runs/contextual-ci > /dev/null
+          python lab/contextual_experiment.py --source-run lab/runs/contextual-ci/reference --output lab/runs/contextual-replay > /dev/null
+          cmp lab/runs/contextual-ci/results.json lab/runs/contextual-replay/results.json
+          cmp lab/runs/contextual-ci/summary.json lab/runs/contextual-replay/summary.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path("lab/runs/contextual-ci/summary.json").read_text())
+          print(json.dumps({"source_kind":r["source_kind"],"events":r["selected_events"],
+            "students":r["selected_students"],"metrics":{m:{k:v for k,v in s.items() if k not in ("reliability","calibration")} for m,s in r["metrics"].items()},
+            "comparisons":r["comparisons"],"can_apply":False,"can_schedule":False},sort_keys=True))
+          PY
+      - name: Aggregate evidence only, never raw student records
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: contextual-human-aggregate-${{ github.run_id }}
+          retention-days: 7
+          if-no-files-found: error
+          path: |
+            analytics-engine/lab/runs/contextual-ci/summary.json
+            analytics-engine/lab/runs/contextual-ci/criteria.json
+            analytics-engine/lab/runs/contextual-ci/manifest.json
