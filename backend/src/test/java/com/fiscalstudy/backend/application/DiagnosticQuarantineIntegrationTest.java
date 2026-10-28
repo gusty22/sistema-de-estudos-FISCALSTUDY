@@ -22,7 +22,7 @@ class DiagnosticQuarantineIntegrationTest {
   jdbc=new JdbcTemplate(ds);
   for(String id:List.of("held","duplicate","open")) jdbc.update(
    "INSERT INTO questions(id,enunciado,options_json,correct_option,disciplina,assunto,status) VALUES(?,?,?,?,?,?,?)",
-   id,id.equals("open")?"Open synthetic":"Held synthetic","[\"A yes\",\"B no\"]","A","Math","Fractions","VALIDADA");
+   id,id.equals("open")?"Open synthetic":"Held synthetic","[\"A yes\",\"B no\",\"C third\",\"D fourth\"]","A","Math","Fractions","VALIDADA");
  }
  void reserve() { append("root","res","held",null,"RESERVED","2026-10-27T00:00:00Z"); }
  void append(String event,String reservation,String question,String previous,String state,String time) {
