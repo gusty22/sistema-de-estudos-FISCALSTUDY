@@ -76,3 +76,6 @@ New DiagnosticQuarantineIntegrationTest and DiagnosticQuarantineArchitectureTest
 Workflow prospective-ledger executes those plus existing Java/SQLite/R/frontend/full Spring Chromium gates. Isolated browser seed contains3study items plus1held SYNTHETIC fixture; reservation creation is still disabled.
 Executed results are recorded in the draft PR/checks for the exact HEAD; do not treat this text as passing evidence before execution.
 No personal, delayed-retention, semantic-novelty or causal validation performed. FSRS and scientific scorecard PR36 unchanged; can_apply=false,can_schedule=false.
+
+
+Browser failure at71c75bc/run40615904546: quarantine denied access but GlobalExceptionHandler caught ResponseStatusException as generic500. Fixed by preserving its declared HTTP status with generic non-content response/no-store; real-advice SQLite MVC regression added for prediction and presentation404. Original browser404 assertion retained. This historical failure is not a passing check of the fixed HEAD.

@@ -117,4 +117,26 @@ class DiagnosticQuarantineIntegrationTest {
   assertEquals(List.of("open"),result.get("questionIds"));
  }
 
+ @Test void realGlobalAdvicePreservesQuarantine404AndDoesNotWriteEvidence() throws Exception {
+  reserve();
+  var repository=new QuestionRepositoryImpl(jdbc);
+  var events=new com.fiscalstudy.backend.infrastructure.out.persistence.EventStoreRepositoryImpl(jdbc);
+  var attempts=new AttemptSubmissionService(repository,events,"REAL_STUDY");
+  var memory=new LearningEvidenceService(jdbc);
+  var ledger=new ProspectivePredictionService(jdbc,events,repository,attempts,memory,java.time.Clock.systemUTC(),"SYNTHETIC_FIXTURE");
+  var mvc=org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup(
+   new com.fiscalstudy.backend.infrastructure.in.web.ProspectivePredictionController(ledger),
+   new com.fiscalstudy.backend.infrastructure.in.web.QuestionController(new QuestionSelectionService(repository,events),attempts))
+   .setControllerAdvice(new com.fiscalstudy.backend.infrastructure.in.web.GlobalExceptionHandler()).build();
+  mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/v1/questions/held/predictions")
+   .contentType("application/json").content("{\"attemptId\":\""+UUID.randomUUID()+"\",\"sessionId\":\"fixture\"}"))
+   .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isNotFound())
+   .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.error").value("REQUEST_REFUSED"));
+  mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/v1/questions/held/presented")
+   .contentType("application/json").content("{\"sessionId\":\"fixture\"}"))
+   .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isNotFound());
+  assertEquals(0,jdbc.queryForObject("SELECT COUNT(*) FROM event_store",Integer.class));
+  assertEquals(0,jdbc.queryForObject("SELECT COUNT(*) FROM learning_evidence_projection",Integer.class));
+ }
+
 }

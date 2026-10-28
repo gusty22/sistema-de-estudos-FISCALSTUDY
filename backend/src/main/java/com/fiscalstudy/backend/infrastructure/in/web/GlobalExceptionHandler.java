@@ -54,6 +54,15 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(error);
     }
 
+    @ExceptionHandler(org.springframework.web.server.ResponseStatusException.class)
+    public ResponseEntity<ApiErrorResponseDTO> handleResponseStatus(org.springframework.web.server.ResponseStatusException ex) {
+        // Preserve intentional 4xx/5xx status; do not disclose internal reasons/item content.
+        return ResponseEntity.status(ex.getStatusCode())
+                .cacheControl(org.springframework.http.CacheControl.noStore())
+                .body(new ApiErrorResponseDTO("REQUEST_REFUSED",
+                        "Solicitação indisponível ou recusada.", UUID.randomUUID().toString()));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErrorResponseDTO> handleGeneralException(Exception ex) {
         String execId = UUID.randomUUID().toString();
