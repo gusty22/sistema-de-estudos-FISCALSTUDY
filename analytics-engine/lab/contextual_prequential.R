@@ -1,5 +1,6 @@
 # Experimental correctness models, not memory or conceptual-mastery estimators.
 # Observed event_order is ordinal only; no elapsed-time interpretation.
+source("lab/prospective_scorecard.R")
 contextual_prequential <- function(events, warmup=10L) {
   required <- c("event_id","student_id","question_id","event_order","skill_key","is_correct")
   if (!is.data.frame(events) || !all(required %in% names(events))) stop("Missing prequential fields")
@@ -11,6 +12,7 @@ contextual_prequential <- function(events, warmup=10L) {
   if (anyNA(d$event_order) || !is.numeric(d$event_order) ||
       any(!is.finite(d$event_order) | d$event_order<0 | d$event_order!=floor(d$event_order)))
     stop("Invalid ordinal chronology")
+  d$event_order <- as.numeric(d$event_order)
   if (!"eligible" %in% names(d)) d$eligible <- TRUE
   if (!is.logical(d$eligible) || anyNA(d$eligible)) stop("Explicit eligibility required")
   d <- d[d$eligible,,drop=FALSE]
@@ -90,7 +92,8 @@ contextual_scores <- function(rows) {
     log_loss=mean(-(y*log(z)+(1-y)*log1p(-z))),bias=mean(p-y),
     calibration_in_the_large_definition="Mean predicted probability minus observed frequency",
     calibration=calibration,reliability=bins,
-    roc_auc=if(positive && negative)(sum(rank(p,ties.method="average")[y==1])-positive*(positive+1)/2)/(positive*negative) else NULL,
+    roc_auc=prospective_discrimination(y,p)$roc_auc,
+    average_precision_error=prospective_discrimination(y,p)$average_precision_error,
     high_confidence=list(threshold=0.8,n=sum(p>=0.8),errors=sum(p>=0.8 & y==0)),
     unique_items=length(unique(rows$question_id)),students=length(unique(rows$student_id)),
     independent_units="NOT_IDENTIFIED_BY_ITEM_COUNTS",
@@ -110,7 +113,9 @@ contextual_report <- function(predictions, seed=1907L, replicates=2000L) {
   if(existed) saved <- get(".Random.seed",envir=.GlobalEnv)
   on.exit(if(existed) assign(".Random.seed",saved,envir=.GlobalEnv) else if(exists(".Random.seed",envir=.GlobalEnv,inherits=FALSE)) rm(".Random.seed",envir=.GlobalEnv))
   set.seed(seed)
-  for(m in setdiff(models,baseline)) {
+  for(m in setdiff(models,baseline)) for(ref in unique(c(baseline,
+      if(m=="CONTEXT_ONLINE_RIDGE_V1") c("CONTENT_SHRINK20_V1","RECENT20_BETA11_V1") else character()))) {
+    reference <- d[d$model_name==ref,,drop=FALSE]
     own <- d[d$model_name==m,,drop=FALSE]
     akey<-paste(own$student_id,own$event_id,sep=":");bkey<-paste(reference$student_id,reference$event_id,sep=":")
     if(anyDuplicated(akey)||anyDuplicated(bkey)||!setequal(akey,bkey)) stop("Unpaired coverage")
@@ -126,7 +131,7 @@ contextual_report <- function(predictions, seed=1907L, replicates=2000L) {
       intervals<-lapply(seq_len(2),function(j)unname(quantile(boot[j,],c(.025,.975))))
       names(intervals)<-c("brier","log_loss")
     }
-    comparisons[[m]]<-list(reference=baseline,paired_events=length(y),paired_students=nrow(per),
+    comparisons[[paste(m,"vs",ref,sep="__")]]<-list(model=m,reference=ref,paired_events=length(y),paired_students=nrow(per),
       mean_brier_difference=mean(db),mean_log_loss_difference=mean(dl),
       brier_skill_score=if(mean((b-y)^2)>0)1-mean((a-y)^2)/mean((b-y)^2) else NULL,
       equal_student_mean_brier_difference=mean(per$brier),
@@ -139,6 +144,9 @@ contextual_report <- function(predictions, seed=1907L, replicates=2000L) {
   list(contract_version="contextual-prequential-v1",target="ASSISTMENTS_FIRST_ATTEMPT_CORRECT_HELP_FAILURE",
     evidence_kind="RETROSPECTIVE_PREQUENTIAL_RECONSTRUCTION",partition="FINAL_TEMPORAL",
     metrics=score,comparisons=comparisons,
+    novelty=lapply(split(d,d$novelty),function(g) lapply(split(g,g$model_name),contextual_scores)),
+    content=lapply(split(d,d$skill_key),function(g) lapply(split(g,g$model_name),contextual_scores)),
+    content_note="Descriptive strata; no item difficulty calibration, semantic-transfer inference or subgroup superiority",
     protocol="contextual-v1-fixed-before-execution",bootstrap_seed=seed,bootstrap_replicates=replicates,
     time_horizons="NOT_AVAILABLE_ORDINAL_DATA",personal_validation="NOT_ESTABLISHED",
     semantic_novelty="NOT_ESTABLISHED",can_apply=FALSE,can_schedule=FALSE)
