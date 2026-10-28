@@ -51,6 +51,7 @@ public class LocalAccessFilter extends OncePerRequestFilter {
             try { uri=java.net.URLDecoder.decode(req.getRequestURI(),StandardCharsets.UTF_8); }
             catch(IllegalArgumentException invalid) { deny(res,400,"Invalid request path");return; }
         }
+        uri=uri.replaceAll(";[^/]*","").replaceAll("/{2,}","/");
         boolean prospective=uri.startsWith("/api/v1/learning-lab/") ||
             (uri.startsWith("/api/v1/questions/") && uri.contains("/predictions"));
         if(prospective) {
@@ -62,7 +63,7 @@ public class LocalAccessFilter extends OncePerRequestFilter {
                 deny(res,403,"Prospective personal lab requires a loopback connection and local Host");return;
             }
         }
-        boolean admin=uri.startsWith("/api/v1/learning-lab/prospective-export") || uri.startsWith("/api/v1/system/backup") || uri.startsWith("/api/v1/system/audit") || uri.startsWith("/api/v1/ingestion");
+        boolean admin=uri.startsWith("/api/v1/learning-lab/source-reads") || uri.startsWith("/api/v1/learning-lab/item-provenance") || uri.startsWith("/api/v1/learning-lab/prospective-export") || uri.startsWith("/api/v1/system/backup") || uri.startsWith("/api/v1/system/audit") || uri.startsWith("/api/v1/ingestion");
         if (admin && !"OPTIONS".equals(req.getMethod())) {
             boolean local;
             try { local=InetAddress.getByName(req.getRemoteAddr()).isLoopbackAddress(); }

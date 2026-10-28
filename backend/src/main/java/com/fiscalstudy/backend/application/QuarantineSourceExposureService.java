@@ -49,4 +49,37 @@ public class QuarantineSourceExposureService {
    }
   });
  }
+ public String beginRead(String resource) {
+  if(resource==null||resource.length()>2048||!resource.startsWith("/api/v1/"))throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+  String id=UUID.randomUUID().toString();
+  try {
+   jdbc.update("INSERT INTO diagnostic_source_read_events VALUES(?,?,?,?,?,?,?,?)",
+    id,id,null,resource,"OPEN",Instant.now().toString(),"UNKNOWN_SOURCE_MEMBERSHIP","source-read-v1");
+  } catch(org.springframework.dao.DataIntegrityViolationException race) {
+   throw new ResponseStatusException(HttpStatus.CONFLICT,"Read conflicts with protected reservation");
+  }
+  return id;
+ }
+ public String finishRead(String leaseId,String phase) {
+  if(!Set.of("COMPLETED","ABORTED","UNCERTAIN_CLOSED").contains(phase))throw new IllegalArgumentException("Invalid read terminal state");
+  return tx.execute(status->{
+   var rows=jdbc.queryForList("SELECT * FROM diagnostic_source_read_events WHERE lease_id=? ORDER BY rowid",leaseId);
+   if(rows.isEmpty())throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+   if(rows.size()>1)return String.valueOf(rows.get(rows.size()-1).get("phase")); // first terminal state is immutable
+   var root=rows.get(0);
+   jdbc.update("INSERT INTO diagnostic_source_read_events VALUES(?,?,?,?,?,?,?,?)",
+    UUID.randomUUID().toString(),leaseId,root.get("event_id"),root.get("resource_path"),phase,
+    Instant.now().toString(),"UNKNOWN_SOURCE_MEMBERSHIP","source-read-v1");
+   return phase;
+  });
+ }
+ public List<Map<String,Object>> openReads(){return jdbc.queryForList("SELECT lease_id,resource_path,occurred_at FROM diagnostic_open_source_reads ORDER BY occurred_at");}
+ public void finishReadConservatively(String id,String phase) {
+  try{finishRead(id,phase);}
+  catch(RuntimeException failed) {
+   // Bytes may already have left. Never invent closure: the persisted OPEN row keeps the reservation barrier.
+   org.slf4j.LoggerFactory.getLogger(getClass()).warn("Read closure not persisted; lease remains uncertain: {}",id);
+  }
+ }
+
 }

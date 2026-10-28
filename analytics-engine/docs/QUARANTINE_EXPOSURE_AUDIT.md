@@ -121,3 +121,44 @@ Future activation requires serialized reservation/read leases: this increment do
 Administrative source access cannot be confused with an eligible no-help assessment. Old files, outside-app viewing and manually copied summaries remain unverifiable.
 Rollback: preserve receipts/COMPROMISED history; never replace this version with unguarded code while real holds exist. No originals are modified/deleted; no personal database used.
 Executed counts and matching HEAD belong in the PR/checks; synthetic fixtures are software evidence only.
+
+
+## Captured provenance and persistent read coordination — after merged PR38
+Base main508eccc454a7a6d32dfd9cce6e9ab415862ab8b9; PR38 confirmed merged. Independent branch feature/source-provenance-read-barrier; unrelated dirty local snapshot preserved. Graphify unavailable; remote tree/selective source inspection used.
+
+### Verifiable correspondence
+item-source-provenance-v1 records existing staging file/document/question IDs, current original-file SHA256, canonical operational ID, exact statement+options digest, source pages, original classification-row snapshots, origin, UTC capture time and immutable record UUID.
+Administrative POST /learning-lab/item-provenance/exact reads staging in read-only mode and hashes a confined original source file. Hash must match staging metadata; source metadata must remain stable during hashing. Statement and JSON-array string options must match the operational item; answer key is not used. Existing content IDs and taxonomy unchanged.
+SAME_CANONICAL_ITEM requires both same ID and exact observed content; otherwise only EXACT_CONTENT_DUPLICATE is recorded. Neither is semantic equivalence or conceptual novelty. Many occurrences can share a file and many records can refer to one item; no whole-document/item equivalence is inferred.
+Records are VERIFIED_AT_CAPTURE_NOT_RUNTIME_AUTHORIZATION. They are historical observations, not proof that a mutable file is still the same at future streaming time or that its entire membership is known.
+Changed hash/content/pages/document scope cannot reuse a record UUID. New captures append observations; old captures cannot be edited/deleted.
+256MiB is this registration tool's hashing budget, not a scientific/OWASP limit. Out-of-acervo/manual alternative paths remain unsupported rather than guessed safe.
+
+### Persistent coordination and exact supported scope
+source-read-v1 appends OPEN before covered source HTTP responses, including reads authorized when there are no holds. Short DB writes finish before response transfer; no SQLite transaction/DB mutex spans streaming.
+SQLite guards serialize two writers: a protected RESERVED item refuses a new OPEN read; an OPEN read refuses a new reservation root. There is no reservation creation API to bypass these constraints.
+A historical source read is still possible prior exposure. After a later root is inserted, a DB trigger immediately appends COMPROMISED when any prior source-read history exists (currently membership unknown). Finished/cancelled/uncertain reads do NOT restore clean novelty. This is deliberately broad; it is not selective quarantine.
+Synchronous closure records COMPLETED/ABORTED; async listener records completion/error/timeout. An async registration/closure failure leaves OPEN, never an invented clean terminal state. OPEN survives restart and has no automatic safe expiry.
+Protected administrative /learning-lab/source-reads exposes open metadata; POST /source-reads/{id}/uncertain-close requires the existing local admin boundary and retains history/uncertainty. It does not release reservations or permit a future clean claim.
+First terminal event wins immutably; retries do not duplicate closure. Failed closure after bytes may have left keeps the persistent barrier. New roots after history become compromised.
+Covered HTTP proof does not extend to arbitrary direct background/file readers, unknown copied summaries, external programs, earlier browser caches or future routes omitted from the source registry. Such gaps still block creation.
+No selective broad-block reduction is enabled from captured provenance; complete document membership/revalidated bytes and reviewed relations remain necessary.
+
+### Tests / synthetic reference
+Isolated fixtures exercise exact copies, changed/unknown variants, altered hash/pages, path escape, no answer-key identity, append-only/idempotence and private endpoint authorization.
+Concurrent DB/thread test pauses a source body and verifies a separate reservation writer is refused without waiting for transfer completion. Tests also cover reserve-first, async timeout, cancelled/uncertain closure, failed closure, restart, no automatic expiry and repeated closure. Restart means reconstructed service against the same persistent test DB; an OS-kill/network-transit experiment is NOT claimed.
+Full Spring/Chromium fixture registers a real generated synthetic PDF/staging occurrence before seeding the synthetic hold, checks file hash and exact relation, then preserves the existing PDF/staging/ledger flow.
+These fixtures are not a reviewed fiscal reference set. Future real reference review must record reviewer identities, agreement/disagreement, inconclusive cases and separate tuning vs final assessment sets; none fabricated here.
+
+### Operational rollback / remaining gates
+Migration7 is additive and transactional, with verified pre-migration backup. Retain read/provenance/COMPROMISED history on recovery. Deploying older readers while holds exist would bypass protections; rollback is not a safe way to clear uncertainty.
+Cache replay authorization/invalidation, unleased non-HTTP readers, complete controlled-source membership, semantic reference review and protected assessment release remain unresolved. Real reserve creation remains disabled. R/FSRS authority flags remain false.
+
+
+### Manual semantic reference protocol (not executed)
+1. Select a small licensed/public set across fiscal subjects; record original source/version/page and stable occurrence IDs before pairing. Keep a separate final set untouched by any rule tuning.
+2. Review each pair independently: exact content, derived copy with source evidence, same concept/different problem, related concept, different application context or inconclusive. Text similarity alone cannot certify a semantic relation.
+3. Record each reviewer's identity/date, proposed label, confidence and concrete reasoning/pre-requisites/solution demands. Leave reviewer fields empty until actual review; no generated HUMAN records.
+4. Resolve disagreements explicitly or retain INCONCLUSIVE. Record raw agreement with denominator; do not infer reliability from a tiny set or fabricate kappa/accuracy.
+5. Keep semantic assertions non-authoritative until adjudicated and tested. This increment persists only deterministic exact capture; no semantic-review database/API was claimed.
+Worksheet fields: pair IDs | source references | reviewer A label/evidence | reviewer B label/evidence | disagreement/adjudication | final status. Current real reference set: NOT_REVIEWED.

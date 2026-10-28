@@ -1,6 +1,6 @@
 {
-  "protocol_version": "personal-prospective-pilot-v1",
-  "status": "PREREGISTERED_NOT_PERSONALLY_EXECUTED",
+  "protocol_version": "personal-prospective-pilot-v2",
+  "status": "NOT_PERSONALLY_EXECUTED",
   "target": "QUESTION_CORRECTNESS_WITHOUT_DECLARED_HELP",
   "scope": "LOCAL_SINGLE_USER",
   "current_model": "PERSONAL_BETA11_PREFIX_V1",
@@ -36,9 +36,11 @@
       "coverage, pending and exclusions",
       "response-delay strata",
       "question/session counts not assumed independent",
-      "harms compared with same-event references"
+      "harms compared with same-event references",
+      "ROC AUC and AP(error) only when both outcomes exist"
     ],
-    "uncertainty": "Dependence and model parameter uncertainty not established; Wilson assumptions explicit"
+    "uncertainty": "Paired descriptive differences; no independent-trial superiority interval from repeated attempts",
+    "cohort": "All precommitted forecasts in exported snapshot; not a preregistered delayed/novel assessment cohort"
   },
   "missing_data": "Absent stays absent; invalid integrity fails run; pending and ineligible targets explicitly unscored",
   "activity_policy": "UNCHANGED_NO_EXPERIMENTAL_AUTOMATIC_ACTION",
@@ -46,5 +48,20 @@
     "recall": "Separate FSRS-aligned target and preregistered delayed probes required",
     "novel_question_evaluation": "Items must be reserved before exposure and all consumers blocked",
     "causal_interventions": "Separate prospective randomized/counterbalanced N-of-1 protocol required"
-  }
+  },
+  "additional_reference": "RECENT_20_ELIGIBLE_BETA11_V1_FIXED_WINDOW_NO_FINAL_TUNING",
+  "collection_mode": "NORMAL_QUESTIONS_ONLY_NO_DIAGNOSTIC_RESERVATIONS",
+  "start_stop": {
+    "start": "User opens normal question session deliberately; preparation must be confirmed before answer",
+    "stop": "End session using existing UI; never delete pending journal or answered history",
+    "automatic_start": false
+  },
+  "local_evaluation": {
+    "command": "python lab/personal_pilot.py --input PRIVATE_EXPORT.json --output NEW_PRIVATE_DIRECTORY",
+    "export": "Existing loopback prospective-export endpoint with admin token; never share token/raw export or commit it",
+    "scope": "Local read-only snapshot evaluation; source label/hash does not establish authenticity",
+    "collection_readiness": "TECHNICALLY_TESTED_SYNTHETICALLY_NOT_AUDITED_ON_PERSONAL_INSTALLATION"
+  },
+  "scoring_protocol_version": "personal-prospective-pilot-v1",
+  "scoring_contract_version": "prospective-evaluation-v1"
 }

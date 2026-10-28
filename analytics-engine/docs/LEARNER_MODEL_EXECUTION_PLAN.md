@@ -142,3 +142,12 @@ Implemented this increment: conservative source-route/service preflight, explici
 NOT enabled: real reservations, delayed diagnostic release, new evaluation targets or R decision authority. Source/copy lineage, pre-existing caches, semantic review and read/reserve concurrency remain gates; personal validity untested.
 Test commands are prospective-ledger.yml selected suites/full Spring+Chromium and learner-lab.yml R/Python replay. CI results must match actual PR head. Resume by checking that head/checks before narrowing provenance or enabling any experiment.
 No destructive cleanup, FSRS/math change or personal database access. Rollback requires retaining audit/compromise state, not silently deploying unguarded source readers.
+
+
+## Read barrier / captured provenance / ordinary pilot checkpoint — after PR38
+Base508eccc, PR38 merged; branch feature/source-provenance-read-barrier. Existing dirty local feature/learner-evidence-r work not edited.
+Code: item-source-provenance-v1, source-read-v1, migration7 and protected metadata/recovery endpoints. No selective release, semantic classifier, cache deletion or late evaluation enabled. Audit matrix records exact supported scope and remaining gates.
+Ordinary pilot workflow v2 prepared separately from protected diagnostics; score engine remains prospective-evaluation-v1/scoring protocol v1. personal_pilot.py evaluates a local existing export with private outputs/manifest, code/input hashes and explicit failure. It starts no study and opens no SQLite/HTTP connection.
+Personal status NOT_PERSONALLY_EXECUTED; personal installation readiness NOT_EXECUTED (Linux workspace contains an unrelated snapshot, not the user's Windows installation). Synthetic full app/SQLite/R/Chromium checks belong to current PR HEAD.
+Commands: prospective-ledger.yml selected Java suites, current R and real pilot CLI fixture evaluation, frontend/browser; learner-lab.yml Python/R replay. Next resume must verify actual HEAD/checks before reusing this checkpoint.
+Next boundary: controlled-cache authorization and coverage for unleased background/file readers, source-membership completeness/revalidation and manual semantic review; retain conservative default and disabled reservations.

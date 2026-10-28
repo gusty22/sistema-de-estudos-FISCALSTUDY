@@ -40,8 +40,7 @@ public class QuarantineSourceAccessFilter extends OncePerRequestFilter {
   // No bypass is inferred from an Origin or an admin token alone.
   boolean active;
   try{active=exposures.hasActiveHolds();}catch(Exception unavailable){deny(res,503);return;}
-  if(!active){chain.doFilter(req,res);return;}
-  try {
+  if(active) try {
    boolean intent="ACKNOWLEDGE_EXPOSURE".equals(req.getHeader("X-FiscalStudy-Maintenance-Intent"));
    if(!intent){deny(res,409);return;}
    String supplied=req.getHeader("X-FiscalStudy-Admin-Token");
@@ -54,10 +53,30 @@ public class QuarantineSourceAccessFilter extends OncePerRequestFilter {
    exposures.commitMaintenanceExposure(req.getHeader("X-FiscalStudy-Exposure-Id"),path+"#"+scope);
   } catch(ResponseStatusException refused){deny(res,refused.getStatusCode().value());return;}
     catch(Exception unavailable){deny(res,503);return;}
-  try(AutoCloseable ignored=QuestionAccessPolicy.authorizedMaintenanceScope()){
-   chain.doFilter(req,res);
+  String lease;
+  try{lease=exposures.beginRead(path+"#"+req.getMethod()+(req.getQueryString()==null?"":"?"+req.getQueryString()));}
+  catch(ResponseStatusException conflict){deny(res,conflict.getStatusCode().value());return;}
+  catch(RuntimeException failed){deny(res,503);return;}
+  boolean completed=false;
+  try {
+   if(active) {
+    try(AutoCloseable ignored=QuestionAccessPolicy.authorizedMaintenanceScope()){chain.doFilter(req,res);}
+   }else chain.doFilter(req,res);
+   completed=true;
   }catch(IOException|ServletException failed){throw failed;}
    catch(Exception failed){throw new ServletException(failed);}
+  finally {
+   if(req.isAsyncStarted()) {
+    try {
+     req.getAsyncContext().addListener(new AsyncListener(){
+      public void onComplete(AsyncEvent e){exposures.finishReadConservatively(lease,"COMPLETED");}
+      public void onTimeout(AsyncEvent e){exposures.finishReadConservatively(lease,"ABORTED");}
+      public void onError(AsyncEvent e){exposures.finishReadConservatively(lease,"ABORTED");}
+      public void onStartAsync(AsyncEvent e){e.getAsyncContext().addListener(this);}
+     });
+    }catch(IllegalStateException uncertain){/* leave OPEN; never infer that an asynchronous body was not exposed */}
+   } else exposures.finishReadConservatively(lease,completed?"COMPLETED":"ABORTED");
+  }
  }
  private static void deny(HttpServletResponse response,int status)throws IOException {
   response.setStatus(status);response.setContentType("application/json");

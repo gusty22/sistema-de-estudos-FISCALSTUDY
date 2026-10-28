@@ -136,7 +136,7 @@ class QuarantineSourceExposureIntegrationTest {
   // Disposable v5-like baseline plus deliberately incompatible receipt object.
   // No receipts exist; no original/personal database is touched.
   jdbc.execute("DROP TABLE diagnostic_source_exposures");
-  jdbc.update("DELETE FROM schema_migrations WHERE version=6");
+  jdbc.update("DELETE FROM schema_migrations WHERE version>=6");
   jdbc.execute("CREATE VIEW diagnostic_source_exposures AS SELECT 1 AS incompatible_fixture");
   assertThrows(IllegalStateException.class,()->new SchemaMigration(jdbc.getDataSource(),paths));
   assertEquals(5,count("schema_migrations"));
@@ -147,7 +147,7 @@ class QuarantineSourceExposureIntegrationTest {
   }
   jdbc.execute("DROP VIEW diagnostic_source_exposures");
   new SchemaMigration(jdbc.getDataSource(),paths);
-  assertEquals(6,count("schema_migrations"));assertEquals(0,count("diagnostic_source_exposures"));
+  assertEquals(7,count("schema_migrations"));assertEquals(0,count("diagnostic_source_exposures"));
   assertEquals(1,count("diagnostic_reservation_events"));
  }
 
