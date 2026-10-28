@@ -253,3 +253,7 @@ New independent branch from merged main16bcb58. Adds tie-aware ROC AUC/AP(error)
 ## Post-PR38 increment
 Captured exact provenance and durable HTTP read coordination implemented in independent branch from508eccc; see QUARANTINE_EXPOSURE_AUDIT.md. No semantic novelty, selective authorization, personal calibration or pedagogical effect established.
 Ordinary-question pilot workflow v2 remains NOT_PERSONALLY_EXECUTED. The new local CLI reuses existing R evaluator; synthetic actual Java export → CLI → R gate required. No input/database mutation or automatic session start.
+
+
+## Contextual correctness laboratory v1
+PR40 adds prefix-only ordinal prequential correctness models with fixed regularization and independent strong references. Human execution is a development-exposed ASSISTments replication, not personal validation. Existing memory/prospective contracts preserved. See CONTEXTUAL_PREDICTION_V1.md and current execution checkpoint; CI must correspond to actual HEAD. No operational authority.

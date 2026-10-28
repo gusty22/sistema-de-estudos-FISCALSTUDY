@@ -151,3 +151,14 @@ Ordinary pilot workflow v2 prepared separately from protected diagnostics; score
 Personal status NOT_PERSONALLY_EXECUTED; personal installation readiness NOT_EXECUTED (Linux workspace contains an unrelated snapshot, not the user's Windows installation). Synthetic full app/SQLite/R/Chromium checks belong to current PR HEAD.
 Commands: prospective-ledger.yml selected Java suites, current R and real pilot CLI fixture evaluation, frontend/browser; learner-lab.yml Python/R replay. Next resume must verify actual HEAD/checks before reusing this checkpoint.
 Next boundary: controlled-cache authorization and coverage for unleased background/file readers, source-membership completeness/revalidation and manual semantic review; retain conservative default and disabled reservations.
+
+
+## Motor R contextual increment — 28/10/2026
+Base main8e96cad, PR39 merged. Branch experiment/r-contextual-prequential-v1, PR40 draft. Quarantine/UI/Anki/planner work suspended per current user priority.
+Implemented shared ordinal prequential evaluation, fixed-parameter content/online ridge candidate, strict metamorphic tests, original ASSISTments baseline replay and human experimental workflow. See CONTEXTUAL_PREDICTION_V1.md.
+No personal database accessed. Local materialization blocked by full disk; no original files removed or changed. CI runs on disposable runners. No operational model authority or memory change.
+First CI caught canonical integer/double order type inconsistency after ineligible-row insertion; corrected normalization, invariant assert retained. Current HEAD must rerun all lab/human gates.
+Validation states remain separate: implemented/tested technically/exploratory human replication/personal NOT_ESTABLISHED/decisions NOT_AUTHORIZED.
+
+Observed result f902892, run40682241525:1682events/12students/342finaltargets. Content Brier0.200134, ridge0.202511, Beta0.207584; paired intervals include0, ridge harms9/12 vs content. INCONCLUSIVE, no promotion. Exposed-sample aggregate versioned; final HEAD gate replays these numbers as regression only. Final follow-up adds empty/identity normalization and source/coverage bookkeeping without tuning model parameters.
+Next priority: freeze this model specification and assess genuinely different held-out histories, then private prospective evidence. Do not add M5/ensemble before incremental benefit is established.

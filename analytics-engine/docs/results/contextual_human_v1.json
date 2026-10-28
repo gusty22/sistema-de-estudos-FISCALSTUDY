@@ -1,0 +1,228 @@
+{
+  "can_apply": false,
+  "can_schedule": false,
+  "comparisons": {
+    "CONTENT_SHRINK20_V1__vs__PERSONAL_BETA11_PREFIX_V1": {
+      "brier_skill_score": 0.035885157470149864,
+      "can_apply": false,
+      "equal_student_mean_brier_difference": -0.008881841825562993,
+      "equal_student_mean_log_loss_difference": -0.016454797279916607,
+      "harmed_student_count": 4,
+      "inference": "Conditional descriptive cluster bootstrap; selected students not population-representative; single-student temporal uncertainty NOT_ESTIMATED",
+      "mean_brier_difference": -0.007449169118449769,
+      "mean_log_loss_difference": -0.014709195742480117,
+      "model": "CONTENT_SHRINK20_V1",
+      "paired_events": 342,
+      "paired_students": 12,
+      "reference": "PERSONAL_BETA11_PREFIX_V1",
+      "student_cluster_bootstrap_95": {
+        "brier": [
+          -0.0217044754911164,
+          0.0032419171453282954
+        ],
+        "log_loss": [
+          -0.04451875075438181,
+          0.010747006254038387
+        ]
+      },
+      "verdict": "INCONCLUSIVE"
+    },
+    "CONTEXT_ONLINE_RIDGE_V1__vs__CONTENT_SHRINK20_V1": {
+      "brier_skill_score": -0.011872688613169258,
+      "can_apply": false,
+      "equal_student_mean_brier_difference": -0.0003897665475521425,
+      "equal_student_mean_log_loss_difference": -0.00647258024920957,
+      "harmed_student_count": 9,
+      "inference": "Conditional descriptive cluster bootstrap; selected students not population-representative; single-student temporal uncertainty NOT_ESTIMATED",
+      "mean_brier_difference": 0.0023761334293262285,
+      "mean_log_loss_difference": 0.002504278412240193,
+      "model": "CONTEXT_ONLINE_RIDGE_V1",
+      "paired_events": 342,
+      "paired_students": 12,
+      "reference": "CONTENT_SHRINK20_V1",
+      "student_cluster_bootstrap_95": {
+        "brier": [
+          -0.021436754490800503,
+          0.017699298471233617
+        ],
+        "log_loss": [
+          -0.056342335349189,
+          0.036010575130872094
+        ]
+      },
+      "verdict": "INCONCLUSIVE"
+    },
+    "CONTEXT_ONLINE_RIDGE_V1__vs__PERSONAL_BETA11_PREFIX_V1": {
+      "brier_skill_score": 0.024438522157458342,
+      "can_apply": false,
+      "equal_student_mean_brier_difference": -0.009271608373115135,
+      "equal_student_mean_log_loss_difference": -0.022927377529126176,
+      "harmed_student_count": 6,
+      "inference": "Conditional descriptive cluster bootstrap; selected students not population-representative; single-student temporal uncertainty NOT_ESTIMATED",
+      "mean_brier_difference": -0.00507303568912354,
+      "mean_log_loss_difference": -0.012204917330239923,
+      "model": "CONTEXT_ONLINE_RIDGE_V1",
+      "paired_events": 342,
+      "paired_students": 12,
+      "reference": "PERSONAL_BETA11_PREFIX_V1",
+      "student_cluster_bootstrap_95": {
+        "brier": [
+          -0.020802256464439124,
+          0.0007644138913082381
+        ],
+        "log_loss": [
+          -0.0542353858845046,
+          0.002240418185233556
+        ]
+      },
+      "verdict": "INCONCLUSIVE"
+    },
+    "CONTEXT_ONLINE_RIDGE_V1__vs__RECENT20_BETA11_V1": {
+      "brier_skill_score": 0.020564972409616633,
+      "can_apply": false,
+      "equal_student_mean_brier_difference": 0.0020823353755489806,
+      "equal_student_mean_log_loss_difference": 0.0011755749136309994,
+      "harmed_student_count": 3,
+      "inference": "Conditional descriptive cluster bootstrap; selected students not population-representative; single-student temporal uncertainty NOT_ESTIMATED",
+      "mean_brier_difference": -0.0042520672074762445,
+      "mean_log_loss_difference": -0.011314511398823269,
+      "model": "CONTEXT_ONLINE_RIDGE_V1",
+      "paired_events": 342,
+      "paired_students": 12,
+      "reference": "RECENT20_BETA11_V1",
+      "student_cluster_bootstrap_95": {
+        "brier": [
+          -0.013822525331232296,
+          0.02241330744004307
+        ],
+        "log_loss": [
+          -0.03118326562914579,
+          0.04364847926051835
+        ]
+      },
+      "verdict": "INCONCLUSIVE"
+    },
+    "RECENT20_BETA11_V1__vs__PERSONAL_BETA11_PREFIX_V1": {
+      "brier_skill_score": 0.003954881782583741,
+      "can_apply": false,
+      "equal_student_mean_brier_difference": -0.011353943748664117,
+      "equal_student_mean_log_loss_difference": -0.024102952442757175,
+      "harmed_student_count": 8,
+      "inference": "Conditional descriptive cluster bootstrap; selected students not population-representative; single-student temporal uncertainty NOT_ESTIMATED",
+      "mean_brier_difference": -0.0008209684816472963,
+      "mean_log_loss_difference": -0.0008904059314166546,
+      "model": "RECENT20_BETA11_V1",
+      "paired_events": 342,
+      "paired_students": 12,
+      "reference": "PERSONAL_BETA11_PREFIX_V1",
+      "student_cluster_bootstrap_95": {
+        "brier": [
+          -0.03719522352832738,
+          0.009868504061523646
+        ],
+        "log_loss": [
+          -0.083648551315061,
+          0.024065099106170097
+        ]
+      },
+      "verdict": "INCONCLUSIVE"
+    }
+  },
+  "events": 1682,
+  "metrics": {
+    "CONTENT_SHRINK20_V1": {
+      "abstentions": 0,
+      "average_precision_error": 0.5129747103827711,
+      "bias": -0.005868854313268479,
+      "brier": 0.20013440146072786,
+      "calibration_in_the_large_definition": "Mean predicted probability minus observed frequency",
+      "coverage": 1,
+      "high_confidence": {
+        "errors": 17,
+        "n": 73,
+        "threshold": 0.8
+      },
+      "independent_units": "NOT_IDENTIFIED_BY_ITEM_COUNTS",
+      "log_loss": 0.5897336944354592,
+      "n": 342,
+      "roc_auc": 0.6706521739130434,
+      "status": "DESCRIPTIVE_NOT_VALIDATED",
+      "students": 12,
+      "unique_items": 337
+    },
+    "CONTEXT_ONLINE_RIDGE_V1": {
+      "abstentions": 0,
+      "average_precision_error": 0.5076964581132244,
+      "bias": -0.02223964593067805,
+      "brier": 0.20251053489005408,
+      "calibration_in_the_large_definition": "Mean predicted probability minus observed frequency",
+      "coverage": 1,
+      "high_confidence": {
+        "errors": 7,
+        "n": 51,
+        "threshold": 0.8
+      },
+      "independent_units": "NOT_IDENTIFIED_BY_ITEM_COUNTS",
+      "log_loss": 0.5922379728476994,
+      "n": 342,
+      "roc_auc": 0.6739518633540372,
+      "status": "DESCRIPTIVE_NOT_VALIDATED",
+      "students": 12,
+      "unique_items": 337
+    },
+    "PERSONAL_BETA11_PREFIX_V1": {
+      "abstentions": 0,
+      "average_precision_error": 0.4788115801251992,
+      "bias": 0.003975126292084096,
+      "brier": 0.20758357057917762,
+      "calibration_in_the_large_definition": "Mean predicted probability minus observed frequency",
+      "coverage": 1,
+      "high_confidence": {
+        "errors": 7,
+        "n": 34,
+        "threshold": 0.8
+      },
+      "independent_units": "NOT_IDENTIFIED_BY_ITEM_COUNTS",
+      "log_loss": 0.6044428901779393,
+      "n": 342,
+      "roc_auc": 0.6302989130434783,
+      "status": "DESCRIPTIVE_NOT_VALIDATED",
+      "students": 12,
+      "unique_items": 337
+    },
+    "RECENT20_BETA11_V1": {
+      "abstentions": 0,
+      "average_precision_error": 0.4752390370656056,
+      "bias": -0.035486443381180226,
+      "brier": 0.20676260209753033,
+      "calibration_in_the_large_definition": "Mean predicted probability minus observed frequency",
+      "coverage": 1,
+      "high_confidence": {
+        "errors": 12,
+        "n": 75,
+        "threshold": 0.8
+      },
+      "independent_units": "NOT_IDENTIFIED_BY_ITEM_COUNTS",
+      "log_loss": 0.6035524842465226,
+      "n": 342,
+      "roc_auc": 0.6600349378881988,
+      "status": "DESCRIPTIVE_NOT_VALIDATED",
+      "students": 12,
+      "unique_items": 337
+    }
+  },
+  "source_kind": "PUBLIC_HUMAN_DATASET",
+  "students": 12,
+  "execution": {
+    "evaluated_commit": "f90289208099318358921634cab2a3f492eaa1a8",
+    "run_id": 40682241525,
+    "workflow_url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40682241525",
+    "artifact_id": 12813496288,
+    "artifact_sha256": "29fc5f983bac73566f25dd8a4b94ce3cc0ade8e1ec9429fdbf0f58a911a9213f",
+    "kind": "Aggregate metrics extracted from actual completed CI log; full calibration/strata in run artifact",
+    "source_csv_sha256": "162ef8d2d28bcbfea6591a282994062bd8d5eaa00636544292a0d268dca6e5da"
+  },
+  "verdict": "INCONCLUSIVE",
+  "personal_validation": "NOT_ESTABLISHED",
+  "confirmatory_status": "PREVIOUSLY_EXAMINED_SAMPLE_EXPLORATORY_REPLICATION"
+}

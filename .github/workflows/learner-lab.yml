@@ -52,6 +52,7 @@ jobs:
           python -m compileall -q lab
           python -m unittest discover -s lab -p 'test_*.py' -v 2>&1 | tee logs/lab-tests.log
           Rscript tests/test_runner.R 2>&1 | tee logs/r-tests.log
+          Rscript lab/test_contextual_prequential.R 2>&1 | tee logs/contextual-tests.log
       - name: Execute real R and pyBKT experiment
         run: |
           python lab/run_experiment.py --with-pybkt --seeds 401,431,461,491,521 --output tests/fixtures/learner_lab/run-ci 2>&1 | tee logs/experiment.log
