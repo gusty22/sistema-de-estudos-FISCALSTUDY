@@ -572,3 +572,14 @@ CREATE VIEW IF NOT EXISTS study_anki_flashcards AS
  SELECT 1 FROM diagnostic_blocked_questions b WHERE b.id=a.source_id);
 
 
+
+-- v6: administrative source exposure receipts, not proof of document/semantic equivalence.
+CREATE TABLE IF NOT EXISTS diagnostic_source_exposures (
+ exposure_id TEXT PRIMARY KEY NOT NULL,
+ resource_path TEXT NOT NULL,
+ origin TEXT NOT NULL CHECK(origin='LOCAL_ADMIN_EXPLICIT_MAINTENANCE'),
+ occurred_at TEXT NOT NULL,
+ reservation_ids_json TEXT NOT NULL CHECK(json_valid(reservation_ids_json)),
+ exposure_scope TEXT NOT NULL CHECK(exposure_scope='UNMAPPED_SOURCE_COMPROMISE_ALL_ACTIVE'),
+ contract_version TEXT NOT NULL CHECK(contract_version='diagnostic-source-exposure-v1')
+);

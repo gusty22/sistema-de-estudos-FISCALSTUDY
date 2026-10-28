@@ -130,6 +130,7 @@ public class StagingDatabaseService {
      * Recupera as questões extraídas de um arquivo específico em staging.
      */
     public List<StagingQuestionDTO> getQuestionsForFile(String fileId) {
+        QuestionAccessPolicy.requireUnmappedSourceRead(operationalJdbcTemplate);
         List<StagingQuestionDTO> questions = new ArrayList<>();
         String sql = "SELECT q.id, q.document_id, q.numero_original, q.statement, q.options_json, " +
                 "       q.correct_option, q.gabarito_status, q.disciplina, q.assunto, q.subassunto, " +
@@ -279,6 +280,7 @@ public class StagingDatabaseService {
      * Atualiza dados de uma questão em staging com auditoria de modificação manual.
      */
     public StagingQuestionDTO updateStagingQuestion(String questionId, QuestionUpdateRequestDTO req) {
+        QuestionAccessPolicy.requireUnmappedSourceRead(operationalJdbcTemplate);
         String selectSql = "SELECT q.*, f.banca, f.ano, f.orgao, f.cargo, f.rel_path, f.id as file_id " +
                 "FROM staging_questions q " +
                 "JOIN staging_documents d ON q.document_id = d.id " +
@@ -424,6 +426,7 @@ public class StagingDatabaseService {
      * Renderiza sob demanda a página do PDF original associada à questão para conferência visual.
      */
     public byte[] renderEvidenceForQuestion(String questionId) throws IOException {
+        QuestionAccessPolicy.requireUnmappedSourceRead(operationalJdbcTemplate);
         return renderEvidenceForQuestion(questionId, null);
     }
 
@@ -431,6 +434,7 @@ public class StagingDatabaseService {
      * Renderiza sob demanda a página do PDF original associada à questão para conferência visual.
      */
     public byte[] renderEvidenceForQuestion(String questionId, Integer pageOverride) throws IOException {
+        QuestionAccessPolicy.requireUnmappedSourceRead(operationalJdbcTemplate);
         String sql = "SELECT q.pages_json, f.rel_path " +
                 "FROM staging_questions q " +
                 "JOIN staging_documents d ON q.document_id = d.id " +
@@ -515,6 +519,7 @@ public class StagingDatabaseService {
      * Renderiza qualquer página de um arquivo de staging em PNG sob demanda.
      */
     public byte[] renderPageImageForFile(String fileId, int pageNum) throws IOException {
+        QuestionAccessPolicy.requireUnmappedSourceRead(operationalJdbcTemplate);
         Path pdfPath = getPdfPathForStagingFile(fileId);
         if (!Files.exists(pdfPath)) {
             throw new IOException("Arquivo PDF não encontrado para staging file: " + fileId);
@@ -632,6 +637,7 @@ public class StagingDatabaseService {
      * Retorna o Path físico do arquivo PDF original no acervo para visualização embutida ou download.
      */
     public Path getPdfPathForStagingFile(String fileId) throws IOException {
+        QuestionAccessPolicy.requireUnmappedSourceRead(operationalJdbcTemplate);
         String sql = "SELECT rel_path FROM staging_files WHERE id = ?";
         String relPath = null;
         try (Connection conn = getStagingConnection();
@@ -813,6 +819,7 @@ public class StagingDatabaseService {
      * Adiciona manualmente uma nova questão a um caderno de prova em staging.
      */
     public StagingQuestionDTO createManualStagingQuestion(String fileId, StagingQuestionDTO req) {
+        QuestionAccessPolicy.requireUnmappedSourceRead(operationalJdbcTemplate);
         String docSelectSql = "SELECT id, banca, ano, orgao, cargo FROM staging_documents WHERE file_id = ? LIMIT 1";
         String docId = null;
         String fileBanca = null;

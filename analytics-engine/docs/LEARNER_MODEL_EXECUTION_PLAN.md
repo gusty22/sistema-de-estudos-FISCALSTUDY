@@ -134,3 +134,11 @@ Implementation and known-path matrix: [QUARANTINE_EXPOSURE_AUDIT.md](QUARANTINE_
 State: policy implemented; tests in current PR must pass before technically tested. Not human/personal validated; not authorized for experiments. Creation/release APIs absent and status explicitly disabled until staging/cache/variant gates are complete.
 No late-assessment contract claimed implemented; no changes to R scorecard/FSRS/operational authority.
 Next resume: verify branch HEAD and CI, fix actual failures, then address staging/material/cache copies before any reserve activation. Never roll back to unguarded older code if real reservations exist. See matrix for limitations, test commands and recovery.
+
+
+## Source-exposure continuation checkpoint — after PR37
+Basee531803 (PR37 merged), branch feature/quarantine-source-exposure; dirty unrelated local snapshot preserved. See QUARANTINE_EXPOSURE_AUDIT.md source→destination matrix.
+Implemented this increment: conservative source-route/service preflight, explicit authenticated maintenance exposure receipts, append-only COMPROMISED transitions before content, migration6 and synthetic integration/browser tests.
+NOT enabled: real reservations, delayed diagnostic release, new evaluation targets or R decision authority. Source/copy lineage, pre-existing caches, semantic review and read/reserve concurrency remain gates; personal validity untested.
+Test commands are prospective-ledger.yml selected suites/full Spring+Chromium and learner-lab.yml R/Python replay. CI results must match actual PR head. Resume by checking that head/checks before narrowing provenance or enabling any experiment.
+No destructive cleanup, FSRS/math change or personal database access. Rollback requires retaining audit/compromise state, not silently deploying unguarded source readers.

@@ -58,3 +58,10 @@ CREATE TRIGGER IF NOT EXISTS diagnostic_freeze_classification_delete
  BEFORE DELETE ON question_topic_classifications
  WHEN EXISTS(SELECT 1 FROM diagnostic_blocked_questions WHERE id=OLD.question_id)
  BEGIN SELECT RAISE(ABORT,'Quarantine classification snapshot is frozen'); END;;
+
+CREATE TRIGGER IF NOT EXISTS diagnostic_source_exposure_no_update
+ BEFORE UPDATE ON diagnostic_source_exposures BEGIN
+ SELECT RAISE(ABORT,'Source exposure history is append-only'); END;;
+CREATE TRIGGER IF NOT EXISTS diagnostic_source_exposure_no_delete
+ BEFORE DELETE ON diagnostic_source_exposures BEGIN
+ SELECT RAISE(ABORT,'Source exposure history is append-only'); END;;

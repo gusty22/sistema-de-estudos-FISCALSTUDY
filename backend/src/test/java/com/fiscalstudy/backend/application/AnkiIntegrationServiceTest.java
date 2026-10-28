@@ -35,27 +35,8 @@ class AnkiIntegrationServiceTest {
 
         jdbcTemplate = new JdbcTemplate(dataSource);
 
-        jdbcTemplate.execute("CREATE TABLE system_settings(setting_key TEXT PRIMARY KEY,setting_value TEXT NOT NULL,updated_at TEXT NOT NULL)");
-        // Cria tabelas necessárias em memória
-        jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS anki_flashcards (" +
-                "id TEXT PRIMARY KEY, session_id TEXT, concurso_id TEXT, disciplina TEXT NOT NULL, " +
-                "assunto TEXT NOT NULL, card_type TEXT NOT NULL, front_or_text TEXT NOT NULL, " +
-                "back_or_extra TEXT, deck_name TEXT NOT NULL, anki_note_id INTEGER, " +
-                "sync_status TEXT NOT NULL, source_type TEXT NOT NULL, source_id TEXT, " +
-                "created_at TEXT, synced_at TEXT, error_message TEXT)");
-
-        jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS edital_topicos (" +
-                "id TEXT PRIMARY KEY, edital_id TEXT, concurso_id TEXT, disciplina TEXT, " +
-                "assunto TEXT, subassunto TEXT, peso REAL, questoes_previstas INTEGER)");
-
-        jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS questions (" +
-                "id TEXT PRIMARY KEY, enunciado TEXT, options_json TEXT, correct_option TEXT, " +
-                "disciplina TEXT, assunto TEXT, status TEXT DEFAULT 'VALIDADA', justificativa TEXT, " +
-                "texto_apoio TEXT, texto_apoio_titulo TEXT, numero_original INTEGER, arquivo_origem TEXT)");
-
-        jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS event_store (" +
-                "event_id TEXT PRIMARY KEY, aggregate_id TEXT, event_type TEXT, " +
-                "session_id TEXT, recorded_at TEXT, payload_json TEXT)");
+        new org.springframework.jdbc.datasource.init.ResourceDatabasePopulator(
+                new org.springframework.core.io.ClassPathResource("schema.sql")).execute(dataSource);
 
         eventStoreRepository = mock(EventStoreRepository.class);
         objectMapper = new ObjectMapper();
@@ -115,8 +96,8 @@ class AnkiIntegrationServiceTest {
                     qId, "Enunciado da questão número " + i + " sobre Direito Tributário e competência tributária.",
                     "[\"A) Primeira opção de resposta " + i + "\", \"B) Segunda opção de resposta " + i + "\"]",
                     "A", "Direito Tributário", "Competência");
-            jdbcTemplate.update("INSERT INTO event_store (aggregate_id, event_type, session_id, payload_json) VALUES (?, 'ANSWER_SUBMITTED', 'session-end-01', ?)",
-                    qId, "{\"selectedOption\":\"A\",\"isCorrect\":true,\"origin\":\"REAL_STUDY\"}");
+            jdbcTemplate.update("INSERT INTO event_store(event_id,aggregate_id,event_type,aggregate_type,session_id,occurred_at,recorded_at,event_version,schema_version,payload_json) VALUES(?,?,'ANSWER_SUBMITTED','QUESTION','session-end-01','2026-10-27T00:00:00Z','2026-10-27T00:00:00Z',1,'v1',?)",
+                    qId,qId, "{\"selectedOption\":\"A\",\"isCorrect\":true,\"origin\":\"REAL_STUDY\"}");
         }
 
         List<AnkiFlashcardDTO> batch = ankiService.generateSessionBatch15("concurso-araguari", "session-end-01");
