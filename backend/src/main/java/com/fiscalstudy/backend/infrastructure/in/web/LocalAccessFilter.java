@@ -51,6 +51,7 @@ public class LocalAccessFilter extends OncePerRequestFilter {
             try { uri=java.net.URLDecoder.decode(req.getRequestURI(),StandardCharsets.UTF_8); }
             catch(IllegalArgumentException invalid) { deny(res,400,"Invalid request path");return; }
         }
+        uri=uri.replaceAll(";[^/]*","").replaceAll("/{2,}","/");
         boolean prospective=uri.startsWith("/api/v1/learning-lab/") ||
             (uri.startsWith("/api/v1/questions/") && uri.contains("/predictions"));
         if(prospective) {

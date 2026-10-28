@@ -70,4 +70,14 @@ class SourceReadBarrierIntegrationTest {
   assertThrows(Exception.class,()->jdbc.update("UPDATE diagnostic_source_read_events SET phase='COMPLETED'"));
   assertThrows(Exception.class,()->reads.finishRead(UUID.randomUUID().toString(),"COMPLETED"));
  }
+ @Test void administrativeEvidenceRoutesCannotBypassTokenUsingPathParameters()throws Exception{
+  var auth=new com.fiscalstudy.backend.infrastructure.in.web.LocalAccessFilter("http://localhost:5173","fixture-token");
+  for(String path:List.of("/api/v1/learning-lab/source-reads","/api/v1/learning-lab/item-provenance/exact",
+   "/api/v1/learning-lab;legacy=true/source-reads","/api/v1/learning-lab;legacy=true/item-provenance/exact")){
+   var req=new MockHttpServletRequest("GET",path);req.setRemoteAddr("127.0.0.1");req.setServerName("localhost");
+   var response=new MockHttpServletResponse();auth.doFilter(req,response,(a,b)->fail("Admin token required"));
+   assertEquals(403,response.getStatus());
+  }
+ }
+
 }
