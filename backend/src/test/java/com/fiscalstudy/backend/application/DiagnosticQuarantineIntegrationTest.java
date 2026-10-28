@@ -139,4 +139,15 @@ class DiagnosticQuarantineIntegrationTest {
   assertEquals(0,jdbc.queryForObject("SELECT COUNT(*) FROM learning_evidence_projection",Integer.class));
  }
 
+ @Test void classificationCoverageUsesTheSameAvailableQuestionDenominator() {
+  jdbc.update("INSERT INTO edital_topicos(id,edital_id,concurso_id,disciplina,assunto) VALUES('topic','edital','contest','Math','Fractions')");
+  var classifications=new QuestionClassificationService(jdbc);
+  classifications.classify("held",new QuestionClassificationService.Classification("topic","CONFIRMED",1.0,"HUMAN","fixture","Synthetic reviewed link"));
+  reserve();
+  var coverage=classifications.coverage(null);
+  assertEquals(1L,((Number)coverage.get("totalQuestions")).longValue());
+  assertEquals(0L,((Number)coverage.get("classifiedQuestions")).longValue());
+  assertEquals(0.0,((Number)coverage.get("coverage")).doubleValue());
+ }
+
 }

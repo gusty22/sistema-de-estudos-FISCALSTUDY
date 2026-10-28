@@ -38,7 +38,7 @@ public class QuestionClassificationService {
     public Map<String,Object> coverage(String concursoId) {
         String scope=concursoId==null || concursoId.isBlank()?"":" AND t.concurso_id=?";
         Object[] args=scope.isEmpty()?new Object[]{}:new Object[]{concursoId};
-        String links=" FROM ("+CURRENT_LINKS+") c JOIN edital_topicos t ON t.id=c.topic_id WHERE 1=1"+scope;
+        String links=" FROM ("+CURRENT_LINKS+") c JOIN study_questions q ON q.id=c.question_id JOIN edital_topicos t ON t.id=c.topic_id WHERE 1=1"+scope;
         long total=jdbc.queryForObject("SELECT COUNT(*) FROM study_questions",Long.class);
         long classified=jdbc.queryForObject("SELECT COUNT(DISTINCT c.question_id)"+links+" AND c.status='CONFIRMED'",Long.class,args);
         long confirmed=jdbc.queryForObject("SELECT COUNT(*)"+links+" AND c.status='CONFIRMED'",Long.class,args);
