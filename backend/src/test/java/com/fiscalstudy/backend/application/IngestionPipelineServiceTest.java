@@ -26,6 +26,7 @@ public class IngestionPipelineServiceTest {
     @BeforeEach
     public void setup() {
         jdbcTemplate = mock(JdbcTemplate.class);
+        when(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM diagnostic_active_reservations",Integer.class)).thenReturn(0);
         service = new IngestionPipelineService(jdbcTemplate);
     }
 

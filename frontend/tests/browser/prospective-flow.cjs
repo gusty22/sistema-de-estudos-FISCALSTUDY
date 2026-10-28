@@ -45,6 +45,34 @@ async function waitFor(fn) { for(let n=0;n<100;n++){if(await fn())return;await n
  assert.equal(sql("SELECT count(*) n FROM diagnostic_reservation_events")[0].n,1);
  console.log('Synthetic quarantine: real batch/bank/direct prediction denied; creation disabled.');
 
+ // Source contents stay closed even for an authenticated admin without explicit exposure intent.
+ const sourceUrl='http://127.0.0.1:5173/api/v1/materials/source-fixture/file';
+ const sourceAdmin={'X-FiscalStudy-Admin-Token':process.env.FISCALSTUDY_ADMIN_TOKEN};
+ for(const url of [sourceUrl,'http://127.0.0.1:5173/api/v1/ingestion/staging-files/source-copy/questions',
+   'http://127.0.0.1:5173/api/v1/ingestion/staging-files/source-copy/page-image?page=1',
+   'http://127.0.0.1:5173/api/v1/anki/export-csv','http://127.0.0.1:5173/api/v1/system/search?q=SYNTHETIC']) {
+  const denied=await page.request.get(url,{headers:sourceAdmin});
+  assert.equal(denied.status(),409);assert(!(await denied.text()).includes('SYNTHETIC_SOURCE_ITEM'));
+  assert((denied.headers()['cache-control']||'').includes('no-store'));
+ }
+ const sourceHeaders={...sourceAdmin,'X-FiscalStudy-Maintenance-Intent':'ACKNOWLEDGE_EXPOSURE','X-FiscalStudy-Exposure-Id':'00000000-0000-4000-8000-000000000038'};
+ const originalSourceBytes=fs.readFileSync(path.join(root,'data','materials','source-fixture.pdf'));
+ const sourceRead=await page.request.get(sourceUrl,{headers:sourceHeaders});
+ assert.equal(sourceRead.status(),200);assert((await sourceRead.body()).equals(originalSourceBytes));
+ assert(originalSourceBytes.includes(Buffer.from('SYNTHETIC_SOURCE_ITEM')));
+ assert(fs.readFileSync(path.join(root,'data','materials','source-fixture.pdf')).equals(originalSourceBytes));
+ assert.equal(sql("SELECT state FROM diagnostic_active_reservations")[0].state,'COMPROMISED');
+ assert.equal(sql("SELECT count(*) n FROM diagnostic_source_exposures")[0].n,1);
+ assert.equal((await page.request.get(sourceUrl,{headers:sourceHeaders})).status(),200);
+ assert.equal(sql("SELECT count(*) n FROM diagnostic_source_exposures")[0].n,1);
+ const copied=await page.request.get('http://127.0.0.1:5173/api/v1/ingestion/staging-files/source-copy/questions',
+  {headers:{...sourceHeaders,'X-FiscalStudy-Exposure-Id':'00000000-0000-4000-8000-000000000039'}});
+ assert.equal(copied.status(),200);assert((await copied.text()).includes('SYNTHETIC_SOURCE_ITEM'));
+ assert.equal(sql("SELECT count(*) n FROM diagnostic_source_exposures")[0].n,2);
+ assert.equal(sql("SELECT count(*) n FROM study_questions WHERE id='fixture-held'")[0].n,0);
+ console.log('Synthetic source access: PDF/staging blocked; authorized exposure audited and compromised before content; replay idempotent.');
+
+
  await gotoStudy();
  await page.getByRole('button',{name:/Iniciar Sessão de Estudo/}).click();
  await page.getByRole('button',{name:'Tentar novamente',exact:true}).waitFor();
@@ -127,7 +155,7 @@ async function waitFor(fn) { for(let n=0;n<100;n++){if(await fn())return;await n
  const answer=await page.request.post('http://127.0.0.1:8080/api/v1/questions/'+qid+'/attempts',{data:{attemptId:id,sessionId:sid,selectedOption:'A',confidenceLevel:4,activeTimeMs:1000,usedHelp:false}});
  assert.equal(answer.status(),200);assert.equal(memory(),1);
  assert.equal(external.length,0);
- fs.writeFileSync(path.join(root,'browser-summary.json'),JSON.stringify({source_kind:'SYNTHETIC_FIXTURE',checks:['quarantine_batch_bank_direct_prediction','quarantine_creation_disabled','preparation_before_answer','lost_preparation_ack_reload','lost_answer_ack_reload','double_click','completed_reload','frontend_runtime_restart','rapid_question_switch','no_grade_leak','export_authorization','ineligible_fsrs_exclusion'],attempts:count('ANSWER_SUBMITTED'),memory_evidence:memory(),can_apply:false,can_schedule:false},null,2));
+ fs.writeFileSync(path.join(root,'browser-summary.json'),JSON.stringify({source_kind:'SYNTHETIC_FIXTURE',checks:['source_guard_pdf_staging','audited_maintenance_compromise','source_receipt_idempotence','quarantine_batch_bank_direct_prediction','quarantine_creation_disabled','preparation_before_answer','lost_preparation_ack_reload','lost_answer_ack_reload','double_click','completed_reload','frontend_runtime_restart','rapid_question_switch','no_grade_leak','export_authorization','ineligible_fsrs_exclusion'],attempts:count('ANSWER_SUBMITTED'),memory_evidence:memory(),can_apply:false,can_schedule:false},null,2));
  await browser.close();
  console.log('Real-browser synthetic homolocation passed; personal validation NOT_EXECUTED.');
 })().catch(async error=>{

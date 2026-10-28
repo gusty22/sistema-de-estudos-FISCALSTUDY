@@ -79,3 +79,45 @@ No personal, delayed-retention, semantic-novelty or causal validation performed.
 
 
 Browser failure at71c75bc/run40615904546: quarantine denied access but GlobalExceptionHandler caught ResponseStatusException as generic500. Fixed by preserving its declared HTTP status with generic non-content response/no-store; real-advice SQLite MVC regression added for prediction and presentation404. Original browser404 assertion retained. This historical failure is not a passing check of the fixed HEAD.
+
+
+## Source exposure boundary v1 — follow-up after merged PR37
+Base maine53180367fba49f0a6d10a24feb55906383929f4. Previous PR37 code/checks preserved.
+Local checkout FiscalStudy on feature/learner-evidence-r contains unrelated modified/untracked work and was not changed; current implementation uses remote branch feature/quarantine-source-exposure. Graphify executable/graph unavailable in this Linux workspace.
+
+### Origin → transformation → destination → consumer matrix
+| Origin | Transformation / existing identifiers | Destination / consumer | Risk | Applied control / test |
+| --- | --- | --- | --- | --- |
+| Original PDF | staging_files.sha256,rel_path,file ID → staging_documents page_start/page_end,document ID | StagingDatabaseService.getPdfPathForStagingFile/renderPageImageForFile/renderEvidenceForQuestion; IngestionController | Same source contains held item, different source IDs | HTTP source guard plus service preflight before file/process access; SQLite test + actual browser PDF/page-denial test |
+| Extracted question | staging_questions document_id,numero_original,pages_json; publish_verified preserves occurrence but versions/copies not fully proven | Staging SQLite → operational questions | Different IDs, modified statement/options, unknown variant | Conservative whole-source denial while any hold exists; not a claimed semantic matching algorithm; actual staging-copy read gated |
+| Temporary ingestion uploads/results | sessionId, documentId, filename, output question IDs | IngestionPipelineService sessionQuestions/getSession/evidence/PDF paths | In-memory and persisted copies bypass operational view | Service preflight outside catch/fallback and source-route guard; isolated service test; no deletion of uploads |
+| Operational item | Existing canonical question ID; exact-content family remains internal | study_questions; bank/repository/classification | Known exact duplicates | PR37 view/guards retained; full regression; no new taxonomy or public answer-key fingerprint |
+| Source/material | study_materials ID/url_ou_caminho, topic links; no universal item-level lineage | StudyMaterialController metadata/file/stream | Notes/PDF may contain held question or answer | Source-route preflight and no-store; actual PDF bytes remain unchanged; source provenance explicitly unresolved |
+| Source text | Automatic/user copy, possibly no item source_id | Anki generation/CSV/recent/background sync | Unmapped card bypasses known-ID view | Direct service preflight + source routes; outbound addNote/sync guarded before content/network. Privacy-off behavior retained |
+| Material/notes | Existing metadata search | SystemSettingsController /system/search | Search may reproduce notes/paths | Source-route preflight; browser denial test |
+| Prior exports | CSV/event payload files, manifests | analytics/export HTTP routes; already saved external files | Content copied outside canonical reads | New HTTP reads guarded/no-store; external saved bytes cannot be revoked and remain UNKNOWN |
+| Known item IDs | Notebook/simulado JSON, direct IDs | PR37 policy | Stale saved IDs | Existing filters/regressions preserved; no claim all nested arbitrary copies are identified |
+| Browser caches | Previous question journal/batch or previously fetched material | QuestionViewer/localStorage/browser cache | Pre-existing bytes can display without a request | New source responses no-store only; historical cache invalidation is NOT implemented; activation still blocked |
+| Summaries / external materials | Existing copied/generated content without verified lineage | Summary/material/other indirect readers | May carry same or related question under unknown ID | Not universally controlled by this increment; source-route registry is finite and needs continued audit |
+| Administrator or external application | Manual SQLite/PDF access | Outside HTTP / backend boundaries | No app-wide guarantee possible | Explicitly EXTERNAL_EXPOSURE_UNKNOWN; no claim to control external files |
+
+### Contract and authority
+diagnostic-source-exposure-v1 is an administrative exposure receipt, not a new learning event or student prediction target.
+Receipt fields: canonical exposure UUID, bound method/path/query, LOCAL_ADMIN_EXPLICIT_MAINTENANCE, server UTC instant, original reservation IDs, UNMAPPED_SOURCE_COMPROMISE_ALL_ACTIVE, version.
+Migration6 adds one append-only table and guards; existing reservation history is unchanged in place. Verified backup required before existing-data migration; transaction rollback retains prior state.
+Without active holds: existing source reads continue, with no-store on covered routes. With active holds: covered content reads fail409, even when a token alone is provided.
+Metadata-only Anki status/preferences and ingestion file listing/quality remain available through their existing access controls.
+To deliberately review sources: loopback+local Host+configured admin token AND X-FiscalStudy-Maintenance-Intent:ACKNOWLEDGE_EXPOSURE AND canonical X-FiscalStudy-Exposure-Id.
+Before any covered body is released, one transaction records the receipt and appends COMPROMISED for every active hold because the source→item association is unknown. No reservation is RELEASED and operational item views remain blocked.
+Same receipt+resource+covered reservation set is idempotent; another resource or new reservation invalidates reuse. Failed audit writes return503 and release no bytes.
+Intentional administrative access invalidates clean assessment eligibility conservatively even if later I/O fails; receipt records authorized source access, not proof the student read/understood it.
+Thread-local maintenance scope is cleared in finally, does not propagate to background threads and is an internal trusted-code mechanism, not a sandbox for hostile Java.
+No automatic AnkiWeb or external synchronization is executed in tests.
+
+### Scope / remaining gates
+Creation remains disabled. No semantic-equivalence model, manually reviewed real fiscal item set, item-source crosswalk, complete cache invalidation, evaluation release route, delayed-assessment queue, multi-target R evaluation or personal pilot execution was claimed implemented.
+This coarse barrier intentionally cannot selectively certify unrelated source content as safe. Source lineage must be improved before narrowing access.
+Future activation requires serialized reservation/read leases: this increment does not prove atomic protection against a new real reservation racing an already authorized stream. There is no reservation creation API here.
+Administrative source access cannot be confused with an eligible no-help assessment. Old files, outside-app viewing and manually copied summaries remain unverifiable.
+Rollback: preserve receipts/COMPROMISED history; never replace this version with unguarded code while real holds exist. No originals are modified/deleted; no personal database used.
+Executed counts and matching HEAD belong in the PR/checks; synthetic fixtures are software evidence only.

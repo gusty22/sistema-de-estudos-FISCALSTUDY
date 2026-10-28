@@ -288,6 +288,7 @@ public class AnkiIntegrationService {
      */
     public boolean triggerAnkiWebSync() {
         if (!cloudAllowed()) return false;
+        QuestionAccessPolicy.requireUnmappedSourceRead(jdbcTemplate);
         try {
             Map<String, Object> req = Map.of(
                     "action", "sync",
@@ -342,6 +343,7 @@ public class AnkiIntegrationService {
      */
     public Long sendNoteToAnkiConnect(String deckName, String cardType, String frontOrText, String backOrExtra, List<String> tags) {
         if (!integrationEnabled()) return null;
+        QuestionAccessPolicy.requireUnmappedSourceRead(jdbcTemplate);
         try {
             ensureDeckExists(deckName);
             refreshAnkiModelMetadata();
@@ -464,6 +466,7 @@ public class AnkiIntegrationService {
     public AnkiFlashcardDTO saveAndPushCard(String sessionId, String concursoId, String disciplina, String assunto,
                                           String cardType, String frontOrText, String backOrExtra,
                                           String sourceType, String sourceId) {
+        QuestionAccessPolicy.requireUnmappedSourceRead(jdbcTemplate);
         QuestionAccessPolicy.requireAvailable(jdbcTemplate,sourceId);
         String cardId = "anki-" + UUID.randomUUID().toString().substring(0, 8);
         String deckName = "FiscalStudy::" + (disciplina != null && !disciplina.isBlank() ? disciplina.trim() : "Geral");
@@ -666,6 +669,7 @@ public class AnkiIntegrationService {
      * Nunca injeta assuntos ou disciplinas não vistas.
      */
     public List<AnkiFlashcardDTO> generateSessionBatch15(String concursoId, String sessionId) {
+        QuestionAccessPolicy.requireUnmappedSourceRead(jdbcTemplate);
         List<AnkiFlashcardDTO> generatedCards = new ArrayList<>();
 
         // 1. Busca questões que o estudante REALMENTE resolveu nesta sessão
@@ -761,6 +765,7 @@ public class AnkiIntegrationService {
      */
     public synchronized int syncPendingQueue() {
         if (!integrationEnabled()) throw new IllegalStateException("Anki integration is disabled");
+        QuestionAccessPolicy.requireUnmappedSourceRead(jdbcTemplate);
         List<Map<String, Object>> pendingRows = jdbcTemplate.queryForList(
                 "SELECT id, disciplina, assunto, card_type, front_or_text, back_or_extra, deck_name FROM study_anki_flashcards WHERE sync_status = 'PENDING_ANKI'"
         );
@@ -870,6 +875,7 @@ public class AnkiIntegrationService {
      * Exporta todos os cards em formato CSV padrão do Anki
      */
     public String exportToCsv(String deckNameFilter) {
+        QuestionAccessPolicy.requireUnmappedSourceRead(jdbcTemplate);
         String sql = "SELECT front_or_text, back_or_extra, card_type, disciplina, assunto FROM study_anki_flashcards";
         if (deckNameFilter != null && !deckNameFilter.isBlank()) {
             sql += " WHERE deck_name = '" + deckNameFilter.replace("'", "''") + "'";
@@ -898,6 +904,7 @@ public class AnkiIntegrationService {
     }
 
     public List<AnkiFlashcardDTO> getRecentFlashcards(int limit) {
+        QuestionAccessPolicy.requireUnmappedSourceRead(jdbcTemplate);
         String sql = "SELECT * FROM study_anki_flashcards ORDER BY created_at DESC LIMIT ?";
         return jdbcTemplate.query(sql, (rs, rowNum) -> new AnkiFlashcardDTO(
                 rs.getString("id"),

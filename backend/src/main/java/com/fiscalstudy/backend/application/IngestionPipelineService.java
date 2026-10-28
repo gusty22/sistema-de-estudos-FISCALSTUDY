@@ -125,6 +125,7 @@ public class IngestionPipelineService {
     }
 
     public StagingSessionDTO runProcessing(String sessionId) {
+        QuestionAccessPolicy.requireUnmappedSourceRead(jdbcTemplate);
         StagingSessionDTO session = getSession(sessionId);
         if (session == null) {
             throw new IllegalArgumentException("Sessão não encontrada: " + sessionId);
@@ -470,6 +471,7 @@ public class IngestionPipelineService {
     }
 
     public List<StagingQuestionDTO> getSessionQuestions(String sessionId) {
+        QuestionAccessPolicy.requireUnmappedSourceRead(jdbcTemplate);
         if (!sessionQuestions.containsKey(sessionId)) {
             loadSessionState(sessionId);
         }
@@ -477,6 +479,7 @@ public class IngestionPipelineService {
     }
 
     public StagingQuestionDTO updateQuestion(String sessionId, String questionId, QuestionUpdateRequestDTO req) {
+        QuestionAccessPolicy.requireUnmappedSourceRead(jdbcTemplate);
         if (!sessionQuestions.containsKey(sessionId)) {
             loadSessionState(sessionId);
         }
@@ -521,6 +524,7 @@ public class IngestionPipelineService {
     }
 
     public byte[] getEvidenceImage(String sessionId, String filename) throws IOException {
+        QuestionAccessPolicy.requireUnmappedSourceRead(jdbcTemplate);
         // Sanitização contra directory traversal
         String safeName = Paths.get(filename).getFileName().toString();
         Path evidencePath = stagingRoot.resolve(sessionId).resolve("output").resolve("evidence").resolve(safeName);
@@ -531,6 +535,7 @@ public class IngestionPipelineService {
     }
 
     public Path getPdfForSession(String sessionId) {
+        QuestionAccessPolicy.requireUnmappedSourceRead(jdbcTemplate);
         Path sessionUploads = stagingRoot.resolve(sessionId).resolve("uploads");
         if (!Files.exists(sessionUploads)) {
             return null;
@@ -663,6 +668,7 @@ public class IngestionPipelineService {
     }
 
     public StagingSessionDTO getSession(String sessionId) {
+        QuestionAccessPolicy.requireUnmappedSourceRead(jdbcTemplate);
         StagingSessionDTO session = sessions.get(sessionId);
         if (session == null) {
             loadSessionState(sessionId);

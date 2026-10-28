@@ -36,7 +36,9 @@ class StagingDatabaseServiceTest {
             stmt.execute("INSERT INTO staging_support_materials(id,document_id,tipo,conteudo_texto) VALUES('mat1','doc1','TEXTO_BASE','Texto de apoio')");
             stmt.execute("INSERT INTO staging_question_support_materials VALUES('q1','mat1')");
         }
-        stagingService=new StagingDatabaseService(mock(JdbcTemplate.class),paths);
+        var operational=new org.springframework.jdbc.datasource.DriverManagerDataSource("jdbc:sqlite:"+temp.resolve("main.db"));
+        try(var connection=operational.getConnection()){com.fiscalstudy.backend.infrastructure.config.SchemaMigration.migrate(connection);}
+        stagingService=new StagingDatabaseService(new JdbcTemplate(operational),paths);
     }
 
     @Test

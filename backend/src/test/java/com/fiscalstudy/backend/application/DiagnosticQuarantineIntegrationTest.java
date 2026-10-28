@@ -96,7 +96,7 @@ class DiagnosticQuarantineIntegrationTest {
   reserve();
   assertEquals(0,jdbc.queryForObject("SELECT COUNT(*) FROM study_anki_flashcards",Integer.class));
   var anki=new AnkiIntegrationService(jdbc,org.mockito.Mockito.mock(com.fiscalstudy.backend.domain.EventStoreRepository.class),new ObjectMapper());
-  assertFalse(anki.exportToCsv(null).contains("Held synthetic"));
+  assertThrows(org.springframework.web.server.ResponseStatusException.class,()->anki.exportToCsv(null));
  }
  @Test void observedExposurePreventsRetroactiveReservationAndTransactionRollbackLeavesNoHold() throws Exception {
   jdbc.update("INSERT INTO event_store VALUES('seen','QUESTION_PRESENTED','QUESTION','held','s','2026-10-26T00:00:00Z','2026-10-26T00:00:00Z',1,'v1','{}')");
