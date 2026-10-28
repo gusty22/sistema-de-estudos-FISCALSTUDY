@@ -583,3 +583,30 @@ CREATE TABLE IF NOT EXISTS diagnostic_source_exposures (
  exposure_scope TEXT NOT NULL CHECK(exposure_scope='UNMAPPED_SOURCE_COMPROMISE_ALL_ACTIVE'),
  contract_version TEXT NOT NULL CHECK(contract_version='diagnostic-source-exposure-v1')
 );
+
+-- v7: persistent HTTP read coordination; no SQLite transaction spans a response body.
+CREATE TABLE IF NOT EXISTS diagnostic_source_read_events (
+ event_id TEXT PRIMARY KEY NOT NULL,
+ lease_id TEXT NOT NULL,
+ previous_event_id TEXT UNIQUE REFERENCES diagnostic_source_read_events(event_id),
+ resource_path TEXT NOT NULL,
+ phase TEXT NOT NULL CHECK(phase IN ('OPEN','COMPLETED','ABORTED','UNCERTAIN_CLOSED')),
+ occurred_at TEXT NOT NULL,
+ membership_status TEXT NOT NULL CHECK(membership_status='UNKNOWN_SOURCE_MEMBERSHIP'),
+ contract_version TEXT NOT NULL CHECK(contract_version='source-read-v1')
+);
+CREATE INDEX IF NOT EXISTS idx_source_read_lease ON diagnostic_source_read_events(lease_id);
+CREATE VIEW IF NOT EXISTS diagnostic_open_source_reads AS
+ SELECT r.* FROM diagnostic_source_read_events r WHERE r.phase='OPEN'
+ AND NOT EXISTS(SELECT 1 FROM diagnostic_source_read_events n WHERE n.previous_event_id=r.event_id);
+CREATE TABLE IF NOT EXISTS item_source_provenance_events (
+ record_id TEXT PRIMARY KEY NOT NULL,
+ staging_file_id TEXT NOT NULL, staging_document_id TEXT NOT NULL, source_sha256 TEXT NOT NULL,
+ staging_question_id TEXT NOT NULL, operational_question_id TEXT NOT NULL REFERENCES questions(id),
+ statement_options_sha256 TEXT NOT NULL, pages_json TEXT,
+ relation TEXT NOT NULL CHECK(relation IN ('SAME_CANONICAL_ITEM','EXACT_CONTENT_DUPLICATE')),
+ origin TEXT NOT NULL CHECK(origin='DETERMINISTIC_STAGING_PDF_VERIFY'),
+ verification TEXT NOT NULL CHECK(verification='VERIFIED_AT_CAPTURE_NOT_RUNTIME_AUTHORIZATION'),
+ classification_snapshot_json TEXT NOT NULL, recorded_at TEXT NOT NULL,
+ contract_version TEXT NOT NULL CHECK(contract_version='item-source-provenance-v1')
+);

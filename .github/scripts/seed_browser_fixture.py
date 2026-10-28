@@ -16,9 +16,8 @@ with sqlite3.connect(db) as c:
            json.dumps(["A) Correta","B) Outra","C) Terceira","D) Quarta","E) Quinta"]),"A","Matemática","Frações","FIXTURE",2026,"Fixture","Fiscal","VALIDADA"))
     c.execute("insert into questions(id,enunciado,options_json,correct_option,disciplina,assunto,banca,ano,status) values(?,?,?,?,?,?,?,?,?)",
       ("fixture-held","SYNTHETIC_HELD_ITEM_NEVER_DISPLAY SYNTHETIC_SOURCE_ITEM",json.dumps(["A) Held","B) Other"]),"A","Matemática","Frações","FIXTURE",2026,"VALIDADA"))
-    c.execute("insert into diagnostic_reservation_events values(?,?,?,?,?,?,?,?,?,?,?,?)",
-      ("fixture-res-event","fixture-reservation","fixture-held",None,"RESERVED","synthetic-protocol","CI quarantine only","2026-10-27T00:00:00Z","{}","EXTERNAL_EXPOSURE_UNKNOWN","Synthetic fixture only","diagnostic-quarantine-v1"))
-print("Seeded 3 study items and 1 quarantined synthetic item; production reservation creation remains disabled.")
+
+print("Seeded 3 study items and 1 candidate; synthetic reservation follows verified provenance capture.")
 
 # The PDF and staging occurrence are synthetic copies with different identifiers.
 source=root/"data"/"materials"/"source-fixture.pdf"
@@ -45,3 +44,24 @@ with sqlite3.connect(root/"data"/"staging.db") as c:
  c.execute("insert into staging_documents(id,file_id,doc_role,page_start,page_end) values('source-doc','source-copy','PROVA',1,1)")
  c.execute("insert into staging_questions(id,document_id,numero_original,statement,options_json,correct_option,pages_json) values(?,?,?,?,?,?,?)",
   ("different-source-id","source-doc",1,"SYNTHETIC_HELD_ITEM_NEVER_DISPLAY SYNTHETIC_SOURCE_ITEM",json.dumps(["A) Held","B) Other"]),"A","[1]"))
+
+# The administrative metadata registration is verified before any hold is created.
+import urllib.request,urllib.error
+registration=json.dumps({"recordId":"00000000-0000-4000-8000-000000000039",
+ "stagingQuestionId":"different-source-id","questionId":"fixture-held"}).encode()
+url="http://127.0.0.1:8080/api/v1/learning-lab/item-provenance/exact"
+try:
+ urllib.request.urlopen(urllib.request.Request(url,data=registration,headers={"Content-Type":"application/json"}),timeout=10)
+ raise AssertionError("Provenance endpoint lacked admin protection")
+except urllib.error.HTTPError as refused:
+ assert refused.code==403
+with urllib.request.urlopen(urllib.request.Request(url,data=registration,headers={
+ "Content-Type":"application/json","X-FiscalStudy-Admin-Token":os.environ["FISCALSTUDY_ADMIN_TOKEN"]}),timeout=10) as response:
+ captured=json.load(response)
+assert captured["relation"]=="EXACT_CONTENT_DUPLICATE"
+assert captured["source_sha256"]==__import__("hashlib").sha256(source.read_bytes()).hexdigest()
+assert captured["verification"]=="VERIFIED_AT_CAPTURE_NOT_RUNTIME_AUTHORIZATION"
+(root/"browser-provenance.json").write_text(json.dumps(captured),encoding="utf-8")
+with sqlite3.connect(db) as c:
+ c.execute("insert into diagnostic_reservation_events values(?,?,?,?,?,?,?,?,?,?,?,?)",
+   ("fixture-res-event","fixture-reservation","fixture-held",None,"RESERVED","synthetic-protocol","CI quarantine only","2026-10-27T00:00:00Z","{}","EXTERNAL_EXPOSURE_UNKNOWN","Synthetic fixture only","diagnostic-quarantine-v1"))

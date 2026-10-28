@@ -248,3 +248,8 @@ PR35 follow-up: main121d7bf reconciled without losing PR34 history/results. Dura
 
 ## Prospective scientific scorecard v1 — 27/10/2026
 New independent branch from merged main16bcb58. Adds tie-aware ROC AUC/AP(error), same-event paired temporal reference RECENT_20_ELIGIBLE_BETA11_V1, harms/ties and explicit abstention. Existing model remains online personal Beta11; no claimed improvement over itself. Source event contract unchanged; additive report field scientific_scorecard with its own version. CI evidence must match actual branch HEAD. No personal/causal validation, new FSRS equation, database write or operational authority. See current checkpoint in LEARNER_MODEL_EXECUTION_PLAN.md.
+
+
+## Post-PR38 increment
+Captured exact provenance and durable HTTP read coordination implemented in independent branch from508eccc; see QUARANTINE_EXPOSURE_AUDIT.md. No semantic novelty, selective authorization, personal calibration or pedagogical effect established.
+Ordinary-question pilot workflow v2 remains NOT_PERSONALLY_EXECUTED. The new local CLI reuses existing R evaluator; synthetic actual Java export → CLI → R gate required. No input/database mutation or automatic session start.

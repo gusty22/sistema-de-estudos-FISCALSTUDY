@@ -65,3 +65,36 @@ CREATE TRIGGER IF NOT EXISTS diagnostic_source_exposure_no_update
 CREATE TRIGGER IF NOT EXISTS diagnostic_source_exposure_no_delete
  BEFORE DELETE ON diagnostic_source_exposures BEGIN
  SELECT RAISE(ABORT,'Source exposure history is append-only'); END;;
+
+CREATE TRIGGER IF NOT EXISTS source_read_no_update BEFORE UPDATE ON diagnostic_source_read_events
+ BEGIN SELECT RAISE(ABORT,'Source read history is append-only'); END;;
+CREATE TRIGGER IF NOT EXISTS source_read_no_delete BEFORE DELETE ON diagnostic_source_read_events
+ BEGIN SELECT RAISE(ABORT,'Source read history is append-only'); END;;
+CREATE TRIGGER IF NOT EXISTS source_read_chain BEFORE INSERT ON diagnostic_source_read_events BEGIN
+ SELECT CASE WHEN julianday(NEW.occurred_at) IS NULL THEN RAISE(ABORT,'Invalid read timestamp') END;
+ SELECT CASE WHEN NEW.previous_event_id IS NULL AND (
+  NEW.phase!='OPEN' OR EXISTS(SELECT 1 FROM diagnostic_source_read_events WHERE lease_id=NEW.lease_id))
+  THEN RAISE(ABORT,'Invalid duplicate read root') END;
+ SELECT CASE WHEN NEW.previous_event_id IS NOT NULL AND NOT EXISTS(
+  SELECT 1 FROM diagnostic_source_read_events p WHERE p.event_id=NEW.previous_event_id
+   AND p.lease_id=NEW.lease_id AND p.resource_path=NEW.resource_path AND p.phase='OPEN'
+   AND NEW.phase!='OPEN' AND julianday(NEW.occurred_at)>=julianday(p.occurred_at))
+  THEN RAISE(ABORT,'Invalid read closure') END;
+ SELECT CASE WHEN NEW.phase='OPEN' AND EXISTS(
+  SELECT 1 FROM diagnostic_active_reservations WHERE state='RESERVED')
+  THEN RAISE(ABORT,'Protected reservation precedes read') END;
+ END;;
+CREATE TRIGGER IF NOT EXISTS reservation_read_barrier BEFORE INSERT ON diagnostic_reservation_events
+ WHEN NEW.previous_event_id IS NULL AND EXISTS(SELECT 1 FROM diagnostic_open_source_reads)
+ BEGIN SELECT RAISE(ABORT,'Open or interrupted source read prevents protected reservation'); END;;
+CREATE TRIGGER IF NOT EXISTS reservation_prior_source_uncertainty AFTER INSERT ON diagnostic_reservation_events
+ WHEN NEW.previous_event_id IS NULL AND EXISTS(SELECT 1 FROM diagnostic_source_read_events) BEGIN
+ INSERT INTO diagnostic_reservation_events VALUES(
+  'prior-source:'||NEW.event_id,NEW.reservation_id,NEW.question_id,NEW.event_id,'COMPROMISED',
+  NEW.protocol_id,NEW.purpose,NEW.occurred_at,NEW.classification_snapshot_json,NEW.novelty_status,
+  'HISTORICAL_UNMAPPED_SOURCE_READ_POSSIBLE_EXPOSURE',NEW.contract_version);
+ END;;
+CREATE TRIGGER IF NOT EXISTS item_source_no_update BEFORE UPDATE ON item_source_provenance_events
+ BEGIN SELECT RAISE(ABORT,'Item source history is append-only'); END;;
+CREATE TRIGGER IF NOT EXISTS item_source_no_delete BEFORE DELETE ON item_source_provenance_events
+ BEGIN SELECT RAISE(ABORT,'Item source history is append-only'); END;;

@@ -62,7 +62,7 @@ public class LocalAccessFilter extends OncePerRequestFilter {
                 deny(res,403,"Prospective personal lab requires a loopback connection and local Host");return;
             }
         }
-        boolean admin=uri.startsWith("/api/v1/learning-lab/prospective-export") || uri.startsWith("/api/v1/system/backup") || uri.startsWith("/api/v1/system/audit") || uri.startsWith("/api/v1/ingestion");
+        boolean admin=uri.startsWith("/api/v1/learning-lab/source-reads") || uri.startsWith("/api/v1/learning-lab/item-provenance") || uri.startsWith("/api/v1/learning-lab/prospective-export") || uri.startsWith("/api/v1/system/backup") || uri.startsWith("/api/v1/system/audit") || uri.startsWith("/api/v1/ingestion");
         if (admin && !"OPTIONS".equals(req.getMethod())) {
             boolean local;
             try { local=InetAddress.getByName(req.getRemoteAddr()).isLoopbackAddress(); }

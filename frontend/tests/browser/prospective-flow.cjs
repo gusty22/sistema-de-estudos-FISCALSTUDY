@@ -70,6 +70,11 @@ async function waitFor(fn) { for(let n=0;n<100;n++){if(await fn())return;await n
  assert.equal(copied.status(),200);assert((await copied.text()).includes('SYNTHETIC_SOURCE_ITEM'));
  assert.equal(sql("SELECT count(*) n FROM diagnostic_source_exposures")[0].n,2);
  assert.equal(sql("SELECT count(*) n FROM study_questions WHERE id='fixture-held'")[0].n,0);
+ assert.equal(sql("SELECT count(*) n FROM diagnostic_open_source_reads")[0].n,0);
+ assert(sql("SELECT count(*) n FROM diagnostic_source_read_events WHERE phase='COMPLETED'")[0].n>=3);
+ assert.equal(sql("SELECT count(*) n FROM item_source_provenance_events")[0].n,1);
+ const readStatus=await page.request.get('http://127.0.0.1:5173/api/v1/learning-lab/source-reads',{headers:sourceAdmin});
+ assert.equal(readStatus.status(),200);assert.equal((await readStatus.json()).automaticExpiry,false);
  console.log('Synthetic source access: PDF/staging blocked; authorized exposure audited and compromised before content; replay idempotent.');
 
 
@@ -155,7 +160,7 @@ async function waitFor(fn) { for(let n=0;n<100;n++){if(await fn())return;await n
  const answer=await page.request.post('http://127.0.0.1:8080/api/v1/questions/'+qid+'/attempts',{data:{attemptId:id,sessionId:sid,selectedOption:'A',confidenceLevel:4,activeTimeMs:1000,usedHelp:false}});
  assert.equal(answer.status(),200);assert.equal(memory(),1);
  assert.equal(external.length,0);
- fs.writeFileSync(path.join(root,'browser-summary.json'),JSON.stringify({source_kind:'SYNTHETIC_FIXTURE',checks:['source_guard_pdf_staging','audited_maintenance_compromise','source_receipt_idempotence','quarantine_batch_bank_direct_prediction','quarantine_creation_disabled','preparation_before_answer','lost_preparation_ack_reload','lost_answer_ack_reload','double_click','completed_reload','frontend_runtime_restart','rapid_question_switch','no_grade_leak','export_authorization','ineligible_fsrs_exclusion'],attempts:count('ANSWER_SUBMITTED'),memory_evidence:memory(),can_apply:false,can_schedule:false},null,2));
+ fs.writeFileSync(path.join(root,'browser-summary.json'),JSON.stringify({source_kind:'SYNTHETIC_FIXTURE',checks:['captured_exact_source_provenance','persistent_read_open_close','source_guard_pdf_staging','audited_maintenance_compromise','source_receipt_idempotence','quarantine_batch_bank_direct_prediction','quarantine_creation_disabled','preparation_before_answer','lost_preparation_ack_reload','lost_answer_ack_reload','double_click','completed_reload','frontend_runtime_restart','rapid_question_switch','no_grade_leak','export_authorization','ineligible_fsrs_exclusion'],attempts:count('ANSWER_SUBMITTED'),memory_evidence:memory(),can_apply:false,can_schedule:false},null,2));
  await browser.close();
  console.log('Real-browser synthetic homolocation passed; personal validation NOT_EXECUTED.');
 })().catch(async error=>{

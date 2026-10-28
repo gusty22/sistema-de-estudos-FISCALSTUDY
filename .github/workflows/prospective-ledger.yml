@@ -48,7 +48,7 @@ jobs:
         timeout-minutes: 8
         run: |
           mvn -B -ntp test-compile
-          mvn -B -ntp -Dtest=ProspectivePredictionIntegrationTest,AttemptIdentityRegressionTest,LearningEvidenceServiceTest,FsrsReferenceConformanceTest,QuestionControllerTest,ProspectiveExportSecurityTest,DiagnosticQuarantineIntegrationTest,DiagnosticQuarantineArchitectureTest,DatabaseFoundationTest,QuarantineSourceExposureIntegrationTest,StagingDatabaseServiceTest,IngestionPipelineServiceTest,AnkiIntegrationServiceTest,AnkiPrivacyPolicyTest test
+          mvn -B -ntp -Dtest=ProspectivePredictionIntegrationTest,AttemptIdentityRegressionTest,LearningEvidenceServiceTest,FsrsReferenceConformanceTest,QuestionControllerTest,ProspectiveExportSecurityTest,DiagnosticQuarantineIntegrationTest,DiagnosticQuarantineArchitectureTest,DatabaseFoundationTest,QuarantineSourceExposureIntegrationTest,StagingDatabaseServiceTest,IngestionPipelineServiceTest,AnkiIntegrationServiceTest,AnkiPrivacyPolicyTest,SourceReadBarrierIntegrationTest,ItemSourceProvenanceIntegrationTest test
       - name: Evaluate the actual Java export in R and replay
         working-directory: analytics-engine
         run: |
@@ -57,6 +57,8 @@ jobs:
           Rscript lab/prospective_evaluation.R ../backend/target/prospective-fixture.json ../backend/target/prospective-metrics-replay.json
           cmp ../backend/target/prospective-metrics.json ../backend/target/prospective-metrics-replay.json
           Rscript tests/test_runner.R
+          python3 lab/personal_pilot.py --input ../backend/target/prospective-fixture.json --output "$RUNNER_TEMP/personal-pilot-synthetic" --synthetic-test
+          cmp ../backend/target/prospective-metrics.json "$RUNNER_TEMP/personal-pilot-synthetic/metrics.json"
       - name: Frontend tests and production build
         working-directory: frontend
         timeout-minutes: 5
@@ -120,5 +122,6 @@ jobs:
             backend/target/surefire-reports/
             backend/target/prospective*fixture.json
             backend/target/prospective-metrics*.json
+            ${{ runner.temp }}/personal-pilot-synthetic/*.json
             ${{ env.FISCALSTUDY_BROWSER_DIR }}/*.png
             ${{ env.FISCALSTUDY_BROWSER_DIR }}/browser-*.json
