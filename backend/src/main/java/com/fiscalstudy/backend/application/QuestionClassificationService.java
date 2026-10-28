@@ -26,10 +26,10 @@ public class QuestionClassificationService {
         if(limit<1 || limit>100 || offset<0) throw bad("limit deve estar entre 1 e 100; offset >= 0");
         if(topicId != null && !topicId.isBlank()) {
             if(unclassified) throw bad("Filtro topicId exige unclassified=false");
-            return jdbc.queryForList("SELECT q.id,q.enunciado,q.disciplina,q.assunto,q.arquivo_origem,q.numero_original FROM questions q WHERE EXISTS (SELECT 1 FROM ("+CURRENT_LINKS+") c WHERE c.question_id=q.id AND c.topic_id=? AND c.status='CONFIRMED') ORDER BY q.id LIMIT ? OFFSET ?",topicId,limit,offset);
+            return jdbc.queryForList("SELECT q.id,q.enunciado,q.disciplina,q.assunto,q.arquivo_origem,q.numero_original FROM study_questions q WHERE EXISTS (SELECT 1 FROM ("+CURRENT_LINKS+") c WHERE c.question_id=q.id AND c.topic_id=? AND c.status='CONFIRMED') ORDER BY q.id LIMIT ? OFFSET ?",topicId,limit,offset);
         }
         String filter=unclassified ? " WHERE NOT EXISTS (SELECT 1 FROM ("+CURRENT_LINKS+") c WHERE c.question_id=q.id AND c.status='CONFIRMED')" : "";
-        return jdbc.queryForList("SELECT q.id,q.enunciado,q.disciplina,q.assunto,q.arquivo_origem,q.numero_original FROM questions q"+filter+" ORDER BY q.id LIMIT ? OFFSET ?",limit,offset);
+        return jdbc.queryForList("SELECT q.id,q.enunciado,q.disciplina,q.assunto,q.arquivo_origem,q.numero_original FROM study_questions q"+filter+" ORDER BY q.id LIMIT ? OFFSET ?",limit,offset);
     }
     public List<Map<String,Object>> history(String questionId) {
         requireQuestion(questionId);
@@ -39,7 +39,7 @@ public class QuestionClassificationService {
         String scope=concursoId==null || concursoId.isBlank()?"":" AND t.concurso_id=?";
         Object[] args=scope.isEmpty()?new Object[]{}:new Object[]{concursoId};
         String links=" FROM ("+CURRENT_LINKS+") c JOIN edital_topicos t ON t.id=c.topic_id WHERE 1=1"+scope;
-        long total=jdbc.queryForObject("SELECT COUNT(*) FROM questions",Long.class);
+        long total=jdbc.queryForObject("SELECT COUNT(*) FROM study_questions",Long.class);
         long classified=jdbc.queryForObject("SELECT COUNT(DISTINCT c.question_id)"+links+" AND c.status='CONFIRMED'",Long.class,args);
         long confirmed=jdbc.queryForObject("SELECT COUNT(*)"+links+" AND c.status='CONFIRMED'",Long.class,args);
         long suggested=jdbc.queryForObject("SELECT COUNT(*)"+links+" AND c.status='SUGGESTED'",Long.class,args);
@@ -64,14 +64,14 @@ public class QuestionClassificationService {
     /** Identity of exact content only: never proof of conceptual transfer or reason to delete occurrences. */
     public Map<String,Object> family(String questionId) {
         requireQuestion(questionId);
-        Map<String,Object> q=jdbc.queryForMap("SELECT enunciado,options_json,correct_option FROM questions WHERE id=?",questionId);
+        Map<String,Object> q=jdbc.queryForMap("SELECT enunciado,options_json,correct_option FROM study_questions WHERE id=?",questionId);
         try {
             String content=Objects.toString(q.get("enunciado"),"")+"\u001e"+Objects.toString(q.get("options_json"),"")+"\u001e"+Objects.toString(q.get("correct_option"),"");
             String fingerprint=HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(content.getBytes(StandardCharsets.UTF_8)));
             return Map.of("questionId",questionId,"familyId",fingerprint,"fingerprintVersion","EXACT_CONTENT_V1","conceptualEquivalenceVerified",false);
         } catch(java.security.NoSuchAlgorithmException e) { throw new IllegalStateException(e); }
     }
-    private void requireQuestion(String id) { if(jdbc.queryForObject("SELECT COUNT(*) FROM questions WHERE id=?",Integer.class,id)==0) throw new ResponseStatusException(HttpStatus.NOT_FOUND,"Questão inexistente"); }
+    private void requireQuestion(String id) { if(jdbc.queryForObject("SELECT COUNT(*) FROM study_questions WHERE id=?",Integer.class,id)==0) throw new ResponseStatusException(HttpStatus.NOT_FOUND,"Questão inexistente"); }
     private static ResponseStatusException bad(String message) { return new ResponseStatusException(HttpStatus.BAD_REQUEST,message); }
     public record Classification(String topicId,String status,Double confidence,String origin,String reviewer,String evidence) {}
 }

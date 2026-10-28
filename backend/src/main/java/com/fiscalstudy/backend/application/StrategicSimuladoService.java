@@ -311,7 +311,7 @@ public class StrategicSimuladoService {
             List<Map<String, Object>> rows = jdbcTemplate.queryForList("""
                 SELECT e.payload_json, q.disciplina, q.assunto
                 FROM event_store e
-                JOIN questions q ON e.aggregate_id = q.id
+                JOIN study_questions q ON e.aggregate_id = q.id
                 WHERE e.event_type = 'ANSWER_SUBMITTED'
             """);
 
@@ -511,7 +511,7 @@ public class StrategicSimuladoService {
             String filtroResolucao,
             int quantidade
     ) {
-        StringBuilder sql = new StringBuilder("SELECT id FROM questions WHERE (status = 'VALIDADA' OR status IS NULL) ");
+        StringBuilder sql = new StringBuilder("SELECT id FROM study_questions WHERE (status = 'VALIDADA' OR status IS NULL) ");
         List<Object> params = new ArrayList<>();
 
         if (disciplinas != null && !disciplinas.isEmpty()) {

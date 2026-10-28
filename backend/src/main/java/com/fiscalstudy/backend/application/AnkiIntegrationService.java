@@ -464,6 +464,7 @@ public class AnkiIntegrationService {
     public AnkiFlashcardDTO saveAndPushCard(String sessionId, String concursoId, String disciplina, String assunto,
                                           String cardType, String frontOrText, String backOrExtra,
                                           String sourceType, String sourceId) {
+        QuestionAccessPolicy.requireAvailable(jdbcTemplate,sourceId);
         String cardId = "anki-" + UUID.randomUUID().toString().substring(0, 8);
         String deckName = "FiscalStudy::" + (disciplina != null && !disciplina.isBlank() ? disciplina.trim() : "Geral");
         String nowStr = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
@@ -670,7 +671,7 @@ public class AnkiIntegrationService {
         // 1. Busca questões que o estudante REALMENTE resolveu nesta sessão
         List<Map<String, Object>> resolvedQuestions = jdbcTemplate.queryForList(
                 "SELECT DISTINCT q.id, q.enunciado, q.options_json, q.correct_option, q.disciplina, q.assunto, e.payload_json " +
-                "FROM questions q " +
+                "FROM study_questions q " +
                 "INNER JOIN event_store e ON e.aggregate_id = q.id " +
                 "WHERE e.event_type = 'ANSWER_SUBMITTED' AND json_extract(e.payload_json, '$.origin') = 'REAL_STUDY' " +
                 (sessionId != null && !sessionId.isBlank() ? "AND e.session_id = ? " : "") +
@@ -682,7 +683,7 @@ public class AnkiIntegrationService {
         if (resolvedQuestions.isEmpty()) {
             resolvedQuestions = jdbcTemplate.queryForList(
                     "SELECT DISTINCT q.id, q.enunciado, q.options_json, q.correct_option, q.disciplina, q.assunto, e.payload_json " +
-                    "FROM questions q " +
+                    "FROM study_questions q " +
                     "INNER JOIN event_store e ON e.aggregate_id = q.id " +
                     "WHERE e.event_type = 'ANSWER_SUBMITTED' " +
                     "ORDER BY e.recorded_at DESC LIMIT 15"
@@ -761,7 +762,7 @@ public class AnkiIntegrationService {
     public synchronized int syncPendingQueue() {
         if (!integrationEnabled()) throw new IllegalStateException("Anki integration is disabled");
         List<Map<String, Object>> pendingRows = jdbcTemplate.queryForList(
-                "SELECT id, disciplina, assunto, card_type, front_or_text, back_or_extra, deck_name FROM anki_flashcards WHERE sync_status = 'PENDING_ANKI'"
+                "SELECT id, disciplina, assunto, card_type, front_or_text, back_or_extra, deck_name FROM study_anki_flashcards WHERE sync_status = 'PENDING_ANKI'"
         );
 
         int count = 0;
@@ -869,7 +870,7 @@ public class AnkiIntegrationService {
      * Exporta todos os cards em formato CSV padrão do Anki
      */
     public String exportToCsv(String deckNameFilter) {
-        String sql = "SELECT front_or_text, back_or_extra, card_type, disciplina, assunto FROM anki_flashcards";
+        String sql = "SELECT front_or_text, back_or_extra, card_type, disciplina, assunto FROM study_anki_flashcards";
         if (deckNameFilter != null && !deckNameFilter.isBlank()) {
             sql += " WHERE deck_name = '" + deckNameFilter.replace("'", "''") + "'";
         }
@@ -897,7 +898,7 @@ public class AnkiIntegrationService {
     }
 
     public List<AnkiFlashcardDTO> getRecentFlashcards(int limit) {
-        String sql = "SELECT * FROM anki_flashcards ORDER BY created_at DESC LIMIT ?";
+        String sql = "SELECT * FROM study_anki_flashcards ORDER BY created_at DESC LIMIT ?";
         return jdbcTemplate.query(sql, (rs, rowNum) -> new AnkiFlashcardDTO(
                 rs.getString("id"),
                 rs.getString("session_id"),
@@ -921,7 +922,7 @@ public class AnkiIntegrationService {
     public int getPendingCardsCount() {
         try {
             Integer count = jdbcTemplate.queryForObject(
-                    "SELECT COUNT(*) FROM anki_flashcards WHERE sync_status = 'PENDING_ANKI'", Integer.class
+                    "SELECT COUNT(*) FROM study_anki_flashcards WHERE sync_status = 'PENDING_ANKI'", Integer.class
             );
             return count != null ? count : 0;
         } catch (Exception e) {
@@ -932,7 +933,7 @@ public class AnkiIntegrationService {
     public int getSyncedCardsCount() {
         try {
             Integer count = jdbcTemplate.queryForObject(
-                    "SELECT COUNT(*) FROM anki_flashcards WHERE sync_status = 'SYNCED'", Integer.class
+                    "SELECT COUNT(*) FROM study_anki_flashcards WHERE sync_status = 'SYNCED'", Integer.class
             );
             return count != null ? count : 0;
         } catch (Exception e) {

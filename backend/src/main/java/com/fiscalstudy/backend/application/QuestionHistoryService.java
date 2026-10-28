@@ -39,7 +39,7 @@ public class QuestionHistoryService {
                    ROW_NUMBER() OVER (PARTITION BY e.aggregate_id ORDER BY e.occurred_at ASC) as attempt_number,
                    COUNT(*) OVER (PARTITION BY e.aggregate_id) as total_attempts_for_question
             FROM event_store e
-            LEFT JOIN questions q ON e.aggregate_id = q.id
+            LEFT JOIN study_questions q ON e.aggregate_id = q.id
             WHERE e.event_type = 'ANSWER_SUBMITTED'
         """);
 
@@ -181,7 +181,7 @@ public class QuestionHistoryService {
             SELECT e.aggregate_id as question_id, e.occurred_at, e.payload_json,
                    q.disciplina, q.assunto, q.gabarito_status
             FROM event_store e
-            LEFT JOIN questions q ON e.aggregate_id = q.id
+            LEFT JOIN study_questions q ON e.aggregate_id = q.id
             WHERE e.event_type = 'ANSWER_SUBMITTED'
             ORDER BY e.occurred_at ASC
         """;
@@ -330,7 +330,7 @@ public class QuestionHistoryService {
         // Total questions in bank & unanswered count
         int totalQuestionsInBank = 0;
         try {
-            List<Map<String, Object>> countRow = LearningEventEligibility.query(jdbcTemplate, "SELECT COUNT(*) as c FROM questions");
+            List<Map<String, Object>> countRow = LearningEventEligibility.query(jdbcTemplate, "SELECT COUNT(*) as c FROM study_questions");
             if (!countRow.isEmpty() && countRow.get(0).get("c") != null) {
                 totalQuestionsInBank = ((Number) countRow.get(0).get("c")).intValue();
             }

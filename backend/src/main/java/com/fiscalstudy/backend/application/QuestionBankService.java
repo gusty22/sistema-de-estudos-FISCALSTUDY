@@ -118,7 +118,7 @@ public class QuestionBankService {
         }
 
         // 1. Contagem Total de Itens Elegíveis (Sem duplicatas)
-        String countSql = "SELECT COUNT(DISTINCT q.id) FROM questions q " + whereClause;
+        String countSql = "SELECT COUNT(DISTINCT q.id) FROM study_questions q " + whereClause;
         Integer totalCount = jdbcTemplate.queryForObject(countSql, Integer.class, params.toArray());
         int total = totalCount != null ? totalCount : 0;
 
@@ -129,7 +129,7 @@ public class QuestionBankService {
                    (SELECT COUNT(*) FROM favorite_questions f WHERE f.question_id = q.id) AS is_favorite,
                    (SELECT COUNT(*) FROM event_store e WHERE e.aggregate_id = q.id AND e.event_type = 'ANSWER_SUBMITTED') AS total_attempts,
                    (SELECT COUNT(*) FROM event_store e WHERE e.aggregate_id = q.id AND e.event_type = 'ANSWER_SUBMITTED' AND e.payload_json LIKE '%"isCorrect":true%') AS total_correct
-            FROM questions q
+            FROM study_questions q
         """ + whereClause + " ORDER BY q.ano DESC, q.id ASC LIMIT ? OFFSET ?";
 
         List<Object> selectParams = new ArrayList<>(params);
@@ -219,7 +219,7 @@ public class QuestionBankService {
         }
         for (String ed : rawEdital) {
             // Checa quantas questões existem no banco para esta disciplina do edital
-            String countQSql = "SELECT COUNT(*) FROM questions WHERE (status = 'VALIDADA' OR status IS NULL) AND (LOWER(disciplina) = LOWER(?) OR (LOWER(?) LIKE '%portug%' AND LOWER(disciplina) LIKE '%portug%'))";
+            String countQSql = "SELECT COUNT(*) FROM study_questions WHERE (status = 'VALIDADA' OR status IS NULL) AND (LOWER(disciplina) = LOWER(?) OR (LOWER(?) LIKE '%portug%' AND LOWER(disciplina) LIKE '%portug%'))";
             Integer qCount = jdbcTemplate.queryForObject(countQSql, Integer.class, ed, ed);
             Map<String, Object> item = new HashMap<>();
             item.put("nome", ed);
@@ -291,7 +291,7 @@ public class QuestionBankService {
         }
 
         List<String> disciplinas = jdbcTemplate.queryForList(
-                "SELECT DISTINCT q.disciplina FROM questions q " + discWhere + " AND q.disciplina IS NOT NULL AND TRIM(q.disciplina) != '' ORDER BY q.disciplina",
+                "SELECT DISTINCT q.disciplina FROM study_questions q " + discWhere + " AND q.disciplina IS NOT NULL AND TRIM(q.disciplina) != '' ORDER BY q.disciplina",
                 String.class,
                 discParams.toArray()
         );
@@ -318,7 +318,7 @@ public class QuestionBankService {
         }
 
         List<String> bancas = jdbcTemplate.queryForList(
-                "SELECT DISTINCT q.banca FROM questions q " + bancaWhere + " AND q.banca IS NOT NULL AND TRIM(q.banca) != '' ORDER BY q.banca",
+                "SELECT DISTINCT q.banca FROM study_questions q " + bancaWhere + " AND q.banca IS NOT NULL AND TRIM(q.banca) != '' ORDER BY q.banca",
                 String.class,
                 bancaParams.toArray()
         );
@@ -345,7 +345,7 @@ public class QuestionBankService {
         }
 
         List<Integer> anos = jdbcTemplate.queryForList(
-                "SELECT DISTINCT q.ano FROM questions q " + anoWhere + " AND q.ano IS NOT NULL AND q.ano > 1990 ORDER BY q.ano DESC",
+                "SELECT DISTINCT q.ano FROM study_questions q " + anoWhere + " AND q.ano IS NOT NULL AND q.ano > 1990 ORDER BY q.ano DESC",
                 Integer.class,
                 anoParams.toArray()
         );
@@ -368,7 +368,7 @@ public class QuestionBankService {
         }
 
         List<String> orgaos = jdbcTemplate.queryForList(
-                "SELECT DISTINCT q.orgao FROM questions q " + orgaoWhere + " AND q.orgao IS NOT NULL AND TRIM(q.orgao) != '' ORDER BY q.orgao",
+                "SELECT DISTINCT q.orgao FROM study_questions q " + orgaoWhere + " AND q.orgao IS NOT NULL AND TRIM(q.orgao) != '' ORDER BY q.orgao",
                 String.class,
                 orgaoParams.toArray()
         );
@@ -391,7 +391,7 @@ public class QuestionBankService {
         }
 
         List<String> cargos = jdbcTemplate.queryForList(
-                "SELECT DISTINCT q.cargo FROM questions q " + cargoWhere + " AND q.cargo IS NOT NULL AND TRIM(q.cargo) != '' ORDER BY q.cargo",
+                "SELECT DISTINCT q.cargo FROM study_questions q " + cargoWhere + " AND q.cargo IS NOT NULL AND TRIM(q.cargo) != '' ORDER BY q.cargo",
                 String.class,
                 cargoParams.toArray()
         );
@@ -402,7 +402,7 @@ public class QuestionBankService {
         tiposReais.add("MULTIPLA_ESCOLHA");
         // Verifica se há alguma CE sob as condições atuais
         Integer countCe = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM questions q " + baseWhere + " AND (q.options_json LIKE '%Certo%' OR q.options_json LIKE '%Errado%')",
+                "SELECT COUNT(*) FROM study_questions q " + baseWhere + " AND (q.options_json LIKE '%Certo%' OR q.options_json LIKE '%Errado%')",
                 Integer.class,
                 baseParams.toArray()
         );
@@ -447,13 +447,15 @@ public class QuestionBankService {
             map.put("modoResolucao", rs.getString("modo_resolucao"));
             map.put("quantidade", rs.getInt("quantidade"));
             map.put("tempoMinutos", rs.getInt("tempo_minutos"));
-            try { map.put("questionIds", objectMapper.readValue(Optional.ofNullable(rs.getString("questoes_ids_json")).orElse("[]"), List.class)); } catch (Exception e) { throw new IllegalStateException("Identidades do caderno inválidas", e); }
+            try { map.put("questionIds", QuestionAccessPolicy.availableIds(jdbcTemplate,objectMapper.readValue(Optional.ofNullable(rs.getString("questoes_ids_json")).orElse("[]"), List.class))); } catch (Exception e) { throw new IllegalStateException("Identidades do caderno inválidas", e); }
             map.put("createdAt", rs.getString("created_at"));
             map.put("lastExecutedAt", rs.getString("last_executed_at"));
             try {
                 String filtros = rs.getString("filtros_json");
                 if (filtros != null) {
-                    map.put("filtros", objectMapper.readValue(filtros, Map.class));
+                    Map<String,Object> parsedFilters=objectMapper.readValue(filtros,Map.class);
+                    if(parsedFilters.get("questionIds") instanceof List<?> filterIds) parsedFilters.put("questionIds",QuestionAccessPolicy.availableIds(jdbcTemplate,filterIds));
+                    map.put("filtros",parsedFilters);
                 }
             } catch (Exception ignored) {}
             return map;
@@ -508,6 +510,7 @@ public class QuestionBankService {
             String filtros=payload.containsKey("filtros")?objectMapper.writeValueAsString(payload.get("filtros")):null;
             Object ids=payload.containsKey("questionIds")?payload.get("questionIds"):payload.get("questoesIds");
             if(ids!=null && !(ids instanceof List<?>))throw new IllegalArgumentException("questionIds deve ser uma lista");
+            if(ids instanceof List<?> values) for(Object questionId:values) QuestionAccessPolicy.requireAvailable(jdbcTemplate,String.valueOf(questionId));
             String idsJson=ids==null?null:objectMapper.writeValueAsString(ids);
             jdbcTemplate.update("""
                 INSERT INTO study_notebooks(id,nome,concurso_id,tipo,modo_resolucao,filtros_json,questoes_ids_json,quantidade,tempo_minutos,created_at)

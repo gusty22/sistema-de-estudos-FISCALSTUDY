@@ -566,7 +566,7 @@ public class IngestionPipelineService {
 
         // Consulta banco operacional apenas para verificação de colisão
         List<String> existingIds = jdbcTemplate.query(
-                "SELECT id FROM questions",
+                "SELECT id FROM study_questions",
                 (rs, rowNum) -> rs.getString("id")
         );
         Set<String> existingIdSet = new HashSet<>(existingIds);

@@ -444,7 +444,7 @@ public class IngestionController {
 
                 // Proteção contra colisão acidental entre provas distintas
                 List<Map<String, Object>> existing = jdbcTemplate.queryForList(
-                    "SELECT id, banca, ano, cargo, orgao FROM questions WHERE id = ?", id
+                    "SELECT id, banca, ano, cargo, orgao FROM study_questions WHERE id = ?", id
                 );
                 if (!existing.isEmpty()) {
                     Map<String, Object> prev = existing.get(0);

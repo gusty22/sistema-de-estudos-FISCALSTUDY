@@ -38,7 +38,7 @@ public class PerformanceIntelligenceService {
             SELECT e.event_id, e.aggregate_id as question_id, e.occurred_at, e.payload_json,
                    q.disciplina, q.assunto, q.dificuldade, q.banca
             FROM event_store e
-            LEFT JOIN questions q ON e.aggregate_id = q.id
+            LEFT JOIN study_questions q ON e.aggregate_id = q.id
             WHERE e.event_type = 'ANSWER_SUBMITTED'
         """);
 
@@ -375,7 +375,7 @@ public class PerformanceIntelligenceService {
             String sqlAttempts = """
                 SELECT e.aggregate_id, e.payload_json, e.occurred_at
                 FROM event_store e
-                LEFT JOIN questions q ON e.aggregate_id = q.id
+                LEFT JOIN study_questions q ON e.aggregate_id = q.id
                 WHERE e.event_type = 'ANSWER_SUBMITTED'
                   AND (q.disciplina = ? OR (? IS NULL AND q.disciplina IS NOT NULL))
                   AND (q.assunto = ? OR (? IS NULL AND q.assunto IS NOT NULL))
@@ -424,7 +424,7 @@ public class PerformanceIntelligenceService {
         // Consultar se há questões cadastradas para o tópico
         try {
             List<Map<String, Object>> countQ = LearningEventEligibility.query(jdbcTemplate, """
-                SELECT COUNT(*) as c FROM questions WHERE disciplina = ? AND assunto = ?
+                SELECT COUNT(*) as c FROM study_questions WHERE disciplina = ? AND assunto = ?
             """, disciplina, topico);
             if (!countQ.isEmpty() && countQ.get(0).get("c") != null) {
                 int count = ((Number) countQ.get(0).get("c")).intValue();
@@ -530,7 +530,7 @@ public class PerformanceIntelligenceService {
             String calibSql = """
                 SELECT e.payload_json, q.disciplina
                 FROM event_store e
-                LEFT JOIN questions q ON e.aggregate_id = q.id
+                LEFT JOIN study_questions q ON e.aggregate_id = q.id
                 WHERE e.event_type = 'ANSWER_SUBMITTED'
             """;
             List<Map<String, Object>> calibRows = LearningEventEligibility.query(jdbcTemplate, calibSql);

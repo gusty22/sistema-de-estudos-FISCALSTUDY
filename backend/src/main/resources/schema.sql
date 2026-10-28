@@ -529,3 +529,46 @@ CREATE TABLE IF NOT EXISTS topic_knowledge_projections (
 );
 CREATE INDEX IF NOT EXISTS idx_topic_knowledge_discipline ON topic_knowledge_projections(discipline_id);
 CREATE INDEX IF NOT EXISTS idx_topic_knowledge_updated ON topic_knowledge_projections(updated_at);
+
+
+-- Diagnostic quarantine foundation v1. Physical questions/ingestion/FKs remain unchanged.
+-- No public reservation creation/release API is enabled: staging/cache audit is still incomplete.
+CREATE TABLE IF NOT EXISTS diagnostic_reservation_events (
+  event_id TEXT PRIMARY KEY NOT NULL,
+  reservation_id TEXT NOT NULL,
+  question_id TEXT NOT NULL REFERENCES questions(id),
+  previous_event_id TEXT UNIQUE REFERENCES diagnostic_reservation_events(event_id),
+  state TEXT NOT NULL CHECK(state IN ('RESERVED','COMPROMISED','RELEASED')),
+  protocol_id TEXT NOT NULL CHECK(length(trim(protocol_id))>0),
+  purpose TEXT NOT NULL CHECK(length(trim(purpose))>0),
+  occurred_at TEXT NOT NULL CHECK(length(occurred_at)>=20 AND substr(occurred_at,-1)='Z'),
+  classification_snapshot_json TEXT NOT NULL CHECK(json_valid(classification_snapshot_json)),
+  novelty_status TEXT NOT NULL CHECK(novelty_status='EXTERNAL_EXPOSURE_UNKNOWN'),
+  reason TEXT NOT NULL CHECK(length(trim(reason))>0),
+  contract_version TEXT NOT NULL CHECK(contract_version='diagnostic-quarantine-v1')
+);
+CREATE INDEX IF NOT EXISTS idx_diagnostic_reservation_question ON diagnostic_reservation_events(question_id);
+CREATE VIEW IF NOT EXISTS diagnostic_active_reservations AS
+ SELECT r.* FROM diagnostic_reservation_events r
+ WHERE r.state IN ('RESERVED','COMPROMISED') AND NOT EXISTS (
+  SELECT 1 FROM diagnostic_reservation_events n WHERE n.previous_event_id=r.event_id);
+CREATE VIEW IF NOT EXISTS diagnostic_blocked_questions AS
+ SELECT DISTINCT q.id FROM questions q JOIN diagnostic_active_reservations r
+ JOIN questions held ON held.id=r.question_id
+ WHERE q.id=held.id OR (length(trim(COALESCE(held.enunciado,'')))>0
+   AND q.enunciado IS held.enunciado AND q.options_json IS held.options_json);
+CREATE VIEW IF NOT EXISTS study_questions AS
+ SELECT q.* FROM questions q WHERE NOT EXISTS (
+  SELECT 1 FROM diagnostic_blocked_questions b WHERE b.id=q.id);
+
+
+
+
+
+
+
+CREATE VIEW IF NOT EXISTS study_anki_flashcards AS
+ SELECT a.* FROM anki_flashcards a WHERE NOT EXISTS (
+ SELECT 1 FROM diagnostic_blocked_questions b WHERE b.id=a.source_id);
+
+

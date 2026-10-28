@@ -49,7 +49,7 @@ public class QuestionRepositoryImpl implements QuestionRepository {
 
     @Override
     public List<Question> findQuestionBatch(String sessionId, String concursoId, String disciplina, String assunto, Boolean includeAnswered, int limit) {
-        StringBuilder sql = new StringBuilder("SELECT * FROM questions q WHERE 1=1 ");
+        StringBuilder sql = new StringBuilder("SELECT * FROM study_questions q WHERE 1=1 ");
         List<Object> params = new java.util.ArrayList<>();
 
         if (concursoId != null && !concursoId.isBlank()) {
@@ -280,7 +280,7 @@ public class QuestionRepositoryImpl implements QuestionRepository {
 
     @Override
     public Optional<Question> findById(String id) {
-        String sql = "SELECT * FROM questions WHERE id = ?";
+        String sql = "SELECT * FROM study_questions WHERE id = ?";
         
         List<Question> questions = jdbcTemplate.query(sql, (rs, rowNum) -> {
             try {
@@ -375,7 +375,7 @@ public class QuestionRepositoryImpl implements QuestionRepository {
     public List<String> findAllDisciplines() {
         String sql = """
             SELECT DISTINCT disciplina FROM (
-                SELECT disciplina FROM questions WHERE disciplina IS NOT NULL AND TRIM(disciplina) != ''
+                SELECT disciplina FROM study_questions WHERE disciplina IS NOT NULL AND TRIM(disciplina) != ''
                 UNION
                 SELECT disciplina FROM edital_topicos WHERE disciplina IS NOT NULL AND TRIM(disciplina) != ''
             ) ORDER BY disciplina
@@ -388,7 +388,7 @@ public class QuestionRepositoryImpl implements QuestionRepository {
         if (disciplina != null && !disciplina.isBlank()) {
             String sql = """
                 SELECT DISTINCT assunto FROM (
-                    SELECT assunto FROM questions WHERE LOWER(disciplina) = LOWER(?) AND assunto IS NOT NULL AND TRIM(assunto) != ''
+                    SELECT assunto FROM study_questions WHERE LOWER(disciplina) = LOWER(?) AND assunto IS NOT NULL AND TRIM(assunto) != ''
                     UNION
                     SELECT assunto FROM edital_topicos WHERE LOWER(disciplina) = LOWER(?) AND assunto IS NOT NULL AND TRIM(assunto) != ''
                 ) ORDER BY assunto
@@ -397,7 +397,7 @@ public class QuestionRepositoryImpl implements QuestionRepository {
         }
         String sql = """
             SELECT DISTINCT assunto FROM (
-                SELECT assunto FROM questions WHERE assunto IS NOT NULL AND TRIM(assunto) != ''
+                SELECT assunto FROM study_questions WHERE assunto IS NOT NULL AND TRIM(assunto) != ''
                 UNION
                 SELECT assunto FROM edital_topicos WHERE assunto IS NOT NULL AND TRIM(assunto) != ''
             ) ORDER BY assunto

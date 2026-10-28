@@ -338,7 +338,7 @@ public class ReverseEngineeringService {
 
         // 1. Tenta banca exata + disciplina + assunto
         String sql = "SELECT id, enunciado, options_json, correct_option, disciplina, assunto, banca, ano, orgao " +
-                     "FROM questions WHERE disciplina = ? AND assunto = ? AND banca = ? ORDER BY ano DESC LIMIT ?";
+                     "FROM study_questions WHERE disciplina = ? AND assunto = ? AND banca = ? ORDER BY ano DESC LIMIT ?";
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql, disciplina, assunto, banca, limit);
         for (Map<String, Object> row : rows) {
             result.add(formatQuestionRow(row));
@@ -348,7 +348,7 @@ public class ReverseEngineeringService {
         if (result.size() < limit) {
             int needed = limit - result.size();
             String sqlBanca = "SELECT id, enunciado, options_json, correct_option, disciplina, assunto, banca, ano, orgao " +
-                              "FROM questions WHERE disciplina = ? AND banca = ? " +
+                              "FROM study_questions WHERE disciplina = ? AND banca = ? " +
                               "AND id NOT IN (" + getInClause(result) + ") ORDER BY ano DESC LIMIT ?";
             List<Map<String, Object>> moreRows = jdbcTemplate.queryForList(sqlBanca, disciplina, banca, needed);
             for (Map<String, Object> row : moreRows) {
@@ -360,7 +360,7 @@ public class ReverseEngineeringService {
         if (result.size() < limit) {
             int needed = limit - result.size();
             String sqlOther = "SELECT id, enunciado, options_json, correct_option, disciplina, assunto, banca, ano, orgao " +
-                              "FROM questions WHERE disciplina = ? " +
+                              "FROM study_questions WHERE disciplina = ? " +
                               "AND id NOT IN (" + getInClause(result) + ") ORDER BY ano DESC LIMIT ?";
             List<Map<String, Object>> otherRows = jdbcTemplate.queryForList(sqlOther, disciplina, needed);
             for (Map<String, Object> row : otherRows) {

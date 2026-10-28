@@ -333,7 +333,7 @@ public class SystemSettingsService {
 
         // Contagens das tabelas centrais
         Map<String, Integer> tables = new LinkedHashMap<>();
-        tables.put("questions", safeCount("SELECT count(*) FROM questions"));
+        tables.put("questions", safeCount("SELECT count(*) FROM study_questions"));
         tables.put("event_store", safeCount("SELECT count(*) FROM event_store"));
         tables.put("materials", safeCount("SELECT count(*) FROM study_materials"));
         tables.put("concursos", safeCount("SELECT count(*) FROM concursos"));
@@ -421,7 +421,7 @@ public class SystemSettingsService {
         try {
             List<Map<String, Object>> rows = jdbcTemplate.queryForList("""
                 SELECT id, numero_original, enunciado, disciplina, assunto
-                FROM questions
+                FROM study_questions
                 WHERE lower(enunciado) LIKE ? OR lower(disciplina) LIKE ? OR lower(assunto) LIKE ?
                 LIMIT 6
             """, searchPattern, searchPattern, searchPattern);

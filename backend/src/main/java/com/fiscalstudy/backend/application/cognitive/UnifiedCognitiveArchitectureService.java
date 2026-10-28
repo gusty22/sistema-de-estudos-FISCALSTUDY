@@ -418,7 +418,7 @@ public class UnifiedCognitiveArchitectureService {
         if (qId == null || qId.isBlank()) return new QuestionMeta("Geral", "Geral");
         try {
             List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                    "SELECT disciplina, assunto FROM questions WHERE id = ?", qId
+                    "SELECT disciplina, assunto FROM study_questions WHERE id = ?", qId
             );
             if (!rows.isEmpty()) {
                 String disc = (String) rows.get(0).get("disciplina");
