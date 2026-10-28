@@ -288,6 +288,7 @@ public class AnkiIntegrationService {
      */
     public boolean triggerAnkiWebSync() {
         if (!cloudAllowed()) return false;
+        QuestionAccessPolicy.requireUnmappedSourceRead(jdbcTemplate);
         try {
             Map<String, Object> req = Map.of(
                     "action", "sync",

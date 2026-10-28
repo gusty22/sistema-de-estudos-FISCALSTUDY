@@ -33,7 +33,7 @@ class QuarantineSourceExposureIntegrationTest {
  int count(String table){return jdbc.queryForObject("SELECT COUNT(*) FROM "+table,Integer.class);}
  @Test void ordinaryReadAndTokenAloneCannotExposeUnknownSources()throws Exception {
   reserve();var filter=new QuarantineSourceAccessFilter(exposures,"fixture-token");
-  for(String path:List.of("/api/v1/materials/m/file","/api/v1/ingestion/staging-files/f/page-image","/api/v1/ingestion/sessions/s/questions","/api/v1/anki/export-csv","/api/v1/system/search","/api/v1/analytics/export/events-v1")) {
+  for(String path:List.of("/api/v1/materials/m/file","/api/v1/ingestion/staging-files/f/page-image","/api/v1/ingestion/sessions/s/questions","/api/v1/anki/export-csv","/api/v1/system/search","/api/v1/system/search;legacy=true","/api/v1/%6daterials/m/file","/api/v1/analytics/export/events-v1")) {
    var req=request(path,false,null);req.addHeader("X-FiscalStudy-Admin-Token","fixture-token");
    var response=new MockHttpServletResponse();
    filter.doFilter(req,response,(a,b)->fail("No content may leave"));
@@ -115,4 +115,20 @@ class QuarantineSourceExposureIntegrationTest {
   var restarted=new QuarantineSourceExposureService(jdbc);assertTrue(restarted.hasActiveHolds());
   assertEquals(1,count("diagnostic_source_exposures"));
  }
+ @Test void explicitCloudConsentCannotBypassAnActiveHold()throws Exception {
+  reserve();
+  var requests=new java.util.concurrent.atomic.AtomicInteger();
+  var server=com.sun.net.httpserver.HttpServer.create(new java.net.InetSocketAddress("127.0.0.1",0),0);
+  server.createContext("/",e->{requests.incrementAndGet();e.sendResponseHeaders(200,0);e.close();});server.start();
+  try {
+   var anki=new AnkiIntegrationService(jdbc,org.mockito.Mockito.mock(com.fiscalstudy.backend.domain.EventStoreRepository.class),new com.fasterxml.jackson.databind.ObjectMapper());
+   anki.setAnkiEndpoint("http://127.0.0.1:"+server.getAddress().getPort());
+   anki.updateIntegrationPreferences(Map.of("enabled",true,"cloudSyncEnabled",true));
+   jdbc.update("INSERT INTO system_settings VALUES('privacidade','{\"armazenamentoLocalEstrito\":false}','2026-10-27T00:00:00Z')");
+   assertThrows(ResponseStatusException.class,anki::triggerAnkiWebSync);
+   assertThrows(ResponseStatusException.class,()->anki.sendNoteToAnkiConnect("fixture","BASIC","synthetic","synthetic",List.of()));
+   assertEquals(0,requests.get());
+  }finally{server.stop(0);}
+ }
+
 }

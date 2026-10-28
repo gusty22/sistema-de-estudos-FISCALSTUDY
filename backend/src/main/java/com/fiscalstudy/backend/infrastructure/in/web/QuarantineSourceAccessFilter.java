@@ -33,6 +33,8 @@ public class QuarantineSourceAccessFilter extends OncePerRequestFilter {
    try{path=java.net.URLDecoder.decode(req.getRequestURI(),StandardCharsets.UTF_8);}
    catch(IllegalArgumentException invalid){res.sendError(400);return;}
   }
+  // Match effective servlet paths, including legacy matrix parameters.
+  path=path.replaceAll(";[^/]*","").replaceAll("/{2,}","/");
   if(!isSourcePath(path)||"OPTIONS".equals(req.getMethod())){chain.doFilter(req,res);return;}
   res.setHeader("Cache-Control","no-store, private");res.setHeader("Pragma","no-cache");
   // No bypass is inferred from an Origin or an admin token alone.
