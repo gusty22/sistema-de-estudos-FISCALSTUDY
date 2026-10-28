@@ -52,6 +52,14 @@ def run(output, download=False, source_run=None):
             comparison["harmed_student_count"]=len(comparison.pop("harmed_students"))
             comparison.pop("student_differences")
         summary["source_kind"]="PUBLIC_HUMAN_DATASET"
+        summary["source"]=old["source"]
+        summary["coverage_accounting"]=dict(selected_logical_events=len(events),
+            predicted_events_after_warmup=counts[CRITERIA["models"][0]],
+            warmup_events_not_scored=len(events)-counts[CRITERIA["models"][0]],
+            final_temporal_events=summary["metrics"][CRITERIA["models"][0]]["n"],
+            abstained_predictions=0,invalid_source_events="See source adapter QA",
+            status="Coverage conditional on selected eligible histories, not all raw records")
+        summary["source_qa"]=old["qa"]
         summary["source_sha256"]=sha(output/"reference"/"raw"/"corrected.csv")
         summary["source_manifest_sha256"]=sha(output/"reference"/"source-manifest.json")
         summary["selected_students"]=old["selected_students"]

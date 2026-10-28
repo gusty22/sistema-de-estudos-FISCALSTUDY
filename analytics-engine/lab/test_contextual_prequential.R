@@ -24,6 +24,7 @@ stopifnot(inherits(try(contextual_prequential(bad),silent=TRUE),"try-error"))
 bad<-d;bad$is_correct[2]<-2
 stopifnot(inherits(try(contextual_prequential(bad),silent=TRUE),"try-error"))
 stopifnot(nrow(contextual_prequential(d[FALSE,]))==0,
+ nrow(contextual_prequential(d[FALSE,setdiff(names(d),"eligible")]))==0,
  nrow(contextual_prequential(d[1:3,]))==0)
 short<-d[1:12,];p<-contextual_prequential(short)
 stopifnot(all(is.finite(p$predicted_probability)),all(p$predicted_probability>0 & p$predicted_probability<1))

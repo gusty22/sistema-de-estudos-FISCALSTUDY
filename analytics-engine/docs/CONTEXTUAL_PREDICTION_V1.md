@@ -68,3 +68,24 @@ NOT established: personal calibration, human fiscal-domain benefit, conceptual m
 can_apply=false / can_schedule=false. No model receives operational authority.
 Rollback: revert this lab-only increment; original adapters/results and operational behavior unchanged.
 Next experiment should use genuinely new human histories or prospective private exports, not tune repeatedly on this exposed sample.
+
+## Executed exploratory result
+Human run40682241525 at f90289208099318358921634cab2a3f492eaa1a8 succeeded; original baselines reproduced and results/summary replay byte-identical.
+1682 logical events,12 selected students,342 final temporal events (337 distinct item IDs), identical scored targets per candidate.
+| Model | Brier | Log loss | ROC AUC |
+|---|---:|---:|---:|
+| Beta11 | 0.207584 | 0.604443 | 0.630299 |
+| Recent20 | 0.206763 | 0.603552 | 0.660035 |
+| Content shrink20 | 0.200134 | 0.589734 | 0.670652 |
+| Online ridge context | 0.202511 | 0.592238 | 0.673952 |
+
+Content model harms4/12 vs Beta11; ridge harms6/12 vs Beta11 and9/12 vs content.
+All paired cluster intervals include0 for both Brier and log loss. Verdict INCONCLUSIVE; do not promote ridge or claim personal gain.
+Ridge Brier is worse than simpler content despite slightly higher AUC. Discrimination alone would select misleadingly.
+Event-weighted and student-weighted comparisons can disagree: ridge vs content has positive event-weighted Brier difference but slightly negative equal-student mean. Neither establishes superiority.
+342 events are NOT342 independent replications. There are12 chosen student clusters; repeated/shared items and selection constrain generalization.
+Final-partition coverage100% conditional on this selected evaluable sample, zero abstenções; conservative probability output is not sufficiency of evidence.
+Frozen aggregate in docs/results/contextual_human_v1.json is an EXPOSED-SAMPLE numerical regression, not a new confirmatory test.
+Full calibration, skill/repetition strata and code/input hash manifests are in the CI aggregate artifact, no raw public student rows uploaded.
+Learner regression at f902892:58 Python tests,640 existing R checks, contextual metamorphic gates and original synthetic/memory/calibration replays passed.
+Subsequent robustness/source-accounting changes require new exact-HEAD CI; successful earlier runs must not be substituted.

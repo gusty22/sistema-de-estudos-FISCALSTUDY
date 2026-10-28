@@ -51,6 +51,11 @@ jobs:
           import json
           from pathlib import Path
           r=json.loads(Path("lab/runs/contextual-ci/summary.json").read_text())
+          frozen=json.loads(Path("docs/results/contextual_human_v1.json").read_text())
+          for name, expected in frozen["metrics"].items():
+            for key in ("brier","log_loss","roc_auc"):
+              assert abs(r["metrics"][name][key]-expected[key])<1e-12, (name,key)
+          print("Exposed-sample numerical regression reproduced; not independent confirmation.")
           print(json.dumps({"source_kind":r["source_kind"],"events":r["selected_events"],
             "students":r["selected_students"],"metrics":{m:{k:v for k,v in s.items() if k not in ("reliability","calibration")} for m,s in r["metrics"].items()},
             "comparisons":r["comparisons"],"can_apply":False,"can_schedule":False},sort_keys=True))

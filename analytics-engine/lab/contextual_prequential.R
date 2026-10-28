@@ -6,14 +6,16 @@ contextual_prequential <- function(events, warmup=10L) {
   if (!is.data.frame(events) || !all(required %in% names(events))) stop("Missing prequential fields")
   if (length(warmup)!=1L || is.na(warmup) || warmup<0 || warmup!=floor(warmup)) stop("Invalid warmup")
   d <- events
-  for (field in c("event_id","student_id","question_id"))
+  for (field in c("event_id","student_id","question_id")) {
     if (anyNA(d[[field]]) || any(!nzchar(trimws(as.character(d[[field]]))))) stop("Missing identity")
+    d[[field]] <- as.character(d[[field]])
+  }
   if (anyDuplicated(d$event_id)) stop("Duplicate event")
   if (anyNA(d$event_order) || !is.numeric(d$event_order) ||
-      any(!is.finite(d$event_order) | d$event_order<0 | d$event_order!=floor(d$event_order)))
+      any(!is.finite(d$event_order) | d$event_order<0 | d$event_order>2^53-1 | d$event_order!=floor(d$event_order)))
     stop("Invalid ordinal chronology")
   d$event_order <- as.numeric(d$event_order)
-  if (!"eligible" %in% names(d)) d$eligible <- TRUE
+  if (!"eligible" %in% names(d)) d$eligible <- rep(TRUE,nrow(d))
   if (!is.logical(d$eligible) || anyNA(d$eligible)) stop("Explicit eligibility required")
   d <- d[d$eligible,,drop=FALSE]
   if (!is.numeric(d$is_correct) || anyNA(d$is_correct) || any(!d$is_correct %in% c(0,1))) stop("Invalid binary target")
