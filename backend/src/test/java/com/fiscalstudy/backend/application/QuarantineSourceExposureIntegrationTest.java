@@ -131,4 +131,24 @@ class QuarantineSourceExposureIntegrationTest {
   }finally{server.stop(0);}
  }
 
+ @Test void failedMigrationPreservesHistoryAndVerifiedBackupThenRecovers()throws Exception {
+  reserve();
+  // Disposable v5-like baseline plus deliberately incompatible receipt object.
+  // No receipts exist; no original/personal database is touched.
+  jdbc.execute("DROP TABLE diagnostic_source_exposures");
+  jdbc.update("DELETE FROM schema_migrations WHERE version=6");
+  jdbc.execute("CREATE VIEW diagnostic_source_exposures AS SELECT 1 AS incompatible_fixture");
+  assertThrows(IllegalStateException.class,()->new SchemaMigration(jdbc.getDataSource(),paths));
+  assertEquals(5,count("schema_migrations"));
+  assertEquals("RESERVED",jdbc.queryForObject("SELECT state FROM diagnostic_active_reservations",String.class));
+  try(var backups=Files.list(paths.backupDirectory())) {
+   var backup=backups.filter(file->file.getFileName().toString().startsWith("before_migration_")).findFirst().orElseThrow();
+   SqliteRecovery.verify(backup);
+  }
+  jdbc.execute("DROP VIEW diagnostic_source_exposures");
+  new SchemaMigration(jdbc.getDataSource(),paths);
+  assertEquals(6,count("schema_migrations"));assertEquals(0,count("diagnostic_source_exposures"));
+  assertEquals(1,count("diagnostic_reservation_events"));
+ }
+
 }
