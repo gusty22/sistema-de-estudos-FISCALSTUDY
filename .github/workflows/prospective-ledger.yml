@@ -133,6 +133,64 @@ jobs:
             backend/target/prospective-metrics*.json
             backend/target/prospective-attested-replay.json
             backend/target/prospective-fixture-public.pem
+            backend/target/prospective-other-fixture-public.pem
             ${{ runner.temp }}/personal-pilot-synthetic/*.json
             ${{ env.FISCALSTUDY_BROWSER_DIR }}/*.png
             ${{ env.FISCALSTUDY_BROWSER_DIR }}/browser-*.json
+
+  windows-synthetic-custody:
+    runs-on: windows-2022
+    timeout-minutes: 25
+    env:
+      PYTHONUTF8: '1'
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          path: FiscalStudy ação
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.13.7'
+      - uses: r-lib/actions/setup-r@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05
+        with:
+          r-version: '4.5.1'
+          use-public-rspm: true
+      - name: Verify native Windows tools and existing R dependencies
+        working-directory: FiscalStudy ação/analytics-engine
+        run: |
+          if ($PSVersionTable.Platform -ne 'Win32NT') { throw 'Native Windows required' }
+          java -version
+          Rscript --version
+          if (!(Get-Command openssl -ErrorAction SilentlyContinue)) {
+            $cryptoBin = Join-Path $env:ProgramFiles 'Git/usr/bin'
+            if (!(Test-Path (Join-Path $cryptoBin 'openssl.exe'))) { throw 'Native OpenSSL unavailable' }
+            $env:PATH = "$cryptoBin;$env:PATH"
+            $cryptoBin | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          }
+          openssl version
+          if ($LASTEXITCODE -ne 0) { throw 'Native OpenSSL failed' }
+          Rscript -e 'install.packages(c("jsonlite","digest"),repos="https://cloud.r-project.org")'
+          if ($LASTEXITCODE -ne 0) { throw 'Existing dependencies unavailable' }
+      - name: Java signing and isolated event store on native Windows
+        working-directory: FiscalStudy ação/backend
+        run: |
+          mvn -B -ntp test-compile
+          if ($LASTEXITCODE -ne 0) { throw 'Java compile failed' }
+          mvn -B -ntp '-Dtest=ProspectivePredictionIntegrationTest,ProspectiveExportSecurityTest' test
+          if ($LASTEXITCODE -ne 0) { throw 'Java synthetic tests failed' }
+      - name: Windows crypto boundary Unicode paths private NTFS and replay
+        working-directory: FiscalStudy ação/analytics-engine
+        run: |
+          python -m unittest discover -s lab -p test_personal_pilot.py -v
+          if ($LASTEXITCODE -ne 0) { throw 'Private CLI regressions failed' }
+          Rscript tests/test_attested_prospective.R
+          if ($LASTEXITCODE -ne 0) { throw 'R custody regressions failed' }
+          python tests/fixtures/authentic_prospective/replay.py
+          if ($LASTEXITCODE -ne 0) { throw 'Native Windows private replay failed' }

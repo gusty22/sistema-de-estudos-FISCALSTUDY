@@ -1,0 +1,63 @@
+FISCALSTUDY — final activation readiness review (software/synthetic only)
+Base main 8724b3f72bbda51de369e93e357cbbf720f52a7f; PR #45 merged by maintainer before this operation.
+Incoming exact-head CI for 8c20fcd: prospective ledger and learner laboratory both success.
+Branch fix/prospective-activation-readiness. No merge/automerge, personal collection or operational key provisioning.
+
+Concrete corrections: bounded actual reads (input32MiB, keys64KiB); reject live evidence/key substitution;
+publish final metrics.json only after verification; NTFS protected audited output/temp before sensitive writes;
+R temporary path without spaces (reports/inputs/public test key still use Unicode and spaces).
+
+Java regression runtime: 122 tests, 0 failures/errors/skips; 38.603s. Final updated boundary fixtures: 14 tests, all pass; 22.502s.
+Explicit Maven test-compile: BUILD SUCCESS; 3.337s. No POM/wrapper edit. JDK21 release17/Maven3.9.11 isolated /tmp.
+R4.6.1 UTF8: 1058 pass, zero fail, 118.013s; C:1054 pass and exactly four inherited failures, 121.991s.
+Inherited C failures retained separately:
+  UTF-8 curriculum labels survive CSV decoding
+  Optional UTF-8 BOM preserves header identity
+  Locale C preserves recorded discipline labels through the full pipeline
+  Locale C preserves recorded topic labels through the full pipeline
+R custody/substitution/size/type/missing verifier/valid wrong RSA key, ledger and contextual gates: pass.
+Python lab:63 tests pass, no skips;22.351s. Additional CLI boundary module:9 pass.
+Existing frontend unit suite:30 pass after installing unchanged declared dependencies in ignored node_modules, cache /tmp.
+No frontend source changed. Prior missing-react/cache-permission failures preserved in intermediate logs.
+Existing dedicated recovery/preparation Node tests also pass. Browser lost-ack/reload/restart runs in unchanged Linux CI.
+Native Windows is a separate required windows-synthetic-custody CI job; Linux results do not establish Windows PASS.
+Windows job: Windows2022/Java17/R4.5.1/Python3.13.7/native OpenSSL; real JCA PKCS8DER key only ephemeral fixture;
+Unicode checkout/key/input/report paths; independently audit NTFS report DACLs; private temp audited by CLI; replay/exclusive create.
+Use completed PR CI job logs for final native Windows result. Actual personal Windows installation remains NOT_VERIFIED.
+
+Coverage finding: QuestionViewer confirmed preparation/recovery; ResolucaoQuestaoModal sends without forecast/help declaration.
+Legacy export_pilot_session.ps1 CSV/hash workflow is not authenticated prospective export; unsupported for this pilot.
+Whole-application question coverage FAIL. Do not backfill forecasts or change operational answer routes to force experiment.
+Checklist: eight PASS/FAIL/NOT_VERIFIED criteria in docs/results/pilot_activation_gate_v1.json.
+Pilot remains NOT_STARTED, activation_allowed=false; authorization FAIL (not provided).
+No operational SQLite access, key generation, personal data or experiment. FSRS/calendar/pedagogical policies unchanged.
+No cryptographic notary or protection from malicious host/operator; no proof of unobserved help or novelty.
+can_apply=false; can_schedule=false; six new targets and personal/causal benefit NOT_ESTABLISHED.
+
+Log/artifact SHA256 (excluding this results file):
+ae56039aa829920900b329f6349dab6e9e975c23dc0ebf714eb1e6736b0d12bc  existing-flow-tests-final.txt
+51b8a79984d3edcf8ff6bbaf9faaab976371b9a7f336794b0877462e963c4191  existing-flow-tests-installed.txt
+22e17711f376727a547d8d7f4a55446b3d2cf5b2675f0b947e81228b49181fc8  existing-flow-tests.txt
+56d42f94998077674be3aeeb9963d1ea79ee2fe8a0ba8a179861f5e71cb74b65  frontend-dependencies-final.txt
+df9ae2a53c1986a73a4916ac2d030e3bf9f82247060d9d5c3c8fca80349f6129  frontend-dependencies.txt
+0e409435092ebd2171234fb84e9195fb732139300632ffd5fe4519d013b26fbe  inherited-locale-failures.json
+1444962f250ed21fefead538eda0e875a7c6b3101269f8e539130f77d3b81936  java-boundary-final.txt
+d4a0286a7e3a675984b67d0ff61fbf037412a1e1adf5173c7b40a11a0b8ddf08  java-boundary.txt
+9e97f5fad667ca66a43796bd6d6b7a56497c6ed066c84517d43bfd15d73fdeb9  java-final.txt
+4bb1fd4e1652611dcbacb6c30d142cd6c5bf1019b1875c9c14f3c2812f3e96fd  linux-unicode-replay-final.json
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  linux-unicode-replay.json
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  linux-unicode-stderr-final.txt
+a7dfd5848c6331d0e65f46706e65cda48c5157d46e26319182ecb4367419ae88  linux-unicode-stderr.txt
+5125c4a95d98365264be52ece9e7c94800d99b0a9e821b9b085cc7539507ba09  prospective-callers.txt
+2aeb9918858d09581a49c929b3fe0c7b5c432c7cc275106c882db1dfc02990bf  python-boundary-final.txt
+1ea052d1540b39d7488efa39e446a8c3c914010b40208c9d723aa11ec140d60f  python-boundary.txt
+cc03dadafe64c8ad5710dd78d202cd78b96bf20d086d278848f13e5bac389fe2  python-initial.txt
+761d254429dc92247a3b49d65afeee8773db62c90f70ecde637570a0e06d7d8a  python-lab-final.txt
+315539c29bb3fba2b5e3fb9049671b1429e7a948dded58734ccb5a07c130dca8  r-C.txt
+b6e1155c4031dcdfb3aa048b60c0f13701a1021c024ea3cab25a43507cb553ac  r-boundary-final.txt
+e4873fae9cab75662d13c8889eec309b17e7d86672be8b2b7586c5e5935527a8  r-boundary-initial.txt
+8b4c018a7df1f6635bbcc35be38251aef5c68489b8add745370531c7a4582020  r-contextual.txt
+4d58c4b3c7a56a6f5db7b33cd12604370fef049c7dd55206a383eccffdbdab58  r-ledger.txt
+2698e61bb7036b69eee06a00162e35831cdbc17b83113842a06cd0d10c114559  r-temp-space-reproduction.txt
+2fdc2703728f8a465a67b9937f61cb02ca649f8ecd9fe86c43763a479ff541a0  r-utf8.txt
+4591f29abb5c0c098e572b8259e7e0f7fe9a5a1b9f2d9aaa47169c9ce3be703e  test-compile.txt

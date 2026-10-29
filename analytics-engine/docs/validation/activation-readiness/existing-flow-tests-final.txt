@@ -1,0 +1,69 @@
+
+> frontend@0.0.0 test
+> node --test tests/*.test.mjs
+
+node:internal/modules/package_json_reader:301
+  throw new ERR_MODULE_NOT_FOUND(packageName, fileURLToPath(base), null);
+        ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'react' imported from /workspace/fiscalstudy/frontend/src/utils/accessibility.ts
+    at Object.getPackageJSONURL (node:internal/modules/package_json_reader:301:9)
+    at packageResolve (node:internal/modules/esm/resolve:768:81)
+    at moduleResolve (node:internal/modules/esm/resolve:859:18)
+    at defaultResolve (node:internal/modules/esm/resolve:992:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:701:20)
+    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:721:38)
+    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:759:56)
+    at #resolve (node:internal/modules/esm/loader:683:17)
+    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:603:35)
+    at ModuleJob.syncLink (node:internal/modules/esm/module_job:163:33) {
+  code: 'ERR_MODULE_NOT_FOUND'
+}
+
+Node.js v24.19.0
+✖ tests/accessibility-and-interaction.test.mjs (350.392474ms)
+✔ 1. Fila vazia: não injeta disciplinas ou tópicos fictícios (1.902405ms)
+✔ 2. Fila com dados reais de revisão e Robin Hood: mapeia sem inventar dados (0.357036ms)
+✔ 3. Proteção matemática: getCurrentActivity e getNextQueueIndex nunca geram NaN (0.283926ms)
+✔ 4. Proteção de sessão: prepareSessionPayload rejeita atividade inexistente (0.510496ms)
+✔ 5. Estados explícitos de interface do Dashboard (0.344537ms)
+✔ 7. Recuperação após carregamento bem-sucedido (0.176645ms)
+✔ EPIC 02 Contrato 1: Tratamento de insuficiência de evidências (SEM_EVIDENCIAS para N=0 e PRELIMINAR para N<10) (1.267201ms)
+✔ EPIC 02 Contrato 2: Denominador auditado explícito sem nota percentual cega (0.247651ms)
+✔ EPIC 02 Contrato 3: Escala ordinal pura de confiança e detecção de pontos cegos (0.197396ms)
+✔ EPIC 02 Contrato 4: Metadados contextuais registrados sem pesos multiplicadores arbitrários (0.30017ms)
+✔ a transport retry preserves attempt identity and the original payload (44.76829ms)
+✔ concurrent submissions share a single in-flight request (0.555814ms)
+✔ HTTP failure never becomes a success result (1.029565ms)
+✔ post-answer annotations target the confirmed attempt, not a new answer (1.982704ms)
+✔ preferences normalize supported choices without inventing a learning profile (0.324567ms)
+✔ only confirmed persisted preferences update the running UI (1.415063ms)
+✔ ingestion authorization stays in memory and is restricted to its API (4.454253ms)
+✔ annotateAttempt handles HTTP 409 conflict and propagates descriptive error without mutating original attempt (2.280422ms)
+✔ pre-answer preparation sends only identity and retries the same reserved attempt (67.56178ms)
+✔ preparation rejects mismatched acknowledgments and executable authority (0.924467ms)
+✔ concurrent preparation shares one request and confirmed preparation does not refreeze (0.824117ms)
+✔ reload after preparation acknowledgment loss retains UUID (97.073741ms)
+✔ reload after answer acknowledgment loss preserves exact payload and outcome (2.869585ms)
+✔ question switch isolates journals and cached session survives frontend restart (0.524988ms)
+✔ damaged storage fails closed without generating another intent (0.497787ms)
+✔ a cached success is never accepted without current server confirmation (2.32662ms)
+ℹ tests 27
+ℹ suites 0
+ℹ pass 26
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1706.183769
+
+✖ failing tests:
+
+test at tests/accessibility-and-interaction.test.mjs:1:1
+✖ tests/accessibility-and-interaction.test.mjs (350.392474ms)
+  'test failed'
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice

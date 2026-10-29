@@ -1,0 +1,2 @@
+Synthetic empty temporary directory, R4.6.1/Linux. Exit 2
+Fatal error: 'R_TempDir' contains space

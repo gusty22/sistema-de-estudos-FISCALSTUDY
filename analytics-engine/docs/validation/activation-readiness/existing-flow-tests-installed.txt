@@ -1,0 +1,42 @@
+
+> frontend@0.0.0 test
+> node --test tests/*.test.mjs
+
+✔ handleKeyActivate fires callback on Enter and Space, ignoring other keys (1.117616ms)
+✔ submitting attempt rejects without false success on 500 internal server error (39.805134ms)
+✔ submitting attempt rejects on malformed non-JSON server error response (0.420191ms)
+✔ confidence level bounds are clamped between 1 and 5 and cannot submit 0 (0.244717ms)
+✔ 1. Fila vazia: não injeta disciplinas ou tópicos fictícios (1.100271ms)
+✔ 2. Fila com dados reais de revisão e Robin Hood: mapeia sem inventar dados (0.368793ms)
+✔ 3. Proteção matemática: getCurrentActivity e getNextQueueIndex nunca geram NaN (0.361512ms)
+✔ 4. Proteção de sessão: prepareSessionPayload rejeita atividade inexistente (0.186069ms)
+✔ 5. Estados explícitos de interface do Dashboard (0.172689ms)
+✔ 7. Recuperação após carregamento bem-sucedido (0.458027ms)
+✔ EPIC 02 Contrato 1: Tratamento de insuficiência de evidências (SEM_EVIDENCIAS para N=0 e PRELIMINAR para N<10) (2.135725ms)
+✔ EPIC 02 Contrato 2: Denominador auditado explícito sem nota percentual cega (0.271407ms)
+✔ EPIC 02 Contrato 3: Escala ordinal pura de confiança e detecção de pontos cegos (0.158248ms)
+✔ EPIC 02 Contrato 4: Metadados contextuais registrados sem pesos multiplicadores arbitrários (0.252769ms)
+✔ a transport retry preserves attempt identity and the original payload (62.570241ms)
+✔ concurrent submissions share a single in-flight request (1.228664ms)
+✔ HTTP failure never becomes a success result (3.29913ms)
+✔ post-answer annotations target the confirmed attempt, not a new answer (4.910318ms)
+✔ preferences normalize supported choices without inventing a learning profile (0.359559ms)
+✔ only confirmed persisted preferences update the running UI (1.792379ms)
+✔ ingestion authorization stays in memory and is restricted to its API (9.134866ms)
+✔ annotateAttempt handles HTTP 409 conflict and propagates descriptive error without mutating original attempt (2.936366ms)
+✔ pre-answer preparation sends only identity and retries the same reserved attempt (48.199198ms)
+✔ preparation rejects mismatched acknowledgments and executable authority (0.670827ms)
+✔ concurrent preparation shares one request and confirmed preparation does not refreeze (0.588292ms)
+✔ reload after preparation acknowledgment loss retains UUID (32.213283ms)
+✔ reload after answer acknowledgment loss preserves exact payload and outcome (1.143405ms)
+✔ question switch isolates journals and cached session survives frontend restart (0.532109ms)
+✔ damaged storage fails closed without generating another intent (0.222333ms)
+✔ a cached success is never accepted without current server confirmation (1.112068ms)
+ℹ tests 30
+ℹ suites 0
+ℹ pass 30
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1140.698297

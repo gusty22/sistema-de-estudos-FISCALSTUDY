@@ -1,0 +1,56 @@
+{
+  "version": "pilot-activation-gate-v1",
+  "base_main": "8724b3f72bbda51de369e93e357cbbf720f52a7f",
+  "pilot_status": "NOT_STARTED",
+  "activation_allowed": false,
+  "scope": "PERSONAL_INSTALLATION_READINESS_NOT_A_SCIENTIFIC_VALIDITY_CLAIM",
+  "checks": [
+    {
+      "id": "personal_installation",
+      "state": "NOT_VERIFIED",
+      "evidence_or_blocker": "Actual Windows installation/code/tools not accessed"
+    },
+    {
+      "id": "origin_clock",
+      "state": "NOT_VERIFIED",
+      "evidence_or_blocker": "Effective source config and clock not audited on personal host"
+    },
+    {
+      "id": "key_custody_permissions",
+      "state": "NOT_VERIFIED",
+      "evidence_or_blocker": "No operational key provisioned or inspected; external fingerprint/owner/DACL proof required"
+    },
+    {
+      "id": "private_report_storage",
+      "state": "NOT_VERIFIED",
+      "evidence_or_blocker": "Private NTFS storage guard tested synthetically; personal volume/ACL unknown"
+    },
+    {
+      "id": "normal_question_flow_coverage",
+      "state": "FAIL",
+      "evidence_or_blocker": "QuestionViewer covered; ResolucaoQuestaoModal lacks forecast/help declaration; legacy CSV script is unsupported"
+    },
+    {
+      "id": "signed_auditable_export",
+      "state": "NOT_VERIFIED",
+      "evidence_or_blocker": "Synthetic chain only; no authenticated personal snapshot"
+    },
+    {
+      "id": "denominators_exclusions",
+      "state": "PASS",
+      "evidence_or_blocker": "Software gate: all forecasts/answers, pending/help/legacy/unforecasted counts retained; no personal sample observed"
+    },
+    {
+      "id": "explicit_user_authorization",
+      "state": "FAIL",
+      "evidence_or_blocker": "No authorization to start collection or provision operational key"
+    }
+  ],
+  "native_windows_evidence": "Required windows-synthetic-custody CI job on disposable windows-2022; use completed run logs, not Linux or self-report",
+  "personal_host_accessed": false,
+  "operational_database_accessed": false,
+  "operational_key_provisioned": false,
+  "personal_collection_started": false,
+  "can_apply": false,
+  "can_schedule": false
+}

@@ -26,7 +26,12 @@ public class ProspectiveExportAttestor {
         if(keyFile.isBlank()) return envelope;
         if(sourceId.isBlank()) throw new IllegalStateException("Prospective signing requires a source identity");
         try {
-            var key=KeyFactory.getInstance("RSA").generatePrivate(new PKCS8EncodedKeySpec(Files.readAllBytes(Path.of(keyFile))));
+            byte[] encoded;
+            try(var stream=Files.newInputStream(Path.of(keyFile))) {
+                encoded=stream.readNBytes(65537);
+            }
+            if(encoded.length>65536) throw new IllegalArgumentException("Signing key exceeds size limit");
+            var key=KeyFactory.getInstance("RSA").generatePrivate(new PKCS8EncodedKeySpec(encoded));
             var statement=new LinkedHashMap<String,Object>();
             statement.put("version","prospective-custody-v1");
             statement.put("sourceId",sourceId); statement.put("sourceKind",sourceKind);

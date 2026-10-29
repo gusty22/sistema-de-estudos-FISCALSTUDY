@@ -1,0 +1,14 @@
+test_bounded_read_limits_the_read_not_a_previous_stat (test_personal_pilot.PersonalPilotTests.test_bounded_read_limits_the_read_not_a_previous_stat) ... ok
+test_explicit_synthetic_mode_and_integrity (test_personal_pilot.PersonalPilotTests.test_explicit_synthetic_mode_and_integrity) ... ok
+test_failure_is_explicit_and_does_not_claim_success (test_personal_pilot.PersonalPilotTests.test_failure_is_explicit_and_does_not_claim_success) ... ok
+test_frozen_input_replacement_cannot_leave_successful_authentication (test_personal_pilot.PersonalPilotTests.test_frozen_input_replacement_cannot_leave_successful_authentication) ... ok
+test_incomplete_external_trust_does_not_create_output (test_personal_pilot.PersonalPilotTests.test_incomplete_external_trust_does_not_create_output) ... ok
+test_incomplete_report_does_not_become_success (test_personal_pilot.PersonalPilotTests.test_incomplete_report_does_not_become_success) ... ok
+test_private_directory_failure_happens_before_input_copy (test_personal_pilot.PersonalPilotTests.test_private_directory_failure_happens_before_input_copy) ... ok
+test_private_outputs_no_overwrite_and_original_preserved (test_personal_pilot.PersonalPilotTests.test_private_outputs_no_overwrite_and_original_preserved) ... ok
+test_real_label_hash_and_embedded_authority_cannot_authenticate (test_personal_pilot.PersonalPilotTests.test_real_label_hash_and_embedded_authority_cannot_authenticate) ... ok
+
+----------------------------------------------------------------------
+Ran 9 tests in 0.025s
+
+OK

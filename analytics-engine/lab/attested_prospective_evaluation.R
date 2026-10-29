@@ -4,10 +4,18 @@ source("lab/prospective_evaluation.R")
 
 evaluate_attested_prospective <- function(path, trusted_public_key, trusted_source_id,
                                          synthetic_test=FALSE) {
+  bounded_read <- function(path, limit) {
+    connection <- file(path,open="rb"); on.exit(close(connection),add=TRUE)
+    bytes <- readBin(connection,"raw",n=limit+1L)
+    if (length(bytes)>limit) stop("Evidence/key exceeds local processing limit")
+    bytes
+  }
+  if (!is.logical(synthetic_test) || length(synthetic_test)!=1L || is.na(synthetic_test))
+    stop("Explicit Boolean fixture mode required")
   if (!is.character(trusted_source_id) || length(trusted_source_id)!=1L ||
       is.na(trusted_source_id) || !nzchar(trusted_source_id) || !file.exists(trusted_public_key))
     stop("External source identity/public key required")
-  bytes <- readBin(path,"raw",n=file.info(path)$size)
+  bytes <- bounded_read(path,32L*1024L*1024L)
   envelope <- jsonlite::fromJSON(rawToChar(bytes),simplifyVector=FALSE)
   if (!is.character(envelope$attestationJson) || length(envelope$attestationJson)!=1L ||
       !is.character(envelope$signatureBase64) || length(envelope$signatureBase64)!=1L)
@@ -17,7 +25,7 @@ evaluate_attested_prospective <- function(path, trusted_public_key, trusted_sour
   statement_path <- file.path(work,"statement"); signature_path <- file.path(work,"signature")
   frozen <- file.path(work,"input.json"); key <- file.path(work,"trusted.pem")
   writeBin(bytes,frozen)
-  public_bytes <- readBin(trusted_public_key,"raw",n=file.info(trusted_public_key)$size)
+  public_bytes <- bounded_read(trusted_public_key,64L*1024L)
   writeBin(public_bytes,key)
   writeBin(charToRaw(enc2utf8(envelope$attestationJson)),statement_path)
   writeBin(jsonlite::base64_dec(envelope$signatureBase64),signature_path)
@@ -39,6 +47,9 @@ evaluate_attested_prospective <- function(path, trusted_public_key, trusted_sour
     if (parse_evidence_timestamp(event$recorded_at)>exported) stop("Export precedes event")
   }
   result <- evaluate_prospective(frozen,require_current_capture=TRUE)
+  if (!identical(bounded_read(path,32L*1024L*1024L),bytes) ||
+      !identical(bounded_read(trusted_public_key,64L*1024L),public_bytes))
+    stop("Evidence or external trust file replaced during evaluation")
   result$source_authentication <- if (isTRUE(synthetic_test))
     "VERIFIED_SIGNATURE_SYNTHETIC_INTEGRATION_ONLY" else "VERIFIED_SIGNATURE_EXTERNALLY_TRUSTED_INSTALLATION"
   result$custody <- list(version=statement$version,source_id=trusted_source_id,
