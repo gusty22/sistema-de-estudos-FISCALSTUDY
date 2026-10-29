@@ -97,7 +97,7 @@ public class AttemptSubmissionService {
                                                                        Long tempoLeituraMs, Long tempoHesitacaoMs, Integer trocasOpcaoCount, Double distanciaCursorPx, Double friccaoCognitivaScore, Boolean chuteEducadoDetectado, String fluenciaNeurologica) {
         return submitAttempt(questionId, selectedOption, confidenceLevel, activeTimeMs, sessionId, origin, causaErro, naCordaBamba, pensouContrario,
                 tempoLeituraMs, tempoHesitacaoMs, trocasOpcaoCount, distanciaCursorPx, friccaoCognitivaScore, chuteEducadoDetectado, fluenciaNeurologica,
-                false, "NENHUM", "REGULAR");
+                null, null, "REGULAR");
     }
 
     public com.fiscalstudy.backend.domain.AttemptResult submitAttempt(String questionId, String selectedOption, int confidenceLevel, long activeTimeMs, String sessionId, String origin, String causaErro, Boolean naCordaBamba, Boolean pensouContrario,
@@ -250,6 +250,10 @@ public class AttemptSubmissionService {
 
         java.util.Map<String,Object> prediction=learningEvidenceService==null ? java.util.Map.of("evidenceStatus","UNAVAILABLE") : learningEvidenceService.preview(questionId);
         java.time.Instant occurredAt=java.time.Instant.now();
+        if(prospectiveEvent.isPresent() &&
+           (!java.time.Instant.parse(prospectiveEvent.get().getOccurredAt()).isBefore(occurredAt) ||
+            !java.time.Instant.parse(prospectiveEvent.get().getRecordedAt()).isBefore(occurredAt)))
+            throw new AttemptConflictException("Forecast must strictly precede the answer");
         java.util.Map<String,Object> fields=new java.util.LinkedHashMap<>();
         fields.put("attemptId",attemptId); fields.put("questionId",questionId); fields.put("selectedOption",optionLetter);
         fields.put("correctOption",question.getCorrectOption()); fields.put("isCorrect",isCorrect); fields.put("concursoPoint",concursoPoint);
@@ -257,6 +261,8 @@ public class AttemptSubmissionService {
         fields.put("origin",determinedOrigin); fields.put("causaErro",causaErroStr); fields.put("naCordaBamba",cordaBambaVal); fields.put("pensouContrario",pensouContrarioVal);
         fields.put("tempoLeituraMs",leituraVal); fields.put("tempoHesitacaoMs",hesitacaoVal); fields.put("trocasOpcaoCount",trocasVal);
         fields.put("distanciaCursorPx",distanciaVal); fields.put("friccaoCognitivaScore",friccaoVal); fields.put("chuteEducadoDetectado",chuteVal);
+        // Preserve missing declarations for analysis; operational memory semantics are unchanged.
+        fields.put("helpDeclarationProvided",usedHelp!=null);
         fields.put("fluenciaNeurologica",fluenciaVal); fields.put("usedHelp",usedHelpVal); fields.put("helpType",helpTypeVal);
         fields.put("exposicaoAnteriorCount",exposicaoAnteriorCount); fields.put("diasDesdeUltimaExposicao",diasDesdeUltimaExposicao);
         fields.put("resultadoAnterior",resultadoAnterior); fields.put("interventionType",interventionVal); fields.put("memoryPrediction",prediction);

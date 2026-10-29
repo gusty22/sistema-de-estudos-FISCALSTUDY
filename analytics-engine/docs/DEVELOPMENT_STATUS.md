@@ -1,3 +1,13 @@
+## Primeira cadeia prospectiva autenticada — 2026-10-29
+
+Base main `be6c93f` (PR #44 já mesclada, CI do head `9aac892` aprovada). Adaptador mínimo opcional assina o snapshot do exportador Java existente; R verifica chave/identidade externas, integridade e prefixo temporal antes de avaliar acerto em questões normais. Declaração de ajuda ausente fica identificável; contradições são excluídas. Compromisso deve ocorrer e ser registrado **estritamente antes** da resposta. Captura legada não adquire elegibilidade pessoal. Exportação preserva recibos de apresentação existentes, sem criar subsistema de coleta.
+
+Cadeia sintética com questão realmente disponível, repositórios Java/SQLite temporário e chave efêmera: 28 forecasts, 28 respostas, 24 scores, quatro exclusões e uma resposta sem previsão; baseline temporal pareado e replay entre versões R. Java: **122 testes aprovados**, zero falhas/skips; compilação de testes aprovada. R: **1.058 aprovados em UTF-8**, **1.054 e as mesmas quatro falhas herdadas em locale C**; gates de ledger/custódia/contextual separados. Python lab: **60 testes aprovados**, sem skips. Logs intermediários preservam fixture inicialmente rejeitada e restrição de sockets do sandbox, resolvidas na repetição.
+
+**Nenhum piloto pessoal iniciado; zero observações pessoais autenticadas avaliadas nesta operação.** Prontidão pessoal depende de autorização explícita, conferência da instalação, custódia/provisionamento externo de chave e cobertura dos chamadores reais. Assinatura não comprova ajuda invisível, novidade, relógio externo ou benefício pedagógico. Os seis novos alvos continuam `NOT_ESTABLISHED`; não se cria perfil pessoal de fixtures. Sem novos modelos, frontend, autoridade de execução/agendamento, modificação de FSRS/calendário ou acesso ao SQLite operacional.
+
+[Inventário, matriz, limites e ativação futura](AUTHENTIC_PROSPECTIVE_EVIDENCE_V1.md), [reprodução sintética](../tests/fixtures/authentic_prospective/README.md) e [resultados completos](validation/authentic-prospective/results.txt). Registros anteriores preservados abaixo.
+
 ## Avaliação científica das decisões — 2026-10-29
 
 Base `abf91929` (PR #43 já mesclada; CI anterior aprovada). O laboratório ganhou contratos/elegibilidade/scoring prospectivo de seis alvos, referências temporais simples e replay das três políticas pelo orquestrador original. Apenas execuções reais registradas como autorizadas e completas recebem follow-ups observacionais. Mudanças pré/pós não são efeitos causais; não há crédito contrafactual, pontuação global de domínio ou nova arquitetura/modelo.

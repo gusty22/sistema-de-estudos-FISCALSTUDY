@@ -14,7 +14,7 @@ ENGINE = Path(__file__).resolve().parents[1]
 def sha(data):
     return hashlib.sha256(data).hexdigest()
 
-def validate_export(path, synthetic_test=False):
+def validate_export(path, synthetic_test=False, trusted_custody=False):
     path = Path(path)
     if path.stat().st_size > MAX_EXPORT_BYTES:
         raise ValueError("Export exceeds local processing policy")
@@ -30,6 +30,8 @@ def validate_export(path, synthetic_test=False):
         raise ValueError("Synthetic exports require explicit test mode")
     if synthetic_test and source.get("sourceKind") != "SYNTHETIC_FIXTURE":
         raise ValueError("Test mode cannot relabel personal/unknown data")
+    if not synthetic_test and not trusted_custody:
+        raise ValueError("Personal evaluation requires an externally trusted signing key and source identity")
     return raw, source.get("sourceKind")
 
 def private_write(path, data):
@@ -37,9 +39,13 @@ def private_write(path, data):
     with os.fdopen(fd, "wb") as target:
         target.write(data)
 
-def evaluate_local(input_path, output, rscript="Rscript", synthetic_test=False):
+def evaluate_local(input_path, output, rscript="Rscript", synthetic_test=False,
+                   trusted_public_key=None, trusted_source_id=None):
     input_path = Path(input_path).resolve()
-    raw, source = validate_export(input_path, synthetic_test)
+    if bool(trusted_public_key) != bool(trusted_source_id):
+        raise ValueError("Both external trust inputs required")
+    attested = bool(trusted_public_key and trusted_source_id)
+    raw, source = validate_export(input_path, synthetic_test, attested)
     output = Path(output).resolve()
     output.mkdir(mode=0o700, exist_ok=False)  # Never overwrite/reuse an existing report directory.
     private_write(output / "input-envelope.json", raw)
@@ -56,13 +62,19 @@ def evaluate_local(input_path, output, rscript="Rscript", synthetic_test=False):
         "can_apply": False, "can_schedule": False,
         "code_sha256": {str(file.relative_to(ENGINE)): sha(file.read_bytes()) for file in sorted(
             list((ENGINE / "R").glob("*.R")) + [ENGINE / name for name in
-            ["lab/prospective_evaluation.R", "lab/prospective_scorecard.R", "lab/individual_calibration.R", "lab/personal_pilot.py"]])},
+            ["lab/prospective_evaluation.R", "lab/attested_prospective_evaluation.R", "lab/prospective_scorecard.R", "lab/individual_calibration.R", "lab/personal_pilot.py"]])},
     }
     error = None
     try:
+        argv = [rscript, str(ENGINE / ("lab/attested_prospective_evaluation.R" if attested else "lab/prospective_evaluation.R")),
+                str(output / "input-envelope.json"), str(output / "metrics.json")]
+        if attested:
+            # Freeze the externally provisioned public key for replay; never accept an embedded key.
+            private_write(output / "trusted-public.pem", Path(trusted_public_key).read_bytes())
+            argv += [str(output / "trusted-public.pem"), trusted_source_id,
+                     "synthetic-test" if synthetic_test else "operational"]
         run = subprocess.run(
-            [rscript, str(ENGINE / "lab/prospective_evaluation.R"),
-             str(output / "input-envelope.json"), str(output / "metrics.json")],
+            argv,
             cwd=ENGINE, capture_output=True, timeout=120, check=False)
         private_write(output / "r-output.log", run.stdout + run.stderr)
         if run.returncode:
@@ -80,6 +92,13 @@ def evaluate_local(input_path, output, rscript="Rscript", synthetic_test=False):
                 or not isinstance(metrics.get("metrics"), dict)
                 or not isinstance(metrics.get("scientific_scorecard"), dict)):
             raise RuntimeError("Incomplete or mismatched analytical report")
+        expected_auth = ("VERIFIED_SIGNATURE_SYNTHETIC_INTEGRATION_ONLY" if synthetic_test else
+                         "VERIFIED_SIGNATURE_EXTERNALLY_TRUSTED_INSTALLATION")
+        if attested and metrics.get("source_authentication") != expected_auth:
+            raise RuntimeError("Custody verification missing from R report")
+        manifest["source_authentication"] = metrics.get("source_authentication", "NOT_AUTHENTICATED")
+        if attested:
+            manifest["custody"] = metrics["custody"]
         n = metrics["scored_count"]
         score = metrics["scientific_scorecard"]
         if (score.get("version") != "prospective-scorecard-v1" or score.get("n") != n
@@ -111,9 +130,12 @@ if __name__ == "__main__":
     parser.add_argument("--output", required=True)
     parser.add_argument("--rscript", default="Rscript")
     parser.add_argument("--synthetic-test", action="store_true")
+    parser.add_argument("--trusted-public-key")
+    parser.add_argument("--trusted-source-id")
     args = parser.parse_args()
     try:
-        report = evaluate_local(args.input, args.output, args.rscript, args.synthetic_test)
+        report = evaluate_local(args.input, args.output, args.rscript, args.synthetic_test,
+                                args.trusted_public_key, args.trusted_source_id)
         print(json.dumps({"status": report["status"], "personal_validation": "NOT_ESTABLISHED", "can_apply": False, "can_schedule": False}))
     except Exception:
         print("Local pilot evaluation failed; no personal data or credentials printed.", file=sys.stderr)

@@ -52,14 +52,14 @@
   "additional_reference": "RECENT_20_ELIGIBLE_BETA11_V1_FIXED_WINDOW_NO_FINAL_TUNING",
   "collection_mode": "NORMAL_QUESTIONS_ONLY_NO_DIAGNOSTIC_RESERVATIONS",
   "start_stop": {
-    "start": "User opens normal question session deliberately; preparation must be confirmed before answer",
+    "start": "Only after explicit user authorization and installation/key custody check: open normal question session deliberately; preparation must be confirmed strictly before answer",
     "stop": "End session using existing UI; never delete pending journal or answered history",
     "automatic_start": false
   },
   "local_evaluation": {
-    "command": "python lab/personal_pilot.py --input PRIVATE_EXPORT.json --output NEW_PRIVATE_DIRECTORY",
+    "command": "python lab/personal_pilot.py --input PRIVATE_EXPORT.json --output NEW_PRIVATE_DIRECTORY --trusted-public-key EXTERNAL-trusted-public.pem --trusted-source-id EXTERNAL-installation-id",
     "export": "Existing loopback prospective-export endpoint with admin token; never share token/raw export or commit it",
-    "scope": "Local read-only snapshot evaluation; source label/hash does not establish authenticity",
+    "scope": "Private read-only signed snapshot evaluation; external key/source identity trust required; no checksum or JSON label alone authenticates origin",
     "collection_readiness": "TECHNICALLY_TESTED_SYNTHETICALLY_NOT_AUDITED_ON_PERSONAL_INSTALLATION"
   },
   "scoring_protocol_version": "personal-prospective-pilot-v1",
@@ -108,5 +108,23 @@
     },
     "data_minimization": "Private exported analytical files only; no operational SQLite access, tokens, direct identifiers or personal artifacts in Git",
     "model_status": "All models and contextual policy remain EXPERIMENTAL; no student experiment initiated"
+  },
+  "custody_extension": {
+    "version": "prospective-custody-v1",
+    "status": "SYNTHETICALLY_TESTED_NOT_PERSONALLY_ACTIVATED",
+    "automatic_start": false,
+    "personal_observations_evaluated": 0,
+    "source_authentication": "RSA_SHA256_SERVER_SNAPSHOT_EXTERNAL_TRUSTED_PUBLIC_KEY",
+    "key_provisioning": "EXPLICIT_FUTURE_OPERATOR_ACTION_NOT_EXECUTED",
+    "capture_version": "ordinary-question-capture-v2",
+    "policy_version": "OBSERVATIONAL_NO_PLANNING_CHANGE_V1",
+    "limitations": [
+      "Trusted local server/operator/database; no independent timestamp",
+      "Help self-report; external help and full answer/item exposure not observable",
+      "Legacy capture excluded from authenticated personal scores",
+      "No causal policy comparison or novel/delayed-target relabeling"
+    ],
+    "can_apply": false,
+    "can_schedule": false
   }
 }

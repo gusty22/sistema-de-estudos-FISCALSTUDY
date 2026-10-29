@@ -1,0 +1,1 @@
+{"status": "SUCCEEDED_SOFTWARE_EVALUATION_ONLY", "personal_validation": "NOT_ESTABLISHED", "can_apply": false, "can_schedule": false}

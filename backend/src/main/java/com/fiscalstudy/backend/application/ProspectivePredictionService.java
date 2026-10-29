@@ -27,12 +27,14 @@ public class ProspectivePredictionService {
     private final ObjectMapper json = new ObjectMapper();
     private final Clock clock;
     private final String sourceKind;
+    private ProspectiveExportAttestor attestor;
 
     @org.springframework.beans.factory.annotation.Autowired
     public ProspectivePredictionService(JdbcTemplate jdbc, EventStoreRepository events,
             QuestionRepository questions, AttemptSubmissionService attempts, LearningEvidenceService memory,
-            @org.springframework.beans.factory.annotation.Value("${fiscalstudy.prospective.source-kind:LOCAL_EVENT_STORE_UNATTESTED}") String sourceKind) {
+            @org.springframework.beans.factory.annotation.Value("${fiscalstudy.prospective.source-kind:LOCAL_EVENT_STORE_UNATTESTED}") String sourceKind, ProspectiveExportAttestor attestor) {
         this(jdbc, events, questions, attempts, memory, Clock.systemUTC(), sourceKind);
+        this.attestor=attestor;
     }
     public ProspectivePredictionService(JdbcTemplate jdbc, EventStoreRepository events,
             QuestionRepository questions, AttemptSubmissionService attempts, LearningEvidenceService memory,
@@ -80,7 +82,8 @@ public class ProspectivePredictionService {
                 catch(Exception invalid) { excluded++; continue; }
                 if(!when.isBefore(now) || !"REAL_STUDY".equals(node.path("origin").asText()) ||
                    !node.path("isCorrect").isBoolean() || !"DEFINITIVO".equals(node.path("gabaritoStatus").asText()) ||
-                   !node.path("usedHelp").isBoolean() || node.path("usedHelp").booleanValue()) {
+                   !node.path("usedHelp").isBoolean() || node.path("usedHelp").booleanValue() ||
+                   !node.path("helpDeclarationProvided").isBoolean() || !node.path("helpDeclarationProvided").asBoolean(false) || !"NENHUM".equals(node.path("helpType").asText())) {
                     excluded++; continue;
                 }
                 n++; if(node.path("isCorrect").booleanValue()) correct++;
@@ -94,6 +97,8 @@ public class ProspectivePredictionService {
             data.put("sessionId",sessionId);data.put("createdAt",now.toString());data.put("dataCutoffAt",now.toString());
             data.put("snapshotRowid",cutoff);data.put("target","QUESTION_CORRECTNESS_WITHOUT_DECLARED_HELP");
             data.put("evaluationHorizon","FIRST_SUBMISSION_OF_RESERVED_ATTEMPT_IN_SESSION");
+            data.put("captureVersion","ordinary-question-capture-v2");
+            data.put("policyVersion","OBSERVATIONAL_NO_PLANNING_CHANGE_V1");
             data.put("modelVersion",MODEL);data.put("probability",(correct+1.0)/(n+2.0));
             data.put("referenceProbability",0.5);data.put("nEvidence",n);data.put("nCorrect",correct);
             data.put("excludedHistoricalEvents",excluded);data.put("evidenceEventIds",evidence);
@@ -153,13 +158,14 @@ public class ProspectivePredictionService {
     public Map<String,Object> exportSnapshot() {
         return transaction.execute(tx -> {
             long cutoff=events.getMaxRowid();
-            var rows=jdbc.queryForList("SELECT rowid AS snapshot_rowid,event_id,event_type,aggregate_id,session_id,occurred_at,recorded_at,payload_json FROM event_store WHERE rowid<=? AND event_type IN ('PREDICTION_COMMITTED','ANSWER_SUBMITTED','ATTEMPT_ANNOTATED') ORDER BY rowid",cutoff);
+            var rows=jdbc.queryForList("SELECT rowid AS snapshot_rowid,event_id,event_type,aggregate_id,session_id,occurred_at,recorded_at,event_version,schema_version,payload_json FROM event_store WHERE rowid<=? AND event_type IN ('PREDICTION_COMMITTED','ANSWER_SUBMITTED','ATTEMPT_ANNOTATED','QUESTION_PRESENTED') ORDER BY rowid",cutoff);
             var input=new LinkedHashMap<String,Object>();
             input.put("contractVersion",CONTRACT);input.put("snapshotRowid",cutoff);input.put("sourceKind",sourceKind);
             input.put("studentId","LOCAL_SINGLE_USER");input.put("events",rows);
             String content=write(input);
-            return Map.<String,Object>of("contractVersion",CONTRACT,"inputJson",content,"inputSha256",sha(content),
+            var envelope=Map.<String,Object>of("contractVersion",CONTRACT,"inputJson",content,"inputSha256",sha(content),
                     "snapshotRowid",cutoff,"can_apply",false,"can_schedule",false);
+            return attestor==null ? envelope : attestor.attest(envelope,sourceKind);
         });
     }
     private static String sha(String value) {

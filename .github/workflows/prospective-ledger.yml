@@ -5,6 +5,10 @@ on:
       - 'backend/**'
       - 'frontend/**'
       - 'analytics-engine/lab/prospective_evaluation.R'
+      - 'analytics-engine/lab/attested_prospective_evaluation.R'
+      - 'analytics-engine/lab/personal_pilot.py'
+      - 'analytics-engine/tests/test_attested_prospective.R'
+      - 'analytics-engine/tests/fixtures/authentic_prospective/**'
       - 'analytics-engine/tests/test_prospective_ledger.R'
       - '.github/scripts/**'
       - '.github/workflows/prospective-ledger.yml'
@@ -53,6 +57,11 @@ jobs:
         working-directory: analytics-engine
         run: |
           Rscript tests/test_prospective_ledger.R
+          Rscript tests/test_attested_prospective.R
+          python3 tests/fixtures/authentic_prospective/replay.py
+          python3 lab/personal_pilot.py --input ../backend/target/prospective-attested-fixture.json --output "$RUNNER_TEMP/pilot-signed-synthetic" --synthetic-test --trusted-public-key ../backend/target/prospective-fixture-public.pem --trusted-source-id SYNTHETIC-INTEGRATION-INSTALLATION
+          Rscript lab/attested_prospective_evaluation.R ../backend/target/prospective-attested-fixture.json ../backend/target/prospective-attested-replay.json ../backend/target/prospective-fixture-public.pem SYNTHETIC-INTEGRATION-INSTALLATION synthetic-test
+          cmp "$RUNNER_TEMP/pilot-signed-synthetic/metrics.json" ../backend/target/prospective-attested-replay.json
           Rscript lab/prospective_evaluation.R ../backend/target/prospective-fixture.json ../backend/target/prospective-metrics.json
           Rscript lab/prospective_evaluation.R ../backend/target/prospective-fixture.json ../backend/target/prospective-metrics-replay.json
           cmp ../backend/target/prospective-metrics.json ../backend/target/prospective-metrics-replay.json
@@ -122,6 +131,8 @@ jobs:
             backend/target/surefire-reports/
             backend/target/prospective*fixture.json
             backend/target/prospective-metrics*.json
+            backend/target/prospective-attested-replay.json
+            backend/target/prospective-fixture-public.pem
             ${{ runner.temp }}/personal-pilot-synthetic/*.json
             ${{ env.FISCALSTUDY_BROWSER_DIR }}/*.png
             ${{ env.FISCALSTUDY_BROWSER_DIR }}/browser-*.json

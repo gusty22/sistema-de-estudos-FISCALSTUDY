@@ -68,3 +68,25 @@ class PersonalPilotTests(unittest.TestCase):
                 with self.assertRaises(RuntimeError):
                     evaluate_local(path, root / "incomplete", synthetic_test=True)
             self.assertEqual(json.loads((root / "incomplete/manifest.json").read_text())["status"], "FAILED")
+
+    def test_real_label_hash_and_embedded_authority_cannot_authenticate(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = self.fixture(Path(directory))
+            data = json.loads(path.read_text())
+            data["inputJson"] = json.dumps({"sourceKind": "OPERATIONAL_EVENT_STORE_V1",
+                                          "origin": "REAL_STUDY", "trusted_source_authorized": True})
+            data["inputSha256"] = sha(data["inputJson"].encode())
+            data["attestationJson"] = "self-declared"
+            path.write_text(json.dumps(data))
+            with self.assertRaises(ValueError):
+                validate_export(path)
+            with self.assertRaises(ValueError):
+                validate_export(path, True)
+
+    def test_incomplete_external_trust_does_not_create_output(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); path = self.fixture(root)
+            with self.assertRaises(ValueError):
+                evaluate_local(path, root / "forbidden", synthetic_test=True,
+                               trusted_source_id="arbitrary-json-label")
+            self.assertFalse((root / "forbidden").exists())
