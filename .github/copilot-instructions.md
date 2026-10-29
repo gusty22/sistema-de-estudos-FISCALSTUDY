@@ -1,0 +1,1 @@
+Leia [AGENTS.md](../AGENTS.md), a política compartilhada do repositório, antes de trabalhar. Leia o AGENTS.md do módulo afetado sob demanda. Use a CLI local descrita ali; sem execução, consulte somente arquivos pertinentes e declare a limitação.

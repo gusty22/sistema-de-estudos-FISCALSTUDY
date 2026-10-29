@@ -1,0 +1,47 @@
+name: Security controls
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      history:
+        description: Explicit initial full-history secret audit
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  secrets:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Fetch checksum-pinned Gitleaks
+        run: python3 scripts/install_gitleaks.py --output "$RUNNER_TEMP/gitleaks"
+      - name: Scan changes without exposing matched values
+        run: python3 .github/scripts/scan_secrets.py "$RUNNER_TEMP/gitleaks/gitleaks"
+  context-tools:
+    strategy:
+      matrix:
+        os: [ubuntu-24.04, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            scripts
+            .github
+            .agents
+            .cursor
+      - run: python -m unittest discover -s scripts -p test_context_tools.py -v
+      - run: python -m unittest discover -s scripts -p test_agent_protocol.py -v
+      - run: python -m unittest discover -s .github/scripts -p test_scan_secrets.py -v

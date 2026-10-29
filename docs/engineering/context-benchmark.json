@@ -1,0 +1,141 @@
+{
+  "base": "091ccb89a08e549af8ccf3424160345f6a1a1187",
+  "method": "Paired deterministic retrieval with fixed oracle paths. Baseline is an explicitly defined full-read procedure, not an observed previous AI session. Byte/4 is a rough UTF-8 estimate, not tokenizer/API measurement. Internal index I/O is separately reported. No model inference or causal efficiency claim.",
+  "cases": [
+    {
+      "task": "java-service",
+      "oracle": "backend/src/main/java/com/fiscalstudy/backend/application/ProspectivePredictionService.java",
+      "backend": "graphify-index",
+      "baseline": {
+        "procedure": "main rules + main context + complete oracle file (declared baseline)",
+        "context_files": 3,
+        "returned_bytes": 52051,
+        "retrieval_queries": 1,
+        "api_tokens": null,
+        "estimate_utf8_bytes_div4": 13013
+      },
+      "selective": {
+        "context_files": 3,
+        "returned_bytes": 6701,
+        "retrieval_queries": 1,
+        "repeated_queries": 0,
+        "subprocesses": 1,
+        "internal_unique_files": 429,
+        "internal_bytes_read": 13026319,
+        "api_tokens": null,
+        "estimate_utf8_bytes_div4": 1675
+      },
+      "path_correct": true,
+      "required_evidence_in_excerpt": true,
+      "model_task_completion": "NOT_MEASURED"
+    },
+    {
+      "task": "architecture-decision",
+      "oracle": "docs/architecture/decisions/HISTORICO_ARQUITETURAL_COMPLETO.md",
+      "backend": "versioned-docs",
+      "baseline": {
+        "procedure": "main rules + main context + complete oracle file (declared baseline)",
+        "context_files": 3,
+        "returned_bytes": 93823,
+        "retrieval_queries": 1,
+        "api_tokens": null,
+        "estimate_utf8_bytes_div4": 23456
+      },
+      "selective": {
+        "context_files": 3,
+        "returned_bytes": 6797,
+        "retrieval_queries": 1,
+        "repeated_queries": 0,
+        "subprocesses": 2,
+        "internal_unique_files": 1,
+        "internal_bytes_read": 107116,
+        "api_tokens": null,
+        "estimate_utf8_bytes_div4": 1699
+      },
+      "path_correct": true,
+      "required_evidence_in_excerpt": true,
+      "model_task_completion": "NOT_MEASURED"
+    },
+    {
+      "task": "scientific-definition",
+      "oracle": "analytics-engine/docs/SCIENTIFIC_DECISION_EVALUATION_V1.md",
+      "backend": "versioned-docs",
+      "baseline": {
+        "procedure": "main rules + main context + complete oracle file (declared baseline)",
+        "context_files": 3,
+        "returned_bytes": 57435,
+        "retrieval_queries": 1,
+        "api_tokens": null,
+        "estimate_utf8_bytes_div4": 14359
+      },
+      "selective": {
+        "context_files": 3,
+        "returned_bytes": 6787,
+        "retrieval_queries": 1,
+        "repeated_queries": 0,
+        "subprocesses": 2,
+        "internal_unique_files": 1,
+        "internal_bytes_read": 34900,
+        "api_tokens": null,
+        "estimate_utf8_bytes_div4": 1697
+      },
+      "path_correct": true,
+      "required_evidence_in_excerpt": true,
+      "model_task_completion": "NOT_MEASURED"
+    },
+    {
+      "task": "authentication-flow",
+      "oracle": "backend/src/main/java/com/fiscalstudy/backend/infrastructure/in/web/LocalAccessFilter.java",
+      "backend": "graphify-index",
+      "baseline": {
+        "procedure": "main rules + main context + complete oracle file (declared baseline)",
+        "context_files": 3,
+        "returned_bytes": 45740,
+        "retrieval_queries": 1,
+        "api_tokens": null,
+        "estimate_utf8_bytes_div4": 11435
+      },
+      "selective": {
+        "context_files": 3,
+        "returned_bytes": 6646,
+        "retrieval_queries": 1,
+        "repeated_queries": 0,
+        "subprocesses": 1,
+        "internal_unique_files": 429,
+        "internal_bytes_read": 13020077,
+        "api_tokens": null,
+        "estimate_utf8_bytes_div4": 1662
+      },
+      "path_correct": true,
+      "required_evidence_in_excerpt": true,
+      "model_task_completion": "NOT_MEASURED"
+    },
+    {
+      "task": "security-tests",
+      "oracle": "backend/src/test/java/com/fiscalstudy/backend/infrastructure/in/web/ProspectiveExportSecurityTest.java",
+      "backend": "tracked-path",
+      "baseline": {
+        "procedure": "main rules + main context + complete oracle file (declared baseline)",
+        "context_files": 3,
+        "returned_bytes": 42514,
+        "retrieval_queries": 1,
+        "api_tokens": null,
+        "estimate_utf8_bytes_div4": 10628
+      },
+      "selective": {
+        "context_files": 3,
+        "returned_bytes": 6723,
+        "retrieval_queries": 1,
+        "repeated_queries": 0,
+        "subprocesses": 1,
+        "internal_unique_files": 428,
+        "internal_bytes_read": 4862190,
+        "api_tokens": null,
+        "estimate_utf8_bytes_div4": 1681
+      },
+      "path_correct": true,
+      "required_evidence_in_excerpt": true,
+      "model_task_completion": "NOT_MEASURED"
+    }
+  ]
+}
