@@ -68,7 +68,7 @@ async function wait(fn){for(let i=0;i<150;i++){if(await fn())return;await new Pr
  assert.equal(response.headers()['x-fiscalstudy-export-kind'],'PROSPECTIVE_EVENT_SNAPSHOT');
  const csv=await page.request.get('http://127.0.0.1:8080/api/v1/analytics/export');assert.equal(csv.headers()['x-fiscalstudy-export-kind'],'DESCRIPTIVE_CSV');assert((await csv.text()).startsWith('question_id,'));
  const envelope=await response.json();assert.equal(JSON.parse(envelope.inputJson).sourceKind,'SYNTHETIC_FIXTURE');fs.writeFileSync(path.join(root,'browser-export.json'),JSON.stringify(envelope));
- fs.writeFileSync(path.join(root,'browser-summary.json'),JSON.stringify({scope:'SYNTHETIC_ONLY',enabled,forecasts:count('PREDICTION_COMMITTED'),answers:count('ANSWER_SUBMITTED'),checks:['real_bank_modal','real_question_viewer','default_off_no_commit','immutable_retry','unknown_help_excluded','active_parent_fallback_fixture','no_backfill'],can_apply:false,can_schedule:false}));
+ fs.writeFileSync(path.join(root,'browser-summary.json'),JSON.stringify({scope:'SYNTHETIC_ONLY',enabled,forecasts:count('PREDICTION_COMMITTED'),answers:count('ANSWER_SUBMITTED'),checks:['real_bank_modal','real_question_viewer','export_kind_separation',...(enabled ? ['immutable_retry','unknown_help_excluded','active_parent_fallback_fixture','no_backfill'] : ['default_off_no_commit','direct_preparation_disabled'])],can_apply:false,can_schedule:false}));
  console.log('Synthetic question flow coverage passed, enabled='+enabled);
  }catch(e){await page.screenshot({path:path.join(root,'failure.png'),fullPage:true});fs.writeFileSync(path.join(root,'failure.html'),await page.content());throw e;}
  finally{await browser.close();}
