@@ -24,10 +24,10 @@ derive_pedagogical_needs <- function(profile, candidates = data.frame(), persona
     for (scope in sort(unique(as.character(eligible$scope_id)))) {
       rows <- eligible[as.character(eligible$scope_id) == scope, , drop = FALSE]
       if (any(rows$activity_type == "LEARN_NEW")) out[[length(out) + 1L]] <- new_pedagogical_need("INITIAL_LEARNING", scope,
-        "VERIFIED_CURRICULUM_AND_ACTIVITY_INVENTORY", limitations = "No personal history: novelty is curricular, not inferred from learner knowledge.",
+        "UNVERIFIED_CURRICULAR_OPPORTUNITY", limitations = "No personal history: novelty is curricular, not inferred from learner knowledge.",
         uncertainty = "PERSONAL_KNOWLEDGE_UNKNOWN", activities = "LEARN_NEW")
       if (any(rows$activity_type == "DIAGNOSE_CONCEPT")) out[[length(out) + 1L]] <- new_pedagogical_need("DIAGNOSTIC", scope,
-        "VERIFIED_CURRICULUM_AND_ACTIVITY_INVENTORY", limitations = "No personal history: diagnostic need is an information-gathering option, not a gap claim.",
+        "UNVERIFIED_CURRICULAR_OPPORTUNITY", limitations = "No personal history: diagnostic need is an information-gathering option, not a gap claim.",
         uncertainty = "PERSONAL_KNOWLEDGE_UNKNOWN", activities = "DIAGNOSE_CONCEPT")
     }
   }
@@ -49,69 +49,199 @@ conservative_decision_policy <- function() list(version = "conservative-decision
 # Contextual policies are explicit configured rules, not fitted weights or claims
 # of learning benefit. Candidate evidence_need_type must be recorded evidence or
 # the literal UNKNOWN; it is never inferred from accuracy alone.
-admissible_contextual_candidates <- function(candidates, context) {
-  req <- c("candidate_id", "activity_type", "scope_id", "contest_id", "estimated_minutes", "material_available", "in_syllabus", "prerequisites_status", "risk", "evidence_need_type", "evidence_verified")
-  if (!is.data.frame(candidates) || !all(req %in% names(candidates))) return(candidates[FALSE, , drop = FALSE])
-  candidates[candidates$contest_id == context$contest_id & candidates$material_available %in% TRUE & candidates$in_syllabus %in% TRUE &
-    candidates$prerequisites_status %in% c("SATISFIED", "NOT_APPLICABLE") & candidates$risk == "LOW_REVERSIBLE" &
-    is.finite(candidates$estimated_minutes) & candidates$estimated_minutes > 0 & candidates$estimated_minutes <= context$available_minutes, , drop = FALSE]
+# Canonical identities bind the trace to all inputs, including rejected candidates.
+# Hashes establish identity, never authority. Registry arguments are trusted host
+# configuration; the CLI never imports them from a request document.
+.pd_canonical <- function(x) {
+  if (is.data.frame(x)) {
+    x <- x[, sort(names(x), method = "radix"), drop = FALSE]
+    rows <- lapply(seq_len(nrow(x)), function(i) .pd_canonical(as.list(x[i, , drop = FALSE])))
+    keys <- vapply(rows, function(r) as.character(jsonlite::toJSON(r, auto_unbox = TRUE, null = "null", na = "null", digits = 16)), character(1))
+    return(rows[order(keys, method = "radix")])
+  }
+  if (is.list(x)) {
+    if (!is.null(names(x))) x <- x[order(names(x), method = "radix")]
+    return(lapply(x, .pd_canonical))
+  }
+  x
+}
+.pd_identity <- function(snapshot, candidates, context) {
+  if (!exists("compute_file_sha256", mode = "function")) source("R/provenance.R")
+  path <- tempfile(); on.exit(unlink(path), add = TRUE)
+  value <- jsonlite::toJSON(.pd_canonical(list(snapshot = snapshot, candidates = candidates, context = context)),
+    auto_unbox = TRUE, null = "null", na = "null", digits = 16)
+  writeBin(charToRaw(enc2utf8(as.character(value))), path)
+  hash <- compute_file_sha256(path)
+  if (is.na(hash)) stop("DECISION_IDENTITY_UNAVAILABLE")
+  hash
 }
 
-decision_trace <- function(snapshot, candidates, context, policy_comparison) {
-  eligible <- admissible_contextual_candidates(candidates, context)
-  rejected <- if (is.data.frame(candidates)) setdiff(as.character(candidates$candidate_id), as.character(eligible$candidate_id)) else character()
-  list(schema_version = "1.0.0", trace_type = "PEDAGOGICAL_DECISION_TRACE_V1",
-    snapshot = list(run_id = snapshot$run_id, cutoff = snapshot$cutoff, student_id = snapshot$student_id),
-    policy_versions = names(policy_comparison$choices), eligible_evidence = as.character(eligible$candidate_id[eligible$evidence_verified %in% TRUE]),
-    insufficient_evidence = as.character(eligible$candidate_id[eligible$evidence_verified %in% TRUE == FALSE]),
-    candidates = as.character(candidates$candidate_id), rejected_candidates = rejected,
-    verified_constraints = list(time_minutes = context$available_minutes, contest_id = context$contest_id),
-    comparison = policy_comparison, limitations = c("Trace records executed rules, not post-hoc reasons.", "No policy efficacy or causal claim."))
+# Standalone policies have no authority to admit activities. A gate from the
+# original orchestrator is mandatory, and must match the exact input identity.
+admissible_contextual_candidates <- function(candidates, context, gate = NULL, snapshot = NULL) {
+  if (!is.data.frame(candidates)) stop("INVALID_CANDIDATES")
+  if (is.null(gate)) return(candidates[FALSE, , drop = FALSE])
+  if (!inherits(gate, "orchestrator_admission")) stop("UNTRUSTED_ADMISSION_GATE")
+  if (!identical(gate$input_id, .pd_identity(snapshot, candidates, context))) stop("DECISION_INPUT_MISMATCH")
+  candidates[match(gate$admitted_ids, candidates$candidate_id), , drop = FALSE]
 }
 
-choose_contextual_policy <- function(candidates, context, policy = c("EVIDENCE_CONTEXTUAL_V1", "SHORTEST_ADMISSIBLE_V1", "CURRICULAR_CONSERVATIVE_V1")) {
-  policy <- match.arg(policy); admitted <- admissible_contextual_candidates(candidates, context)
-  empty <- list(candidate_id = NULL, status = "ABSTAIN", policy_version = policy, rationale = "NO_ADMISSIBLE_ACTIVITY", expected_gain = "NOT_ESTABLISHED")
-  if (!nrow(admitted)) return(empty)
-  # FSRS due remains protected, but it is not absolute when a bounded review
-  # capacity is declared: the contextual policy reserves one curricular option.
-  rank <- switch(policy,
-    SHORTEST_ADMISSIBLE_V1 = rep(1L, nrow(admitted)),
-    CURRICULAR_CONSERVATIVE_V1 = ifelse(admitted$activity_type == "LEARN_NEW", 1L, 2L),
-    EVIDENCE_CONTEXTUAL_V1 = ifelse(admitted$evidence_verified %in% TRUE & admitted$evidence_need_type == "MEMORY_MAINTENANCE" & admitted$activity_type == "REVIEW_ITEM" & admitted$fsrs_due_verified %in% TRUE & admitted$memory_risk_verified %in% TRUE, 1L,
-      ifelse(admitted$evidence_verified %in% TRUE & admitted$evidence_need_type %in% c("OBSERVED_CONCEPTUAL_GAP", "EXAM_EXECUTION_ERROR") & admitted$activity_type == "DIAGNOSE_CONCEPT", 2L,
-      ifelse(admitted$evidence_verified %in% TRUE & admitted$evidence_need_type == "TRANSFER_ASSESSMENT" & admitted$activity_type == "DEEPEN_APPLICATION", 3L,
-      ifelse(admitted$activity_type == "LEARN_NEW", 4L, 5L)))) )
-  if (policy == "EVIDENCE_CONTEXTUAL_V1" && isTRUE(context$review_capacity_exceeded) && isTRUE(context$review_capacity_verified) && any(admitted$activity_type == "LEARN_NEW"))
-    rank[admitted$activity_type == "LEARN_NEW"] <- pmin(rank[admitted$activity_type == "LEARN_NEW"], 2L)
-  selected <- admitted[order(rank, admitted$estimated_minutes, admitted$candidate_id), , drop = FALSE][1L, ]
-  list(candidate_id = selected$candidate_id, status = "PROPOSED_NOT_APPLIED", policy_version = policy,
-    rationale = paste0("CONFIGURED_RULE:", selected$evidence_need_type), expected_gain = "NOT_ESTABLISHED",
-    can_apply = FALSE, can_schedule = FALSE)
+.pd_inventory_authority <- function(row, snapshot, registry) {
+  matching <- Filter(function(a) {
+    is.list(a) && identical(a$target, "CURRICULUM_INVENTORY") &&
+      identical(a$validation_status, "CONFIGURED_POLICY") && isTRUE(a$can_propose) &&
+      all(vapply(c("inventory_id", "inventory_version", "curriculum_source_id", "scope_id", "contest_id"),
+        function(k) .lo_text(row[[k]]) && identical(a[[k]], row[[k]]), logical(1))) &&
+      is.finite(.lo_time(a$valid_from)) && is.finite(.lo_time(a$valid_until)) &&
+      .lo_time(a$valid_from) <= .lo_time(snapshot$cutoff) && .lo_time(a$valid_until) >= .lo_time(snapshot$cutoff)
+  }, registry)
+  # Ambiguous or contradictory active versions cannot establish inventory facts.
+  length(matching) == 1L && all(vapply(c("activity_type", "material_available", "in_syllabus", "prerequisites_status", "estimated_minutes", "risk"),
+    function(k) !is.null(row[[k]]) && identical(matching[[1L]][[k]], row[[k]]), logical(1)))
 }
 
-compare_contextual_policies <- function(candidates, context) {
-  names <- c("EVIDENCE_CONTEXTUAL_V1", "SHORTEST_ADMISSIBLE_V1", "CURRICULAR_CONSERVATIVE_V1")
-  choices <- lapply(names, function(p) choose_contextual_policy(candidates, context, p)); names(choices) <- names
-  list(contract_version = "1.0.0", choices = choices,
-    divergence = length(unique(vapply(choices, function(x) ifelse(is.null(x$candidate_id), "ABSTAIN", x$candidate_id), character(1)))) > 1L,
+# A claim is usable only if an authorized, validated specialist supplies it and
+# every referenced event has matching source, scope, type, version and validity.
+# *_verified input columns are intentionally never used here.
+.pd_bindings <- function(snapshot, candidates, checked, admitted_ids, registry) {
+  out <- list(); failures <- list(); events <- snapshot$evidence
+  req <- c("event_id", "source_id", "scope_id", "evidence_type", "evidence_version", "occurred_at", "valid_until")
+  if (!is.data.frame(events) || !all(req %in% names(events))) {
+    attr(out, "rejections") <- lapply(admitted_ids, function(id) list(candidate_id = id, codes = "MISSING_CONTEXTUAL_EVIDENCE_SCHEMA"))
+    return(out)
+  }
+  for (id in admitted_ids) {
+    reject <- function(code) { failures[[id]] <<- list(candidate_id = id, codes = sort(unique(code), method = "radix")) }
+    row <- as.list(candidates[match(id, candidates$candidate_id), , drop = FALSE])
+    support <- Filter(function(s) identical(s$specialist_id, row$support_specialist_id) &&
+      isTRUE(s$decision_eligible) && identical(s$run_id, snapshot$run_id), checked)
+    if (length(support) != 1L) { reject("NO_SAME_RUN_AUTHORIZED_SUPPORT"); next }
+    s <- support[[1]]; need <- s$result$need_type
+    allowed <- switch(s$target, ITEM_MEMORY = "MEMORY_MAINTENANCE",
+      KNOWLEDGE_OBSERVATIONS = c("OBSERVED_CONCEPTUAL_GAP", "EXAM_EXECUTION_ERROR"),
+      APPLICATION_OBSERVATIONS = "TRANSFER_ASSESSMENT", character())
+    if (!.lo_text(need) || !need %in% allowed) { reject("NO_CONFIRMED_PEDAGOGICAL_NEED"); next }
+    authority <- Filter(function(a) is.list(a) && identical(a$specialist_id, s$specialist_id) &&
+      identical(a$model_version, s$model_version) && identical(a$target, s$target) && isTRUE(a$can_propose) &&
+      identical(a$scope_id, row$scope_id) && is.character(a$source_ids) && !anyNA(a$source_ids) &&
+      all(s$source_ids %in% a$source_ids) && is.character(a$evidence_versions) && length(a$evidence_versions) > 0L && !anyNA(a$evidence_versions) && all(nzchar(trimws(a$evidence_versions))) && is.character(a$evidence_types) && need %in% a$evidence_types &&
+      is.finite(.lo_time(a$valid_from)) && is.finite(.lo_time(a$valid_until)) &&
+      .lo_time(a$valid_from) <= .lo_time(s$cutoff) && .lo_time(a$valid_until) >= .lo_time(snapshot$cutoff), registry)
+    if (!length(authority)) { reject("MISSING_SOURCE_SCOPE_TYPE_VERSION_TEMPORAL_AUTHORIZATION"); next }
+    if (need == "MEMORY_MAINTENANCE" && (!isTRUE(s$result$due) || !isTRUE(s$result$memory_risk))) { reject("DUE_OR_MEMORY_RISK_NOT_CONFIRMED"); next }
+    ev <- events[match(s$evidence_ids, events$event_id), , drop = FALSE]
+    if (!nrow(ev) || anyNA(ev[req]) ||
+        !all(vapply(ev[c("source_id", "scope_id", "evidence_type", "evidence_version")], is.character, logical(1)))) { reject("MALFORMED_EVIDENCE_REFERENCE"); next }
+    issues <- unlist(lapply(seq_len(nrow(ev)), function(i) c(
+      if (!.lo_text(ev$source_id[i]) || !ev$source_id[i] %in% s$source_ids) "EVIDENCE_SOURCE_MISMATCH",
+      if (!identical(ev$scope_id[i], row$scope_id)) "EVIDENCE_SCOPE_MISMATCH",
+      if (!identical(ev$evidence_type[i], need)) "EVIDENCE_TYPE_MISMATCH",
+      if (!.lo_text(ev$evidence_version[i]) || !ev$evidence_version[i] %in% unlist(lapply(authority, function(a) a$evidence_versions), use.names = FALSE)) "EVIDENCE_VERSION_MISMATCH",
+      if (!is.finite(.lo_time(ev$occurred_at[i]))) "INVALID_EVIDENCE_TIME"
+      else if (.lo_time(ev$occurred_at[i]) > .lo_time(s$cutoff)) "FUTURE_EVIDENCE",
+      if (!is.finite(.lo_time(ev$valid_until[i]))) "UNKNOWN_EVIDENCE_VALIDITY"
+      else if (.lo_time(ev$valid_until[i]) < .lo_time(snapshot$cutoff)) "EXPIRED_EVIDENCE")), use.names = FALSE)
+    if (length(issues)) { reject(issues); next }
+    refs <- lapply(order(ev$event_id, method = "radix"), function(i) list(evidence_id = ev$event_id[i], event_id = ev$event_id[i],
+      source_id = ev$source_id[i], scope_id = ev$scope_id[i], evidence_type = ev$evidence_type[i],
+      evidence_version = ev$evidence_version[i], occurred_at = ev$occurred_at[i], valid_until = ev$valid_until[i],
+      specialist_id = s$specialist_id, specialist_version = s$specialist_version,
+      model_version = s$model_version, validation_status = s$validation_status, specialist_cutoff = s$cutoff,
+      authorization = "HOST_AUTHORITY_REGISTRY", origin = ev$origin[i]))
+    out[[id]] <- list(need_type = need, evidence = refs)
+  }
+  attr(out, "rejections") <- unname(failures)
+  out
+}
+
+choose_contextual_policy <- function(candidates, context, policy = c("EVIDENCE_CONTEXTUAL_V1", "SHORTEST_ADMISSIBLE_V1", "CURRICULAR_CONSERVATIVE_V1"), gate = NULL, snapshot = NULL) {
+  policy <- match.arg(policy)
+  admitted <- admissible_contextual_candidates(candidates, context, gate, snapshot)
+  rank <- integer(nrow(admitted)); rules <- character(nrow(admitted)); selectable <- rep(TRUE, nrow(admitted)); decisive <- list()
+  for (i in seq_len(nrow(admitted))) {
+    id <- admitted$candidate_id[i]; activity <- admitted$activity_type[i]
+    binding <- gate$bindings[[id]]; need <- binding$need_type
+    rank[i] <- 5L; rules[i] <- "UNKNOWN_PERSONAL_STATE_CONSERVATIVE_DIAGNOSTIC"
+    if (activity == "LEARN_NEW") { rank[i] <- 4L; rules[i] <- "ADMISSIBLE_CURRICULAR_OPPORTUNITY" }
+    if (policy == "EVIDENCE_CONTEXTUAL_V1" && !is.null(need)) {
+      if (need == "MEMORY_MAINTENANCE" && activity == "REVIEW_ITEM") {rank[i] <- 1L; rules[i] <- "VERIFIED_DUE_AND_MEMORY_RISK"}
+      if (need %in% c("OBSERVED_CONCEPTUAL_GAP", "EXAM_EXECUTION_ERROR") && activity == "DIAGNOSE_CONCEPT") {rank[i] <- 2L; rules[i] <- paste0("VERIFIED_", need)}
+      if (need == "TRANSFER_ASSESSMENT" && activity == "DEEPEN_APPLICATION") {rank[i] <- 3L; rules[i] <- "VERIFIED_TRANSFER_ASSESSMENT"}
+    }
+    if (policy == "EVIDENCE_CONTEXTUAL_V1" && rank[i] == 5L && !activity %in% c("LEARN_NEW", "DIAGNOSE_CONCEPT")) {
+      selectable[i] <- FALSE; rules[i] <- "INSUFFICIENT_CONTEXTUAL_EVIDENCE"
+    }
+    if (policy == "SHORTEST_ADMISSIBLE_V1") {rank[i] <- 1L; rules[i] <- "SHORTEST_ADMISSIBLE"}
+    if (policy == "CURRICULAR_CONSERVATIVE_V1") {rank[i] <- if (activity == "LEARN_NEW") 1L else 2L; rules[i] <- "CURRICULAR_CONSERVATIVE"}
+  }
+  ordering <- order(rank, admitted$estimated_minutes, admitted$candidate_id, method = "radix")
+  selectable_order <- ordering[selectable[ordering]]
+  selected <- if (length(selectable_order)) selectable_order[1L] else integer()
+  chosen <- if (length(selected)) admitted$candidate_id[selected] else NULL
+  if (length(selected) && policy == "EVIDENCE_CONTEXTUAL_V1" && !is.null(gate$bindings[[chosen]])) decisive <- gate$bindings[[chosen]]$evidence
+  list(candidate_id = chosen, status = if (is.null(chosen)) "ABSTAIN" else "PROPOSED_NOT_APPLIED", policy_version = policy,
+    rationale = if (is.null(chosen)) "NO_ADMISSIBLE_ACTIVITY" else rules[selected],
+    executed_rules = data.frame(candidate_id = as.character(admitted$candidate_id), rank = rank, rule = rules, selectable = selectable),
+    tie_break = c("rule_rank_ascending", "estimated_minutes_ascending", "candidate_id_UTF8_radix"),
+    ranked_candidates = as.character(admitted$candidate_id[ordering]), determining_evidence = decisive,
+    input_id = if (is.null(gate)) NULL else gate$input_id,
+    evaluated_candidates = as.character(admitted$candidate_id),
+    expected_gain = "NOT_ESTABLISHED", validation_status = "EXPERIMENTAL", can_apply = FALSE, can_schedule = FALSE)
+}
+
+compare_contextual_policies <- function(candidates, context, gate = NULL, snapshot = NULL) {
+  versions <- c("EVIDENCE_CONTEXTUAL_V1", "SHORTEST_ADMISSIBLE_V1", "CURRICULAR_CONSERVATIVE_V1")
+  choices <- lapply(versions, function(p) choose_contextual_policy(candidates, context, p, gate, snapshot)); names(choices) <- versions
+  list(contract_version = "1.1.0", input_id = .pd_identity(snapshot, candidates, context), choices = choices,
+    admitted_ids = if (is.null(gate)) character() else gate$admitted_ids,
+    divergence = length(unique(vapply(choices, function(x) if (is.null(x$candidate_id)) "ABSTAIN" else x$candidate_id, character(1)))) > 1L,
     inference = "CONFIGURED_POLICY_COMPARISON_NOT_PEDAGOGICAL_SUPERIORITY")
 }
 
-initial_inventory_recommendation <- function(snapshot, context, candidates) {
+decision_trace <- function(snapshot, candidates, context, policy_comparison, gate = NULL) {
+  identity <- .pd_identity(snapshot, candidates, context)
+  if (!identical(identity, policy_comparison$input_id) || is.null(gate) || !identical(identity, gate$input_id)) stop("DECISION_INPUT_MISMATCH")
+  # Reject altered comparisons too. Executed rule records are kept by the policy.
+  replay <- compare_contextual_policies(candidates, context, gate, snapshot)
+  if (!identical(.pd_identity(replay, NULL, NULL), .pd_identity(policy_comparison, NULL, NULL))) stop("DECISION_COMPARISON_MISMATCH")
+  refs <- unlist(lapply(gate$bindings, function(b) b$evidence), recursive = FALSE, use.names = FALSE)
+  list(schema_version = "1.1.0", trace_type = "PEDAGOGICAL_DECISION_TRACE_V1", input_id = identity,
+    snapshot = list(run_id = snapshot$run_id, cutoff = snapshot$cutoff, student_id = snapshot$student_id),
+    policy_versions = names(policy_comparison$choices),
+    eligible_evidence = sort(unique(vapply(refs, function(e) e$evidence_id, character(1))), method = "radix"),
+    evidence_references = refs,
+    insufficient_evidence = setdiff(gate$admitted_ids, names(gate$bindings)),
+    candidates = sort(as.character(candidates$candidate_id), method = "radix"),
+    admitted_candidates = gate$admitted_ids,
+    rejected_candidates = vapply(gate$rejections, function(r) r$candidate_id, character(1)),
+    rejection_details = gate$rejections,
+    admission_reasons = gate$inclusion_reasons,
+    untrusted_declarations_ignored = c("evidence_verified", "fsrs_due_verified", "memory_risk_verified", "inventory_verified", "evidence_need_type", "review_capacity_verified"),
+    contextual_evidence_rejections = attr(gate$bindings, "rejections"),
+    unknown_states = list(review_capacity = "NOT_ESTABLISHED"),
+    inclusion_rule = "ORIGINAL_ORCHESTRATOR_VALIDATOR_OR_AUTHORIZED_COLD_CURRICULUM",
+    verified_constraints = list(time_minutes = context$available_minutes, contest_id = context$contest_id),
+    comparison = policy_comparison, limitations = c("Executed configured rules do not establish efficacy.",
+      "Unknown evidence remains unknown; review capacity declarations grant no priority."))
+}
+
+initial_inventory_recommendation <- function(snapshot, context, candidates, authority_registry = list()) {
   if (!is.data.frame(candidates) || !nrow(candidates)) return(NULL)
-  req <- c("candidate_id", "activity_type", "scope_id", "contest_id", "estimated_minutes", "material_available", "in_syllabus", "prerequisites_status", "risk", "inventory_verified", "curriculum_source_id")
+  req <- c("candidate_id", "activity_type", "scope_id", "contest_id", "estimated_minutes", "material_available", "in_syllabus", "prerequisites_status", "risk")
   if (!all(req %in% names(candidates))) return(NULL)
-  eligible <- candidates[candidates$contest_id == context$contest_id & candidates$activity_type %in% c("DIAGNOSE_CONCEPT", "LEARN_NEW") &
-    candidates$in_syllabus %in% TRUE & candidates$material_available %in% TRUE & candidates$prerequisites_status %in% c("SATISFIED", "NOT_APPLICABLE") &
-    candidates$risk == "LOW_REVERSIBLE" & candidates$inventory_verified %in% TRUE & !is.na(candidates$curriculum_source_id) & nzchar(candidates$curriculum_source_id) &
-    is.finite(candidates$estimated_minutes) & candidates$estimated_minutes > 0 & candidates$estimated_minutes <= context$available_minutes, , drop = FALSE]
+  valid <- vapply(seq_len(nrow(candidates)), function(i) {
+    row <- as.list(candidates[i, , drop = FALSE])
+    .pd_inventory_authority(row, snapshot, authority_registry) && identical(row$contest_id, context$contest_id) &&
+      row$activity_type %in% c("LEARN_NEW", "DIAGNOSE_CONCEPT") && isTRUE(row$in_syllabus) && isTRUE(row$material_available) &&
+      row$prerequisites_status %in% c("SATISFIED", "NOT_APPLICABLE") && identical(row$risk, "LOW_REVERSIBLE") &&
+      .lo_number(row$estimated_minutes) && row$estimated_minutes > 0 && row$estimated_minutes <= context$available_minutes
+  }, logical(1))
+  eligible <- candidates[valid, , drop = FALSE]
   if (!nrow(eligible)) return(NULL)
-  rank <- ifelse(eligible$activity_type == "DIAGNOSE_CONCEPT", 1L, 2L)
-  selected <- eligible[order(rank, eligible$estimated_minutes, eligible$candidate_id), , drop = FALSE][1L, ]
+  selected <- eligible[order(eligible$activity_type != "DIAGNOSE_CONCEPT", eligible$estimated_minutes, eligible$candidate_id, method = "radix"), , drop = FALSE][1L, ]
   list(candidate_id = selected$candidate_id, status = "PROPOSED_NOT_APPLIED", basis = "CURRICULUM_INVENTORY_INITIAL_POLICY_V1",
        personal_inference = FALSE, can_apply = FALSE, can_schedule = FALSE,
-       limitations = "No personal history: recommendation is a reversible curriculum/inventory action, not personalization.")
+       limitations = "Curricular opportunity; personal knowledge remains unknown.")
 }
 
 new_decision_ledger <- function(run_id, proposal = NULL) list(schema_version = "1.0.0", run_id = run_id,

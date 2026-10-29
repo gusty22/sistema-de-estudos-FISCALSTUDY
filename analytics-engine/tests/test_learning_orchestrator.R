@@ -3,11 +3,18 @@ source("R/learning_orchestrator.R")
 # Synthetic inputs exclusively exercise contracts, not learning efficacy.
 lo_snapshot <- list(student_id = "fixture-student", run_id = "fixture-run", cutoff = "2026-10-28T12:00:00Z",
   evidence = data.frame(event_id = c("e2", "e1"), occurred_at = c("2026-10-28T11:00:00Z", "2026-10-27T11:00:00Z"), origin = "SYNTHETIC_FIXTURE"))
+lo_snapshot$evidence$source_id <- "fixture-source"
+lo_snapshot$evidence$scope_id <- "item-1"
+lo_snapshot$evidence$evidence_type <- "MEMORY_MAINTENANCE"
+lo_snapshot$evidence$evidence_version <- "FSRS6_PRE_UPDATE_V1"
+lo_snapshot$evidence$valid_until <- "2026-10-29T12:00:00Z"
 lo_context <- list(contest_id = "fiscal", available_minutes = 30)
 lo_specialist <- build_specialist_result("memory", "Item memory", "ITEM_MEMORY", "fixture-student", "item-1", lo_snapshot$cutoff,
-  c("e1", "e2"), result = list(due = TRUE), model_version = "FSRS6_PRE_UPDATE_V1", validation_status = "OPERATIONAL_VALIDATED", source_ids = "fixture-source", run_id = "fixture-run")
+  c("e1", "e2"), result = list(due = TRUE, memory_risk = TRUE, need_type = "MEMORY_MAINTENANCE"), model_version = "FSRS6_PRE_UPDATE_V1", validation_status = "OPERATIONAL_VALIDATED", source_ids = "fixture-source", run_id = "fixture-run")
 lo_diagnostic <- lo_specialist; lo_diagnostic$specialist_id <- "knowledge"; lo_diagnostic$target <- "KNOWLEDGE_OBSERVATIONS"
 lo_registry <- list(list(specialist_id = "knowledge", model_version = "FSRS6_PRE_UPDATE_V1", target = "KNOWLEDGE_OBSERVATIONS", unit = "NOT_APPLICABLE", horizon = "NOT_APPLICABLE", validation_status = "OPERATIONAL_VALIDATED", epistemic_type = "OBSERVATION", can_propose = TRUE), list(specialist_id = "memory", model_version = "FSRS6_PRE_UPDATE_V1", target = "ITEM_MEMORY", unit = "NOT_APPLICABLE", horizon = "NOT_APPLICABLE", validation_status = "OPERATIONAL_VALIDATED", epistemic_type = "OBSERVATION", can_propose = TRUE))
+lo_registry <- lapply(lo_registry, function(a) c(a, list(scope_id = "item-1", source_ids = "fixture-source",
+  evidence_types = "MEMORY_MAINTENANCE", evidence_versions = "FSRS6_PRE_UPDATE_V1", valid_from = "2026-01-01T00:00:00Z", valid_until = "2026-12-31T00:00:00Z")))
 lo_candidates <- data.frame(candidate_id = c("review", "diagnostic"), activity_type = c("REVIEW_ITEM", "DIAGNOSE_CONCEPT"),
   scope_id = "item-1", contest_id = "fiscal", priority = c("MAINTENANCE_DUE", "DIAGNOSTIC_GAP"), estimated_minutes = c(15, 5),
   material_available = TRUE, in_syllabus = TRUE, prerequisites_status = "SATISFIED", risk = "LOW_REVERSIBLE", support_specialist_id = c("memory", "knowledge"))
@@ -38,7 +45,12 @@ lo_cold_inventory$candidate_id <- "cold-diagnostic"
 lo_cold_inventory$estimated_minutes <- 10
 lo_cold_inventory$inventory_verified <- TRUE
 lo_cold_inventory$curriculum_source_id <- "edital-verified-v1"
-lo_cold <- lo_run(snapshot = lo_empty, candidates = lo_cold_inventory)
+lo_cold_inventory$inventory_id <- "cold-inventory"
+lo_cold_inventory$inventory_version <- "v1"
+lo_cold_registry <- list(c(as.list(lo_cold_inventory[1, c("inventory_id", "inventory_version", "curriculum_source_id", "scope_id", "contest_id", "activity_type", "material_available", "in_syllabus", "prerequisites_status", "estimated_minutes", "risk")]),
+  list(target = "CURRICULUM_INVENTORY", validation_status = "CONFIGURED_POLICY", can_propose = TRUE,
+    valid_from = "2026-01-01T00:00:00Z", valid_until = "2026-12-31T00:00:00Z")))
+lo_cold <- lo_run(snapshot = lo_empty, candidates = lo_cold_inventory, registry = lo_cold_registry)
 assert_equal(lo_cold$proposal$candidate_id, "cold-diagnostic", "No-history policy may propose a verified, reversible curriculum diagnostic")
 assert_false(lo_cold$proposal$personal_inference, "Cold-start recommendation never claims personal diagnosis")
 assert_true(any(vapply(lo_cold$pedagogical_needs, function(x) x$uncertainty == "PERSONAL_KNOWLEDGE_UNKNOWN", logical(1))), "Cold-start need retains unknown personal knowledge")
@@ -47,7 +59,7 @@ assert_true("MIXED_ORIGIN" %in% lo_codes(lo_run(snapshot = lo_bad)), "Mixed real
 lo_bad <- lo_snapshot; lo_bad$evidence$origin <- "REAL_STUDY"
 assert_true("UNVERIFIED_OPERATIONAL_SOURCE" %in% lo_codes(lo_run(snapshot = lo_bad)), "Declared real origin requires audit")
 lo_bad$provenance <- list(is_proven_operational = TRUE, is_real_student_data = TRUE, can_generate_student_profile = TRUE)
-assert_true(lo_run(snapshot = lo_bad)$personal_source_verified, "Three explicit provenance audit gates recognized")
+assert_false(lo_run(snapshot = lo_bad)$personal_source_verified, "Three self-declared provenance flags do not establish an audited source")
 lo_bad <- lo_snapshot; lo_bad$evidence$occurred_at[1] <- NA_character_
 assert_true("INVALID_EVENT_TIMESTAMP" %in% lo_codes(lo_run(snapshot = lo_bad)), "Missing timestamp blocks all proposals")
 lo_bad <- lo_snapshot; lo_bad$evidence$occurred_at[1] <- "2026-10-29T11:00:00Z"
@@ -125,13 +137,17 @@ lo_personal$evidence$origin <- "REAL_STUDY"
 lo_personal$evidence$question_id <- c("q1", "q2")
 lo_personal$evidence$is_correct <- c(TRUE, FALSE)
 lo_personal$provenance <- list(is_proven_operational = TRUE, is_real_student_data = TRUE, can_generate_student_profile = TRUE)
+# Explicit trusted-host simulation for this inherited adapter contract test;
+# JSON transport cannot carry R attributes and must audit source bytes instead.
+attr(lo_personal$provenance, "orchestrator_evidence_id") <- .pd_identity(lo_personal$evidence, NULL, NULL)
+attr(lo_personal$provenance, "trusted_source_authorized") <- TRUE
 lo_inventory <- lo_candidates
 lo_inventory$candidate_id <- c("learn", "diagnose")
 lo_inventory$activity_type <- c("LEARN_NEW", "DIAGNOSE_CONCEPT")
 lo_inventory$priority <- c("NEW_CONTENT", "DIAGNOSTIC_GAP")
 lo_inventory$support_specialist_id <- "BUILTIN_INVENTORY_POLICY"
 lo_auto <- lo_run(snapshot = lo_personal, specialists = list(), candidates = lo_inventory, registry = list())
-assert_equal(lo_auto$proposal$candidate_id, "diagnose", "Built-in inventory policy produces low-risk diagnostic proposal")
+assert_equal(lo_auto$proposal$candidate_id, "learn", "Built-in inventory policy produces conservative curricular proposal when personal need is unknown")
 assert_equal(lo_auto$learner_evidence_profile$status, "OBSERVATIONAL_ONLY", "Orchestrator automatically executes descriptive specialists")
 assert_equal(length(lo_auto$specialists), 8L, "Six descriptive specialists plus two configured inventory proposals")
 assert_false(lo_auto$proposal$can_apply, "Built-in diagnostic remains unapplied")

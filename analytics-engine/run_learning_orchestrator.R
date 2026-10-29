@@ -10,15 +10,19 @@ source('R/learning_orchestrator.R')
 source('R/analytical_portability.R')
 request <- read_analytical_bundle(args[1])$payload
 if (!identical(request$request_version,'learning-orchestrator-request-v1')) stop('Unknown request version')
-# Deliberately ignore any embedded authority/provenance claim. Audit actual CSV bytes.
+# Deliberately ignore embedded authority_registry, specialists, gate and provenance
+# claims. Only the existing host-built specialists can support admission here.
+# The orchestrator emits the contextual proposal, three-policy comparison and
+# execution trace together; the transport never reconstructs a decision rationale.
+# Audit actual CSV bytes; an imported verification flag is not custody.
 if (!portable_scalar_text(request$events_csv) || !file.exists(request$events_csv)) stop('Missing events CSV')
 events_size <- file.info(request$events_csv)$size
 if (is.na(events_size) || events_size > 64*1024^2) stop('Events CSV exceeds size bound')
 events <- read.csv(request$events_csv,stringsAsFactors=FALSE,check.names=FALSE,na.strings=c('','NA'))
 manifest <- request$events_manifest
-provenance <- verify_data_provenance(events,declared_provenance=request$declared_provenance,
-                                    file_path=request$events_csv,manifest=manifest)
 if (!'origin' %in% names(events) && 'origin_type' %in% names(events)) events$origin <- events$origin_type
+provenance <- audit_learning_provenance(events,declared_provenance=request$declared_provenance,
+                                      file_path=request$events_csv,manifest=manifest)
 rows_to_frame <- function(rows) {
   if (is.null(rows) || !length(rows)) return(data.frame())
   if (!is.list(rows) || !all(vapply(rows,is.list,logical(1)))) stop('Invalid row records')
