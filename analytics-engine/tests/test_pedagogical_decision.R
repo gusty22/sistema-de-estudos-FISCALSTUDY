@@ -1,15 +1,20 @@
-source("R/pedagogical_decision.R")
+source("R/learning_orchestrator.R")
 
 pd_candidates <- data.frame(candidate_id = c("new", "diagnose"), activity_type = c("LEARN_NEW", "DIAGNOSE_CONCEPT"),
   scope_id = c("tax", "tax"), contest_id = "fiscal", estimated_minutes = c(20, 10), material_available = TRUE,
   in_syllabus = TRUE, prerequisites_status = "SATISFIED", risk = "LOW_REVERSIBLE", inventory_verified = TRUE,
   curriculum_source_id = "edital-v1", stringsAsFactors = FALSE)
+pd_candidates$inventory_id <- c("catalogue-new", "catalogue-diagnose")
+pd_candidates$inventory_version <- "catalogue-v1"
+pd_authority <- lapply(seq_len(nrow(pd_candidates)), function(i) c(as.list(pd_candidates[i, c("inventory_id", "inventory_version", "curriculum_source_id", "scope_id", "contest_id", "activity_type", "material_available", "in_syllabus", "prerequisites_status", "estimated_minutes", "risk")]),
+  list(target = "CURRICULUM_INVENTORY", validation_status = "CONFIGURED_POLICY", can_propose = TRUE,
+    valid_from = "2026-01-01T00:00:00Z", valid_until = "2026-12-31T00:00:00Z")))
 pd_snapshot <- list(student_id = "new-student", run_id = "new-run", cutoff = "2026-10-28T12:00:00Z")
-pd_initial <- initial_inventory_recommendation(pd_snapshot, list(contest_id = "fiscal", available_minutes = 30), pd_candidates)
+pd_initial <- initial_inventory_recommendation(pd_snapshot, list(contest_id = "fiscal", available_minutes = 30), pd_candidates, pd_authority)
 assert_equal(pd_initial$candidate_id, "diagnose", "No-history policy prefers reversible diagnostic from verified inventory")
 assert_false(pd_initial$personal_inference, "Initial policy does not fabricate personalization")
-pd_unverified <- pd_candidates; pd_unverified$inventory_verified <- FALSE
-assert_true(is.null(initial_inventory_recommendation(pd_snapshot, list(contest_id = "fiscal", available_minutes = 30), pd_unverified)), "Unverified inventory cannot authorize initial proposal")
+pd_unverified <- pd_candidates; pd_unverified$inventory_verified <- TRUE
+assert_true(is.null(initial_inventory_recommendation(pd_snapshot, list(contest_id = "fiscal", available_minutes = 30), pd_unverified)), "Self-declared inventory cannot authorize initial proposal without host registry")
 pd_needs <- derive_pedagogical_needs(NULL, pd_candidates, FALSE)
 assert_true(all(vapply(pd_needs, function(x) x$uncertainty == "PERSONAL_KNOWLEDGE_UNKNOWN", logical(1))), "Curricular opportunity keeps learner knowledge unknown")
 assert_true(all(vapply(pd_needs, function(x) x$diagnostic_status == "OBSERVED_NOT_DIAGNOSTIC", logical(1))), "Need contract does not convert inventory into diagnosis")
@@ -31,27 +36,14 @@ for (n in c(5000L, 20000L)) {
 pd_overlap <- pd_relations(2L); pd_overlap$question_id <- "q1"; pd_overlap$valid_to[2] <- "2026-01-03T00:00:00Z"
 assert_true(inherits(try(validate_concept_relations(pd_overlap, "2026-10-28T12:00:00Z"), silent = TRUE), "try-error"), "Relation sweep preserves overlap rejection semantics")
 
-# Same verified catalogue, distinct recorded need labels: no accuracy or mastery
-# probabilities are supplied. These are controlled contract scenarios only.
-pd_contextual <- data.frame(candidate_id = c("review", "diagnose", "transfer", "new"),
-  activity_type = c("REVIEW_ITEM", "DIAGNOSE_CONCEPT", "DEEPEN_APPLICATION", "LEARN_NEW"), scope_id = c("item", "concept", "concept", "new-topic"),
-  contest_id = "fiscal", estimated_minutes = c(10, 8, 12, 15), material_available = TRUE, in_syllabus = TRUE,
-  prerequisites_status = "SATISFIED", risk = "LOW_REVERSIBLE", evidence_need_type = "UNKNOWN", evidence_verified = TRUE,
-  fsrs_due_verified = c(TRUE, FALSE, FALSE, FALSE), memory_risk_verified = c(TRUE, FALSE, FALSE, FALSE), stringsAsFactors = FALSE)
-pd_pick <- function(need, minutes = 30, reviews = FALSE) { x <- pd_contextual; x$evidence_need_type[match(need, x$candidate_id)] <- switch(need, review="MEMORY_MAINTENANCE", diagnose="OBSERVED_CONCEPTUAL_GAP", transfer="TRANSFER_ASSESSMENT", new="INITIAL_LEARNING"); choose_contextual_policy(x, list(contest_id="fiscal", available_minutes=minutes, review_capacity_exceeded=reviews, review_capacity_verified=reviews)) }
-assert_equal(pd_pick("new")$candidate_id, "new", "No-history curricular opportunity can advance only verified new content")
-assert_equal(pd_pick("review")$candidate_id, "review", "Recorded due-memory need selects protected review")
-assert_equal(pd_pick("diagnose")$candidate_id, "diagnose", "Observed conceptual evidence selects diagnostic alternative")
-assert_equal(pd_pick("transfer")$candidate_id, "transfer", "Unestablished transfer selects assessment/application alternative")
-pd_execution <- pd_contextual; pd_execution$evidence_need_type[2] <- "EXAM_EXECUTION_ERROR"
-assert_equal(choose_contextual_policy(pd_execution, list(contest_id="fiscal", available_minutes=30))$candidate_id, "diagnose", "Recorded execution error is investigated without claiming cause")
-assert_equal(pd_pick("review", minutes=9)$candidate_id, "diagnose", "Time limit removes unaffordable review and retains admissible conservative alternative")
-pd_volume <- pd_contextual; pd_volume$evidence_need_type[1] <- "MEMORY_MAINTENANCE"; pd_volume$evidence_need_type[4] <- "INITIAL_LEARNING"
-pd_compare <- compare_contextual_policies(pd_volume, list(contest_id="fiscal", available_minutes=30, review_capacity_exceeded=TRUE, review_capacity_verified=TRUE))
-assert_true(pd_compare$divergence, "Policy comparison records divergence under excessive review volume")
-assert_equal(pd_compare$inference, "CONFIGURED_POLICY_COMPARISON_NOT_PEDAGOGICAL_SUPERIORITY", "Synthetic comparison claims no superiority")
-pd_unverified <- pd_contextual; pd_unverified$evidence_need_type[2] <- "OBSERVED_CONCEPTUAL_GAP"; pd_unverified$evidence_verified[2] <- FALSE
-assert_equal(choose_contextual_policy(pd_unverified, list(contest_id="fiscal", available_minutes=30))$candidate_id, "new", "Unverified gap cannot justify diagnostic priority")
-pd_trace <- decision_trace(list(run_id="trace-run", cutoff="2026-10-28T12:00:00Z", student_id="fixture"), pd_contextual, list(contest_id="fiscal", available_minutes=30), pd_compare)
-assert_equal(pd_trace$trace_type, "PEDAGOGICAL_DECISION_TRACE_V1", "Decision trace is versioned")
-assert_true(identical(pd_trace, decision_trace(list(run_id="trace-run", cutoff="2026-10-28T12:00:00Z", student_id="fixture"), pd_contextual, list(contest_id="fiscal", available_minutes=30), pd_compare)), "Decision trace is deterministic")
+# Standalone imported candidates cannot establish admission or evidence authority.
+pd_claims <- pd_candidates
+pd_claims$evidence_verified <- TRUE
+pd_claims$fsrs_due_verified <- TRUE
+pd_claims$memory_risk_verified <- TRUE
+pd_claims$evidence_need_type <- "MEMORY_MAINTENANCE"
+assert_equal(choose_contextual_policy(pd_claims, list(contest_id="fiscal", available_minutes=30))$status,
+  "ABSTAIN", "Imported flags cannot authorize standalone contextual selection")
+assert_true(inherits(try(decision_trace(pd_snapshot, pd_claims, list(contest_id="fiscal", available_minutes=30),
+  compare_contextual_policies(pd_claims, list(contest_id="fiscal", available_minutes=30))), silent=TRUE), "try-error"),
+  "Trace requires the actual execution gate")

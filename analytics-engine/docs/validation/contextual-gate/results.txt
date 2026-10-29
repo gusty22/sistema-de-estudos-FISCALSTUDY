@@ -1,0 +1,82 @@
+FISCALSTUDY — GATE CONTEXTUAL — EXECUTION RECORD 2026-10-29 UTC
+Base: b13cefabe3d9fd3d4bc02515a04e7645dfe677ee (main, PR #42)
+Ancestor checked: 0eb98d1108a0aca4965d567fe23b0e19548ad5f5
+Branch: fix/contextual-integration-gate
+Runtime: R 4.6.1 (2026-06-24), Debian 13, x86_64
+Existing packages: jsonlite 1.9.1; digest 0.6.37
+Runtime/packages extracted into /tmp only; no repository dependencies added.
+
+Command (cwd analytics-engine): LC_ALL=<locale> Rscript tests/test_runner.R
+Sandbox runtime: RHOME=/tmp/r46/usr/lib/R
+R_LIBS=/tmp/r-local/usr/lib/R/site-library
+Rscript executable: /tmp/r46/usr/bin/Rscript
+Final runs execute sequentially because inherited visualization tests share paths.
+
+main    C.UTF-8 passed=826 failed=0 exit=0 elapsed=65.199s log=baseline-UTF8.txt
+main    C       passed=822 failed=4 exit=1 elapsed=77.317s log=baseline-C.txt
+branch  C.UTF-8 passed=968 failed=0 exit=0 elapsed=126.872s log=final-UTF8.txt
+branch  C       passed=964 failed=4 exit=1 elapsed=95.540s log=final-C.txt
+
+Inherited locale failures (same descriptions on base and final):
+- UTF-8 curriculum labels survive CSV decoding
+- Optional UTF-8 BOM preserves header identity
+- Locale C preserves recorded discipline labels through the full pipeline
+- Locale C preserves recorded topic labels through the full pipeline
+
+No new failures in sequential final suite runs. The locale-C exit code is 1;
+the four inherited failures were neither suppressed nor converted into passes.
+Changes to tests remove self-verified authorization expectations and replace them
+with trusted-source and negative authorization checks; this changes test counts.
+
+During an earlier simultaneous UTF8/C execution in the same checkout, one run
+reported: plot_evidence_volume gera arquivo PNG valido -> expected TRUE.
+The inherited tests/test_visualization.R writes and removes a shared directory;
+parallel runs competed for test_evidence.png. No visualization code was changed.
+The full sequential final runs above supersede that concurrency-contaminated run.
+
+Required backend check attempted: bash mvnw test-compile (cwd backend).
+Original wrapper blocked: ./.mvn/wrapper/maven-wrapper.properties absent.
+Fallback completed with Maven 3.9.11 and JDK 21.0.12.1 extracted into /tmp.
+The installed JRE lacked ct.sym; the complete isolated JDK supplied release-17
+compilation support. No backend source, POM, operational database or wrapper changed.
+Command (cwd backend):
+JAVA_HOME=/tmp/fiscalstudy-jdk/usr/lib/jvm/java-21-openjdk-amd64
+MAVEN_OPTS=-Djava.home=/tmp/fiscalstudy-jdk/usr/lib/jvm/java-21-openjdk-amd64
+/tmp/apache-maven-3.9.11/bin/mvn -B -s /tmp/fiscalstudy-maven-settings.xml
+-Dmaven.repo.local=/tmp/fiscalstudy-m2 test-compile
+Result: BUILD SUCCESS, exit 0; 182 production and 75 test source files, release 17.
+
+Same Maven environment, -Dtest=ProspectivePredictionIntegrationTest test:
+8 tests, 0 failures, 0 errors, 0 skipped; BUILD SUCCESS, exit 0.
+These inherited tests use @TempDir SQLite, never the operational database.
+They produce synthetic JSON exports in backend/target for the separate R lab test.
+Rscript tests/test_prospective_ledger.R: exit 0 on final branch and base, using the
+same two Java-generated synthetic JSON fixtures (no SQLite database was copied).
+The first attempts lacked those generated fixtures and stopped; after running the
+existing Java fixture producer, both R versions of the ledger suite passed.
+The lab suite is supplementary and is not included in the 968 main-suite count.
+Graphify was unavailable in the environment.
+
+Reproduction:
+Rscript tests/fixtures/contextual_gate/reproduce.R NEW-memory.json memory
+Expected example is SYNTHETIC_FIXTURE ONLY; can_apply=false; can_schedule=false.
+Independent subprocess replay is checked by tests, including CLI JSON/CSV replay.
+The final memory artifact also compares byte-for-byte between R 4.5.0 and 4.6.1.
+Correctness and policy coherence are tested; pedagogical benefit is not observed.
+No merge, FSRS change, operational database write, calendar/frontend change,
+new specialist, neural model, scheduler or flashcard generator.
+
+Raw stdout is preserved in the versioned logs, including trailing whitespace and
+expected negative-test subprocess messages such as Execution halted. No PASS, FAIL,
+warning or error lines were filtered. Source/test/Markdown whitespace checks pass.
+
+SHA-256 (versioned validation files and example):
+9c5c54c596fda9c7a1244f0bc3c0480c095387a830a643fad0dc6fcb16b3f8b9  baseline-UTF8.txt
+05214ca96ab929949e3c58e46083d7072cc529b6c25ef32bbad40a96495df6ed  baseline-C.txt
+d004f1b7356046ed6bb69670ba580d4eccffb2b88dd7426410812f4d6771b84c  final-UTF8.txt
+c64767435516b30f9bd2571e73bcd4a65176741ddb0e3d3905ed2b5278512138  final-C.txt
+cbc15627805055ad68368c66b0c11428c664e5ef93a533a92b2a1bf7139084e3  tests/fixtures/contextual_gate/expected-memory.json
+e8ae33e155a8149d352cf4f687befdd8e471da43f88e80479ffa3368f57b55b0  backend-test-compile.txt
+347740f59e42dc09a4126d575630348d6695b05cf99c3c671fd1d14a25f43cde  prospective-java.txt
+4d58c4b3c7a56a6f5db7b33cd12604370fef049c7dd55206a383eccffdbdab58  prospective-R-final.txt
+4d58c4b3c7a56a6f5db7b33cd12604370fef049c7dd55206a383eccffdbdab58  prospective-R-base.txt

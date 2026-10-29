@@ -1,3 +1,11 @@
+## Gate de integração contextual — 2026-10-29
+
+A proposta principal de `orchestrate_learning()` agora executa `EVIDENCE_CONTEXTUAL_V1` sobre a admissão do validador original e emite comparação das três políticas, necessidades vinculadas e rastro `1.1.0` na mesma execução. Flags externas não concedem autoridade; procedência pessoal exige vínculo aos eventos e atestação do host confiável. Sem confirmação, preservam-se desconhecidos e oportunidades curriculares admissíveis. Nenhuma aplicação ou agenda operacional é autorizada.
+
+Validação final em R 4.6.1: 968 verificações aprovadas em UTF-8, zero falhas; em locale C permanecem exatamente as quatro falhas herdadas da main, sem regressões novas. O exemplo final reproduz os mesmos bytes em R 4.5.0 e 4.6.1. O wrapper original está incompleto; a compilação equivalente passou com Maven/JDK isolados. Os oito testes Java do ledger prospectivo e a suíte R complementar também passaram, com fixtures e SQLite temporários isolados. Esses resultados validam software/regras configuradas, sem demonstrar benefício pedagógico.
+
+Consulte o [relatório e limites](CONTEXTUAL_INTEGRATION_GATE.md) e o [registro com logs completos](validation/contextual-gate/results.txt). As fotografias históricas abaixo permanecem preservadas.
+
 ## Provenance correction — 2026-10-25
 
 `verify_data_provenance` now requires `origin_type == REAL_STUDY` in every row before granting personal-study/profile eligibility. Mixed, missing, unknown, automated and demonstration origins remain `UNVERIFIED_SOURCE`; their rows are preserved for diagnostics. The existing Java `AnalyticsProjectionService.exportCsv` already exports `origin_type`; no Java migration is needed. Legacy CSV files without this column remain readable but cannot establish personal learning evidence.

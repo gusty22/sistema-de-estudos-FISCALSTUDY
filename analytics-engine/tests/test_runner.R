@@ -108,7 +108,8 @@ run_all_tests <- function() {
     "tests/test_evidence_specialists.R",
     "tests/test_pedagogical_decision.R",
     "tests/test_learning_orchestrator.R",
-    "tests/test_orchestrator_cli.R"
+    "tests/test_orchestrator_cli.R",
+    "tests/test_contextual_integration.R"
   )
   
   start_time <- Sys.time()
