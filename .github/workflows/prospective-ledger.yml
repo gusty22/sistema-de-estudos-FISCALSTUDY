@@ -181,6 +181,11 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Native OpenSSL failed' }
           Rscript -e 'install.packages(c("jsonlite","digest"),repos="https://cloud.r-project.org")'
           if ($LASTEXITCODE -ne 0) { throw 'Existing dependencies unavailable' }
+      - name: Native NTFS storage boundary with synthetic empty directories
+        working-directory: FiscalStudy ação/analytics-engine
+        run: |
+          python -m unittest discover -s lab -p test_personal_pilot.py -v
+          if ($LASTEXITCODE -ne 0) { throw 'Native private storage boundary failed' }
       - name: Java signing and isolated event store on native Windows
         working-directory: FiscalStudy ação/backend
         run: |
@@ -191,8 +196,6 @@ jobs:
       - name: Windows crypto boundary Unicode paths private NTFS and replay
         working-directory: FiscalStudy ação/analytics-engine
         run: |
-          python -m unittest discover -s lab -p test_personal_pilot.py -v
-          if ($LASTEXITCODE -ne 0) { throw 'Private CLI regressions failed' }
           Rscript tests/test_attested_prospective.R
           if ($LASTEXITCODE -ne 0) { throw 'R custody regressions failed' }
           python tests/fixtures/authentic_prospective/replay.py

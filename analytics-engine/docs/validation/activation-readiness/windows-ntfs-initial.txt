@@ -1,0 +1,136 @@
+Native Windows run 40941811339 / job 123687140335. Full log retained on GitHub.
+2026-10-29T19:41:53.4345853Z [INFO] BUILD SUCCESS
+2026-10-29T19:41:53.4346455Z [INFO] ------------------------------------------------------------------------
+2026-10-29T19:41:53.4363753Z [INFO] Total time:  43.423 s
+2026-10-29T19:41:53.4365676Z [INFO] Finished at: 2026-10-29T19:41:53Z
+2026-10-29T19:41:53.4366434Z [INFO] ------------------------------------------------------------------------
+2026-10-29T19:41:53.5642348Z ##[group]Run python -m unittest discover -s lab -p test_personal_pilot.py -v
+2026-10-29T19:41:53.5643046Z [36;1mpython -m unittest discover -s lab -p test_personal_pilot.py -v[0m
+2026-10-29T19:41:53.5643560Z [36;1mif ($LASTEXITCODE -ne 0) { throw 'Private CLI regressions failed' }[0m
+2026-10-29T19:41:53.5643986Z [36;1mRscript tests/test_attested_prospective.R[0m
+2026-10-29T19:41:53.5644377Z [36;1mif ($LASTEXITCODE -ne 0) { throw 'R custody regressions failed' }[0m
+2026-10-29T19:41:53.5644806Z [36;1mpython tests/fixtures/authentic_prospective/replay.py[0m
+2026-10-29T19:41:53.5645248Z [36;1mif ($LASTEXITCODE -ne 0) { throw 'Native Windows private replay failed' }[0m
+2026-10-29T19:41:53.5689818Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-10-29T19:41:53.5690165Z env:
+2026-10-29T19:41:53.5690333Z   PYTHONUTF8: 1
+2026-10-29T19:41:53.5690681Z   JAVA_HOME: C:\hostedtoolcache\windows\Java_Temurin-Hotspot_jdk\17.0.20-101\x64
+2026-10-29T19:41:53.5691256Z   JAVA_HOME_17_X64: C:\hostedtoolcache\windows\Java_Temurin-Hotspot_jdk\17.0.20-101\x64
+2026-10-29T19:41:53.5691742Z   pythonLocation: C:\hostedtoolcache\windows\Python\3.13.7\x64
+2026-10-29T19:41:53.5692184Z   PKG_CONFIG_PATH: C:\hostedtoolcache\windows\Python\3.13.7\x64/lib/pkgconfig
+2026-10-29T19:41:53.5692613Z   Python_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.13.7\x64
+2026-10-29T19:41:53.5693002Z   Python2_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.13.7\x64
+2026-10-29T19:41:53.5693394Z   Python3_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.13.7\x64
+2026-10-29T19:41:53.5693728Z   _R_INSTALL_TIME_PATCHES_: no
+2026-10-29T19:41:53.5693954Z   RTOOLS45_HOME: C:\rtools45
+2026-10-29T19:41:53.5694171Z   R_LIBS_USER: D:\a\_temp\Library
+2026-10-29T19:41:53.5694384Z   TZ: UTC
+2026-10-29T19:41:53.5694556Z   _R_CHECK_SYSTEM_CLOCK_: FALSE
+2026-10-29T19:41:53.5694773Z   NOT_CRAN: true
+2026-10-29T19:41:53.5695024Z   RSPM: https://packagemanager.posit.co/cran/latest
+2026-10-29T19:41:53.5695447Z   RENV_CONFIG_REPOS_OVERRIDE: https://packagemanager.posit.co/cran/latest
+2026-10-29T19:41:53.5695805Z ##[endgroup]
+2026-10-29T19:41:54.1476551Z test_bounded_read_limits_the_read_not_a_previous_stat (test_personal_pilot.PersonalPilotTests.test_bounded_read_limits_the_read_not_a_previous_stat) ... ok
+2026-10-29T19:41:54.1647883Z test_explicit_synthetic_mode_and_integrity (test_personal_pilot.PersonalPilotTests.test_explicit_synthetic_mode_and_integrity) ... ok
+2026-10-29T19:41:54.6181128Z test_failure_is_explicit_and_does_not_claim_success (test_personal_pilot.PersonalPilotTests.test_failure_is_explicit_and_does_not_claim_success) ... ERROR
+2026-10-29T19:41:54.9210613Z ##[error]test_frozen_input_replacement_cannot_leave_successful_authentication (test_personal_pilot.PersonalPilotTests.test_frozen_input_replacement_cannot_leave_successful_authentication) ... ERROR
+2026-10-29T19:41:54.9215891Z test_incomplete_external_trust_does_not_create_output (test_personal_pilot.PersonalPilotTests.test_incomplete_external_trust_does_not_create_output) ... ok
+2026-10-29T19:41:55.2245934Z test_incomplete_report_does_not_become_success (test_personal_pilot.PersonalPilotTests.test_incomplete_report_does_not_become_success) ... ERROR
+2026-10-29T19:41:55.2303160Z ##[error]test_private_directory_failure_happens_before_input_copy (test_personal_pilot.PersonalPilotTests.test_private_directory_failure_happens_before_input_copy) ... ok
+2026-10-29T19:41:55.5328085Z test_private_outputs_no_overwrite_and_original_preserved (test_personal_pilot.PersonalPilotTests.test_private_outputs_no_overwrite_and_original_preserved) ... ERROR
+2026-10-29T19:41:55.5430446Z ##[error]test_real_label_hash_and_embedded_authority_cannot_authenticate (test_personal_pilot.PersonalPilotTests.test_real_label_hash_and_embedded_authority_cannot_authenticate) ... ok
+2026-10-29T19:41:55.5433471Z 
+2026-10-29T19:41:55.5433904Z ======================================================================
+2026-10-29T19:41:55.5438686Z ERROR: test_failure_is_explicit_and_does_not_claim_success (test_personal_pilot.PersonalPilotTests.test_failure_is_explicit_and_does_not_claim_success)
+2026-10-29T19:41:55.5439687Z ----------------------------------------------------------------------
+2026-10-29T19:41:55.5440110Z Traceback (most recent call last):
+2026-10-29T19:41:55.5441613Z   File "D:\a\sistema-de-estudos-FISCALSTUDY\sistema-de-estudos-FISCALSTUDY\FiscalStudy ação\analytics-engine\lab\test_personal_pilot.py", line 64, in test_failure_is_explicit_and_does_not_claim_success
+2026-10-29T19:41:55.5442714Z     report = json.loads((root / "failed/manifest.json").read_text())
+2026-10-29T19:41:55.5443190Z                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+2026-10-29T19:41:55.5443830Z   File "C:\hostedtoolcache\windows\Python\3.13.7\x64\Lib\pathlib\_local.py", line 546, in read_text
+2026-10-29T19:41:55.5444465Z     return PathBase.read_text(self, encoding, errors, newline)
+2026-10-29T19:41:55.5444922Z            ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-10-29T19:41:55.5445542Z   File "C:\hostedtoolcache\windows\Python\3.13.7\x64\Lib\pathlib\_abc.py", line 632, in read_text
+2026-10-29T19:41:55.5446237Z     with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+2026-10-29T19:41:55.5446786Z          ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-10-29T19:41:55.5447812Z   File "C:\hostedtoolcache\windows\Python\3.13.7\x64\Lib\pathlib\_local.py", line 537, in open
+2026-10-29T19:41:55.5448843Z     return io.open(self, mode, buffering, encoding, errors, newline)
+2026-10-29T19:41:55.5449633Z            ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-10-29T19:41:55.5450954Z FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\tmpj501v662\\failed\\manifest.json'
+2026-10-29T19:41:55.5451881Z 
+2026-10-29T19:41:55.5452224Z ======================================================================
+2026-10-29T19:41:55.5454091Z ERROR: test_frozen_input_replacement_cannot_leave_successful_authentication (test_personal_pilot.PersonalPilotTests.test_frozen_input_replacement_cannot_leave_successful_authentication)
+2026-10-29T19:41:55.5455831Z ----------------------------------------------------------------------
+2026-10-29T19:41:55.5456497Z Traceback (most recent call last):
+2026-10-29T19:41:55.5458923Z   File "D:\a\sistema-de-estudos-FISCALSTUDY\sistema-de-estudos-FISCALSTUDY\FiscalStudy ação\analytics-engine\lab\test_personal_pilot.py", line 124, in test_frozen_input_replacement_cannot_leave_successful_authentication
+2026-10-29T19:41:55.5460881Z     manifest=json.loads((root / "changed/manifest.json").read_text())
+2026-10-29T19:41:55.5461347Z                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+2026-10-29T19:41:55.5461968Z   File "C:\hostedtoolcache\windows\Python\3.13.7\x64\Lib\pathlib\_local.py", line 546, in read_text
+2026-10-29T19:41:55.5462574Z     return PathBase.read_text(self, encoding, errors, newline)
+2026-10-29T19:41:55.5462992Z            ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-10-29T19:41:55.5463563Z   File "C:\hostedtoolcache\windows\Python\3.13.7\x64\Lib\pathlib\_abc.py", line 632, in read_text
+2026-10-29T19:41:55.5464217Z     with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+2026-10-29T19:41:55.5464720Z          ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-10-29T19:41:55.5465748Z   File "C:\hostedtoolcache\windows\Python\3.13.7\x64\Lib\pathlib\_local.py", line 537, in open
+2026-10-29T19:41:55.5466827Z     return io.open(self, mode, buffering, encoding, errors, newline)
+2026-10-29T19:41:55.5467622Z            ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-10-29T19:41:55.5468966Z FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\tmpeo6_o6b1\\changed\\manifest.json'
+2026-10-29T19:41:55.5470156Z 
+2026-10-29T19:41:55.5471371Z ======================================================================
+2026-10-29T19:41:55.5472882Z ERROR: test_incomplete_report_does_not_become_success (test_personal_pilot.PersonalPilotTests.test_incomplete_report_does_not_become_success)
+2026-10-29T19:41:55.5474254Z ----------------------------------------------------------------------
+2026-10-29T19:41:55.5474911Z Traceback (most recent call last):
+2026-10-29T19:41:55.5477164Z   File "D:\a\sistema-de-estudos-FISCALSTUDY\sistema-de-estudos-FISCALSTUDY\FiscalStudy ação\analytics-engine\lab\test_personal_pilot.py", line 77, in test_incomplete_report_does_not_become_success
+2026-10-29T19:41:55.5479255Z     self.assertEqual(json.loads((root / "incomplete/manifest.json").read_text())["status"], "FAILED")
+2026-10-29T19:41:55.5480296Z                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+2026-10-29T19:41:55.5481444Z   File "C:\hostedtoolcache\windows\Python\3.13.7\x64\Lib\pathlib\_local.py", line 546, in read_text
+2026-10-29T19:41:55.5482571Z     return PathBase.read_text(self, encoding, errors, newline)
+2026-10-29T19:41:55.5483296Z            ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-10-29T19:41:55.5483916Z   File "C:\hostedtoolcache\windows\Python\3.13.7\x64\Lib\pathlib\_abc.py", line 632, in read_text
+2026-10-29T19:41:55.5484591Z     with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+2026-10-29T19:41:55.5485112Z          ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-10-29T19:41:55.5485698Z   File "C:\hostedtoolcache\windows\Python\3.13.7\x64\Lib\pathlib\_local.py", line 537, in open
+2026-10-29T19:41:55.5486291Z     return io.open(self, mode, buffering, encoding, errors, newline)
+2026-10-29T19:41:55.5486733Z            ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-10-29T19:41:55.5487484Z FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\tmpbovg9xa4\\incomplete\\manifest.json'
+2026-10-29T19:41:55.5488005Z 
+2026-10-29T19:41:55.5488189Z ======================================================================
+2026-10-29T19:41:55.5489050Z ERROR: test_private_outputs_no_overwrite_and_original_preserved (test_personal_pilot.PersonalPilotTests.test_private_outputs_no_overwrite_and_original_preserved)
+2026-10-29T19:41:55.5489858Z ----------------------------------------------------------------------
+2026-10-29T19:41:55.5490233Z Traceback (most recent call last):
+2026-10-29T19:41:55.5492143Z   File "D:\a\sistema-de-estudos-FISCALSTUDY\sistema-de-estudos-FISCALSTUDY\FiscalStudy ação\analytics-engine\lab\test_personal_pilot.py", line 49, in test_private_outputs_no_overwrite_and_original_preserved
+2026-10-29T19:41:55.5494079Z     result = evaluate_local(path, root / "run", synthetic_test=True)
+2026-10-29T19:41:55.5496154Z   File "D:\a\sistema-de-estudos-FISCALSTUDY\sistema-de-estudos-FISCALSTUDY\FiscalStudy ação\analytics-engine\lab\personal_pilot.py", line 99, in evaluate_local
+2026-10-29T19:41:55.5497425Z     storage_privacy = make_private_directory(output)  # Refuse reuse; audit before input copy.
+2026-10-29T19:41:55.5499374Z   File "D:\a\sistema-de-estudos-FISCALSTUDY\sistema-de-estudos-FISCALSTUDY\FiscalStudy ação\analytics-engine\lab\personal_pilot.py", line 65, in make_private_directory
+2026-10-29T19:41:55.5500996Z     raise RuntimeError("Cannot establish/audit private NTFS directory; no input copied")
+2026-10-29T19:41:55.5501657Z RuntimeError: Cannot establish/audit private NTFS directory; no input copied
+2026-10-29T19:41:55.5501965Z 
+2026-10-29T19:41:55.5502177Z ----------------------------------------------------------------------
+2026-10-29T19:41:55.5502888Z Ran 9 tests in 1.398s
+2026-10-29T19:41:55.5503134Z 
+2026-10-29T19:41:55.5503302Z FAILED (errors=4)
+2026-10-29T19:41:55.7806676Z [31;1mException: [0mD:\a\_temp\f83e57fe-7495-446c-8668-1eb38cc97257.ps1:3[0m
+2026-10-29T19:41:55.7807987Z [31;1m[0m[36;1mLine |[0m
+2026-10-29T19:41:55.7809531Z [31;1m[0m[36;1m[36;1m   3 | [0m if ($LASTEXITCODE -ne 0) { [36;1mthrow 'Private CLI regressions failed'[0m }[0m
+2026-10-29T19:41:55.7810505Z [31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+2026-10-29T19:41:55.7811349Z [31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mPrivate CLI regressions failed[0m
+2026-10-29T19:41:55.8251550Z ##[error]Process completed with exit code 1.
+2026-10-29T19:41:55.8445403Z Post job cleanup.
+2026-10-29T19:41:55.9990796Z (node:7656) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-10-29T19:41:55.9992149Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-10-29T19:41:56.0277075Z Post job cleanup.
+2026-10-29T19:41:56.2389618Z [command]"C:\Program Files\Git\bin\git.exe" version
+2026-10-29T19:41:56.2662916Z git version 2.56.0.windows.3
+2026-10-29T19:41:56.2720504Z Temporarily overriding HOME='D:\a\_temp\03f91cee-4c92-4b42-a145-29da3811fd42' before making global git config changes
+2026-10-29T19:41:56.2721939Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-29T19:41:56.2733013Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory "D:\a\sistema-de-estudos-FISCALSTUDY\sistema-de-estudos-FISCALSTUDY\FiscalStudy ação"
+2026-10-29T19:41:56.3029166Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+2026-10-29T19:41:56.3319006Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+2026-10-29T19:41:56.8064759Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-29T19:41:56.8359888Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+2026-10-29T19:41:57.2837041Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-29T19:41:57.3121514Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+2026-10-29T19:41:57.7846135Z Cleaning up orphan processes
+2026-10-29T19:41:57.8002089Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@11d5960a326750d5838078e36cf38b85af677262, actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3, actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+

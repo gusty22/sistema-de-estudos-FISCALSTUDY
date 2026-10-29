@@ -11,7 +11,12 @@ REAL_RUN = subprocess.run
 
 def r_only(stub):
     def execute(argv, **kwargs):
-        return REAL_RUN(argv, **kwargs) if argv[0] == "powershell.exe" else stub(argv, **kwargs)
+        if argv[0] == "powershell.exe":
+            result = REAL_RUN(argv, **kwargs)
+            if result.returncode:
+                raise AssertionError("Synthetic Windows ACL diagnostic: " + result.stderr.decode("utf-8", errors="replace"))
+            return result
+        return stub(argv, **kwargs)
     return execute
 
 class PersonalPilotTests(unittest.TestCase):

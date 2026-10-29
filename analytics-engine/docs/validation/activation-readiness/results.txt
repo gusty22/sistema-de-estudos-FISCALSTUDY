@@ -64,3 +64,6 @@ e4873fae9cab75662d13c8889eec309b17e7d86672be8b2b7586c5e5935527a8  r-boundary-ini
 
 Native Windows initial checkout failed on unrelated Docling reference paths (Filename too long); next run uses sparse checkout backend/analytics-engine with Unicode path preserved. No Windows PASS claimed for that attempt.
 f8ffc79a441314f87ea2fb3460ac926b858f2f0258c0033cad1c4219994169c0  windows-checkout-initial.txt
+
+Native Windows Java14/PKCS8/Unicode passed, then NTFS boundary refused before input copy. Windows not homologated by that run; native stderr diagnosis required. Full logs: actions/runs/40941811339, job123687140335.
+9af9d482005ccdc097788948d4b0d533b7582cb7f23b86056bd37e8c65125440  windows-ntfs-initial.txt

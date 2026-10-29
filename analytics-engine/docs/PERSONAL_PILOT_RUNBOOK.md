@@ -5,6 +5,8 @@ No diagnostic reserve creation, intervention randomization, FSRS override or aut
 
 See [authenticated custody and activation gate](AUTHENTIC_PROSPECTIVE_EVIDENCE_V1.md). No personal session is authorized or started by this operation. Provision/check the external public key and installation identity only after explicit authorization.
 
+The [final activation gate](PILOT_ACTIVATION_GATE_V1.md) is controlling: whole-application coverage FAIL, actual personal installation NOT_VERIFIED, pilot NOT_STARTED. Only a later explicit authorization scoped to QuestionViewer can cover a first observation. ResolucaoQuestaoModal and the legacy CSV PowerShell script are excluded.
+
 ## Before collecting
 - Use the personal local installation deliberately, bound to127.0.0.1. Current application.yml declares REAL_STUDY; confirm effective runtime configuration. Never relabel an isolated/test profile as personal evidence.
 - Keep a private directory outside the Git repository/cloud sharing. Set owner-only ACLs on Windows; chmod in the CLI is not a Windows ACL or encryption guarantee.
