@@ -1,5 +1,5 @@
 # Validação da operação
-Base main: 091ccb89a08e549af8ccf3424160345f6a1a1187. Execução Windows local; não houve acesso ao SQLite pessoal, FSRS ou provisão de chave.
+Base inicial: 091ccb89; rebase sem conflitos sobre main 6489a1f6455161aec4cb581aeae14b76e64c19a3 (PR #47). Execução Windows local; não houve acesso ao SQLite pessoal, FSRS ou provisão de chave.
 
 | Comando | Resultado observado |
 |---|---|
@@ -7,7 +7,7 @@ Base main: 091ccb89a08e549af8ccf3424160345f6a1a1187. Execução Windows local; n
 | python -m unittest discover -s scripts -p test_agent_protocol.py -v | 6 aprovados; arquivos/imports/fallback/IDs, sem inferência de modelo |
 | python -m unittest discover -s .github/scripts -p test_scan_secrets.py -v | 3 aprovados |
 | Maven 3.9.12/JDK17 offline test-compile | compilação efetiva dos testes durante gate Maven; classe ArchUnit gerada |
-| mvn -o -B -ntp -Dtest=DevelopmentArchitectureTest,DiagnosticQuarantineArchitectureTest,ProspectiveExportSecurityTest test | 9 aprovados, 0 falhas/erros/skips |
+| mvn -o -B -ntp -Dtest=DevelopmentArchitectureTest,DiagnosticQuarantineArchitectureTest,ProspectiveExportSecurityTest test | 9 aprovados na base inicial; após rebase, mais ProspectivePredictionIntegrationTest: 19 aprovados, 0 falhas/erros/skips |
 | Gitleaks 8.30.1 git --staged --redact=100 | 0 achados na rodada observada (119500 bytes); repetir no commit final |
 | context.py update seguido de update | 427 fontes; 7 mudanças na rodada registrada; segundo comando fresh, 0 alterados; nenhum processo Graphify no no-op |
 | context.py sync --vault docs/obsidian-sync --db graphify-out/repository-notes.db --exclude Estado-Atual.md | updated; corpus de notas versionadas, sem ler cofre pessoal |
@@ -27,3 +27,5 @@ Base main: 091ccb89a08e549af8ccf3424160345f6a1a1187. Execução Windows local; n
 - Graphify: consulta PT irrelevante e explain homônimo; IDs completos e fontes são necessários. Sem tree-sitter-language-pack, os 34 R não produziram nós. Dois TSX parcialmente extraídos. Sem instalação automática.
 - Os cinco casos de benchmark são recuperação determinística com oráculos fixos, não avaliação de modelos, uso real da API ou tarefa de implementação completa. Medidas de I/O interno podem superar a leitura do contexto antigo, pois frescor usa hashes de todos os fontes permitidos. Não há alegação de redução de processamento total.
 - Agentes externos não foram executados. Matriz distingue configuração de runtime. Linux/Windows em CI ainda precisam de evidência do run correspondente.
+
+Após rebase, o checkout esparso retirou .cursor da árvore local; git sparse-checkout add .cursor restaurou o arquivo já commitado e os seis testes de protocolo passaram. Não houve perda do adaptador.

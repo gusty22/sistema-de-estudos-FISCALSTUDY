@@ -1,5 +1,5 @@
 # Ambiente e recuperação seletiva
-Base: main 091ccb89a08e549af8ccf3424160345f6a1a1187 em 2026-10-29; PRs #41–#46 mescladas, verificadas via GitHub. Não partir do checkpoint de 2026-10-25 como estado atual.
+Base inicial: 091ccb89. Entrega reaplicada sem conflitos sobre main 6489a1f6455161aec4cb581aeae14b76e64c19a3, PRs #41–#47 mescladas e verificadas em 2026-10-29. Não partir do checkpoint de 2026-10-25 como estado atual.
 
 ## Inventário recuperado
 | Ferramenta | Estado observado |
@@ -20,7 +20,7 @@ Skills são metadados de descoberta quando o agente suporta o diretório; seus c
 
 ## Interface local — Python 3.10+ e Git
 Mesmos comandos no PowerShell e Linux (substituir python por python3 conforme instalação):
-- `python scripts/context.py doctor`: disponibilidade compacta, sem mostrar caminho do vault nem credenciais.
+- `python scripts/context.py doctor`: disponibilidade no PATH, sem mostrar caminho do vault nem credenciais. O Gitleaks descartável é executado por caminho explícito, sem instalação no PATH.
 - `python scripts/context.py locate ProspectivePredictionService --module backend`: índice atualizado ou busca em fontes versionados.
 - `python scripts/context.py locate ID_COMPLETO --relations`: subgrafo Graphify limitado; IDs aparecem na primeira localização.
 - `python scripts/context.py docs NOT_ESTABLISHED --path analytics-engine/docs/SCIENTIFIC_DECISION_EVALUATION_V1.md`: trecho rastreável.

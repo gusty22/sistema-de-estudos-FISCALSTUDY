@@ -9,21 +9,21 @@
       "baseline": {
         "procedure": "main rules + main context + complete oracle file (declared baseline)",
         "context_files": 3,
-        "returned_bytes": 52051,
+        "returned_bytes": 52627,
         "retrieval_queries": 1,
         "api_tokens": null,
-        "estimate_utf8_bytes_div4": 13013
+        "estimate_utf8_bytes_div4": 13157
       },
       "selective": {
         "context_files": 3,
-        "returned_bytes": 6701,
+        "returned_bytes": 6777,
         "retrieval_queries": 1,
         "repeated_queries": 0,
         "subprocesses": 1,
-        "internal_unique_files": 429,
-        "internal_bytes_read": 13026319,
+        "internal_unique_files": 430,
+        "internal_bytes_read": 13056376,
         "api_tokens": null,
-        "estimate_utf8_bytes_div4": 1675
+        "estimate_utf8_bytes_div4": 1694
       },
       "path_correct": true,
       "required_evidence_in_excerpt": true,
@@ -36,21 +36,21 @@
       "baseline": {
         "procedure": "main rules + main context + complete oracle file (declared baseline)",
         "context_files": 3,
-        "returned_bytes": 93823,
+        "returned_bytes": 93430,
         "retrieval_queries": 1,
         "api_tokens": null,
-        "estimate_utf8_bytes_div4": 23456
+        "estimate_utf8_bytes_div4": 23358
       },
       "selective": {
         "context_files": 3,
-        "returned_bytes": 6797,
+        "returned_bytes": 6873,
         "retrieval_queries": 1,
         "repeated_queries": 0,
-        "subprocesses": 2,
+        "subprocesses": 1,
         "internal_unique_files": 1,
-        "internal_bytes_read": 107116,
+        "internal_bytes_read": 53558,
         "api_tokens": null,
-        "estimate_utf8_bytes_div4": 1699
+        "estimate_utf8_bytes_div4": 1718
       },
       "path_correct": true,
       "required_evidence_in_excerpt": true,
@@ -63,21 +63,21 @@
       "baseline": {
         "procedure": "main rules + main context + complete oracle file (declared baseline)",
         "context_files": 3,
-        "returned_bytes": 57435,
+        "returned_bytes": 57322,
         "retrieval_queries": 1,
         "api_tokens": null,
-        "estimate_utf8_bytes_div4": 14359
+        "estimate_utf8_bytes_div4": 14330
       },
       "selective": {
         "context_files": 3,
-        "returned_bytes": 6787,
+        "returned_bytes": 6863,
         "retrieval_queries": 1,
         "repeated_queries": 0,
-        "subprocesses": 2,
+        "subprocesses": 1,
         "internal_unique_files": 1,
-        "internal_bytes_read": 34900,
+        "internal_bytes_read": 17450,
         "api_tokens": null,
-        "estimate_utf8_bytes_div4": 1697
+        "estimate_utf8_bytes_div4": 1716
       },
       "path_correct": true,
       "required_evidence_in_excerpt": true,
@@ -90,21 +90,21 @@
       "baseline": {
         "procedure": "main rules + main context + complete oracle file (declared baseline)",
         "context_files": 3,
-        "returned_bytes": 45740,
+        "returned_bytes": 45634,
         "retrieval_queries": 1,
         "api_tokens": null,
-        "estimate_utf8_bytes_div4": 11435
+        "estimate_utf8_bytes_div4": 11408
       },
       "selective": {
         "context_files": 3,
-        "returned_bytes": 6646,
+        "returned_bytes": 6722,
         "retrieval_queries": 1,
         "repeated_queries": 0,
         "subprocesses": 1,
-        "internal_unique_files": 429,
-        "internal_bytes_read": 13020077,
+        "internal_unique_files": 430,
+        "internal_bytes_read": 13049383,
         "api_tokens": null,
-        "estimate_utf8_bytes_div4": 1662
+        "estimate_utf8_bytes_div4": 1680
       },
       "path_correct": true,
       "required_evidence_in_excerpt": true,
@@ -113,25 +113,25 @@
     {
       "task": "security-tests",
       "oracle": "backend/src/test/java/com/fiscalstudy/backend/infrastructure/in/web/ProspectiveExportSecurityTest.java",
-      "backend": "tracked-path",
+      "backend": "graphify-index",
       "baseline": {
         "procedure": "main rules + main context + complete oracle file (declared baseline)",
         "context_files": 3,
-        "returned_bytes": 42514,
+        "returned_bytes": 42477,
         "retrieval_queries": 1,
         "api_tokens": null,
-        "estimate_utf8_bytes_div4": 10628
+        "estimate_utf8_bytes_div4": 10619
       },
       "selective": {
         "context_files": 3,
-        "returned_bytes": 6723,
+        "returned_bytes": 6933,
         "retrieval_queries": 1,
         "repeated_queries": 0,
         "subprocesses": 1,
-        "internal_unique_files": 428,
-        "internal_bytes_read": 4862190,
+        "internal_unique_files": 430,
+        "internal_bytes_read": 13046226,
         "api_tokens": null,
-        "estimate_utf8_bytes_div4": 1681
+        "estimate_utf8_bytes_div4": 1733
       },
       "path_correct": true,
       "required_evidence_in_excerpt": true,

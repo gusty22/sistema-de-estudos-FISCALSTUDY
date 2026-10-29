@@ -1,5 +1,5 @@
 # FiscalStudy — protocolo compartilhado
-Leia este arquivo uma vez por tarefa. Agentes sem execução usam os arquivos acessíveis e declaram a limitação.
+Leia este arquivo uma vez por tarefa. Execute os comandos a partir da raiz do repositório. Agentes sem execução usam os arquivos acessíveis e declaram a limitação.
 
 ## Início e recuperação
 1. Confira repositório, `git status --short`, HEAD, main remota e PRs pertinentes; preserve trabalho local. Use branch própria baseada na referência verificada. Nunca push direto para main, merge ou automerge.

@@ -1,10 +1,10 @@
 # Checkpoint — contexto e ambiente
-Origem verificada: main 091ccb89a08e549af8ccf3424160345f6a1a1187 (PR #46); main remota confirmada na retomada.
-Branch: chore/development-context-security. Checkpoint exclusivo desta operação.
-Objetivo: protocolo universal, recuperação seletiva e testes, sem comportamento operacional/científico alterado.
+Base inicial: main 091ccb89 (PR #46). Base final verificada: main 6489a1f6455161aec4cb581aeae14b76e64c19a3 (PR #47).
+Branch exclusiva: chore/development-context-security. Snapshot preservado/reaplicado em 9b8c134.
+Objetivo: protocolo universal, recuperação seletiva e evidências sem alteração operacional/científica.
 
-Recuperado localmente: contexto compacto + histórico; Graphify com espelho restrito; FTS5 com sync explícito; skills de coordenação e domain-modeling; CI de segurança e ArchUnit.
-Ainda não commitado/publicado na retomada. O checkout original no OneDrive não foi editado.
-Testes prévios: 8 testes Python aprovados; Graphify update gerou 5190 nós/13524 relações. Consulta PT falhou em relevância; explain homônimo exige ID.
-Limitações: execuções Maven/scan da rodada anterior interrompidas; não presumir resultados. Vault pessoal apenas detectado, não lido/indexado.
-Próxima ação: finalizar CLI universal, testes/adaptadores e benchmark; executar validações, revisar diff, commit e PR sem merge.
+Concluído: AGENTS central; imports Claude/Gemini; ponteiros Copilot/Cursor; CLI context.py; FTS5 somente leitura/sync explícito; grafo restrito incremental; 2 skills; segurança CI; ArchUnit; benchmark e matriz de compatibilidade.
+Verificado: Python 10+6+3 testes; Java 19 após rebase; flags R falsas; Gitleaks sem achados no diff verificado; cinco recuperações corretas. Graphify sem mudança retorna fresh.
+Estado Git: implementação preservada em commit; atualização final de referência/validação acompanha este checkpoint. Nenhum merge/automerge. Publicação deve ser confirmada pela PR associada à branch, não presumida pela documentação.
+Limites: outros agentes CONFIGURED_NOT_TESTED; R sem parser opcional, dois TSX parciais; vault pessoal não lido/sincronizado; quick_validate requer PyYAML ausente. Relatórios em VALIDATION.md e AGENT_COMPATIBILITY.md.
+Próxima ação objetiva: conferir CI da PR e revisão humana; validar descoberta em instalações reais dos demais agentes antes de marcar VERIFIED.

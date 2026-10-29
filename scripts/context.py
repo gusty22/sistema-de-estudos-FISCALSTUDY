@@ -23,11 +23,11 @@ def tracked(root=ROOT):
     return subprocess.run(["git", "ls-files", "-z"], cwd=root, check=True,
                           capture_output=True).stdout.decode("utf-8").split("\0")
 
-def snippet(file, line, max_chars=600, root=ROOT):
+def snippet(file, line, max_chars=600, root=ROOT, lines=None):
     full = (root / file).resolve()
     if not full.is_relative_to(root.resolve()) or full.is_symlink():
         raise ValueError("Path outside repository")
-    lines = full.read_text(encoding="utf-8").splitlines()
+    lines = full.read_text(encoding="utf-8").splitlines() if lines is None else lines
     start = max(0, line - 3)
     text = "\n".join(f"{n+1}: {lines[n]}" for n in range(start, min(len(lines), line + 4)))
     return {"path": file, "line": line, "excerpt": text[:max_chars]}
@@ -80,7 +80,7 @@ def locate(symbol, module=None, root=ROOT, relations=False):
         for p in paths[:3]:
             lines = (root / p).read_text(encoding="utf-8").splitlines()
             anchor = next((n for n, line in enumerate(lines, 1) if symbol.casefold() in line.casefold()), 1)
-            matches.append(snippet(p, anchor, root=root))
+            matches.append(snippet(p, anchor, root=root, lines=lines))
         return {"backend": "tracked-path", "index_status": state["status"], "matches": matches}
     results = []
     for file in sorted(files):
@@ -94,12 +94,13 @@ def locate(symbol, module=None, root=ROOT, relations=False):
 
 def docs(query, file=None, root=ROOT):
     # Only versioned technical docs; historical logs and personal corpora are not searched.
-    paths = [p for p in tracked(root) if p.endswith(".md") and
+    names = tracked(root)
+    paths = [p for p in names if p.endswith(".md") and
              (p.startswith("docs/architecture/") or p.startswith("docs/obsidian-sync/") or
               p.startswith("analytics-engine/docs/") or p.startswith("docs/engineering/")) and
              "/validation/" not in p and "/checkpoints/" not in p]
     if file:
-        if file not in tracked(root) or not file.endswith(".md"):
+        if file not in names or not file.endswith(".md"):
             raise ValueError("Use a tracked Markdown file")
         paths = [file]
     terms = [t.casefold() for t in query.split() if len(t) >= 3]
@@ -109,9 +110,10 @@ def docs(query, file=None, root=ROOT):
         full = root / p
         if not full.is_file() or full.is_symlink():
             continue
-        for n, line in enumerate(full.read_text(encoding="utf-8").splitlines(), 1):
+        lines = full.read_text(encoding="utf-8").splitlines()
+        for n, line in enumerate(lines, 1):
             if terms and any(t in line.casefold() for t in terms):
-                results.append(snippet(p, n, root=root))
+                results.append(snippet(p, n, root=root, lines=lines))
                 break
         if len(results) == 2:
             break

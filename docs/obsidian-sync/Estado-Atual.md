@@ -6,7 +6,7 @@ status: historico-superado
 
 # Estado Atual — FiscalStudy (checkpoint histórico)
 
-> Superado pelo índice .agents/memory/CONTEXT.md, referência main 091ccb89 (2026-10-29, PRs #41–#46). Este conteúdo foi preservado como histórico; não comprova estado atual. Vault pessoal não sincronizado nesta operação.
+> Superado pelo índice .agents/memory/CONTEXT.md, referência main 6489a1f (2026-10-29, PRs #41–#47). Este conteúdo foi preservado como histórico; não comprova estado atual. Vault pessoal não sincronizado nesta operação.
 
 Nota preparada no repositório para importação manual. O vault original não foi sincronizado nem modificado. Após importar, adicionar no Dashboard um link para esta nota; preservar o roadmap antigo como histórico.
 

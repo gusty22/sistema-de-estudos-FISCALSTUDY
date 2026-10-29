@@ -1,8 +1,8 @@
 # FiscalStudy — índice executivo
 Objetivo: estudo local com evidências rastreáveis, sem confundir acerto, retenção, domínio e transferência.
 
-Referência verificada em 2026-10-29: main `091ccb89a08e549af8ccf3424160345f6a1a1187`.
-PRs #41–#46 mescladas: orquestração, avaliação prospectiva, autenticação e prontidão.
+Referência verificada em 2026-10-29: main `6489a1f6455161aec4cb581aeae14b76e64c19a3`.
+PRs #41–#47 mescladas: orquestração, avaliação prospectiva, autenticação, prontidão e cobertura de captura.
 Confirme `git status --short`, `git log -3 --oneline` e referência remota antes de trabalhar.
 A existência dos contratos não demonstra benefício pedagógico. Piloto pessoal não iniciado.
 
