@@ -36,8 +36,9 @@ assert_true(inherits(try(validate_concept_relations(pd_overlap, "2026-10-28T12:0
 pd_contextual <- data.frame(candidate_id = c("review", "diagnose", "transfer", "new"),
   activity_type = c("REVIEW_ITEM", "DIAGNOSE_CONCEPT", "DEEPEN_APPLICATION", "LEARN_NEW"), scope_id = c("item", "concept", "concept", "new-topic"),
   contest_id = "fiscal", estimated_minutes = c(10, 8, 12, 15), material_available = TRUE, in_syllabus = TRUE,
-  prerequisites_status = "SATISFIED", risk = "LOW_REVERSIBLE", evidence_need_type = "UNKNOWN", stringsAsFactors = FALSE)
-pd_pick <- function(need, minutes = 30, reviews = FALSE) { x <- pd_contextual; x$evidence_need_type[match(need, x$candidate_id)] <- switch(need, review="MEMORY_MAINTENANCE", diagnose="OBSERVED_CONCEPTUAL_GAP", transfer="TRANSFER_ASSESSMENT", new="INITIAL_LEARNING"); choose_contextual_policy(x, list(contest_id="fiscal", available_minutes=minutes, review_capacity_exceeded=reviews)) }
+  prerequisites_status = "SATISFIED", risk = "LOW_REVERSIBLE", evidence_need_type = "UNKNOWN", evidence_verified = TRUE,
+  fsrs_due_verified = c(TRUE, FALSE, FALSE, FALSE), memory_risk_verified = c(TRUE, FALSE, FALSE, FALSE), stringsAsFactors = FALSE)
+pd_pick <- function(need, minutes = 30, reviews = FALSE) { x <- pd_contextual; x$evidence_need_type[match(need, x$candidate_id)] <- switch(need, review="MEMORY_MAINTENANCE", diagnose="OBSERVED_CONCEPTUAL_GAP", transfer="TRANSFER_ASSESSMENT", new="INITIAL_LEARNING"); choose_contextual_policy(x, list(contest_id="fiscal", available_minutes=minutes, review_capacity_exceeded=reviews, review_capacity_verified=reviews)) }
 assert_equal(pd_pick("new")$candidate_id, "new", "No-history curricular opportunity can advance only verified new content")
 assert_equal(pd_pick("review")$candidate_id, "review", "Recorded due-memory need selects protected review")
 assert_equal(pd_pick("diagnose")$candidate_id, "diagnose", "Observed conceptual evidence selects diagnostic alternative")
@@ -46,6 +47,11 @@ pd_execution <- pd_contextual; pd_execution$evidence_need_type[2] <- "EXAM_EXECU
 assert_equal(choose_contextual_policy(pd_execution, list(contest_id="fiscal", available_minutes=30))$candidate_id, "diagnose", "Recorded execution error is investigated without claiming cause")
 assert_equal(pd_pick("review", minutes=9)$candidate_id, "diagnose", "Time limit removes unaffordable review and retains admissible conservative alternative")
 pd_volume <- pd_contextual; pd_volume$evidence_need_type[1] <- "MEMORY_MAINTENANCE"; pd_volume$evidence_need_type[4] <- "INITIAL_LEARNING"
-pd_compare <- compare_contextual_policies(pd_volume, list(contest_id="fiscal", available_minutes=30, review_capacity_exceeded=TRUE))
+pd_compare <- compare_contextual_policies(pd_volume, list(contest_id="fiscal", available_minutes=30, review_capacity_exceeded=TRUE, review_capacity_verified=TRUE))
 assert_true(pd_compare$divergence, "Policy comparison records divergence under excessive review volume")
 assert_equal(pd_compare$inference, "CONFIGURED_POLICY_COMPARISON_NOT_PEDAGOGICAL_SUPERIORITY", "Synthetic comparison claims no superiority")
+pd_unverified <- pd_contextual; pd_unverified$evidence_need_type[2] <- "OBSERVED_CONCEPTUAL_GAP"; pd_unverified$evidence_verified[2] <- FALSE
+assert_equal(choose_contextual_policy(pd_unverified, list(contest_id="fiscal", available_minutes=30))$candidate_id, "new", "Unverified gap cannot justify diagnostic priority")
+pd_trace <- decision_trace(list(run_id="trace-run", cutoff="2026-10-28T12:00:00Z", student_id="fixture"), pd_contextual, list(contest_id="fiscal", available_minutes=30), pd_compare)
+assert_equal(pd_trace$trace_type, "PEDAGOGICAL_DECISION_TRACE_V1", "Decision trace is versioned")
+assert_true(identical(pd_trace, decision_trace(list(run_id="trace-run", cutoff="2026-10-28T12:00:00Z", student_id="fixture"), pd_contextual, list(contest_id="fiscal", available_minutes=30), pd_compare)), "Decision trace is deterministic")

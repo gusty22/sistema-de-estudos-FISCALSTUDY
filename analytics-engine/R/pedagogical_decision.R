@@ -50,11 +50,23 @@ conservative_decision_policy <- function() list(version = "conservative-decision
 # of learning benefit. Candidate evidence_need_type must be recorded evidence or
 # the literal UNKNOWN; it is never inferred from accuracy alone.
 admissible_contextual_candidates <- function(candidates, context) {
-  req <- c("candidate_id", "activity_type", "scope_id", "contest_id", "estimated_minutes", "material_available", "in_syllabus", "prerequisites_status", "risk", "evidence_need_type")
+  req <- c("candidate_id", "activity_type", "scope_id", "contest_id", "estimated_minutes", "material_available", "in_syllabus", "prerequisites_status", "risk", "evidence_need_type", "evidence_verified")
   if (!is.data.frame(candidates) || !all(req %in% names(candidates))) return(candidates[FALSE, , drop = FALSE])
   candidates[candidates$contest_id == context$contest_id & candidates$material_available %in% TRUE & candidates$in_syllabus %in% TRUE &
     candidates$prerequisites_status %in% c("SATISFIED", "NOT_APPLICABLE") & candidates$risk == "LOW_REVERSIBLE" &
     is.finite(candidates$estimated_minutes) & candidates$estimated_minutes > 0 & candidates$estimated_minutes <= context$available_minutes, , drop = FALSE]
+}
+
+decision_trace <- function(snapshot, candidates, context, policy_comparison) {
+  eligible <- admissible_contextual_candidates(candidates, context)
+  rejected <- if (is.data.frame(candidates)) setdiff(as.character(candidates$candidate_id), as.character(eligible$candidate_id)) else character()
+  list(schema_version = "1.0.0", trace_type = "PEDAGOGICAL_DECISION_TRACE_V1",
+    snapshot = list(run_id = snapshot$run_id, cutoff = snapshot$cutoff, student_id = snapshot$student_id),
+    policy_versions = names(policy_comparison$choices), eligible_evidence = as.character(eligible$candidate_id[eligible$evidence_verified %in% TRUE]),
+    insufficient_evidence = as.character(eligible$candidate_id[eligible$evidence_verified %in% TRUE == FALSE]),
+    candidates = as.character(candidates$candidate_id), rejected_candidates = rejected,
+    verified_constraints = list(time_minutes = context$available_minutes, contest_id = context$contest_id),
+    comparison = policy_comparison, limitations = c("Trace records executed rules, not post-hoc reasons.", "No policy efficacy or causal claim."))
 }
 
 choose_contextual_policy <- function(candidates, context, policy = c("EVIDENCE_CONTEXTUAL_V1", "SHORTEST_ADMISSIBLE_V1", "CURRICULAR_CONSERVATIVE_V1")) {
@@ -66,11 +78,11 @@ choose_contextual_policy <- function(candidates, context, policy = c("EVIDENCE_C
   rank <- switch(policy,
     SHORTEST_ADMISSIBLE_V1 = rep(1L, nrow(admitted)),
     CURRICULAR_CONSERVATIVE_V1 = ifelse(admitted$activity_type == "LEARN_NEW", 1L, 2L),
-    EVIDENCE_CONTEXTUAL_V1 = ifelse(admitted$evidence_need_type == "MEMORY_MAINTENANCE" & admitted$activity_type == "REVIEW_ITEM", 1L,
-      ifelse(admitted$evidence_need_type %in% c("OBSERVED_CONCEPTUAL_GAP", "EXAM_EXECUTION_ERROR") & admitted$activity_type == "DIAGNOSE_CONCEPT", 2L,
-      ifelse(admitted$evidence_need_type == "TRANSFER_ASSESSMENT" & admitted$activity_type == "DEEPEN_APPLICATION", 3L,
+    EVIDENCE_CONTEXTUAL_V1 = ifelse(admitted$evidence_verified %in% TRUE & admitted$evidence_need_type == "MEMORY_MAINTENANCE" & admitted$activity_type == "REVIEW_ITEM" & admitted$fsrs_due_verified %in% TRUE & admitted$memory_risk_verified %in% TRUE, 1L,
+      ifelse(admitted$evidence_verified %in% TRUE & admitted$evidence_need_type %in% c("OBSERVED_CONCEPTUAL_GAP", "EXAM_EXECUTION_ERROR") & admitted$activity_type == "DIAGNOSE_CONCEPT", 2L,
+      ifelse(admitted$evidence_verified %in% TRUE & admitted$evidence_need_type == "TRANSFER_ASSESSMENT" & admitted$activity_type == "DEEPEN_APPLICATION", 3L,
       ifelse(admitted$activity_type == "LEARN_NEW", 4L, 5L)))) )
-  if (policy == "EVIDENCE_CONTEXTUAL_V1" && isTRUE(context$review_capacity_exceeded) && any(admitted$activity_type == "LEARN_NEW"))
+  if (policy == "EVIDENCE_CONTEXTUAL_V1" && isTRUE(context$review_capacity_exceeded) && isTRUE(context$review_capacity_verified) && any(admitted$activity_type == "LEARN_NEW"))
     rank[admitted$activity_type == "LEARN_NEW"] <- pmin(rank[admitted$activity_type == "LEARN_NEW"], 2L)
   selected <- admitted[order(rank, admitted$estimated_minutes, admitted$candidate_id), , drop = FALSE][1L, ]
   list(candidate_id = selected$candidate_id, status = "PROPOSED_NOT_APPLIED", policy_version = policy,
