@@ -67,3 +67,7 @@ f8ffc79a441314f87ea2fb3460ac926b858f2f0258c0033cad1c4219994169c0  windows-checko
 
 Native Windows Java14/PKCS8/Unicode passed, then NTFS boundary refused before input copy. Windows not homologated by that run; native stderr diagnosis required. Full logs: actions/runs/40941811339, job123687140335.
 9af9d482005ccdc097788948d4b0d533b7582cb7f23b86056bd37e8c65125440  windows-ntfs-initial.txt
+
+Native diagnostic established Set-Acl could not autoload Microsoft.PowerShell.Security in Windows PowerShell invoked from the PS7 runner. Explicit system-module import added to guard and independent test audit; failures remained before copying input.
+505fd4c623e702cdd3406be6f32d72cb34e208664fdee9188fc77aaae6992772  windows-ntfs-diagnostic.txt
+e3b100e7729f332895dad5bfa22a18c9320c1faa6abfd478b3dc606d27d34548  python-module-import.txt

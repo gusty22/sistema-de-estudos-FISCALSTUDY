@@ -36,6 +36,9 @@ def make_private_directory(path):
     # chmod is not a Windows DACL. Restrict BEFORE copying any input, then audit.
     command = r"""
 $ErrorActionPreference='Stop'
+# Select the Windows PowerShell system module, not a PS7 module inherited via PSModulePath.
+$env:PSModulePath=$PSHOME+'/Modules'
+Import-Module Microsoft.PowerShell.Security -ErrorAction Stop
 $p=$env:FISCALSTUDY_PRIVATE_DIRECTORY
 if ([IO.DriveInfo]::new([IO.Path]::GetPathRoot($p)).DriveFormat -ne 'NTFS') { throw 'NTFS required' }
 $user=[Security.Principal.WindowsIdentity]::GetCurrent().User.Value

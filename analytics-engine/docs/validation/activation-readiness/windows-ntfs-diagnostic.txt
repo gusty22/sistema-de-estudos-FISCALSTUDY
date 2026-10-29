@@ -1,0 +1,47 @@
+Native Windows run40942796517 / job123690267791; full log in GitHub Actions.
+﻿2026-10-29T19:44:36.3192634Z Current runner version: '2.338.0'
+2026-10-29T19:44:36.3217258Z ##[group]Runner Image Provisioner
+2026-10-29T19:44:36.3218059Z Hosted Compute Agent
+2026-10-29T19:44:36.3218599Z Version: 20261021.618
+2026-10-29T19:44:36.3219186Z Commit: 21505ad2541d5be6135ed84fc33697146cf75b8e
+2026-10-29T19:44:36.3219839Z Build Date: 2026-10-21T00:45:21Z
+2026-10-29T19:44:36.3220444Z Worker ID: {602d50ba-6499-48b6-ba46-5e44a668d15b}
+2026-10-29T19:44:36.3221104Z Region: westus
+2026-10-29T19:44:36.3221589Z Cloud: Azure
+2026-10-29T19:44:36.3222074Z ##[endgroup]
+2026-10-29T19:44:36.3223425Z ##[group]Operating System
+2026-10-29T19:44:36.3224065Z Microsoft Windows Server 2022
+2026-10-29T19:44:36.3224626Z 10.0.20348
+2026-10-29T19:44:36.3225075Z Datacenter
+2026-10-29T19:44:36.3225541Z ##[endgroup]
+2026-10-29T19:44:36.3226010Z ##[group]Runner Image
+2026-10-29T19:44:36.3226505Z Image: windows-2022
+2026-10-29T19:44:36.3227006Z Version: 20261025.346.1
+2026-10-29T19:44:36.3228339Z Included Software: https://github.com/actions/runner-images/blob/win22/20261025.346/images/windows/Windows2022-Readme.md
+2026-10-29T19:44:36.3229903Z Image Release: https://github.com/actions/runner-images/releases/tag/win22%2F20261025.346
+2026-10-29T19:44:36.3230786Z ##[endgroup]
+2026-10-29T19:44:36.3231823Z ##[group]GITHUB_TOKEN Permissions
+2026-10-29T19:44:36.3233570Z Contents: read
+2026-10-29T19:44:36.3234178Z Metadata: read
+2026-10-29T19:44:36.3234662Z ##[endgroup]
+2026-10-29T19:44:36.3236696Z Secret source: Actions
+2026-10-29T19:44:36.3237530Z Cache mode: write
+2026-10-29T19:44:36.3238175Z Prepare workflow directory
+2026-10-29T19:46:11.3415325Z     raise AssertionError("Synthetic Windows ACL diagnostic: " + result.stderr.decode("utf-8", errors="replace"))
+2026-10-29T19:46:11.3417023Z AssertionError: Synthetic Windows ACL diagnostic: Set-Acl : The 'Set-Acl' command was found in the module 'Microsoft.PowerShell.Security', but the module could not be 
+2026-10-29T19:46:11.3418477Z loaded. For more information, run 'Import-Module Microsoft.PowerShell.Security'.
+2026-10-29T19:46:11.3421598Z     + FullyQualifiedErrorId : CouldNotAutoloadMatchingModule
+2026-10-29T19:46:11.3449506Z     raise AssertionError("Synthetic Windows ACL diagnostic: " + result.stderr.decode("utf-8", errors="replace"))
+2026-10-29T19:46:11.3451321Z AssertionError: Synthetic Windows ACL diagnostic: Set-Acl : The 'Set-Acl' command was found in the module 'Microsoft.PowerShell.Security', but the module could not be 
+2026-10-29T19:46:11.3452925Z loaded. For more information, run 'Import-Module Microsoft.PowerShell.Security'.
+2026-10-29T19:46:11.3456396Z     + FullyQualifiedErrorId : CouldNotAutoloadMatchingModule
+2026-10-29T19:46:11.3482513Z     raise AssertionError("Synthetic Windows ACL diagnostic: " + result.stderr.decode("utf-8", errors="replace"))
+2026-10-29T19:46:11.3484286Z AssertionError: Synthetic Windows ACL diagnostic: Set-Acl : The 'Set-Acl' command was found in the module 'Microsoft.PowerShell.Security', but the module could not be 
+2026-10-29T19:46:11.3485904Z loaded. For more information, run 'Import-Module Microsoft.PowerShell.Security'.
+2026-10-29T19:46:11.3489262Z     + FullyQualifiedErrorId : CouldNotAutoloadMatchingModule
+2026-10-29T19:46:11.3515410Z     raise AssertionError("Synthetic Windows ACL diagnostic: " + result.stderr.decode("utf-8", errors="replace"))
+2026-10-29T19:46:11.3517285Z AssertionError: Synthetic Windows ACL diagnostic: Set-Acl : The 'Set-Acl' command was found in the module 'Microsoft.PowerShell.Security', but the module could not be 
+2026-10-29T19:46:11.3518905Z loaded. For more information, run 'Import-Module Microsoft.PowerShell.Security'.
+2026-10-29T19:46:11.3522318Z     + FullyQualifiedErrorId : CouldNotAutoloadMatchingModule
+2026-10-29T19:46:11.3523944Z Ran 9 tests in 1.429s
+2026-10-29T19:46:11.3524339Z FAILED (failures=4)

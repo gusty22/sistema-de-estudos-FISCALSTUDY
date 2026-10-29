@@ -52,6 +52,9 @@ def main():
             audit_env["FISCALSTUDY_AUDIT_DIRECTORY"] = str(root / "private run")
             audit = r"""
 $ErrorActionPreference='Stop'
+# Select the Windows PowerShell system module, not a PS7 module inherited via PSModulePath.
+$env:PSModulePath=$PSHOME+'/Modules'
+Import-Module Microsoft.PowerShell.Security -ErrorAction Stop
 $p=$env:FISCALSTUDY_AUDIT_DIRECTORY
 $allowed=@([Security.Principal.WindowsIdentity]::GetCurrent().User.Value,'S-1-5-18','S-1-5-32-544')
 if (!(Get-Acl -LiteralPath $p).AreAccessRulesProtected) { throw 'Unprotected output' }
