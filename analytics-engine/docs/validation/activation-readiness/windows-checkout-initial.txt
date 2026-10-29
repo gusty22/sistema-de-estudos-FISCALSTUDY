@@ -1,0 +1,171 @@
+﻿2026-10-29T19:35:38.3202974Z Current runner version: '2.338.0'
+2026-10-29T19:35:38.3335962Z ##[group]Runner Image Provisioner
+2026-10-29T19:35:38.3337086Z Hosted Compute Agent
+2026-10-29T19:35:38.3337799Z Version: 20261021.618
+2026-10-29T19:35:38.3338603Z Commit: 21505ad2541d5be6135ed84fc33697146cf75b8e
+2026-10-29T19:35:38.3339524Z Build Date: 2026-10-21T00:45:21Z
+2026-10-29T19:35:38.3340389Z Worker ID: {bf7c5f87-3afd-4eef-987b-93567f8bcf24}
+2026-10-29T19:35:38.3341293Z Region: westcentralus
+2026-10-29T19:35:38.3341972Z Cloud: Azure
+2026-10-29T19:35:38.3342653Z ##[endgroup]
+2026-10-29T19:35:38.3344494Z ##[group]Operating System
+2026-10-29T19:35:38.3345263Z Microsoft Windows Server 2022
+2026-10-29T19:35:38.3345993Z 10.0.20348
+2026-10-29T19:35:38.3346600Z Datacenter
+2026-10-29T19:35:38.3347228Z ##[endgroup]
+2026-10-29T19:35:38.3347863Z ##[group]Runner Image
+2026-10-29T19:35:38.3348543Z Image: windows-2022
+2026-10-29T19:35:38.3349233Z Version: 20261025.346.1
+2026-10-29T19:35:38.3351233Z Included Software: https://github.com/actions/runner-images/blob/win22/20261025.346/images/windows/Windows2022-Readme.md
+2026-10-29T19:35:38.3353314Z Image Release: https://github.com/actions/runner-images/releases/tag/win22%2F20261025.346
+2026-10-29T19:35:38.3354515Z ##[endgroup]
+2026-10-29T19:35:38.3356060Z ##[group]GITHUB_TOKEN Permissions
+2026-10-29T19:35:38.3358550Z Contents: read
+2026-10-29T19:35:38.3359295Z Metadata: read
+2026-10-29T19:35:38.3359933Z ##[endgroup]
+2026-10-29T19:35:38.3362990Z Secret source: Actions
+2026-10-29T19:35:38.3364083Z Cache mode: write
+2026-10-29T19:35:38.3364986Z Prepare workflow directory
+2026-10-29T19:35:38.3810782Z Prepare all required actions
+2026-10-29T19:35:38.3859408Z Getting action download info
+2026-10-29T19:35:38.7282224Z Download action repository 'actions/checkout@11d5960a326750d5838078e36cf38b85af677262' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+2026-10-29T19:35:38.8462306Z Download action repository 'actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3' (SHA:cf277c60eb25467037889841efdb72551f06f6c3)
+2026-10-29T19:35:39.4965203Z Download action repository 'actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065' (SHA:a26af69be951a213d495a4c3e4e4022e16d87065)
+2026-10-29T19:35:39.6241015Z Download action repository 'r-lib/actions@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05' (SHA:f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05)
+2026-10-29T19:35:40.3670743Z Complete job name: windows-synthetic-custody
+2026-10-29T19:35:40.5459586Z ##[group]Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+2026-10-29T19:35:40.5461180Z with:
+2026-10-29T19:35:40.5461576Z   persist-credentials: false
+2026-10-29T19:35:40.5462114Z   path: FiscalStudy ação
+2026-10-29T19:35:40.5462569Z   repository: gusty22/sistema-de-estudos-FISCALSTUDY
+2026-10-29T19:35:40.5465240Z   token: ***
+2026-10-29T19:35:40.5465614Z   ssh-strict: true
+2026-10-29T19:35:40.5466003Z   ssh-user: git
+2026-10-29T19:35:40.5466372Z   clean: true
+2026-10-29T19:35:40.5466771Z   sparse-checkout-cone-mode: true
+2026-10-29T19:35:40.5467275Z   fetch-depth: 1
+2026-10-29T19:35:40.5467700Z   fetch-tags: false
+2026-10-29T19:35:40.5468074Z   show-progress: true
+2026-10-29T19:35:40.5468460Z   lfs: false
+2026-10-29T19:35:40.5468850Z   submodules: false
+2026-10-29T19:35:40.5469234Z   set-safe-directory: true
+2026-10-29T19:35:40.5469746Z   allow-unsafe-pr-checkout: false
+2026-10-29T19:35:40.5470447Z env:
+2026-10-29T19:35:40.5470831Z   PYTHONUTF8: 1
+2026-10-29T19:35:40.5471380Z ##[endgroup]
+2026-10-29T19:35:40.6914541Z Syncing repository: gusty22/sistema-de-estudos-FISCALSTUDY
+2026-10-29T19:35:40.6916203Z ##[group]Getting Git version info
+2026-10-29T19:35:40.6917207Z Working directory is 'D:\a\sistema-de-estudos-FISCALSTUDY\sistema-de-estudos-FISCALSTUDY\FiscalStudy ação'
+2026-10-29T19:35:40.7881367Z [command]"C:\Program Files\Git\bin\git.exe" version
+2026-10-29T19:35:41.2258093Z git version 2.56.0.windows.3
+2026-10-29T19:35:41.2300670Z ##[endgroup]
+2026-10-29T19:35:41.2320785Z Temporarily overriding HOME='D:\a\_temp\35d4a2c0-0034-4123-b73a-5adf71bd5f4f' before making global git config changes
+2026-10-29T19:35:41.2324054Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-29T19:35:41.2332390Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory "D:\a\sistema-de-estudos-FISCALSTUDY\sistema-de-estudos-FISCALSTUDY\FiscalStudy ação"
+2026-10-29T19:35:41.3032282Z ##[group]Initializing the repository
+2026-10-29T19:35:41.3042901Z [command]"C:\Program Files\Git\bin\git.exe" init "D:\a\sistema-de-estudos-FISCALSTUDY\sistema-de-estudos-FISCALSTUDY\FiscalStudy ação"
+2026-10-29T19:35:41.3946604Z Initialized empty Git repository in D:/a/sistema-de-estudos-FISCALSTUDY/sistema-de-estudos-FISCALSTUDY/FiscalStudy ação/.git/
+2026-10-29T19:35:41.3993824Z [command]"C:\Program Files\Git\bin\git.exe" remote add origin https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY
+2026-10-29T19:35:41.4701171Z ##[endgroup]
+2026-10-29T19:35:41.4701833Z ##[group]Disabling automatic garbage collection
+2026-10-29T19:35:41.4712851Z [command]"C:\Program Files\Git\bin\git.exe" config --local gc.auto 0
+2026-10-29T19:35:41.5023344Z ##[endgroup]
+2026-10-29T19:35:41.5023958Z ##[group]Setting up auth
+2026-10-29T19:35:41.5036438Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+2026-10-29T19:35:41.5360301Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+2026-10-29T19:35:43.1590472Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-29T19:35:43.1900146Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+2026-10-29T19:35:43.6547281Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-29T19:35:43.6859818Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+2026-10-29T19:35:44.1583780Z [command]"C:\Program Files\Git\bin\git.exe" config --local http.https://github.com/.extraheader "AUTHORIZATION: basic ***"
+2026-10-29T19:35:44.1890492Z ##[endgroup]
+2026-10-29T19:35:44.1891050Z ##[group]Fetching the repository
+2026-10-29T19:35:44.1904980Z [command]"C:\Program Files\Git\bin\git.exe" -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +0edb92ac4d5a6332cd562fd35efbcd1058424448:refs/remotes/pull/46/merge
+2026-10-29T19:35:49.2165950Z From https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY
+2026-10-29T19:35:49.2168242Z  * [new ref]         0edb92ac4d5a6332cd562fd35efbcd1058424448 -> pull/46/merge
+2026-10-29T19:35:49.2205168Z ##[endgroup]
+2026-10-29T19:35:49.2205825Z ##[group]Determining the checkout info
+2026-10-29T19:35:49.2208024Z ##[endgroup]
+2026-10-29T19:35:49.2222184Z [command]"C:\Program Files\Git\bin\git.exe" sparse-checkout disable
+2026-10-29T19:35:49.2686679Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all extensions.worktreeConfig
+2026-10-29T19:35:49.3026062Z ##[group]Checking out the ref
+2026-10-29T19:35:49.3036862Z [command]"C:\Program Files\Git\bin\git.exe" checkout --progress --force refs/remotes/pull/46/merge
+2026-10-29T19:35:50.2593268Z ##[error]error: unable to create file references/document-processing/docling/tests/data/ocr/groundtruth/nemotron_ocr/pdf_aware_layout_regions/nemotron_multipage.nemotron_ocr.pdf_aware_layout_regions.pages.meta.json: Filename too long
+2026-10-29T19:35:50.2602057Z ##[error]error: unable to create file references/document-processing/docling/tests/data/ocr/groundtruth/nemotron_ocr/pdf_aware_layout_regions/ocr_test_rotated_180.nemotron_ocr.pdf_aware_layout_regions.pages.meta.json: Filename too long
+2026-10-29T19:35:50.2606095Z ##[error]error: unable to create file references/document-processing/docling/tests/data/ocr/groundtruth/nemotron_ocr/pdf_aware_layout_regions/ocr_test_rotated_270.nemotron_ocr.pdf_aware_layout_regions.pages.meta.json: Filename too long
+2026-10-29T19:35:50.2608817Z ##[error]error: unable to create file references/document-processing/docling/tests/data/ocr/groundtruth/nemotron_ocr/pdf_aware_layout_regions/ocr_test_rotated_90.nemotron_ocr.pdf_aware_layout_regions.pages.meta.json: Filename too long
+2026-10-29T19:35:50.3965704Z Updating files:  71% (2211/3086)
+2026-10-29T19:35:50.4385379Z Updating files:  72% (2222/3086)
+2026-10-29T19:35:50.4485445Z Updating files:  73% (2253/3086)
+2026-10-29T19:35:50.5487582Z Updating files:  74% (2284/3086)
+2026-10-29T19:35:50.7963469Z Updating files:  75% (2315/3086)
+2026-10-29T19:35:50.8076428Z Updating files:  76% (2346/3086)
+2026-10-29T19:35:50.8149351Z Updating files:  77% (2377/3086)
+2026-10-29T19:35:50.8187208Z Updating files:  78% (2408/3086)
+2026-10-29T19:35:50.8264260Z Updating files:  79% (2438/3086)
+2026-10-29T19:35:50.8367613Z Updating files:  80% (2469/3086)
+2026-10-29T19:35:50.8425133Z Updating files:  81% (2500/3086)
+2026-10-29T19:35:50.8485421Z Updating files:  82% (2531/3086)
+2026-10-29T19:35:50.8530378Z Updating files:  83% (2562/3086)
+2026-10-29T19:35:50.8578149Z Updating files:  84% (2593/3086)
+2026-10-29T19:35:50.8625640Z Updating files:  85% (2624/3086)
+2026-10-29T19:35:50.8840335Z Updating files:  86% (2654/3086)
+2026-10-29T19:35:50.9117180Z Updating files:  87% (2685/3086)
+2026-10-29T19:35:50.9157516Z Updating files:  88% (2716/3086)
+2026-10-29T19:35:50.9195156Z Updating files:  89% (2747/3086)
+2026-10-29T19:35:50.9246560Z Updating files:  90% (2778/3086)
+2026-10-29T19:35:50.9317359Z Updating files:  91% (2809/3086)
+2026-10-29T19:35:50.9357145Z Updating files:  92% (2840/3086)
+2026-10-29T19:35:50.9412747Z Updating files:  93% (2870/3086)
+2026-10-29T19:35:50.9448780Z Updating files:  94% (2901/3086)
+2026-10-29T19:35:50.9486371Z Updating files:  95% (2932/3086)
+2026-10-29T19:35:50.9518790Z Updating files:  96% (2963/3086)
+2026-10-29T19:35:50.9566532Z Updating files:  97% (2994/3086)
+2026-10-29T19:35:50.9614730Z Updating files:  98% (3025/3086)
+2026-10-29T19:35:51.1407569Z Updating files:  99% (3056/3086)
+2026-10-29T19:35:51.1408033Z Updating files: 100% (3086/3086)
+2026-10-29T19:35:51.1409522Z Updating files: 100% (3086/3086), done.
+2026-10-29T19:35:51.1525216Z Note: switching to 'refs/remotes/pull/46/merge'.
+2026-10-29T19:35:51.1525700Z 
+2026-10-29T19:35:51.1525998Z You are in 'detached HEAD' state. You can look around, make experimental
+2026-10-29T19:35:51.1527350Z changes and commit them, and you can discard any commits you make in this
+2026-10-29T19:35:51.1527902Z state without impacting any branches by switching back to a branch.
+2026-10-29T19:35:51.1528226Z 
+2026-10-29T19:35:51.1528445Z If you want to create a new branch to retain commits you create, you may
+2026-10-29T19:35:51.1528951Z do so (now or later) by using -c with the switch command. Example:
+2026-10-29T19:35:51.1529256Z 
+2026-10-29T19:35:51.1529467Z   git switch -c <new-branch-name>
+2026-10-29T19:35:51.1529711Z 
+2026-10-29T19:35:51.1529824Z Or undo this operation with:
+2026-10-29T19:35:51.1530008Z 
+2026-10-29T19:35:51.1530108Z   git switch -
+2026-10-29T19:35:51.1530472Z 
+2026-10-29T19:35:51.1530719Z Turn off this advice by setting config variable advice.detachedHead to false
+2026-10-29T19:35:51.1531046Z 
+2026-10-29T19:35:51.1531407Z HEAD is now at 0edb92a Merge 9d09ac649ae603587e227b2c03672eca47dec4b8 into 8724b3f72bbda51de369e93e357cbbf720f52a7f
+2026-10-29T19:35:51.1929668Z ##[group]Removing auth
+2026-10-29T19:35:51.1939204Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+2026-10-29T19:35:51.2257457Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+2026-10-29T19:35:51.7156180Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-29T19:35:51.7482709Z http.https://github.com/.extraheader
+2026-10-29T19:35:51.7525786Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all http.https://github.com/.extraheader
+2026-10-29T19:35:51.7832673Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+2026-10-29T19:35:52.2461763Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-29T19:35:52.2769865Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+2026-10-29T19:35:52.7283677Z ##[endgroup]
+2026-10-29T19:35:52.7312891Z ##[error]The process 'C:\Program Files\Git\bin\git.exe' failed with exit code 1
+2026-10-29T19:35:52.7726850Z Post job cleanup.
+2026-10-29T19:35:52.9415057Z [command]"C:\Program Files\Git\bin\git.exe" version
+2026-10-29T19:35:52.9697798Z git version 2.56.0.windows.3
+2026-10-29T19:35:52.9763887Z Temporarily overriding HOME='D:\a\_temp\63b81fda-32a1-4883-8016-53b102c8f61f' before making global git config changes
+2026-10-29T19:35:52.9765512Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-29T19:35:52.9776579Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory "D:\a\sistema-de-estudos-FISCALSTUDY\sistema-de-estudos-FISCALSTUDY\FiscalStudy ação"
+2026-10-29T19:35:53.0169434Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+2026-10-29T19:35:53.0537338Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+2026-10-29T19:35:53.5627417Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-29T19:35:53.5936062Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+2026-10-29T19:35:54.0961447Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-29T19:35:54.1283315Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+2026-10-29T19:35:54.6403823Z Cleaning up orphan processes
+2026-10-29T19:35:54.6490078Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@11d5960a326750d5838078e36cf38b85af677262. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+

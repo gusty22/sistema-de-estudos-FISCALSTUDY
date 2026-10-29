@@ -61,3 +61,6 @@ e4873fae9cab75662d13c8889eec309b17e7d86672be8b2b7586c5e5935527a8  r-boundary-ini
 2698e61bb7036b69eee06a00162e35831cdbc17b83113842a06cd0d10c114559  r-temp-space-reproduction.txt
 2fdc2703728f8a465a67b9937f61cb02ca649f8ecd9fe86c43763a479ff541a0  r-utf8.txt
 4591f29abb5c0c098e572b8259e7e0f7fe9a5a1b9f2d9aaa47169c9ce3be703e  test-compile.txt
+
+Native Windows initial checkout failed on unrelated Docling reference paths (Filename too long); next run uses sparse checkout backend/analytics-engine with Unicode path preserved. No Windows PASS claimed for that attempt.
+f8ffc79a441314f87ea2fb3460ac926b858f2f0258c0033cad1c4219994169c0  windows-checkout-initial.txt

@@ -151,6 +151,9 @@ jobs:
         with:
           persist-credentials: false
           path: FiscalStudy ação
+          sparse-checkout: |
+            backend
+            analytics-engine
       - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3
         with:
           distribution: temurin
