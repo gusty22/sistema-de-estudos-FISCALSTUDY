@@ -46,6 +46,46 @@ conservative_decision_policy <- function() list(version = "conservative-decision
     "PREFER_DIAGNOSTIC_WHEN_PERSONAL_KNOWLEDGE_UNKNOWN", "ALLOW_NEW_CONTENT_ONLY_FROM_VERIFIED_INVENTORY",
     "DO_NOT_CLAIM_EXPECTED_GAIN_OR_CAUSAL_EFFECT"), can_apply = FALSE, can_schedule = FALSE)
 
+# Contextual policies are explicit configured rules, not fitted weights or claims
+# of learning benefit. Candidate evidence_need_type must be recorded evidence or
+# the literal UNKNOWN; it is never inferred from accuracy alone.
+admissible_contextual_candidates <- function(candidates, context) {
+  req <- c("candidate_id", "activity_type", "scope_id", "contest_id", "estimated_minutes", "material_available", "in_syllabus", "prerequisites_status", "risk", "evidence_need_type")
+  if (!is.data.frame(candidates) || !all(req %in% names(candidates))) return(candidates[FALSE, , drop = FALSE])
+  candidates[candidates$contest_id == context$contest_id & candidates$material_available %in% TRUE & candidates$in_syllabus %in% TRUE &
+    candidates$prerequisites_status %in% c("SATISFIED", "NOT_APPLICABLE") & candidates$risk == "LOW_REVERSIBLE" &
+    is.finite(candidates$estimated_minutes) & candidates$estimated_minutes > 0 & candidates$estimated_minutes <= context$available_minutes, , drop = FALSE]
+}
+
+choose_contextual_policy <- function(candidates, context, policy = c("EVIDENCE_CONTEXTUAL_V1", "SHORTEST_ADMISSIBLE_V1", "CURRICULAR_CONSERVATIVE_V1")) {
+  policy <- match.arg(policy); admitted <- admissible_contextual_candidates(candidates, context)
+  empty <- list(candidate_id = NULL, status = "ABSTAIN", policy_version = policy, rationale = "NO_ADMISSIBLE_ACTIVITY", expected_gain = "NOT_ESTABLISHED")
+  if (!nrow(admitted)) return(empty)
+  # FSRS due remains protected, but it is not absolute when a bounded review
+  # capacity is declared: the contextual policy reserves one curricular option.
+  rank <- switch(policy,
+    SHORTEST_ADMISSIBLE_V1 = rep(1L, nrow(admitted)),
+    CURRICULAR_CONSERVATIVE_V1 = ifelse(admitted$activity_type == "LEARN_NEW", 1L, 2L),
+    EVIDENCE_CONTEXTUAL_V1 = ifelse(admitted$evidence_need_type == "MEMORY_MAINTENANCE" & admitted$activity_type == "REVIEW_ITEM", 1L,
+      ifelse(admitted$evidence_need_type %in% c("OBSERVED_CONCEPTUAL_GAP", "EXAM_EXECUTION_ERROR") & admitted$activity_type == "DIAGNOSE_CONCEPT", 2L,
+      ifelse(admitted$evidence_need_type == "TRANSFER_ASSESSMENT" & admitted$activity_type == "DEEPEN_APPLICATION", 3L,
+      ifelse(admitted$activity_type == "LEARN_NEW", 4L, 5L)))) )
+  if (policy == "EVIDENCE_CONTEXTUAL_V1" && isTRUE(context$review_capacity_exceeded) && any(admitted$activity_type == "LEARN_NEW"))
+    rank[admitted$activity_type == "LEARN_NEW"] <- pmin(rank[admitted$activity_type == "LEARN_NEW"], 2L)
+  selected <- admitted[order(rank, admitted$estimated_minutes, admitted$candidate_id), , drop = FALSE][1L, ]
+  list(candidate_id = selected$candidate_id, status = "PROPOSED_NOT_APPLIED", policy_version = policy,
+    rationale = paste0("CONFIGURED_RULE:", selected$evidence_need_type), expected_gain = "NOT_ESTABLISHED",
+    can_apply = FALSE, can_schedule = FALSE)
+}
+
+compare_contextual_policies <- function(candidates, context) {
+  names <- c("EVIDENCE_CONTEXTUAL_V1", "SHORTEST_ADMISSIBLE_V1", "CURRICULAR_CONSERVATIVE_V1")
+  choices <- lapply(names, function(p) choose_contextual_policy(candidates, context, p)); names(choices) <- names
+  list(contract_version = "1.0.0", choices = choices,
+    divergence = length(unique(vapply(choices, function(x) ifelse(is.null(x$candidate_id), "ABSTAIN", x$candidate_id), character(1)))) > 1L,
+    inference = "CONFIGURED_POLICY_COMPARISON_NOT_PEDAGOGICAL_SUPERIORITY")
+}
+
 initial_inventory_recommendation <- function(snapshot, context, candidates) {
   if (!is.data.frame(candidates) || !nrow(candidates)) return(NULL)
   req <- c("candidate_id", "activity_type", "scope_id", "contest_id", "estimated_minutes", "material_available", "in_syllabus", "prerequisites_status", "risk", "inventory_verified", "curriculum_source_id")
