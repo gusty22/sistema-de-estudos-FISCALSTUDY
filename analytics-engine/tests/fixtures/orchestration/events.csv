@@ -1,0 +1,3 @@
+event_id,question_id,occurred_at,origin_type,is_correct,assistance_status,answer_exposed,confidence_level
+fixture-e1,fixture-q1,2026-10-27T10:00:00Z,SYNTHETIC_FIXTURE,TRUE,NONE,FALSE,4
+fixture-e2,fixture-q2,2026-10-27T11:00:00Z,SYNTHETIC_FIXTURE,FALSE,NONE,FALSE,5

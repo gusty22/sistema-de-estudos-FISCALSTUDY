@@ -1,0 +1,17 @@
+{
+  "schema_version": "analytical-bundle-v1",
+  "can_apply": false,
+  "can_schedule": false,
+  "payload": {
+    "request_version": "learning-orchestrator-request-v1",
+    "events_csv": "tests/fixtures/orchestration/events.csv",
+    "declared_provenance": "SYNTHETIC_FIXTURE",
+    "student_id": "fixture-student",
+    "run_id": "fixture-run",
+    "cutoff": "2026-10-28T12:00:00Z",
+    "context": {"contest_id": "fixture-fiscal", "available_minutes": 20},
+    "candidates": [
+      {"candidate_id": "fixture-diagnose", "activity_type": "DIAGNOSE_CONCEPT", "scope_id": "fixture-concept", "contest_id": "fixture-fiscal", "priority": "DIAGNOSTIC_GAP", "estimated_minutes": 10, "material_available": true, "in_syllabus": true, "prerequisites_status": "NOT_APPLICABLE", "risk": "LOW_REVERSIBLE", "support_specialist_id": "BUILTIN_INVENTORY_POLICY"}
+    ]
+  }
+}
