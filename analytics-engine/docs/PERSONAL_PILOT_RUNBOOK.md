@@ -41,3 +41,21 @@ No efficacy/causal/personal-superiority claim until a separate valid design and 
 ## Before diagnostic/late assessment
 Complete cache/background access gates, source membership and revalidation, reviewed fiscal items and a separate versioned target/horizon/intermediate-exposure contract.
 Do not use these ordinary outcomes to tune a model and then call them an untouched final test.
+
+## Scientific decision extension — prepared, not started
+
+`PERSONAL_PILOT_PROTOCOL.json` now includes an additive `decision_scientific_extension`
+with contract `scientific-decision-evaluation-v1`, status `NOT_STARTED`. The existing
+ordinary-question v2 collection/scoring workflow above is unchanged. Its immediate
+correctness observations must not be relabeled delayed retrieval, application or transfer.
+
+The new R sidecar can evaluate committed forecasts and recorded executions after a
+future trusted exporter provides the required contact, instrument, timing and custody
+evidence. This change does not implement that exporter, reservations or a Core App UI,
+and does not assert those fields are already collected on the personal installation.
+No manual flashcard creation or manual review management is a prerequisite.
+
+See [target definitions, metrics, source requirements and limitations](SCIENTIFIC_DECISION_EVALUATION_V1.md).
+Before any real pilot, choose the independent assessments, observation windows and
+precision/stopping plan explicitly; keep personal artifacts private. Observational
+pre/post changes do not establish a causal policy benefit. No experiment was started.

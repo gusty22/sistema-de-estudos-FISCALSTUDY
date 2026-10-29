@@ -1,0 +1,11 @@
+{
+  "base_main": "abf91929bdc847c47400cec04d90acf6e66ad065",
+  "locale": "C",
+  "inherited_failures": [
+    "UTF-8 curriculum labels survive CSV decoding",
+    "Optional UTF-8 BOM preserves header identity",
+    "Locale C preserves recorded discipline labels through the full pipeline",
+    "Locale C preserves recorded topic labels through the full pipeline"
+  ],
+  "new_failures": []
+}

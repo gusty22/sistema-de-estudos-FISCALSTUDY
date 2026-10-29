@@ -1,3 +1,11 @@
+## Avaliação científica das decisões — 2026-10-29
+
+Base `abf91929` (PR #43 já mesclada; CI anterior aprovada). O laboratório ganhou contratos/elegibilidade/scoring prospectivo de seis alvos, referências temporais simples e replay das três políticas pelo orquestrador original. Apenas execuções reais registradas como autorizadas e completas recebem follow-ups observacionais. Mudanças pré/pós não são efeitos causais; não há crédito contrafactual, pontuação global de domínio ou nova arquitetura/modelo.
+
+Validação: R 4.6.1 UTF-8 **1.058 aprovados, zero falhas**; locale C **1.054 aprovados e as mesmas quatro falhas herdadas**. Python lab **58 testes, sem skips**; gates R contextual/ledger e compilação Java aprovados. O exemplo JSON repete bytes em subprocessos e entre R 4.5.0/4.6.1. Zero dados pessoais avaliados nos novos contratos; piloto científico `NOT_STARTED`, sem cartões/revisões manuais obrigatórios e sem captura nova no Core App.
+
+[Contratos, métricas, dados disponíveis e limites](SCIENTIFIC_DECISION_EVALUATION_V1.md), [readiness estruturado](results/scientific_decision_readiness_v1.json) e [logs/resultados completos](validation/scientific-decisions/results.txt). As fotografias anteriores permanecem abaixo.
+
 ## Gate de integração contextual — 2026-10-29
 
 A proposta principal de `orchestrate_learning()` agora executa `EVIDENCE_CONTEXTUAL_V1` sobre a admissão do validador original e emite comparação das três políticas, necessidades vinculadas e rastro `1.1.0` na mesma execução. Flags externas não concedem autoridade; procedência pessoal exige vínculo aos eventos e atestação do host confiável. Sem confirmação, preservam-se desconhecidos e oportunidades curriculares admissíveis. Nenhuma aplicação ou agenda operacional é autorizada.

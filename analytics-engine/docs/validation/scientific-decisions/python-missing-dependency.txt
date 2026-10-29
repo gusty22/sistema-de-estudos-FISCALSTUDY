@@ -1,0 +1,148 @@
+test_assisted_exposure_is_not_mislabeled_as_unseen (test_comparison.RealMovingAverageTests.test_assisted_exposure_is_not_mislabeled_as_unseen) ... ok
+test_real_r_reuses_previous_five_without_current_outcome (test_comparison.RealMovingAverageTests.test_real_r_reuses_previous_five_without_current_outcome) ... ok
+test_extreme_prefix_never_exports_nonfinite_probabilities (test_comparison.RealPyBKTTests.test_extreme_prefix_never_exports_nonfinite_probabilities) ... ERROR
+test_future_and_target_outcomes_cannot_change_prior_prediction (test_comparison.RealPyBKTTests.test_future_and_target_outcomes_cannot_change_prior_prediction) ... ERROR
+test_insufficient_history_is_not_zero_knowledge (test_comparison.RealPyBKTTests.test_insufficient_history_is_not_zero_knowledge) ... ERROR
+test_reordering_input_preserves_predictions (test_comparison.RealPyBKTTests.test_reordering_input_preserves_predictions) ... ERROR
+test_same_timestamp_is_not_ordered_into_training (test_comparison.RealPyBKTTests.test_same_timestamp_is_not_ordered_into_training) ... ERROR
+test_decision_authority_is_rejected (test_comparison.SnapshotTests.test_decision_authority_is_rejected) ... ok
+test_forged_manifest_and_mixed_session_rejected (test_comparison.SnapshotTests.test_forged_manifest_and_mixed_session_rejected) ... ok
+test_hash_tampering_is_detected (test_comparison.SnapshotTests.test_hash_tampering_is_detected) ... ok
+test_report_keeps_sparse_observations_without_fabricating_predictions (test_comparison.SnapshotTests.test_report_keeps_sparse_observations_without_fabricating_predictions) ... ok
+test_unlisted_artifact_is_detected (test_comparison.SnapshotTests.test_unlisted_artifact_is_detected) ... ok
+test_missing_true_probability_allowed_but_duplicates_rejected (test_human_learning.HumanMetricsTests.test_missing_true_probability_allowed_but_duplicates_rejected) ... ok
+test_paired_bss_same_events_and_incomplete_coverage (test_human_learning.HumanMetricsTests.test_paired_bss_same_events_and_incomplete_coverage) ... ok
+test_proper_scores_and_auc (test_human_learning.HumanMetricsTests.test_proper_scores_and_auc) ... ok
+test_ties_and_single_class (test_human_learning.HumanMetricsTests.test_ties_and_single_class) ... ok
+test_future_labels_do_not_change_frozen_calibration_or_use_future_donors (test_human_learning.HumanRIntegrationTests.test_future_labels_do_not_change_frozen_calibration_or_use_future_donors) ... ok
+test_original_source_identity_and_label (test_human_learning.PredictionJoinTests.test_original_source_identity_and_label) ... ok
+test_assistments_conflicting_target_rejected (test_human_learning.PublicAdapterTests.test_assistments_conflicting_target_rejected) ... ok
+test_assistments_one_event_multiskill_and_no_fake_time (test_human_learning.PublicAdapterTests.test_assistments_one_event_multiskill_and_no_fake_time) ... ok
+test_fsrs_bad_target_duplicate_and_missing_prefix (test_human_learning.PublicAdapterTests.test_fsrs_bad_target_duplicate_and_missing_prefix) ... ok
+test_fsrs_identity_and_order (test_human_learning.PublicAdapterTests.test_fsrs_identity_and_order) ... ok
+test_official_helper_flooring_is_declared_not_reimplemented (test_human_learning.PublicAdapterTests.test_official_helper_flooring_is_declared_not_reimplemented) ... ok
+test_source_study_day_is_not_silently_equated_to_24h (test_human_learning.PublicAdapterTests.test_source_study_day_is_not_silently_equated_to_24h) ... ok
+test_both_r_calls_precede_truth_and_parameters_persistence (test_individual_calibration.CalibrationTests.test_both_r_calls_precede_truth_and_parameters_persistence) ... ok
+test_end_to_end_real_r_and_manifest (test_individual_calibration.CalibrationTests.test_end_to_end_real_r_and_manifest) ... ok
+test_r_rejects_latent_columns_duplicate_and_future_predictions (test_individual_calibration.CalibrationTests.test_r_rejects_latent_columns_duplicate_and_future_predictions) ... ok
+test_r_temporal_invariance_and_cold_start (test_individual_calibration.CalibrationTests.test_r_temporal_invariance_and_cold_start) ... ok
+test_independent_generator_and_observational_equivalence (test_individual_calibration.ProbeTests.test_independent_generator_and_observational_equivalence) ... ok
+test_invalid_generator_arguments (test_individual_calibration.ProbeTests.test_invalid_generator_arguments) ... ok
+test_r_rejects_duplicate_and_ambiguous_history (test_lab.RealRContractTests.test_r_rejects_duplicate_and_ambiguous_history) ... ok
+test_real_engine_future_perturbation_and_student_separation (test_lab.RealRContractTests.test_real_engine_future_perturbation_and_student_separation) ... ok
+test_sparse_profile_produces_no_false_certainty (test_lab.RealRContractTests.test_sparse_profile_produces_no_false_certainty) ... ok
+test_absence_is_not_zero_knowledge (test_lab.SimulatorTests.test_absence_is_not_zero_knowledge) ... ok
+test_contract_matches_generator_columns (test_lab.SimulatorTests.test_contract_matches_generator_columns) ... ok
+test_half_life_is_a_simulator_assumption_not_a_universal_law (test_lab.SimulatorTests.test_half_life_is_a_simulator_assumption_not_a_universal_law) ... ok
+test_invalid_events_are_rejected_without_repair (test_lab.SimulatorTests.test_invalid_events_are_rejected_without_repair) ... ok
+test_known_score_vector (test_lab.SimulatorTests.test_known_score_vector) ... ok
+test_latent_truth_not_persisted_before_r (test_lab.SimulatorTests.test_latent_truth_not_persisted_before_r) ... ok
+test_observations_cannot_contain_truth (test_lab.SimulatorTests.test_observations_cannot_contain_truth) ... ok
+test_reproducible_and_all_quantitative_profiles (test_lab.SimulatorTests.test_reproducible_and_all_quantitative_profiles) ... ok
+test_bad_id_future_time_and_latent_column_rejected (test_memory_lab.MemoryTests.test_bad_id_future_time_and_latent_column_rejected) ... ok
+test_cold_start_is_not_zero_retrievability (test_memory_lab.MemoryTests.test_cold_start_is_not_zero_retrievability) ... ok
+test_generator_replays_and_excludes_latent_fields (test_memory_lab.MemoryTests.test_generator_replays_and_excludes_latent_fields) ... ok
+test_pre_update_prediction_independent_of_current_outcome (test_memory_lab.MemoryTests.test_pre_update_prediction_independent_of_current_outcome) ... ok
+test_real_r_scores_match_and_hash_tamper_rejected (test_memory_lab.MemoryTests.test_real_r_scores_match_and_hash_tamper_rejected) ... ok
+test_same_time_baseline_history_is_frozen (test_memory_lab.MemoryTests.test_same_time_baseline_history_is_frozen) ... ok
+test_truth_remains_unwritten_before_r (test_memory_lab.MemoryTests.test_truth_remains_unwritten_before_r) ... ok
+test_explicit_synthetic_mode_and_integrity (test_personal_pilot.PersonalPilotTests.test_explicit_synthetic_mode_and_integrity) ... ok
+test_failure_is_explicit_and_does_not_claim_success (test_personal_pilot.PersonalPilotTests.test_failure_is_explicit_and_does_not_claim_success) ... ok
+test_incomplete_report_does_not_become_success (test_personal_pilot.PersonalPilotTests.test_incomplete_report_does_not_become_success) ... ok
+test_private_outputs_no_overwrite_and_original_preserved (test_personal_pilot.PersonalPilotTests.test_private_outputs_no_overwrite_and_original_preserved) ... ok
+test_current_rating_does_not_enter_its_own_prediction (test_recorded_day_clock.OfficialClockTests.test_current_rating_does_not_enter_its_own_prediction) ... ok
+test_observed_instants_outcomes_and_ids_are_preserved (test_recorded_day_clock.OfficialClockTests.test_observed_instants_outcomes_and_ids_are_preserved) ... ok
+test_zero_source_day_is_retained_but_not_scored (test_recorded_day_clock.OfficialClockTests.test_zero_source_day_is_retained_but_not_scored) ... ok
+test_declared_history_is_checked_not_a_future_predictor (test_recorded_day_clock.SourceProtocolTests.test_declared_history_is_checked_not_a_future_predictor) ... ok
+test_protocol_keeps_authority_blocked_and_registers_prior_cohort (test_recorded_day_clock.SourceProtocolTests.test_protocol_keeps_authority_blocked_and_registers_prior_cohort) ... ok
+test_untouched_selection_is_deterministic_and_excludes_prior (test_recorded_day_clock.SourceProtocolTests.test_untouched_selection_is_deterministic_and_excludes_prior) ... ok
+
+======================================================================
+ERROR: test_extreme_prefix_never_exports_nonfinite_probabilities (test_comparison.RealPyBKTTests.test_extreme_prefix_never_exports_nonfinite_probabilities)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/fiscalstudy/analytics-engine/lab/test_comparison.py", line 115, in test_extreme_prefix_never_exports_nonfinite_probabilities
+    predictions,status=pybkt_adapter.predict_events(rows)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/fiscalstudy/analytics-engine/lab/pybkt_adapter.py", line 67, in predict_events
+    from pyBKT.models import Model
+  File "/tmp/science-lab-deps/pyBKT/models/__init__.py", line 1, in <module>
+    from pyBKT.models.Model import Model
+  File "/tmp/science-lab-deps/pyBKT/models/Model.py", line 18, in <module>
+    from pyBKT.util import crossvalidate, data_helper, check_data, metrics
+  File "/tmp/science-lab-deps/pyBKT/util/data_helper.py", line 14, in <module>
+    import requests
+ModuleNotFoundError: No module named 'requests'
+
+======================================================================
+ERROR: test_future_and_target_outcomes_cannot_change_prior_prediction (test_comparison.RealPyBKTTests.test_future_and_target_outcomes_cannot_change_prior_prediction)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/fiscalstudy/analytics-engine/lab/test_comparison.py", line 94, in test_future_and_target_outcomes_cannot_change_prior_prediction
+    before,status=pybkt_adapter.predict_events(rows)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/fiscalstudy/analytics-engine/lab/pybkt_adapter.py", line 67, in predict_events
+    from pyBKT.models import Model
+  File "/tmp/science-lab-deps/pyBKT/models/__init__.py", line 1, in <module>
+    from pyBKT.models.Model import Model
+  File "/tmp/science-lab-deps/pyBKT/models/Model.py", line 18, in <module>
+    from pyBKT.util import crossvalidate, data_helper, check_data, metrics
+  File "/tmp/science-lab-deps/pyBKT/util/data_helper.py", line 14, in <module>
+    import requests
+ModuleNotFoundError: No module named 'requests'
+
+======================================================================
+ERROR: test_insufficient_history_is_not_zero_knowledge (test_comparison.RealPyBKTTests.test_insufficient_history_is_not_zero_knowledge)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/fiscalstudy/analytics-engine/lab/test_comparison.py", line 140, in test_insufficient_history_is_not_zero_knowledge
+    predictions,status=pybkt_adapter.predict_events(rows)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/fiscalstudy/analytics-engine/lab/pybkt_adapter.py", line 67, in predict_events
+    from pyBKT.models import Model
+  File "/tmp/science-lab-deps/pyBKT/models/__init__.py", line 1, in <module>
+    from pyBKT.models.Model import Model
+  File "/tmp/science-lab-deps/pyBKT/models/Model.py", line 18, in <module>
+    from pyBKT.util import crossvalidate, data_helper, check_data, metrics
+  File "/tmp/science-lab-deps/pyBKT/util/data_helper.py", line 14, in <module>
+    import requests
+ModuleNotFoundError: No module named 'requests'
+
+======================================================================
+ERROR: test_reordering_input_preserves_predictions (test_comparison.RealPyBKTTests.test_reordering_input_preserves_predictions)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/fiscalstudy/analytics-engine/lab/test_comparison.py", line 127, in test_reordering_input_preserves_predictions
+    before,_=pybkt_adapter.predict_events(rows)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/fiscalstudy/analytics-engine/lab/pybkt_adapter.py", line 67, in predict_events
+    from pyBKT.models import Model
+  File "/tmp/science-lab-deps/pyBKT/models/__init__.py", line 1, in <module>
+    from pyBKT.models.Model import Model
+  File "/tmp/science-lab-deps/pyBKT/models/Model.py", line 18, in <module>
+    from pyBKT.util import crossvalidate, data_helper, check_data, metrics
+  File "/tmp/science-lab-deps/pyBKT/util/data_helper.py", line 14, in <module>
+    import requests
+ModuleNotFoundError: No module named 'requests'
+
+======================================================================
+ERROR: test_same_timestamp_is_not_ordered_into_training (test_comparison.RealPyBKTTests.test_same_timestamp_is_not_ordered_into_training)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/fiscalstudy/analytics-engine/lab/test_comparison.py", line 134, in test_same_timestamp_is_not_ordered_into_training
+    predictions,status=pybkt_adapter.predict_events(rows)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/fiscalstudy/analytics-engine/lab/pybkt_adapter.py", line 67, in predict_events
+    from pyBKT.models import Model
+  File "/tmp/science-lab-deps/pyBKT/models/__init__.py", line 1, in <module>
+    from pyBKT.models.Model import Model
+  File "/tmp/science-lab-deps/pyBKT/models/Model.py", line 18, in <module>
+    from pyBKT.util import crossvalidate, data_helper, check_data, metrics
+  File "/tmp/science-lab-deps/pyBKT/util/data_helper.py", line 14, in <module>
+    import requests
+ModuleNotFoundError: No module named 'requests'
+
+----------------------------------------------------------------------
+Ran 58 tests in 20.928s
+
+FAILED (errors=5)

@@ -1,0 +1,81 @@
+FISCALSTUDY — SCIENTIFIC DECISION EVALUATION — 2026-10-29 UTC
+Base: abf91929bdc847c47400cec04d90acf6e66ad065 (remote main, merge of PR #43).
+PR #43 head: 6b1e3bfe33b6436eefc1aa730905bac30cde9751; already merged before task.
+Initial CI: Learner laboratory / synthetic-integrity SUCCESS, run 40892602527.
+https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40892602527
+No workflow run associated specifically with the merge SHA was returned initially.
+Branch: lab/scientific-decision-evaluation. No merge/automerge performed.
+
+RUNTIME AND COMMANDS
+R 4.6.1 / jsonlite 1.9.1 / digest 0.6.37; Debian 13; UTC event timestamps.
+RHOME=/tmp/r46/usr/lib/R; R_LIBS=/tmp/r-local/usr/lib/R/site-library.
+Main suites run sequentially in analytics-engine:
+LC_ALL=C.UTF-8 Rscript tests/test_runner.R
+LC_ALL=C Rscript tests/test_runner.R
+baseline-UTF8.txt: passed=968; failed=0; exit=0; elapsed=77.425s
+baseline-C.txt: passed=964; failed=4; exit=1; elapsed=88.962s
+final-UTF8.txt: passed=1058; failed=0; exit=0; elapsed=101.489s
+final-C.txt: passed=1054; failed=4; exit=1; elapsed=95.169s
+New scientific module adds 90 passing assertions; old assertions were not removed.
+Four inherited C-locale failures are listed separately in inherited-locale-failures.json.
+No new failures relative to base. Locale C intentionally exits 1; no failure suppression.
+
+Additional existing laboratory gates:
+- python -m unittest discover -s lab -p 'test_*.py' -v: 58 tests, OK, no skips.
+- Rscript lab/test_contextual_prequential.R: exit 0.
+- Rscript tests/test_prospective_ledger.R: exit 0, existing synthetic Java exports.
+- Maven 3.9.11 test-compile, JDK 21.0.12.1 / release 17: BUILD SUCCESS, exit 0.
+  Used isolated /tmp Maven/JDK and cached dependencies because checkout wrapper is incomplete.
+  No Java/POM/wrapper sources modified; no operational SQLite access.
+
+Python optional test dependencies already declared by the project were installed only
+in /tmp/science-lab-deps: pyBKT 1.4.3, fsrs 6.3.2, scikit-learn 1.6.1, requests 2.32.5
+(and declared requests transitive dependencies). Repository requirements unchanged.
+Initial optional-dependency execution skipped 20 tests. After enabling pyBKT, five
+errors exposed the system scikit-learn 1.8.0 incompatibility; after selecting the pinned
+1.6.1, five errors exposed absent requests. Both intermediate logs are retained.
+With existing declared dependencies selected, the final 58-test suite passed fully.
+These are environment corrections, not changes to model/reference implementations.
+A separate missing-session edge check confirms zero identified sessions with missing
+session identity while preserving six descriptive targets; independence stays unknown.
+
+REPRODUCTION
+Prior gate memory artifact still matches committed expected-memory.json SHA-256:
+cbc15627805055ad68368c66b0c11428c664e5ef93a533a92b2a1bf7139084e3
+New example commands (cwd analytics-engine; output paths must be NEW):
+Rscript tests/fixtures/scientific_evaluation/reproduce.R INPUT.json REPORT.json
+Rscript lab/run_decision_evaluation.R INPUT.json REPLAY.json
+cmp REPORT.json REPLAY.json
+Report bytes also match when replayed with isolated R 4.5.0 and R 4.6.1.
+The latter is a portability check of this example, not a universal locale guarantee.
+The example is SYNTHETIC_CONTRACT_ONLY; six scored software-fixture targets, zero
+personal observations evaluated. Can_apply=false; can_schedule=false.
+
+INTERPRETATION
+Contracts, eligibility, prequential scoring, reference comparisons and original
+orchestrator policy replay are implemented for six targets. No six trained personal
+predictors or new operational commitment producer are claimed. Actual observational
+followups credit only the fully executed authorized policy, never shadow alternatives.
+Pre/post changes remain observational; policy causal effects and personal validation
+are NOT_ESTABLISHED. No student experiment, new data collection, new model or
+intervention assignment started. Historical public human archives were referenced
+with their original scopes; not reanalyzed or reclassified as personal/new-target data.
+
+Raw stdout logs preserve warnings, trailing whitespace and intentional negative-test
+subprocess errors. No lines were removed or reclassified as passes.
+
+SHA-256 OF DELIVERED VALIDATION FILES
+b17dfd3f93ddc96484482a64d7cfb4de625c0a31d55689c19884d243d101c29d  baseline-C.txt
+751c678230b28476b42a00260daa30c6f48534097c4f653646acf1c48270b9bb  baseline-UTF8.txt
+8b4c018a7df1f6635bbcc35be38251aef5c68489b8add745370531c7a4582020  contextual-prequential.txt
+55b11f618338650a2e949b0ba14d192cde4930175b1214da682d526e467cf426  final-C.txt
+361eca7cd43d9cc12f876307a2f68b6c0a8f6935d13d625f4ae5fcbdfe84f608  final-UTF8.txt
+59a467cb1b367d7f8f42a664ce4ecbb823ad6748b3c7edc14820a33a503095ed  inherited-locale-failures.json
+5499e9e0dd0d846767ead3b39d1e7332511e7a87c301047615fd8909e4f62964  missing-session-edge.txt
+4d58c4b3c7a56a6f5db7b33cd12604370fef049c7dd55206a383eccffdbdab58  prospective-ledger.txt
+b845c057f5e544d5600b8d32181d7cb32e0ad33204265c85427166dd6578679d  python-environment-initial.txt
+cf6e3eb88782cbe0636985d5b6f992b510e2226913e040b2ee6ee1c3246eeb25  python-lab.txt
+5d2e0205706a6f3f66996a147004b206e2b670ec67cc9d4ce028604e48a95420  python-missing-dependency.txt
+ccfc5dac7146ec5464abfbf46bedca1c7d2daec70d9b22e069340984e4fb78a7  test-compile.txt
+fb9ac54fd893b382a98c1e533c7b917f3cceddfdccf1361858e9514aadad0a84  tests/fixtures/scientific_evaluation/expected-input.json
+d6bbfb393a94770cbe24b28601f09e4275ff34ec0d128b6dbd1092dca43322d5  tests/fixtures/scientific_evaluation/expected-report.json
