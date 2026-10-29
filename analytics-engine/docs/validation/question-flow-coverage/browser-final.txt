@@ -1,0 +1,8 @@
+Synthetic question flow coverage passed, enabled=false
+Prospective sidecar evaluation: 0 scored, 0 excluded; can_apply=false
+Prospective sidecar evaluation: 0 scored, 0 excluded; can_apply=false
+{"scope": "SYNTHETIC_ONLY", "enabled": false, "forecasts": 0, "scored": 0, "excluded": 0, "unforecasted": 2}
+Synthetic question flow coverage passed, enabled=true
+Prospective sidecar evaluation: 2 scored, 5 excluded; can_apply=false
+Prospective sidecar evaluation: 2 scored, 5 excluded; can_apply=false
+{"scope": "SYNTHETIC_ONLY", "enabled": true, "forecasts": 7, "scored": 2, "excluded": 5, "unforecasted": 1}

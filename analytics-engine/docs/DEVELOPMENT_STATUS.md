@@ -1,3 +1,13 @@
+## Cobertura dos fluxos prospectivos de questões — 2026-10-29
+
+Base main `091ccb8`, PR #46 integrada e CIs de `0f3af68` aprovadas. Captura agora desligada por padrão também no QuestionViewer: opt-in explícito no frontend e autorização/habilitação do host são exigidos; o servidor recusa preparo direto sem suas duas flags. Modal do banco usa preparação, journal, UUID estável e recuperação confirmada, sem inferir ausência de ajuda. Reabertura não vira novo desfecho; nova tentativa capturada exige ação explícita. Fallback de SessaoEstudoAtiva corrigido para ler `questions` da API, preservando `items` legado.
+
+Browser real + Java/SQLite/exportação/R nos dois modos: desligado 0 previsões/2 respostas sem previsão; ligado, exemplo local com 7 previsões/2 scores/5 exclusões ou pendências/1 resposta sem previsão. Replay do mesmo snapshot idêntico. Não confundir fallback montado por fixture com rota atual do App, que encaminha ao viewer. CSVs/rótulos legados agora explicitamente descritivos; sem alteração de colunas ou histórico.
+
+**Piloto NOT_STARTED, ativação não autorizada. Cobertura global FAIL**, embora os dois fluxos ordinários estejam testados: rotas especializadas, clientes externos e todas as variantes de simulado não recebem PASS por compartilhar helpers. Instalação pessoal, relógio, raiz e armazenamento continuam NOT_VERIFIED. Nenhuma chave operacional/coleta pessoal; FSRS, SQLite operacional, calendário e políticas preservados.
+
+[Matriz, escopo e limitações](QUESTION_FLOW_PROSPECTIVE_COVERAGE_V1.md), [checklist](results/pilot_activation_gate_v1.json), [reprodução](../../frontend/tests/fixtures/question_flow_coverage/README.md) e [logs](validation/question-flow-coverage/results.txt). Registros anteriores preservados abaixo.
+
 ## Gate de ativação prospectiva — 2026-10-29
 
 Estado **NOT_STARTED**, ativação bloqueada. Revisão da PR #45/main `8724b3f`: corrigidos limites de leitura, publicação prematura do relatório e privacidade NTFS/temporário R. Testes adicionais são exclusivamente sintéticos; nenhuma chave operacional, coleta pessoal, alteração de frontend/FSRS/SQLite/calendário/política.

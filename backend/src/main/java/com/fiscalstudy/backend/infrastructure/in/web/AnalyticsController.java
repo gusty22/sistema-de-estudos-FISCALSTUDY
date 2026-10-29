@@ -146,6 +146,7 @@ public class AnalyticsController {
         String sha256 = analyticsProjectionService.calculateSha256(bytes);
 
         return ResponseEntity.ok()
+                .header("X-FiscalStudy-Export-Kind", "DESCRIPTIVE_CSV")
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"fiscalstudy_attempts.csv\"")
                 .header(HttpHeaders.ETAG, "\"" + sha256 + "\"")
                 .contentType(MediaType.parseMediaType("text/csv; charset=UTF-8"))
@@ -159,7 +160,7 @@ public class AnalyticsController {
         ExportManifestDTO manifest = snapshotRowid != null
                 ? analyticsProjectionService.generateExportManifest(origin, snapshotRowid)
                 : analyticsProjectionService.generateExportManifest(origin);
-        return ResponseEntity.ok(manifest);
+        return ResponseEntity.ok().header("X-FiscalStudy-Export-Kind", "DESCRIPTIVE_CHECKSUM_MANIFEST").body(manifest);
     }
 
     @GetMapping(value = "/export/questions-v1", produces = "text/csv")
@@ -171,6 +172,7 @@ public class AnalyticsController {
         String sha256 = analyticsProjectionService.calculateSha256(bytes);
 
         return ResponseEntity.ok()
+                .header("X-FiscalStudy-Export-Kind", "DESCRIPTIVE_CSV")
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"questions_v1.csv\"")
                 .header(HttpHeaders.ETAG, "\"" + sha256 + "\"")
                 .contentType(MediaType.parseMediaType("text/csv; charset=UTF-8"))
@@ -186,6 +188,7 @@ public class AnalyticsController {
         String sha256 = analyticsProjectionService.calculateSha256(bytes);
 
         return ResponseEntity.ok()
+                .header("X-FiscalStudy-Export-Kind", "DESCRIPTIVE_CSV")
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"events_v1.csv\"")
                 .header(HttpHeaders.ETAG, "\"" + sha256 + "\"")
                 .contentType(MediaType.parseMediaType("text/csv; charset=UTF-8"))

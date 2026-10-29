@@ -228,7 +228,7 @@ export default function SessaoEstudoAtiva({
       const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
-        const items = data.items || [];
+        const items = data.questions || data.items || [];
         if (items.length > 0) {
           setSessionQuestions(items);
           setCurrentQuestionIdx(0);
@@ -240,8 +240,9 @@ export default function SessaoEstudoAtiva({
       const fallbackRes = await fetch('/api/v1/bank/questions?page=0&size=5');
       if (fallbackRes.ok) {
         const fallbackData = await fallbackRes.json();
-        if (fallbackData.items && fallbackData.items.length > 0) {
-          setSessionQuestions(fallbackData.items);
+        const fallbackItems = fallbackData.questions || fallbackData.items || [];
+        if (fallbackItems.length > 0) {
+          setSessionQuestions(fallbackItems);
           setCurrentQuestionIdx(0);
           setIsEmbeddedQuestionsOpen(true);
           return;
@@ -411,6 +412,7 @@ export default function SessaoEstudoAtiva({
       const activeQ = sessionQuestions[currentQuestionIdx];
       return (
         <ResolucaoQuestaoModal
+          captureScope={'active:' + effectiveDiscipline + '|' + effectiveTopic}
           question={activeQ}
           currentIndex={currentQuestionIdx}
           totalInBatch={sessionQuestions.length}

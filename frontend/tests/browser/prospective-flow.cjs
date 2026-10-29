@@ -15,7 +15,7 @@ const count=type=>sql("SELECT count(*) n FROM event_store WHERE event_type=?",[t
 const memory=()=>sql("SELECT count(*) n FROM learning_evidence_projection")[0].n;
 async function waitFor(fn) { for(let n=0;n<100;n++){if(await fn())return;await new Promise(r=>setTimeout(r,100));}throw Error('Condition not reached'); }
 (async()=>{
- const browser=await chromium.launch({headless:true}); runningBrowser=browser;
+ const browser=await chromium.launch({headless:true,executablePath:process.env.FISCALSTUDY_CHROMIUM_PATH}); runningBrowser=browser;
  let page=await browser.newPage({viewport:{width:1440,height:1000}}); activePage=page;
  const external=[];
  await page.route('**/*',async route=>{
@@ -103,6 +103,7 @@ async function waitFor(fn) { for(let n=0;n<100;n++){if(await fn())return;await n
  });
  await page.getByRole('radio').first().click();
  await page.locator('.conf-btn').nth(3).click();
+ await page.getByLabel('Ajuda nesta tentativa').selectOption('NO');
  await page.locator('.submit-btn').evaluate(el=>{el.click();el.click();});
  await waitFor(()=>count('ANSWER_SUBMITTED')===1 && memory()===1);
  await page.screenshot({path:path.join(root,'02-answer-ack-lost.png'),fullPage:true});

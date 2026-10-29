@@ -35,6 +35,8 @@ class ProspectivePredictionIntegrationTest {
         memory=new LearningEvidenceService(jdbc);
         ReflectionTestUtils.setField(attempts,"learningEvidenceService",memory);
         ledger=new ProspectivePredictionService(jdbc,events,questions,attempts,memory,Clock.systemUTC(),"SYNTHETIC_FIXTURE");
+        org.springframework.test.util.ReflectionTestUtils.setField(ledger,"captureAuthorized",true);
+        org.springframework.test.util.ReflectionTestUtils.setField(ledger,"captureEnabled",true);
     }
     AttemptResult answer(String id,String option,boolean help,int confidence) {
         return attempts.submitAttempt("q1",option,confidence,12000,"personal-session",null,null,
@@ -148,6 +150,8 @@ class ProspectivePredictionIntegrationTest {
         attempts=new AttemptSubmissionService(questions,events,"REAL_STUDY");
         ReflectionTestUtils.setField(attempts,"learningEvidenceService",memory);
         ledger=new ProspectivePredictionService(jdbc,events,questions,attempts,memory,Clock.systemUTC(),"SYNTHETIC_FIXTURE");
+        org.springframework.test.util.ReflectionTestUtils.setField(ledger,"captureAuthorized",true);
+        org.springframework.test.util.ReflectionTestUtils.setField(ledger,"captureEnabled",true);
         new QuestionSelectionService(questions,events).recordPresentation("q1","personal-session");
         // A fresh ephemeral TEST key. No operational key or personal database is touched.
         var pair=java.security.KeyPairGenerator.getInstance("RSA"); pair.initialize(2048);
@@ -200,5 +204,17 @@ class ProspectivePredictionIntegrationTest {
         assertEquals(snapshot,new ProspectiveExportAttestor("","").attest(snapshot,"SYNTHETIC_FIXTURE"));
         assertThrows(IllegalStateException.class,()->new ProspectiveExportAttestor(privateKey.toString(),"").attest(snapshot,"SYNTHETIC_FIXTURE"));
         assertThrows(IllegalStateException.class,()->new ProspectiveExportAttestor(directory.resolve("missing").toString(),"fixture").attest(snapshot,"SYNTHETIC_FIXTURE"));
+    }
+    @Test void disabledOrPartlyAuthorizedCaptureCannotCommitButNormalStudyStillWorks() {
+        for(boolean[] flags:List.of(new boolean[]{false,false},new boolean[]{true,false},new boolean[]{false,true})) {
+            ReflectionTestUtils.setField(ledger,"captureAuthorized",flags[0]);
+            ReflectionTestUtils.setField(ledger,"captureEnabled",flags[1]);
+            assertEquals(false,ledger.captureStatus().get("enabled"));
+            assertThrows(org.springframework.web.server.ResponseStatusException.class,
+                ()->ledger.prepare("q1","personal-session",UUID.randomUUID().toString()));
+        }
+        answer(UUID.randomUUID().toString(),"A",false,4);
+        assertEquals(0,events.getAllEvents("PREDICTION_COMMITTED").size());
+        assertEquals(1,events.getAllEvents("ANSWER_SUBMITTED").size());
     }
 }

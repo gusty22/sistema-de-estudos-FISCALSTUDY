@@ -2,21 +2,25 @@ import { readAttemptJournal, freezeAttemptPayload, confirmAttempt } from './atte
 /** A pending submission keeps its identity and payload after transport failures. */
 export class AttemptSubmission {
   readonly attemptId: string;
+  confirmed = false;
   readonly payload: Record<string, unknown>;
+  private useJournal: boolean;
   private pending: Promise<any> | null = null;
-  constructor(payload: Record<string, unknown>, id: string = crypto.randomUUID()) {
+  constructor(payload: Record<string, unknown>, id: string = crypto.randomUUID(), useJournal = true) {
+    this.useJournal = useJournal;
     this.attemptId = id;
     this.payload = Object.freeze({ ...payload, attemptId: id });
   }
   send(questionId: string): Promise<any> {
     if (this.pending) return this.pending;
-    const durable = readAttemptJournal(questionId, String(this.payload.sessionId || ''));
+    const durable = this.useJournal ? readAttemptJournal(questionId, String(this.payload.sessionId || '')) : null;
     if (durable) freezeAttemptPayload(questionId, this.payload, this.attemptId);
     this.pending = requestJson('/api/v1/questions/' + encodeURIComponent(questionId) + '/attempts', {
       method: 'POST', body: JSON.stringify(this.payload)
     }).then(result => {
       if (result.attemptId !== this.attemptId) throw new Error('A resposta confirmou outra tentativa.');
       if (durable) confirmAttempt(questionId, String(this.payload.sessionId), this.attemptId, result);
+      this.confirmed = true;
       return result;
     }).finally(() => { this.pending = null; });
     return this.pending;

@@ -1,0 +1,24 @@
+Synthetic question flow coverage passed, enabled=false
+Prospective sidecar evaluation: 0 scored, 0 excluded; can_apply=false
+{"scope": "SYNTHETIC_ONLY", "enabled": false, "forecasts": 0, "scored": 0, "excluded": 0, "unforecasted": 2}
+AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+7 !== 6
+
+    at /workspace/fiscalstudy/frontend/tests/browser/question-flow-coverage.cjs:63:190 {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: 7,
+  expected: 6,
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+Traceback (most recent call last):
+  File "/workspace/fiscalstudy/frontend/tests/fixtures/question_flow_coverage/run.py", line 62, in <module>
+    if __name__=='__main__':main()
+                            ^^^^^^
+  File "/workspace/fiscalstudy/frontend/tests/fixtures/question_flow_coverage/run.py", line 44, in main
+    subprocess.run(['node',str(ROOT/'frontend/tests/browser/question-flow-coverage.cjs')],cwd=ROOT,env=env,check=True,timeout=200)
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['node', '/workspace/fiscalstudy/frontend/tests/browser/question-flow-coverage.cjs']' returned non-zero exit status 1.

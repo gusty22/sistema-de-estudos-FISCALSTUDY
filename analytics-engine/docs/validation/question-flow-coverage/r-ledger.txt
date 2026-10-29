@@ -1,0 +1,2 @@
+Prospective R: 11 integrity/scoring scenarios passed; fixture-only, no personal validation.
+Prospective scorecard: closed-form, ties, abstention, harms and replay checks passed.\n

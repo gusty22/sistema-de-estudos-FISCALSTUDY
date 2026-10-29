@@ -1,0 +1,19 @@
+
+> frontend@0.0.0 test
+> node --test tests/*.test.mjs
+
+✔ tests/accessibility-and-interaction.test.mjs (251.34258ms)
+✔ tests/dashboard-pedagogical-integrity.test.mjs (129.920794ms)
+✔ tests/knowledge-model-contracts.test.mjs (50.88597ms)
+✔ tests/learning-contracts.test.mjs (144.784796ms)
+✔ tests/prospective-capture-gate.test.mjs (156.374062ms)
+✔ tests/prospective-preparation.test.mjs (143.570285ms)
+✔ tests/prospective-recovery.test.mjs (194.774416ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1093.308091

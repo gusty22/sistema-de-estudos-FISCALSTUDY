@@ -1,0 +1,16 @@
+locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+[2m  - waiting for locator('.options[aria-busy="false"]') to be visible[22m
+
+    at /workspace/fiscalstudy/frontend/tests/browser/question-flow-coverage.cjs:44:52 {
+  name: 'TimeoutError'
+}
+Traceback (most recent call last):
+  File "/workspace/fiscalstudy/frontend/tests/fixtures/question_flow_coverage/run.py", line 62, in <module>
+    if __name__=='__main__':main()
+                            ^^^^^^
+  File "/workspace/fiscalstudy/frontend/tests/fixtures/question_flow_coverage/run.py", line 44, in main
+    subprocess.run(['node',str(ROOT/'frontend/tests/browser/question-flow-coverage.cjs')],cwd=ROOT,env=env,check=True,timeout=200)
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['node', '/workspace/fiscalstudy/frontend/tests/browser/question-flow-coverage.cjs']' returned non-zero exit status 1.
