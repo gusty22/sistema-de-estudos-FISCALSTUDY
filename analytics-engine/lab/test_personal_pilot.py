@@ -5,7 +5,19 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 from types import SimpleNamespace
-from personal_pilot import evaluate_local, validate_export, sha
+from personal_pilot import evaluate_local, validate_export, sha, bounded_read
+import subprocess
+REAL_RUN = subprocess.run
+
+def r_only(stub):
+    def execute(argv, **kwargs):
+        if argv[0] == "powershell.exe":
+            result = REAL_RUN(argv, **kwargs)
+            if result.returncode:
+                raise AssertionError("Synthetic Windows ACL diagnostic: " + result.stderr.decode("utf-8", errors="replace"))
+            return result
+        return stub(argv, **kwargs)
+    return execute
 
 class PersonalPilotTests(unittest.TestCase):
     def fixture(self, root):
@@ -38,7 +50,7 @@ class PersonalPilotTests(unittest.TestCase):
                     "excluded_count": 0, "metrics": {"status": "INSUFFICIENT_EVIDENCE"},
                     "scientific_scorecard": {"version": "prospective-scorecard-v1", "n": 0, "can_apply": False, "can_schedule": False}}))
                 return SimpleNamespace(returncode=0, stdout=b"synthetic", stderr=b"")
-            with patch("personal_pilot.subprocess.run", side_effect=execute):
+            with patch("personal_pilot.subprocess.run", side_effect=r_only(execute)):
                 result = evaluate_local(path, root / "run", synthetic_test=True)
             self.assertEqual(result["status"], "SUCCEEDED_SOFTWARE_EVALUATION_ONLY")
             self.assertEqual(path.read_bytes(), original)
@@ -51,7 +63,7 @@ class PersonalPilotTests(unittest.TestCase):
     def test_failure_is_explicit_and_does_not_claim_success(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory); path = self.fixture(root)
-            with patch("personal_pilot.subprocess.run", return_value=SimpleNamespace(returncode=1, stdout=b"", stderr=b"synthetic failure")):
+            with patch("personal_pilot.subprocess.run", side_effect=r_only(lambda *a, **kw: SimpleNamespace(returncode=1, stdout=b"", stderr=b"synthetic failure"))):
                 with self.assertRaises(RuntimeError):
                     evaluate_local(path, root / "failed", synthetic_test=True)
             report = json.loads((root / "failed/manifest.json").read_text())
@@ -64,7 +76,7 @@ class PersonalPilotTests(unittest.TestCase):
             def incomplete(argv, **kwargs):
                 Path(argv[-1]).write_text('{"can_apply":false,"can_schedule":false}')
                 return SimpleNamespace(returncode=0, stdout=b"", stderr=b"")
-            with patch("personal_pilot.subprocess.run", side_effect=incomplete):
+            with patch("personal_pilot.subprocess.run", side_effect=r_only(incomplete)):
                 with self.assertRaises(RuntimeError):
                     evaluate_local(path, root / "incomplete", synthetic_test=True)
             self.assertEqual(json.loads((root / "incomplete/manifest.json").read_text())["status"], "FAILED")
@@ -90,3 +102,40 @@ class PersonalPilotTests(unittest.TestCase):
                 evaluate_local(path, root / "forbidden", synthetic_test=True,
                                trusted_source_id="arbitrary-json-label")
             self.assertFalse((root / "forbidden").exists())
+
+    def test_bounded_read_limits_the_read_not_a_previous_stat(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "growing.json"
+            path.write_bytes(b"x" * 17)
+            self.assertEqual(bounded_read(path, 17), b"x" * 17)
+            with self.assertRaises(ValueError):
+                bounded_read(path, 16)
+
+    def test_frozen_input_replacement_cannot_leave_successful_authentication(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); path = self.fixture(root)
+            def changed(argv, **kwargs):
+                env = json.loads(path.read_text())
+                Path(argv[2]).write_bytes(b"substituted frozen bytes")
+                Path(argv[3]).write_text(json.dumps({"can_apply":False,"can_schedule":False,
+                    "contract_version":"prospective-evaluation-v1","input_sha256":env["inputSha256"],
+                    "source_kind":"SYNTHETIC_FIXTURE","forecast_count":0,"scored_count":0,"excluded_count":0,
+                    "metrics":{"status":"INSUFFICIENT_EVIDENCE"},"scientific_scorecard":{
+                        "version":"prospective-scorecard-v1","n":0,"can_apply":False,"can_schedule":False}}))
+                return SimpleNamespace(returncode=0,stdout=b"",stderr=b"")
+            with patch("personal_pilot.subprocess.run", side_effect=r_only(changed)):
+                with self.assertRaises(RuntimeError):
+                    evaluate_local(path, root / "changed", synthetic_test=True)
+            manifest=json.loads((root / "changed/manifest.json").read_text())
+            self.assertEqual(manifest["status"], "FAILED")
+            self.assertNotIn("source_authentication", manifest)
+            self.assertFalse((root / "changed/metrics.json").exists())
+            self.assertTrue((root / "changed/pending-metrics.json").exists())
+
+    def test_private_directory_failure_happens_before_input_copy(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); path = self.fixture(root)
+            with patch("personal_pilot.make_private_directory", side_effect=RuntimeError("ACL unavailable")):
+                with self.assertRaises(RuntimeError):
+                    evaluate_local(path, root / "no-copy", synthetic_test=True)
+            self.assertFalse((root / "no-copy/input-envelope.json").exists())

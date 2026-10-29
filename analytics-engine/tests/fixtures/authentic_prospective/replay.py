@@ -24,16 +24,20 @@ def main():
     envelope = json.loads(fixture.read_text(encoding="utf-8"))
     if json.loads(envelope["inputJson"]).get("sourceKind") != "SYNTHETIC_FIXTURE":
         raise ValueError("This fixture harness cannot evaluate personal exports")
-    with tempfile.TemporaryDirectory(prefix="fiscalstudy signed replay ") as temporary:
+    with tempfile.TemporaryDirectory(prefix="FiscalStudy sintético ação ") as temporary:
         root = Path(temporary)
-        result = evaluate_local(fixture, root / "private run", args.rscript, True,
-                                key, "SYNTHETIC-INTEGRATION-INSTALLATION")
+        copied_input = root / "entrada sintética ação.json"
+        copied_input.write_bytes(fixture.read_bytes())
+        copied_key = root / "raiz pública ação.pem"
+        copied_key.write_bytes(key.read_bytes())
+        result = evaluate_local(copied_input, root / "private run", args.rscript, True,
+                                copied_key, "SYNTHETIC-INTEGRATION-INSTALLATION")
         second_env = os.environ.copy()
         if args.second_r_home:
             second_env["RHOME"] = args.second_r_home
             second_env["R_HOME"] = args.second_r_home
         command = [args.second_rscript, str(ENGINE / "lab/attested_prospective_evaluation.R"),
-                   str(fixture), str(root / "replay.json"), str(key),
+                   str(copied_input), str(root / "replay.json"), str(copied_key),
                    "SYNTHETIC-INTEGRATION-INSTALLATION", "synthetic-test"]
         run = subprocess.run(command, cwd=ENGINE, env=second_env, capture_output=True, timeout=120)
         if run.returncode:
@@ -43,12 +47,37 @@ def main():
         assert metrics.endswith(b"\n") and b"\r\n" not in metrics
         overwrite = subprocess.run(command, cwd=ENGINE, env=second_env, capture_output=True, timeout=120)
         assert overwrite.returncode != 0 and metrics == (root / "replay.json").read_bytes()
+        if os.name == "nt":
+            audit_env = os.environ.copy()
+            audit_env["FISCALSTUDY_AUDIT_DIRECTORY"] = str(root / "private run")
+            audit = r"""
+$ErrorActionPreference='Stop'
+# Select the Windows PowerShell system module, not a PS7 module inherited via PSModulePath.
+$env:PSModulePath=$PSHOME+'/Modules'
+Import-Module Microsoft.PowerShell.Security -ErrorAction Stop
+$p=$env:FISCALSTUDY_AUDIT_DIRECTORY
+$allowed=@([Security.Principal.WindowsIdentity]::GetCurrent().User.Value,'S-1-5-18','S-1-5-32-544')
+if (!(Get-Acl -LiteralPath $p).AreAccessRulesProtected) { throw 'Unprotected output' }
+$all=@(Get-Item -LiteralPath $p)+@(Get-ChildItem -LiteralPath $p -Recurse -Force)
+foreach($item in $all) {
+  foreach($rule in (Get-Acl -LiteralPath $item.FullName).GetAccessRules($true,$true,[Security.Principal.SecurityIdentifier])) {
+    if ($rule.AccessControlType -eq 'Allow' -and $rule.IdentityReference.Value -notin $allowed) { throw 'Broad inherited ACL' }
+  }
+}
+"""
+            acl = subprocess.run(["powershell.exe","-NoProfile","-NonInteractive","-Command",audit],
+                                 env=audit_env,capture_output=True,timeout=30)
+            if acl.returncode:
+                raise RuntimeError("Independent NTFS audit failed")
+            assert result["storage_privacy"] == "NTFS_PROTECTED_USER_SYSTEM_ADMINISTRATORS"
         report = json.loads(metrics)
         assert report["personal_profile"] == "NOT_CREATED"
         assert all(value == "NOT_ESTABLISHED" for value in report["six_scientific_targets"].values())
         print(json.dumps({
             "scope": "SYNTHETIC_INTEGRATION_SOFTWARE_ONLY",
             "source_authentication": result["source_authentication"],
+            "storage_privacy": result["storage_privacy"],
+            "platform": sys.platform, "unicode_paths": True,
             "replay_identical": True, "overwrite_refused": True, "lf_utf8": True,
             "input_sha256": envelope["inputSha256"],
             "input_file_sha256": hashlib.sha256(fixture.read_bytes()).hexdigest(),

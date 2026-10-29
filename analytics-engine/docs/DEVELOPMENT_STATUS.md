@@ -1,3 +1,11 @@
+## Gate de ativação prospectiva — 2026-10-29
+
+Estado **NOT_STARTED**, ativação bloqueada. Revisão da PR #45/main `8724b3f`: corrigidos limites de leitura, publicação prematura do relatório e privacidade NTFS/temporário R. Testes adicionais são exclusivamente sintéticos; nenhuma chave operacional, coleta pessoal, alteração de frontend/FSRS/SQLite/calendário/política.
+
+Cobertura integral **FAIL**: QuestionViewer tem preparação/retry/retomada; ResolucaoQuestaoModal envia sem previsão/ajuda explícita; script PowerShell legado não autentica a origem prospectiva. Rotas não cobertas ficam fora de qualquer futura autorização restrita. Instalação pessoal, relógio, raiz de confiança e ACLs pessoais **NOT_VERIFIED**; autorização de início **FAIL** (não fornecida). Não confundir homologação nativa de runner Windows descartável com conferência do computador pessoal.
+
+[Checklist e revisão](PILOT_ACTIVATION_GATE_V1.md), [estados estruturados](results/pilot_activation_gate_v1.json) e [evidências locais](validation/activation-readiness/). A CI prospectiva inclui agora o gate nativo Windows com dados sintéticos e auditoria NTFS. Resultados históricos seguem preservados abaixo.
+
 ## Primeira cadeia prospectiva autenticada — 2026-10-29
 
 Base main `be6c93f` (PR #44 já mesclada, CI do head `9aac892` aprovada). Adaptador mínimo opcional assina o snapshot do exportador Java existente; R verifica chave/identidade externas, integridade e prefixo temporal antes de avaliar acerto em questões normais. Declaração de ajuda ausente fica identificável; contradições são excluídas. Compromisso deve ocorrer e ser registrado **estritamente antes** da resposta. Captura legada não adquire elegibilidade pessoal. Exportação preserva recibos de apresentação existentes, sem criar subsistema de coleta.

@@ -93,3 +93,34 @@ stopifnot(historical_report$scored_count==24,historical_report$unforecasted_atte
 wrong_key <- tempfile();writeLines("UNTRUSTED KEY",wrong_key)
 expect_error(evaluate_attested_prospective(path,wrong_key,source_id,TRUE))
 cat("Authenticated Java -> export -> R: synthetic custody, strict chronology, identity, help, exposure, tamper and baseline/replay checks passed. No personal experiment.\n")
+
+# Activation review: direct R entry cannot bypass size/type or live file-substitution guards.
+expect_error(evaluate_attested_prospective(path,key,source_id,NA))
+expect_error(evaluate_attested_prospective(path,key,source_id,"true"))
+large_key <- tempfile();writeBin(as.raw(rep(0L,65537L)),large_key)
+expect_error(evaluate_attested_prospective(path,large_key,source_id,TRUE))
+original_evaluator <- evaluate_prospective
+for (replace_key in c(FALSE,TRUE)) {
+  copied_input <- tempfile();file.copy(path,copied_input)
+  copied_key <- tempfile();file.copy(key,copied_key)
+  evaluate_prospective <- function(...) {
+    result <- original_evaluator(...)
+    writeBin(charToRaw("substituted"),if(replace_key) copied_key else copied_input)
+    result
+  }
+  tryCatch(expect_error(evaluate_attested_prospective(copied_input,copied_key,source_id,TRUE)),
+           finally={evaluate_prospective <- original_evaluator})
+}
+cat("Activation boundary: bounded key input, explicit fixture Boolean and original file/key substitution rejected.\n")
+
+original_system2 <- system2
+system2 <- function(...) 127L
+tryCatch(expect_error(evaluate_attested_prospective(path,key,source_id,TRUE)),
+         finally={system2 <- original_system2})
+expect_error(evaluate_attested_prospective(path,paste0(key,".absent"),source_id,TRUE))
+cat("Missing verifier or external key fails closed; no authenticated result.\n")
+
+expect_error(evaluate_attested_prospective(path,"../backend/target/prospective-other-fixture-public.pem",source_id,TRUE))
+message <- tryCatch(evaluate_attested_prospective(path,large_key,source_id,TRUE),error=function(e)conditionMessage(e))
+stopifnot(is.character(message),grepl("processing limit",message))
+cat("Valid other RSA public key rejected; key-size error identifies the limit guard.\n")

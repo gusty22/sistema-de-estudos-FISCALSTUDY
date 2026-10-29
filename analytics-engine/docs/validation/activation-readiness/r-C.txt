@@ -1,0 +1,1138 @@
+=========================================================
+FISCALSTUDY ANALYTICS — SUITE DE TESTES AUTOMATIZADOS (R)
+=========================================================
+
+
+--- Executando modulo: tests/test_validation.R ---
+  [PASS] validate_questions_dataset rejeita entrada NULL
+  [PASS] NULL em questoes gera 1 erro bloqueante
+  [PASS] validate_questions_dataset rejeita dataframe vazio
+  [PASS] validate_events_dataset rejeita entrada NULL
+  [PASS] validate_events_dataset rejeita dataframe vazio
+  [PASS] Rejeita catalogo de questoes sem question_id e disciplina
+  [PASS] Rejeita eventos sem session_id e occurred_at
+  [PASS] Fixture valid_questions.csv e considerada valida
+  [PASS] Zero erros bloqueantes no catalogo valido
+  [PASS] Fixture valid_events.csv e considerada valida
+  [PASS] Zero erros bloqueantes nos eventos validos
+  [PASS] Detectou exatamente 12 tentativas de resposta na fixture valida
+  [PASS] Fixture invalid_events.csv e corretamente rejeitada com is_valid == FALSE
+  [PASS] Detectou múltiplos erros bloqueantes na fixture invalida
+  [PASS] Detectou data invalida (DATA_INVALIDA_2026)
+  [PASS] Detectou nivel de confianca fora da escala (6)
+  [PASS] Detectou tempo ativo negativo (-4500)
+  [PASS] Detectou identificador de evento duplicado (inv-02)
+  [PASS] Detectou tentativa sem question_id
+  [PASS] Detectou tempo sub-segundo como warning (500ms)
+  [PASS] Detectou tentativa em questao anulada (q009)
+  [PASS] Detectou referencia a questao nao cadastrada (q999)
+  [PASS] Detectou gabarito com opcao invalida (X)
+  [PASS] Detectou ano anomalamente antigo (1950)
+  [PASS] Detectou alternativa selecionada fora de A-E (Z)
+  [PASS] Rejeita sessao com encerramento anterior ao inicio
+  [PASS] Identificou SESSION_CHRONOLOGY_INCONSISTENCY
+  [PASS] Detectou divergencia entre gabarito e is_correct
+
+--- Executando modulo: tests/test_descriptive.R ---
+  [PASS] Wilson CI lower bound com 0 acertos e 0.0
+  [PASS] Wilson CI upper bound com 0 acertos e plausivel
+  [PASS] Wilson CI upper bound com 10/10 acertos e 1.0
+  [PASS] Wilson CI com N=0 retorna NA
+  [PASS] Dataframe vazio resulta em 0 tentativas
+  [PASS] Dataframe vazio tem accuracy NA
+  [PASS] Total de 12 tentativas validas identificadas
+  [PASS] Total de 9 acertos identificados
+  [PASS] Total de 3 erros identificados
+  [PASS] Taxa de acerto global e exatamente 75.0%
+  [PASS] Denominador formatado corretamente no texto
+  [PASS] Calculou desempenho para as disciplinas do catalogo
+  [PASS] Direito Tributario presente nas disciplinas analisadas
+  [PASS] Direito Tributario possui 3 tentativas
+  [PASS] Direito Tributario possui 2 acertos
+  [PASS] 12 tempos validos analisados
+  [PASS] Mediana de tempo e positiva
+  [PASS] IQR de tempo e nao-negativo
+  [PASS] Menor tempo registrado e 35 segundos (35000 ms)
+  [PASS] Ignora tempos negativos na agregacao descritiva sem lancar excecao
+  [PASS] 12 observacoes com confianca valida
+  [PASS] Detectou exatamente 1 caso de superconfianca maxima (erro com conf 5)
+  [PASS] Detectou 0 casos de subconfianca na fixture
+  [PASS] Brier score e valido entre [0, 1]
+  [PASS] ECE e valido entre [0, 1]
+  [PASS] Identificou 2 sessoes distintas na fixture valida
+  [PASS] Sessoes com N < 10 foram assinaladas com flag de amostra baixa
+  [PASS] Topico com tentativas vazias retorna dataframe vazio
+  [PASS] Topico sem catalogo de questoes retorna dataframe vazio
+  [PASS] Calculou desempenho para topicos do catalogo
+  [PASS] Coluna assunto presente no resultado
+  [PASS] Topico Obrigacao Tributaria presente
+  [PASS] Obrigacao Tributaria possui 2 tentativas (q002 em sess-1 e sess-2)
+  [PASS] Obrigacao Tributaria possui 1 acerto (evt-03 errou, evt-12 acertou)
+  [PASS] Taxa de acerto em Obrigacao Tributaria e 50.0%
+  [PASS] Topico com N=2 sinalizado com low_sample_flag
+  [PASS] Comparacao em dataframe vazio retorna delta NA
+  [PASS] Sessao 1 contem 8 tentativas
+  [PASS] Sessao 1 contem 5 acertos
+  [PASS] Sessao 1 taxa de acerto e 62.5%
+  [PASS] Sessao 2 contem 4 tentativas
+  [PASS] Sessao 2 contem 4 acertos
+  [PASS] Sessao 2 taxa de acerto e 100.0%
+  [PASS] Delta de acuracia e +37.5%
+  [PASS] Valor de p calculado via Fisher/prop.test
+  [PASS] Flag de disparidade amostral ativada devido a N1=8 e N2=4
+  [PASS] Advertencias metodologicas retornadas explicitamente
+  [PASS] Explicit offset and UTC are the same instant
+  [PASS] Malformed, naive, impossible and missing timestamps remain unavailable
+  [PASS] Fractions survive explicit-offset conversion
+  [PASS] Invalid clock minute is rejected
+  [PASS] Only exact ordinal levels and evaluable outcomes enter confidence metrics
+  [PASS] Maximum-confidence denominator is its own observed subset
+  [PASS] Low-confidence denominator is its own observed subset
+  [PASS] Invalid ordinal evidence is counted, not silently truncated
+  [PASS] Conditional high-confidence error rate uses 1/1
+  [PASS] Conditional low-confidence success rate uses 1/1
+  [PASS] Mapped Brier matches the independent three-observation vector
+  [PASS] Mapped ECE uses unrounded empirical bin proportions
+  [PASS] An assumed mapping never claims validated subjective probabilities
+  [PASS] Missing pre-feedback timing is not reconstructed
+  [PASS] Absent level five is unknown rate, not zero
+  [PASS] Absent low-confidence group is unknown rate
+  [PASS] Fractional ordinal level is excluded
+  [PASS] No valid ordinal evidence produces no Brier score
+  [PASS] Empty confidence result preserves the result contract
+  [PASS] Mapped scores are explicitly sensitive to the assumed mapping
+  [PASS] Malformed probability mapping fails explicitly rather than reverting or emitting NA scores
+  [PASS] Malformed probability mapping fails explicitly rather than reverting or emitting NA scores
+  [PASS] Malformed probability mapping fails explicitly rather than reverting or emitting NA scores
+  [PASS] Malformed probability mapping fails explicitly rather than reverting or emitting NA scores
+  [PASS] Malformed probability mapping fails explicitly rather than reverting or emitting NA scores
+
+--- Executando modulo: tests/test_retention.R ---
+  [PASS] Retencao sobre dataframe vazio retorna 0 tentativas
+  [PASS] Classificou todas as 12 tentativas
+  [PASS] Identificou 9 tentativas iniciais
+  [PASS] Identificou 3 repeticoes da mesma questao
+  [PASS] Intervalo de atraso (lag) calculado corretamente (~28 horas)
+  [PASS] Total de 3 repeticoes processadas nas metricas
+  [PASS] Matriz de transicao registrou 3 recuperacoes (Erro -> Acerto)
+  [PASS] Zero esquecimentos observados na amostra (Acerto -> Erro)
+  [PASS] Preserva advertencias metodologicas explicitas
+  [PASS] No observations means insufficient evidence
+  [PASS] No arbitrary coefficients for an empty history
+  [PASS] No fitted exploration authorizes scheduling
+  [PASS] Three repeat observations cannot establish a forgetting model
+  [PASS] Small samples do not receive invented priors
+  [PASS] Finite identifiable logistic association is retained as exploratory
+  [PASS] Observed positive slope is not clipped into theoretical forgetting
+  [PASS] Current confidence is not a prior-memory predictor
+  [PASS] Changing current confidence cannot change memory coefficients
+  [PASS] Identical intervals cannot identify a time slope
+  [PASS] Numerical separation must not be reported as a viable calibrated model
+  [PASS] Failed estimation does not fall back to synthetic coefficients
+  [PASS] A logistic association does not establish a personal half life
+  [PASS] A valid FSRS state is required instead of a deadline from a subject name
+  [PASS] Discipline names do not invent future intervention dates
+  [PASS] Wilson interval is not calculated over expected future successes
+  [PASS] Observed accuracy retains its actual denominator
+  [PASS] Equivalent evidence has equivalent observed uncertainty regardless of discipline name
+  [PASS] Exploratory model cannot create an executable forgetting curve
+  [PASS] Zero denominator is unknown rather than zero proficiency
+  [PASS] Omitted sample size is not silently imputed
+  [PASS] Java-compatible algorithm envelope retained
+  [PASS] Unvalidated weights cannot override the actual study plan
+  [PASS] No invented allocation percentages or study minutes
+  [PASS] A global confidence signal does not assign deficits or donors to all disciplines
+  [PASS] Missing elapsed days and budget stay missing
+  [PASS] No donor time is fabricated
+  [PASS] Identical duplicate catalog metadata cannot multiply attempt rows
+  [PASS] Input metadata is preserved without merge suffixes
+  [PASS] Same topic label in another discipline is not prior topic exposure
+  [PASS] Different question in the same discipline/topic is recognized as such
+  [PASS] Missing catalog preserves observed topic metadata
+  [PASS] Conflicting duplicate question identity is rejected explicitly
+  [PASS] Empty interval is not displayed as zero retention
+  [PASS] Exposure labels refer to logged attempts, not a complete lifetime history
+  [PASS] First recorded attempt does not claim no earlier unrecorded exposure
+
+--- Executando modulo: tests/test_visualization.R ---
+Sem dados para plot_accuracy_evolution.
+  [PASS] plot_accuracy_evolution com NULL retorna NULL
+Sem dados para plot_accuracy_evolution.
+  [PASS] plot_accuracy_evolution com vazio retorna NULL
+Fontconfig error: No writable cache directories
+  [PASS] plot_accuracy_evolution gera arquivo PNG valido
+Sem dados para plot_response_time_distribution.
+  [PASS] plot_response_time_distribution com NULL retorna NULL
+Sem dados para plot_response_time_distribution.
+  [PASS] plot_response_time_distribution com vazio retorna NULL
+  [PASS] plot_response_time_distribution gera arquivo PNG valido
+Sem dados para plot_calibration_curve.
+  [PASS] plot_calibration_curve com NULL retorna NULL
+Sem dados para plot_calibration_curve.
+  [PASS] plot_calibration_curve com n_observations=0 retorna NULL
+  [PASS] plot_calibration_curve gera arquivo PNG valido
+Sem dados para plot_discipline_comparison.
+  [PASS] plot_discipline_comparison com NULL retorna NULL
+Sem dados para plot_discipline_comparison.
+  [PASS] plot_discipline_comparison com vazio retorna NULL
+  [PASS] plot_discipline_comparison gera arquivo PNG valido
+Sem dados para plot_evidence_volume.
+  [PASS] plot_evidence_volume com NULL retorna NULL
+Sem dados para plot_evidence_volume.
+  [PASS] plot_evidence_volume com vazio retorna NULL
+  [PASS] plot_evidence_volume gera arquivo PNG valido
+  [PASS] One attempt produces a valid descriptive time figure
+  [PASS] Constant response times do not trigger an undefined histogram rule
+  [PASS] Nonfinite times do not form a fabricated distribution
+  [PASS] No valid times means no figure is manufactured
+
+--- Executando modulo: tests/test_export.R ---
+  [PASS] Nome da metrica preservado
+  [PASS] Valor da metrica preservado
+  [PASS] Quantidade de observacoes preservada
+  [PASS] Versao do contrato de saida e 1.0.0
+  [PASS] Pacote contem pelo menos 6 metricas consolidadas
+  [PASS] Arquivo JSON de metricas gerado com sucesso
+  [PASS] Arquivo CSV de metricas gerado com sucesso
+  [PASS] CSV gerado contem todas as linhas de metricas
+  [PASS] Coluna metric_name presente no CSV
+  [PASS] overall_accuracy presente no CSV
+  [FAIL] UTF-8 curriculum labels survive CSV decoding (Esperado: 'Direito Tribut<U+00E1>rio: exce<U+00E7><U+00E3>o, aten<U+00E7><U+00E3>o e mem<U+00F3>ria' | Obtido: 'Direito Tribut<U+00E1>rio: exce<U+00E7><U+00E3>o, aten<U+00E7><U+00E3>o e mem<U+00F3>ria')
+  [PASS] UTF-8 reader preserves input snapshot bytes
+  [PASS] UTF-8 header/row limits remain supported
+  [FAIL] Optional UTF-8 BOM preserves header identity (Esperado: 'Direito Tribut<U+00E1>rio: exce<U+00E7><U+00E3>o, aten<U+00E7><U+00E3>o e mem<U+00F3>ria' | Obtido: 'Direito Tribut<U+00E1>rio: exce<U+00E7><U+00E3>o, aten<U+00E7><U+00E3>o e mem<U+00F3>ria')
+  [PASS] Invalid UTF-8 bytes fail explicitly
+  [PASS] Encoding failure identifies UTF-8 contract
+  [PASS] UTF-8 CSV retains standard quote/comma/newline semantics
+  [PASS] UTF-8 CSV retains character metric values
+  [PASS] Conditional confidence export uses its subset denominator
+  [PASS] Fixture distinguishes subset from total observations
+  [PASS] Metric package does not claim subjective probability validation
+  [PASS] Assumed mapping provenance survives export
+  [PASS] CSV/JSON record exposes unvalidated ordinal mapping
+
+--- Executando modulo: tests/test_learning_profile.R ---
+  [PASS] build_learning_profile com NULL retorna versao 1.0.0
+  [PASS] build_learning_profile com NULL possui 0 tentativas validas
+  [PASS] build_learning_profile com NULL nao e valido
+  [PASS] build_learning_profile com NULL possui period start NA
+  [PASS] build_learning_profile com df vazio possui 0 tentativas
+  [PASS] build_learning_profile com df vazio tem disciplinas vazias
+  [PASS] Perfil sobre fixture valida tem is_valid == TRUE
+  [PASS] Identificou 12 tentativas validas no perfil
+  [PASS] Identificou 2 sessoes no periodo do perfil
+  [PASS] Perfil contem pelo menos 3 disciplinas analisadas
+  [PASS] Coluna evidence_level presente nas disciplinas
+  [PASS] Disciplinas da fixture classificadas com LOW_EVIDENCE
+  [PASS] Perfil contem topicos mapeados
+  [PASS] Catalogo contem topicos nao estudados marcados como NO_DATA
+  [PASS] Topico NO_DATA possui acuracia NA e nao 0%
+  [PASS] Topico NO_DATA possui exatamente 0 tentativas
+  [PASS] Perfil registrou 3 tentativas repetidas
+  [PASS] Taxa de acerto em repeticoes e 100% (3/3)
+  [PASS] Acuracia em itens ineditos calculada
+  [PASS] Alias historico de diferenca repeticao-inicial calculado, sem provar transferencia
+  [PASS] Perfil analisou 12 tempos validos
+  [PASS] Mediana de tempo e positiva
+  [PASS] Fixture valida nao possui tempos sub-segundo
+  [PASS] Metacognicao cobriu 12 observacoes
+  [PASS] Perfil detectou 1 caso de superconfianca maxima
+  [PASS] Brier score esta no intervalo [0, 1]
+  [PASS] ECE esta no intervalo [0, 1]
+  [PASS] Total de 3 erros identificado no perfil
+  [PASS] Zero erros reincidentes em questoes ja repetidas na fixture valida
+  [PASS] Questao anulada nao entra nas evidencias avaliaveis do perfil
+  [PASS] Dados sem erros bloqueantes continuam validos
+  [PASS] Catalogo anulada aparece no denominador de exclusao
+  [PASS] Anulada nao contamina calibracao
+  [PASS] Repetir item nao estabelece transferencia conceitual
+  [PASS] Alias legado conserva valor e significado explicito
+  [PASS] Fixture permanece diagnostica e nao perfil pessoal
+  [PASS] Origem REAL_STUDY explicita e auditoria comprovada permitem perfil pessoal
+  [PASS] Contagem de origem pessoal usa dados originais
+  [PASS] Atributo antigo nao lava origem nao pessoal: AUTOMATED_TEST
+  [PASS] Procedencia conflitante explicitamente nao verificada: AUTOMATED_TEST
+  [PASS] Atributo antigo nao lava origem nao pessoal: DEMO
+  [PASS] Procedencia conflitante explicitamente nao verificada: DEMO
+  [PASS] Atributo antigo nao lava origem nao pessoal: UNKNOWN
+  [PASS] Procedencia conflitante explicitamente nao verificada: UNKNOWN
+  [PASS] Atributo antigo nao lava origem nao pessoal: 
+  [PASS] Procedencia conflitante explicitamente nao verificada: 
+  [PASS] Atributo antigo nao lava origem nao pessoal: NA
+  [PASS] Procedencia conflitante explicitamente nao verificada: NA
+  [PASS] Atributo operacional nao substitui origem por linha ausente
+  [PASS] Linha nao avaliavel e removida da metrica
+  [PASS] Excluir teste anulado nao transforma dataset misto em pessoal
+  [PASS] Resultado presente nao supera gabarito nao avaliavel: ANULADA
+  [PASS] Sem resultado avaliavel permanece NO_DATA: ANULADA
+  [PASS] Perfil sem evidencias avaliaveis nao e pessoal: ANULADA
+  [PASS] Ausencia de evidencia nao vira 0%: ANULADA
+  [PASS] Status do catalogo tambem exclui resultado: ANULADA
+  [PASS] Resultado presente nao supera gabarito nao avaliavel: AUSENTE
+  [PASS] Sem resultado avaliavel permanece NO_DATA: AUSENTE
+  [PASS] Perfil sem evidencias avaliaveis nao e pessoal: AUSENTE
+  [PASS] Ausencia de evidencia nao vira 0%: AUSENTE
+  [PASS] Status do catalogo tambem exclui resultado: AUSENTE
+  [PASS] Resultado presente nao supera gabarito nao avaliavel: SOB_REVISAO
+  [PASS] Sem resultado avaliavel permanece NO_DATA: SOB_REVISAO
+  [PASS] Perfil sem evidencias avaliaveis nao e pessoal: SOB_REVISAO
+  [PASS] Ausencia de evidencia nao vira 0%: SOB_REVISAO
+  [PASS] Status do catalogo tambem exclui resultado: SOB_REVISAO
+  [PASS] is_annulled registrado na tentativa tambem exclui evidencia
+  [PASS] Ausencia de resultado possui contador explicito
+  [PASS] Sem resultado nao atualiza metrica
+  [PASS] Confianca ausente explicitamente contada
+  [PASS] Tempo ausente explicitamente contado
+  [PASS] Data ausente explicitamente contada
+  [PASS] Sessao ausente nao fabrica uma sessao
+  [PASS] Erro bloqueante de validacao impede perfil pessoal
+  [PASS] Flag explicita de inelegibilidade da auditoria e respeitada
+  [PASS] Colunas Java e catalogo coexistem sem .x/.y ou perda de evidencia
+  [PASS] Perfil operacional possui topico observado
+  [PASS] Duplicata identica no catalogo nao altera denominador do perfil
+  [PASS] Join de desempenho nao duplica tentativa por catalogo repetido
+  [PASS] Catalogo incompleto nao apaga disciplina registrada na tentativa
+  [PASS] Catalogo incompleto nao apaga topico registrado na tentativa
+  [PASS] Catalogo conflitante gera erro explicito em vez de multiplicar evidencias
+  [PASS] Politica de evidencia versionada tambem no perfil vazio
+  [PASS] Politica de evidencia distingue perfil com filtro novo
+  [PASS] Helper central preserva denominador original
+  [PASS] Helper central usa mesma exclusao do perfil
+  [PASS] Mascara central rastreia cada linha original
+  [PASS] Pipeline e perfil compartilham identica elegibilidade
+  [PASS] Filtro nao altera auditoria original nem cria nova procedencia
+  [PASS] Helper central aceita entrada nula sem fabricar dados
+
+--- Executando modulo: tests/test_analytical_signals.R ---
+  [PASS] Perfil nulo gera exatamente 1 sinal
+  [PASS] Sinal gerado e SIG_NO_VALID_DATA
+  [PASS] SIG_NO_VALID_DATA nao e heuristico
+  [PASS] Detectou sinais analiticos na fixture valida
+  [PASS] Sinal SIG_OVERCONFIDENCE_ERROR satisfaz contrato de campos obrigatorios
+  [PASS] Sinal SIG_OVERCONFIDENCE_ERROR possui limitacoes metodologicas explicitas
+  [PASS] Sinal SIG_INSUFFICIENT_EVIDENCE_Auditoria_Procedimentos satisfaz contrato de campos obrigatorios
+  [PASS] Sinal SIG_INSUFFICIENT_EVIDENCE_Auditoria_Procedimentos possui limitacoes metodologicas explicitas
+  [PASS] Sinal SIG_INSUFFICIENT_EVIDENCE_Contabilidade_Geral_Demonstracoes satisfaz contrato de campos obrigatorios
+  [PASS] Sinal SIG_INSUFFICIENT_EVIDENCE_Contabilidade_Geral_Demonstracoes possui limitacoes metodologicas explicitas
+  [PASS] Sinal SIG_INSUFFICIENT_EVIDENCE_Direito_Administrativo_Atos satisfaz contrato de campos obrigatorios
+  [PASS] Sinal SIG_INSUFFICIENT_EVIDENCE_Direito_Administrativo_Atos possui limitacoes metodologicas explicitas
+  [PASS] Sinal SIG_INSUFFICIENT_EVIDENCE_Direito_Administrativo_Improbidade satisfaz contrato de campos obrigatorios
+  [PASS] Sinal SIG_INSUFFICIENT_EVIDENCE_Direito_Administrativo_Improbidade possui limitacoes metodologicas explicitas
+  [PASS] Sinal SIG_INSUFFICIENT_EVIDENCE_Direito_Tributario_Lancamento satisfaz contrato de campos obrigatorios
+  [PASS] Sinal SIG_INSUFFICIENT_EVIDENCE_Direito_Tributario_Lancamento possui limitacoes metodologicas explicitas
+  [PASS] Sinal SIG_INSUFFICIENT_EVIDENCE_Direito_Tributario_Obrigacao_Tributaria satisfaz contrato de campos obrigatorios
+  [PASS] Sinal SIG_INSUFFICIENT_EVIDENCE_Direito_Tributario_Obrigacao_Tributaria possui limitacoes metodologicas explicitas
+  [PASS] Sinal SIG_INSUFFICIENT_EVIDENCE_Legislacao_Municipal_IPTU satisfaz contrato de campos obrigatorios
+  [PASS] Sinal SIG_INSUFFICIENT_EVIDENCE_Legislacao_Municipal_IPTU possui limitacoes metodologicas explicitas
+  [PASS] Sinal SIG_INSUFFICIENT_EVIDENCE_Legislacao_Municipal_ISSQN satisfaz contrato de campos obrigatorios
+  [PASS] Sinal SIG_INSUFFICIENT_EVIDENCE_Legislacao_Municipal_ISSQN possui limitacoes metodologicas explicitas
+  [PASS] Sinal SIG_INSUFFICIENT_EVIDENCE_Lingua_Portuguesa_Concordancia satisfaz contrato de campos obrigatorios
+  [PASS] Sinal SIG_INSUFFICIENT_EVIDENCE_Lingua_Portuguesa_Concordancia possui limitacoes metodologicas explicitas
+  [PASS] Sinal SIG_INSUFFICIENT_EVIDENCE_Lingua_Portuguesa_Sintaxe satisfaz contrato de campos obrigatorios
+  [PASS] Sinal SIG_INSUFFICIENT_EVIDENCE_Lingua_Portuguesa_Sintaxe possui limitacoes metodologicas explicitas
+  [PASS] Detectou sinal SIG_OVERCONFIDENCE_ERROR
+  [PASS] Tipo do sinal e HIGH_CONFIDENCE_ERROR
+  [PASS] Superconfianca e definicao metrologica exata, nao heuristica arbitraria
+  [PASS] Detectou sinal de evidencia insuficiente em topicos com N < 10
+  [PASS] Detectou erro recorrente na questao q002
+  [PASS] Tipo do sinal de erro e RECURRENT_ERROR
+  [PASS] Identificado como heuristico provisorio
+  [PASS] Detectou anomalia de tempo sub-segundo
+  [PASS] Configuracao customizada de limiar respeitada
+  [PASS] Absent attempt rows do not invent two errors to support a signal
+
+--- Executando modulo: tests/test_interventions.R ---
+  [PASS] validate_interventions_dataset rejeita NULL
+  [PASS] NULL gera 1 erro bloqueante
+  [PASS] validate_interventions_dataset rejeita dataframe vazio
+  [PASS] Rejeita dataframe sem colunas obrigatorias
+  [PASS] Identificou MISSING_REQUIRED_COLUMNS
+  [PASS] Fixture valid_interventions.csv e considerada valida
+  [PASS] Zero erros bloqueantes nas intervencoes validas
+  [PASS] Processou exatamente 3 intervencoes validas
+  [PASS] Fixture invalid_interventions.csv e rejeitada
+  [PASS] Detectou multiplos erros bloqueantes na fixture invalida
+  [PASS] Detectou intervencao com ID duplicado
+  [PASS] Detectou tempo de intervencao negativo
+  [PASS] Detectou timestamp invalido
+  [PASS] Detectou atividade fora do dominio permitido
+  [PASS] Detectou desfecho posterior invalido
+  [PASS] Detectou warnings na fixture invalida
+  [PASS] Detectou tempo suspeitosamente curto (< 5s) como warning
+  [PASS] Amostra com N < 5 retorna explicitamente INSUFFICIENT_EVIDENCE
+  [PASS] Total de 3 intervencoes identificado
+  [PASS] Uma intervencao declara desfecho posterior
+  [PASS] Sem evento correspondente nao ha desfecho verificado
+  [PASS] Advertencias metodologicas retornadas explicitamente
+  [PASS] Oito eventos vinculados permitem apenas resumo observacional
+  [PASS] 8 intervencoes avaliadas
+  [PASS] Avaliou 2 atividades distintas
+  [PASS] Avaliou 2 metodos distintos
+  [PASS] 4 avaliacoes foram em SAME_QUESTION
+  [PASS] 4 acertos em SAME_QUESTION (100%)
+  [PASS] Taxa em mesma questao e 1.0
+  [PASS] 4 avaliacoes foram em SAME_TOPIC_NEW_QUESTION
+  [PASS] 3 acertos em SAME_TOPIC_NEW_QUESTION (75%)
+  [PASS] Taxa em questoes novas e 0.75
+  [PASS] IC lower para questoes novas e valido
+  [PASS] IC upper para questoes novas e valido
+  [PASS] Advertencia expressa contra atribuicao automatica de causalidade preservada
+  [PASS] Followup summary never authorizes a planner action
+  [PASS] Linked outcomes do not establish empirical efficacy
+  [PASS] Declared new-item label does not prove transfer
+  [PASS] Assessment type retains its unverified declaration status
+  [PASS] Every counted outcome points to an unambiguous later answer event
+  [PASS] Simultaneous outcome is not a proven subsequent assessment
+  [PASS] Temporal violation has an explicit reason
+  [PASS] Declared success cannot override an actual incorrect answer
+  [PASS] Contradictory event outcome is identified
+  [PASS] Duplicated event identity cannot inflate followup evidence
+  [PASS] One followup reused by two interventions is not counted twice
+  [PASS] All ambiguous shared links are rejected rather than choosing an arbitrary owner
+  [PASS] Annulled event cannot evaluate an intervention
+  [PASS] Naive timestamp is not silently converted to UTC
+  [PASS] Presentation event is not an evaluated response
+  [PASS] Observed lag derives from actual recorded timestamps
+  [PASS] Original declared lag remains auditable
+  [PASS] Duplicate intervention IDs fail validation
+  [PASS] Empty intervention input remains a no-data state
+
+--- Executando modulo: tests/test_adapter.R ---
+  [PASS] validate_operational_export rejeita NULL
+  [PASS] NULL gera 1 erro bloqueante
+  [PASS] validate_operational_export rejeita dataframe vazio
+  [PASS] Rejeita dataset sem colunas obrigatorias da exportacao
+  [PASS] Identificou MISSING_REQUIRED_COLUMNS
+  [PASS] Rejeita confianca fora do dominio [1, 5]
+  [PASS] Identificou INVALID_CONFIDENCE_RANGE
+  [PASS] Rejeita tempo ativo negativo
+  [PASS] Identificou NEGATIVE_ACTIVE_TIME
+  [PASS] Exportacao operacional real e estruturalmente valida
+  [PASS] Zero erros bloqueantes na exportacao real
+  [PASS] Processou exatamente 20 registros operacionais
+  [PASS] Identificou 19 tentativas avaliaveis com gabarito
+  [PASS] Segregou 1 tentativa nao-aveliavel (q14 gabarito ausente)
+  [PASS] Contabilizou 13 acertos pedagogicos
+  [PASS] Pontuacao de concurso calculada corretamente
+  [PASS] Reconhece ausencia de dados temporais sem injetar datas ficticias
+  [PASS] Traduziu discipline para disciplina
+  [PASS] Traduziu board para banca
+  [PASS] Traduziu year para ano
+  [PASS] Preservou occurred_at como NA transparente
+  [PASS] Extraiu catalogo com 20 questoes unicas
+  [PASS] question_id presente no catalogo
+  [PASS] disciplina presente no catalogo
+  [PASS] Preserves observed trace: event_id
+  [PASS] Preserves observed trace: session_id
+  [PASS] Preserves observed trace: occurred_at
+  [PASS] Preserves observed trace: origin_type
+  [PASS] Preserves observed trace: fsrs_retrievability_pre_update
+  [PASS] Preserves observed trace: fsrs_prediction_timestamp
+  [PASS] Preserves observed trace: fsrs_model_version
+  [PASS] Preserves observed trace: fsrs_evidence_status
+  [PASS] Preserves FSRS pre-update probability without recomputation
+  [PASS] Preserves the recorded FSRS implementation version
+  [PASS] Preserves the FSRS prediction timestamp
+  [PASS] Preserves the estimate calibration status
+  [PASS] Existing timestamps are recognized
+  [PASS] Complete timestamps retain complete coverage
+  [PASS] Temporal denominator is explicit
+  [PASS] Existing event and session identities are complete
+  [PASS] Trace presence does not convert fixtures to personal study
+  [PASS] Adapter does not fabricate question source text
+  [PASS] Missing confidence remains an explicit gap
+  [PASS] Legacy omission remains unknown: event_id
+  [PASS] Legacy omission remains unknown: session_id
+  [PASS] Legacy omission remains unknown: occurred_at
+  [PASS] Legacy omission remains unknown: origin_type
+  [PASS] Legacy omission remains unknown: fsrs_retrievability_pre_update
+  [PASS] Legacy omission remains unknown: fsrs_prediction_timestamp
+  [PASS] Legacy omission remains unknown: fsrs_model_version
+  [PASS] Legacy omission remains unknown: fsrs_evidence_status
+  [PASS] Legacy exports do not acquire fabricated FSRS estimates
+  [PASS] Legacy exports do not acquire synthetic timestamps
+  [PASS] Legacy exports do not acquire synthetic identity
+  [PASS] Missing origin cannot establish a personal profile
+  [PASS] Partial time coverage is present
+  [PASS] Partial time coverage is not complete
+  [PASS] Partial temporal denominator is explicit
+  [PASS] Malformed observed timestamps block adaptation
+  [PASS] Duplicate known attempt identities cannot duplicate evidence
+  [PASS] Missing answer-key status is not silently definitive
+
+--- Executando modulo: tests/test_baselines_and_rigor.R ---
+  [PASS] Wilson CI k=0 n=1: limite inferior e exatamente 0.0
+  [PASS] Wilson CI k=0 n=1: limite superior matematicamente consistente (~0.7935)
+  [PASS] Wilson CI k=1 n=1: limite superior e exatamente 1.0
+  [PASS] Wilson CI k=1 n=1: limite inferior matematicamente consistente (~0.2065)
+  [PASS] Wilson CI k=5 n=10 e perfeitamente simetrico em torno de 0.5
+  [PASS] Brier score coincide exatamente com calculo analitico (0.0250)
+  [PASS] Brier score de baseline coincide com calculo analitico (0.2500)
+  [PASS] Brier Skill Score coincide com resolucao exata (0.9000)
+  [PASS] Identificou superacao do baseline
+  [PASS] Identificou 4 observacoes no baseline historico
+  [PASS] Identificou 3 acertos
+  [PASS] Probabilidade predita e exatamente a media historica 0.75
+  [PASS] Funcao predict aplica probabilidade constante
+  [PASS] Tabela de topicos possui 2 topicos catalogados
+  [PASS] Predicao suavizada calculada corretamente
+  [PASS] Ultimos 3 itens todos certos -> media movel 1.0
+  [PASS] Primeiros 2 itens errados -> media movel 0.0
+  [PASS] BKT rejeitado com amostra pequena
+  [PASS] Veredito e NOT_VIABLE_USE_BASELINE
+  [PASS] Identificou multiplas barreiras metodologicas no BKT
+  [PASS] IRT com 1 estudante rejeitado como matematicamente impossivel
+  [PASS] Veredito de IRT individual e NOT_VIABLE_USE_BASELINE
+  [PASS] Retencao parametrica sem espacamento > 14 dias rejeitada
+  [PASS] Baseline historico com NULL retorna 0 observacoes
+  [PASS] Baseline topicos com NULL retorna dataframe vazio
+  [PASS] Media movel com NULL retorna 0 observacoes
+  [PASS] Comparacao de vetores sem desenho temporal nao se apresenta como validação
+  [PASS] Comparacao descritiva nao pode dirigir o planejador
+  [PASS] Backtest temporal gera status descritivo explicitamente nao validado
+  [PASS] Cada previsao usa somente eventos anteriores ao seu timestamp
+  [PASS] Backtest individual nao se autodeclara empiricamente validado
+  [PASS] Backtest nao comanda revisao FSRS nem plano
+  [PASS] Item anulado e excluido do backtest
+  [PASS] Backtest informa tentativa excluida
+  [PASS] Primeira previsao usa somente os tres resultados anteriores
+  [PASS] Eventos no mesmo timestamp nao vazam resultado entre si
+  [PASS] Tamanho do historico preditivo e rastreado
+  [PASS] Questao previamente vista e separada de primeira exposicao
+  [PASS] Backtest temporal e invariante a ordem de entrada
+  [PASS] Resultados futuros nao alteram a previsao ja feita
+  [PASS] Identidade duplicada bloqueia avaliacao temporal
+  [PASS] Identidade duplicada nao produz previsoes
+  [PASS] Historico menor que a janela inicial produz estado insuficiente explicito
+  [PASS] Predictive backtest rejects timestamps with an unknown timezone
+  [PASS] Same-instant events stay in one prediction batch across timezone representations
+  [PASS] Perfect probabilities have exactly zero Brier without clipping
+  [PASS] BSS against a perfect zero-error baseline is undefined
+  [PASS] Undefined BSS cannot claim superiority
+  [PASS] Nonbinary outcome is not silently recoded as incorrect
+  [PASS] Out-of-range probabilities are rejected instead of clipped
+  [PASS] Missing probabilities cannot produce a valid score
+
+--- Executando modulo: tests/test_provenance.R ---
+
+--- Executando modulo: tests/test_provenance.R ---
+  [PASS] verify_data_provenance rejeita NULL com UNVERIFIED_SOURCE
+  [PASS] NULL nao e operacional comprovado
+  [PASS] NULL nao e dado de estudante real
+  [PASS] NULL nao pode gerar perfil de estudante
+  [PASS] verify_data_provenance rejeita dataframe vazio
+  [PASS] Dataframe vazio nao e dado real
+  [PASS] Caminho tests/fixtures/ classificado como SYNTHETIC_FIXTURE
+  [PASS] Fixture sintetica nao e estudante real
+  [PASS] Fixture sintetica nao pode gerar perfil real
+  [PASS] Declaracao SYNTHETIC_FIXTURE respeitada
+  [PASS] Arquivo com 'sample' no nome e DEMONSTRATION_SAMPLE
+  [PASS] Amostra sample nao e historico real
+  [PASS] operational_export_v1.csv classificado como DEMONSTRATION_SAMPLE
+  [PASS] operational_export_v1.csv NAO e estudante real
+  [PASS] Veredito e AMOSTRA_DEMONSTRATIVA_DE_CONTRATO
+  [PASS] Avisos de bloqueio epistemico emitidos para a amostra
+  [PASS] Declaracao operacional falsa e REBAIXADA para UNVERIFIED_SOURCE
+  [PASS] Declaracao falsa nao e aceita como operacional
+  [PASS] Declaracao falsa nao gera dado real de estudante
+  [PASS] Veredito e REJEITADO_FALTA_DE_CUSTODIA
+  [PASS] Alerta explicito de rejeicao gerado
+  [PASS] Manifesto possui versao 1.0.0
+  [PASS] Manifesto confirma ambiente de producao
+  [PASS] Dataset com manifesto integro e aprovado como PROVEN_OPERATIONAL
+  [PASS] Status e operacional comprovado
+  [PASS] Status e dado de estudante real
+  [PASS] Autorizado a gerar perfil real de estudante
+  [PASS] Veredito e PROCEDENCIA_OPERACIONAL_COMPROVADA
+  [PASS] Adaptador preserva procedencia DEMONSTRATION_SAMPLE
+  [PASS] Adaptador marca is_real_student_data = FALSE
+  [PASS] Adaptador veda geracao de perfil de estudante
+  [PASS] Cautela metodologica sobre procedencia incluida
+  [PASS] Perfil identifica data_provenance como DEMONSTRATION_SAMPLE
+  [PASS] Perfil marca is_real_student_profile = FALSE
+  [PASS] Bloqueio epistemico presente nas advertencias do perfil
+  [PASS] calculate_confidence_metrics retorna conversion_hypothesis
+  [PASS] Natureza da conversao explicitada como hipotese parametrica
+  [PASS] Cautela sobre hipotese presente nas advertencias
+  [PASS] Divergencia de SHA-256 e rejeitada como REJEITADO_INCONSISTENCIA_MANIFESTO
+  [PASS] Inconsistencia de hash nao e aceita como operacional
+  [PASS] Inconsistencia de hash nao e tratada como dado real
+  [PASS] Motivo explicita CHECKSUM_MISMATCH
+  [PASS] Divergencia de contagem e rejeitada como REJEITADO_INCONSISTENCIA_MANIFESTO
+  [PASS] Inconsistencia de contagem nao e aceita como operacional
+  [PASS] Motivo explicita RECORD_COUNT_MISMATCH
+  [PASS] Manifesto sem hash e rejeitado compulsoriamente como REJEITADO_MANIFESTO_SEM_HASH
+  [PASS] Manifesto sem hash nao e operacional comprovado
+  [PASS] Manifesto sem hash nao gera dados reais de estudante
+  [PASS] Arquivo ausente para hash e rejeitado como REJEITADO_ARQUIVO_INACESSIVEL_PARA_HASH
+  [PASS] Impossibilidade de hash nao pode ser aprovada como operacional
+  [PASS] Arquivo sem verificacao criptografica nao e dado real
+  [PASS] Arquivo modificado e rejeitado como REJEITADO_INCONSISTENCIA_MANIFESTO
+  [PASS] Arquivo adulterado nao e operacional
+  [PASS] Arquivo adulterado gera motivo explicito CHECKSUM_MISMATCH
+  [PASS] Nonpersonal origin rejected: AUTOMATED_TEST
+  [PASS] No personal profile for: AUTOMATED_TEST
+  [PASS] Nonpersonal origin rejected: DEMO
+  [PASS] No personal profile for: DEMO
+  [PASS] Nonpersonal origin rejected: UNKNOWN
+  [PASS] No personal profile for: UNKNOWN
+  [PASS] Nonpersonal origin rejected: 
+  [PASS] No personal profile for: 
+  [PASS] Nonpersonal origin rejected: NA
+  [PASS] No personal profile for: NA
+  [PASS] Missing event origin remains unverified despite matching checksum
+  [PASS] compute_file_sha256 gera hash hex de 64 caracteres
+  [PASS] compute_file_sha256 coincide rigorosamente com tools::sha256sum
+  [PASS] compute_file_sha256 coincide rigorosamente com digest::digest
+  [PASS] compute_file_sha256 retorna NA em arquivo inexistente
+  [PASS] compute_file_sha256 retorna NA para input NULL
+  [PASS] compute_file_sha256 retorna NA para vetor vazio
+  [PASS] Buffered connection SHA-256 matches the independent abc vector
+  [PASS] Buffered fallback refuses files exceeding its explicit memory cap
+  [PASS] Empty-file SHA-256 matches the independent known-answer vector
+  [PASS] Missing file never receives an invented hash
+
+--- Executando modulo: tests/test_pipeline_evidence.R ---
+  [PASS] Pipeline accepts valid temporal contract: ======================================================================== Pipeline analitico concluido com sucesso!
+  [PASS] Summary identifies its actual run
+  [PASS] Synthetic fixture manifest cannot establish operational provenance
+  [PASS] Synthetic fixture cannot be labeled real-student data
+  [PASS] Exploratory R output cannot override the scheduler
+  [PASS] FSRS diagnostic identifies its source run
+  [PASS] Temporal baseline artifact identifies its actual run
+  [PASS] Small history is reported without a fabricated score
+  [PASS] Temporal baseline audit cannot drive decisions
+  [PASS] Pipeline separates a high-retrievability error for investigation
+  [PASS] Pipeline emits one unresolved investigation candidate
+  [PASS] FSRS diagnostic cannot change memory scheduling
+  [PASS] Unvalidated model emits no discipline overrides
+  [PASS] Each metric preserves its actual evaluable or conditional denominator
+  [PASS] UTF-8 operational fixture runs under locale C
+  [PASS] Locale C pipeline reports no character conversion warning
+  [PASS] Locale C export preserves full UTF-8 metric limitations
+  [FAIL] Locale C preserves recorded discipline labels through the full pipeline -> Esperado TRUE, obtido FALSE ou NA
+  [FAIL] Locale C preserves recorded topic labels through the full pipeline -> Esperado TRUE, obtido FALSE ou NA
+  [PASS] Unicode fixture never gains real-student provenance
+  [PASS] Mixed-origin diagnostic pipeline remains readable
+  [PASS] Mixed origins cannot establish a personal summary
+  [PASS] Tampered-manifest input produces diagnostic output, not personal authorization
+  [PASS] Checksum mismatch never grants personal-study status
+  [PASS] Empty operational export finishes with an explicit cold-start contract
+  [PASS] Cold start replaces stale intervention results
+  [PASS] Cold-start artifact identifies its own run
+  [PASS] Cold start replaces memory diagnostics with explicit no-data status
+  [PASS] Cold start replaces temporal baseline output with explicit no-data status
+  [PASS] Cold-start baseline artifact identifies its own run
+  [PASS] Cold-start baseline artifact cannot drive decisions
+  [PASS] Cold-start memory diagnostics cannot schedule
+  [PASS] No data is not an actionable recommendation
+========================================================================
+                 FISCALSTUDY ANALYTICS — PIPELINE EM R                 
+========================================================================
+
+>>> Detectada exportacao operacional do FiscalStudy: /tmp/RtmpU5Xsm0/pipeline-contract-42484c5d0ca4/attempts.csv
+>>> Auditando procedencia e adaptando esquema via R/adapter.R...
+Error in main() : Configured export manifest does not exist
+Execution halted 
+  [PASS] An explicitly configured missing manifest fails visibly
+
+--- Executando modulo: tests/test_retrieval_diagnostics.R ---
+  [PASS] FSRS audit has an explicit empty-data state
+  [PASS] An empty FSRS audit cannot trigger an action
+  [PASS] Legacy exports do not fabricate a memory estimate
+  [PASS] Missing FSRS probability is identified by field name
+  [PASS] FSRS audit preserves its observed input count
+  [PASS] Annulled attempts are excluded before memory-outcome comparison
+  [PASS] Only valid, versioned, pre-update snapshots are scored
+  [PASS] A low-retrievability error is consistent with expected forgetting, not a cause diagnosis
+  [PASS] A high-retrievability error is flagged for investigation
+  [PASS] A correct answer despite low predicted retrieval is visible as a model discrepancy
+  [PASS] Intermediate predicted retrieval is not forced into expected or unexpected bins
+  [PASS] A state snapshot later than the event timestamp is rejected
+  [PASS] Equal timestamp precision is accepted when pre-update capture precedes event persistence
+  [PASS] Missing predictions stay missing rather than becoming zero
+  [PASS] Only high-predicted-retrieval errors enter the investigation queue
+  [PASS] The output requests investigation instead of asserting a cause
+  [PASS] Topic summaries distinguish identical labels across disciplines
+  [PASS] Prediction scores are grouped by the declared FSRS version
+  [PASS] Observed FSRS prediction scores are not labeled validated
+  [PASS] Pedagogical analysis never changes FSRS scheduling
+  [PASS] Cold start is explicitly labeled as an ineligible memory state
+  [PASS] FSRS cold-start state is not treated as a probability prediction
+  [PASS] Invalid triage thresholds fail explicitly
+  [PASS] All duplicate event identities are excluded from FSRS scores
+  [PASS] Duplicate high-error event cannot create duplicate investigations
+  [PASS] Missing event identity cannot establish auditable evidence
+  [PASS] Timezone-free snapshot is not proven to precede the answer
+  [PASS] FSRS diagnostic accepts explicit equivalent timezone offsets
+  [PASS] High-prediction error rate uses high-prediction denominator
+  [PASS] Integrity fixes do not grant decision authority
+
+--- Executando modulo: tests/test_learner_contract_integration.R ---
+  [PASS] Contract: operational event identity survives adaptation
+  [PASS] Contract: operational session identity survives adaptation
+  [PASS] Contract: real timestamp fields survive adaptation unchanged
+  [PASS] Contract: automated origin cannot be rewritten as personal study
+  [PASS] Contract: supplied valid timestamps are recognized
+  [PASS] Contract: annulled response never contributes to performance profile
+  [PASS] Contract: adapted test history never becomes a personal profile
+  [PASS] Contract: repeated-item performance does not establish transfer
+  [PASS] Contract: joining question metadata preserves observation cardinality
+  [PASS] Contract: metadata enrichment keeps canonical topic columns
+  [PASS] Contract: metadata enrichment does not create ambiguous suffixed fields
+  [PASS] Contract: same topic label in another discipline is not prior exposure
+  [PASS] Contract: one observed repeat cannot create fitted forgetting coefficients
+  [PASS] Contract: insufficient memory evidence cannot override study allocations
+  [PASS] Contract: unvalidated analytic weights are explicitly non-executable
+  [PASS] Contract: no fabricated emergency intervention is exported
+  [PASS] Contract: JSON retains zero executable discipline weights
+  [PASS] Contract: JSON retains non-executable state
+  [PASS] Contract: stale provenance attribute cannot launder unknown origins
+  [PASS] Contract: empty history has zero observations
+  [PASS] Contract: empty history is not evidence of personal learning
+  [PASS] Contract: empty history does not invent zero-percent discipline mastery
+
+--- Executando modulo: tests/test_analytical_portability.R ---
+  [PASS] External assessment inert and traceable, even model version explicitly unknown
+  [PASS] Incomplete external analysis fails explicitly
+  [PASS] Imported authority rejected: can_apply
+  [PASS] Imported authority rejected: can_schedule
+  [PASS] Imported authority rejected: eligible_for_fsrs
+  [PASS] Imported authority rejected: eligible_for_mastery
+  [PASS] Future external assessment blocked
+  [PASS] Infinite assessment score blocked
+  [PASS] NaN assessment score blocked
+  [PASS] Unknown assistance vocabulary rejected
+  [PASS] Every duplicate external assessment blocked
+  [PASS] Instruction-shaped external content remains inert data
+  [PASS] External import never becomes canonical training evidence
+  [PASS] External text round trips without execution
+  [PASS] Portable result has no scheduler authority
+  [PASS] Export refuses replacement of prior artifact
+  [PASS] Import size bound enforced
+  [PASS] Invalid output rejected before serialization hides NaN
+  [PASS] Same-day future assessment blocked at fractional second cutoff
+  [PASS] Follow-up never establishes causal benefit
+  [PASS] Follow-up cannot rewrite proposal authorization
+  [PASS] Contemporaneous outcome cannot evaluate prior decision
+  [PASS] Outcome linked to another decision is rejected
+  [PASS] Future decision outcome rejected
+  [PASS] Decision evaluation replay is idempotent
+
+--- Executando modulo: tests/test_evidence_specialists.R ---
+  [PASS] Evidence specialists preserve observational status
+  [PASS] Descriptive specialist cannot apply
+  [PASS] Descriptive specialist cannot schedule
+  [PASS] Descriptive specialist invents no probabilities
+  [PASS] Correct item is not conceptual mastery
+  [PASS] Objective outcome alone is not verified application instrument
+  [PASS] Repeated correct answer does not demonstrate transfer
+  [PASS] Repeated item is counted separately from transfer
+  [PASS] High confidence errors remain ordinal counts
+  [PASS] Confidence denominators reconcile
+  [PASS] High confidence never invents error cause
+  [PASS] Composite item records relations without distributing outcome
+  [PASS] Concept association has no arbitrary fraction of success
+  [PASS] Out of order rows yield deterministic specialist output
+  [PASS] Identical inputs replay exactly
+  [PASS] No attempts remains NO_DATA
+  [PASS] Missing provenance audit blocks personal claims
+  [PASS] Synthetic origin never becomes personal evidence
+  [PASS] Mixed provenance does not launder personal profile
+  [PASS] Mixed snapshot conservatively blocks personal inference
+  [PASS] Timestamp missing excluded explicitly
+  [PASS] Missing timestamp reason remains auditable
+  [PASS] Future evidence cannot contribute
+  [PASS] All duplicated identities are blocked including contradictory records
+  [PASS] Contradictory duplicate rows remain canonical under permutation
+  [PASS] Annulled item excluded from ordinal errors
+  [PASS] Hint is not independent recovery
+  [PASS] Correct after exposure is not independent recovery
+  [PASS] Unknown exposure is not silently treated as no exposure
+  [PASS] NA infinity and nonordinal confidence are not observations
+  [PASS] Unclassified outcomes stay at item level
+  [PASS] AI proposed relation never confirmed implicitly
+  [PASS] Later classification cannot retroactively classify older outcomes
+  [PASS] Backdated relation unavailable at outcome cannot leak historical classification
+  [PASS] Future relation excluded
+  [PASS] Missing relation provenance fails explicitly
+  [PASS] Duplicate relation identity fails explicitly
+  [PASS] Overlapping confirmed versions rejected
+  [PASS] Verified independent explanation counted as observed task
+  [PASS] Verified application retains explicit target
+  [PASS] Repeated item excluded from transfer instrument despite novelty assertion
+  [PASS] Verified independent context recorded without claiming mastery
+  [PASS] Observed transfer task does not manufacture latent probability
+  [PASS] Self report not promoted to verified execution cause
+  [PASS] Original self reported category is preserved for investigation
+  [PASS] Sourced observed transcription error distinct from knowledge deficit
+  [PASS] Taxonomy still cannot prove a psychological cause
+  [PASS] FSRS probability does not override sourced error observation
+  [PASS] Specialists preserve original history
+  [PASS] Six responsibilities bridge to common contracts
+  [PASS] Common contract accepts descriptive dimensions without numeric NA
+  [PASS] Descriptive bridge never self authorizes policy
+  [PASS] Unknown probability portable as explicit state
+
+--- Executando modulo: tests/test_pedagogical_decision.R ---
+  [PASS] No-history policy prefers reversible diagnostic from verified inventory
+  [PASS] Initial policy does not fabricate personalization
+  [PASS] Self-declared inventory cannot authorize initial proposal without host registry
+  [PASS] Curricular opportunity keeps learner knowledge unknown
+  [PASS] Need contract does not convert inventory into diagnosis
+  [PASS] Ignored, substituted, interrupted and partial recommendations receive no outcome credit
+  [PASS] Only authorized completed activity can await later independent evaluation
+  [PASS] Prospective ledger never infers causal effect
+  [PASS] Relation sweep preserves 5000 valid independent edges
+  [PASS] Relation sweep preserves 20000 valid independent edges
+  [PASS] Relation sweep preserves overlap rejection semantics
+  [PASS] Imported flags cannot authorize standalone contextual selection
+  [PASS] Trace requires the actual execution gate
+
+--- Executando modulo: tests/test_learning_orchestrator.R ---
+  [PASS] Configured maintenance priority selects review
+  [PASS] Independent shortest-admissible baseline preserved
+  [PASS] Policy disagreement does not establish gain
+  [PASS] No fabricated benefit estimate
+  [PASS] Proposal never applies automatically
+  [PASS] No second scheduler
+  [PASS] Synthetic fixture never becomes personal learning
+  [PASS] Fixture produces no personal inference
+  [PASS] Same explicit inputs reproduce complete result
+  [PASS] Candidate permutation does not alter result
+  [PASS] Out-of-order events resolved without rewriting history
+  [PASS] Input event order preserved
+  [PASS] Self-declared validated specialist grants no authority
+  [PASS] No attempts causes explicit abstention
+  [PASS] No data distinct from zero mastery
+  [PASS] No-history policy may propose a verified, reversible curriculum diagnostic
+  [PASS] Cold-start recommendation never claims personal diagnosis
+  [PASS] Cold-start need retains unknown personal knowledge
+  [PASS] Mixed real/artificial origins block candidates
+  [PASS] Declared real origin requires audit
+  [PASS] Three self-declared provenance flags do not establish an audited source
+  [PASS] Missing timestamp blocks all proposals
+  [PASS] Future event blocks use of snapshot
+  [PASS] Duplicate identity fails closed
+  [PASS] Unknown origin rejected
+  [PASS] Experimental result never promotes itself
+  [PASS] Forged apply capability overwritten
+  [PASS] Forged scheduling capability overwritten
+  [PASS] Unknown model version cannot support proposal
+  [PASS] Unavailable model safely abstains
+  [PASS] Malformed external result safely abstains
+  [PASS] Unknown specialist evidence rejected
+  [PASS] Future specialist result rejected
+  [PASS] Unverified specialist source rejected
+  [PASS] Invalid numeric specialist result blocked
+  [PASS] Invalid numeric specialist result blocked
+  [PASS] Invalid numeric specialist result blocked
+  [PASS] Invalid numeric specialist result blocked
+  [PASS] Time budget admission precedes priority
+  [PASS] Unavailable materials reject candidate
+  [PASS] Unknown prerequisites not invented
+  [PASS] Unknown syllabus membership rejected
+  [PASS] Different contest not admissible
+  [PASS] High-impact candidate requires confirmation
+  [PASS] Item memory cannot silently propagate to other concepts
+  [PASS] Equally authorized contradiction remains explicit
+  [PASS] Unresolved contradiction blocks supported candidate
+  [PASS] Specialist ordering preserves conflict replay
+  [PASS] Experimental confidence cannot overrule authorized reference
+  [PASS] Authorized memory reference retained
+  [PASS] No invented due review
+  [PASS] No inventory produces no fabricated activity
+  [PASS] Duplicate candidate identities rejected
+  [PASS] Nonfinite available time rejected
+  [PASS] Missing snapshot cutoff rejected
+  [PASS] Portable JSON preserves preferred candidate
+  [PASS] Portable JSON preserves authority denial
+  [PASS] Decision evaluation waits for observed future outcome
+  [PASS] Specialist cannot cite evidence after its own cutoff
+  [PASS] Inconsistent observed denominator blocks claims
+  [PASS] Logical missing result cannot masquerade as known output
+  [PASS] Built-in inventory policy produces conservative curricular proposal when personal need is unknown
+  [PASS] Orchestrator automatically executes descriptive specialists
+  [PASS] Six descriptive specialists plus two configured inventory proposals
+  [PASS] Built-in diagnostic remains unapplied
+  [PASS] Built-in inventory rule cannot invent FSRS due review
+  [PASS] Synthetic events cannot authorize built-in personal proposal
+  [PASS] Memory result cannot substitute conceptual diagnostic evidence
+  [PASS] Out-of-range probability fails closed
+  [PASS] Out-of-range probability fails closed
+  [PASS] Changed specialist semantics cannot inherit registry authority
+  [PASS] Changed specialist semantics cannot inherit registry authority
+  [PASS] Changed specialist semantics cannot inherit registry authority
+  [PASS] Conflicting origin aliases block orchestration
+  [PASS] Conflicting origins cannot produce personal profile
+  [PASS] Built-in candidate inventory permutation is deterministic
+  [PASS] Scalar malformed specialist result fails closed without runtime error
+
+--- Executando modulo: tests/test_orchestrator_cli.R ---
+  [PASS] Orchestrator CLI executes JSON request with actual CSV
+  [PASS] Orchestrator CLI replay executes
+  [PASS] CLI output bytes replay exactly with fixed inputs
+  [PASS] CLI emits observation-only mode
+  [PASS] CLI never grants apply authority
+  [PASS] CLI never grants scheduler authority
+  [PASS] CSV fixture remains synthetic after transport
+  [PASS] Synthetic-only snapshot cannot generate personal inventory proposal
+  [PASS] CLI refuses replacing existing result
+  [PASS] CLI executes inert request containing forged authority fields
+  [PASS] JSON cannot authorize its own candidates or evidence
+  [PASS] CLI executes all three contextual/baseline policies
+  [PASS] CLI trace and comparison identify same execution inputs
+  [PASS] CLI policies share the same empty admission after original validator rejects forged support
+  [PASS] CLI handles empty-history CSV without execution errors
+  [PASS] CLI cold start remains distinct from zero knowledge
+  [PASS] CLI cold start cannot self-authorize inventory
+
+--- Executando modulo: tests/test_contextual_integration.R ---
+  [PASS] Real orchestrator scenario: cold
+  [PASS] Contextual policy remains experimental
+  [PASS] Synthetic integrated proposal has no apply authority
+  [PASS] Synthetic integrated proposal has no scheduling authority
+  [PASS] Synthetic integrated evidence never becomes personal history
+  [PASS] All three policies execute over identical original admission
+  [PASS] All three policies execute over identical original admission
+  [PASS] All three policies execute over identical original admission
+  [PASS] Trace contains rules emitted by executed policy
+  [PASS] Integrated result deterministically replays
+  [PASS] Real orchestrator scenario: insufficient_inventory
+  [PASS] Contextual policy remains experimental
+  [PASS] Synthetic integrated proposal has no apply authority
+  [PASS] Synthetic integrated proposal has no scheduling authority
+  [PASS] Synthetic integrated evidence never becomes personal history
+  [PASS] All three policies execute over identical original admission
+  [PASS] All three policies execute over identical original admission
+  [PASS] All three policies execute over identical original admission
+  [PASS] Trace contains rules emitted by executed policy
+  [PASS] Integrated result deterministically replays
+  [PASS] Real orchestrator scenario: memory
+  [PASS] Contextual policy remains experimental
+  [PASS] Synthetic integrated proposal has no apply authority
+  [PASS] Synthetic integrated proposal has no scheduling authority
+  [PASS] Synthetic integrated evidence never becomes personal history
+  [PASS] All three policies execute over identical original admission
+  [PASS] All three policies execute over identical original admission
+  [PASS] All three policies execute over identical original admission
+  [PASS] Trace contains rules emitted by executed policy
+  [PASS] Integrated result deterministically replays
+  [PASS] Selected contextual need cites actual determining event
+  [PASS] Pedagogical need and choice refer to the same validated evidence
+  [PASS] Real orchestrator scenario: gap
+  [PASS] Contextual policy remains experimental
+  [PASS] Synthetic integrated proposal has no apply authority
+  [PASS] Synthetic integrated proposal has no scheduling authority
+  [PASS] Synthetic integrated evidence never becomes personal history
+  [PASS] All three policies execute over identical original admission
+  [PASS] All three policies execute over identical original admission
+  [PASS] All three policies execute over identical original admission
+  [PASS] Trace contains rules emitted by executed policy
+  [PASS] Integrated result deterministically replays
+  [PASS] Selected contextual need cites actual determining event
+  [PASS] Pedagogical need and choice refer to the same validated evidence
+  [PASS] Real orchestrator scenario: transfer
+  [PASS] Contextual policy remains experimental
+  [PASS] Synthetic integrated proposal has no apply authority
+  [PASS] Synthetic integrated proposal has no scheduling authority
+  [PASS] Synthetic integrated evidence never becomes personal history
+  [PASS] All three policies execute over identical original admission
+  [PASS] All three policies execute over identical original admission
+  [PASS] All three policies execute over identical original admission
+  [PASS] Trace contains rules emitted by executed policy
+  [PASS] Integrated result deterministically replays
+  [PASS] Selected contextual need cites actual determining event
+  [PASS] Pedagogical need and choice refer to the same validated evidence
+  [PASS] Real orchestrator scenario: execution
+  [PASS] Contextual policy remains experimental
+  [PASS] Synthetic integrated proposal has no apply authority
+  [PASS] Synthetic integrated proposal has no scheduling authority
+  [PASS] Synthetic integrated evidence never becomes personal history
+  [PASS] All three policies execute over identical original admission
+  [PASS] All three policies execute over identical original admission
+  [PASS] All three policies execute over identical original admission
+  [PASS] Trace contains rules emitted by executed policy
+  [PASS] Integrated result deterministically replays
+  [PASS] Selected contextual need cites actual determining event
+  [PASS] Pedagogical need and choice refer to the same validated evidence
+  [PASS] Real orchestrator scenario: time
+  [PASS] Contextual policy remains experimental
+  [PASS] Synthetic integrated proposal has no apply authority
+  [PASS] Synthetic integrated proposal has no scheduling authority
+  [PASS] Synthetic integrated evidence never becomes personal history
+  [PASS] All three policies execute over identical original admission
+  [PASS] All three policies execute over identical original admission
+  [PASS] All three policies execute over identical original admission
+  [PASS] Trace contains rules emitted by executed policy
+  [PASS] Integrated result deterministically replays
+  [PASS] Real orchestrator scenario: unknown
+  [PASS] Contextual policy remains experimental
+  [PASS] Synthetic integrated proposal has no apply authority
+  [PASS] Synthetic integrated proposal has no scheduling authority
+  [PASS] Synthetic integrated evidence never becomes personal history
+  [PASS] All three policies execute over identical original admission
+  [PASS] All three policies execute over identical original admission
+  [PASS] All three policies execute over identical original admission
+  [PASS] Trace contains rules emitted by executed policy
+  [PASS] Integrated result deterministically replays
+  [PASS] Declared flags do not replace validated evidence
+  [PASS] Unknown flag cannot remove real validated evidence
+  [PASS] String boolean fails original candidate admission
+  [PASS] Declared flags do not replace validated evidence
+  [PASS] Unknown flag cannot remove real validated evidence
+  [PASS] String boolean fails original candidate admission
+  [PASS] Declared flags do not replace validated evidence
+  [PASS] Unknown flag cannot remove real validated evidence
+  [PASS] String boolean fails original candidate admission
+  [PASS] Declared flags do not replace validated evidence
+  [PASS] Unknown flag cannot remove real validated evidence
+  [PASS] String boolean fails original candidate admission
+  [PASS] Unbound memory evidence falls back conservatively: source_id
+  [PASS] Unknown memory claim receives no determining-evidence credit
+  [PASS] Unbound memory evidence falls back conservatively: scope_id
+  [PASS] Unknown memory claim receives no determining-evidence credit
+  [PASS] Unbound memory evidence falls back conservatively: evidence_type
+  [PASS] Unknown memory claim receives no determining-evidence credit
+  [PASS] Unbound memory evidence falls back conservatively: evidence_version
+  [PASS] Unknown memory claim receives no determining-evidence credit
+  [PASS] Unbound memory evidence falls back conservatively: valid_until
+  [PASS] Unknown memory claim receives no determining-evidence credit
+  [PASS] Absent specialist memory risk remains unknown
+  [PASS] Specialist boolean cannot be a string
+  [PASS] Cross-run specialist cannot authorize contextual evidence
+  [PASS] Source authorization is independent of source declaration
+  [PASS] Original authority validator still rejects unauthorized support
+  [PASS] Input flags cannot override contradictory validated memory result
+  [PASS] Self-declared capacity cannot override verified memory
+  [PASS] Context booleans are type-checked
+  [PASS] Trace reconstructs from recorded inputs and executed comparison
+  [PASS] Cross-run comparison rejected
+  [PASS] Different snapshot comparison rejected
+  [PASS] Different candidate set comparison rejected
+  [PASS] Altered choice comparison rejected
+  [PASS] Evidence and candidate permutation preserve complete artifact
+  [PASS] Integrated example produces portable analytical bundle
+  [PASS] Integrated example replays in independent R process
+  [PASS] Independent integrated runs reproduce artifact bytes
+  [PASS] JSON round trip preserves snapshot/candidate/context identity
+  [PASS] Exported comparison reconstructs the decision trace
+  [PASS] Transport retains determining evidence reference
+  [PASS] Portable contextual artifact has no operational authority
+  [PASS] Cold inventory flags cannot replace trusted catalogue record
+  [PASS] Expired or contradictory catalogue records cannot support cold proposal
+  [PASS] Malformed optional need label is rejected
+  [PASS] New synthetic scenarios never claim operational model validation or execution authority
+  [PASS] JSON-shaped provenance flags cannot establish personal source authority
+  [PASS] Self-declared audit cannot trigger built-in personal inventory authority
+  [PASS] JSON-shaped admission cannot authorize standalone policy
+  [PASS] Compatible eligible_evidence references real evidence IDs, not candidate IDs
+  [PASS] Ambiguous active catalogue identities fail closed
+  [PASS] A matching byte binding does not authenticate an operational source
+  [PASS] Hash and production declarations cannot self-authorize personal proposals
+  [PASS] Automatic descriptive specialists preserve unverified personal provenance
+
+--- Executando modulo: tests/test_scientific_decision_evaluation.R ---
+  [PASS] All six distinct future targets are technically scored
+  [PASS] Scientific fixture never becomes personal evidence
+  [PASS] No target claims sufficient real personal observations
+  [PASS] Scientific evaluator has no operational apply capability
+  [PASS] Scientific evaluator has no scheduling capability
+  [PASS] Correct software fixtures do not validate a student model
+  [PASS] Prospective association is not a causal effect
+  [PASS] Retention interval is measured from item contact, not forecast creation
+  [PASS] Response delay is kept separate from retention interval
+  [PASS] Binary baseline is reconstructed from eligible prior outcomes only
+  [PASS] Duration reference uses observed prefix active seconds
+  [PASS] Duration MAE has a closed-form expected value
+  [PASS] Duration model and baseline use the same paired activity
+  [PASS] Delayed retrieval Brier score is numerically correct
+  [PASS] Each predictive metric reports its actual denominator
+  [PASS] Invested time is the observed sum, including historical execution
+  [PASS] Curricular coverage uses an explicit registered denominator
+  [PASS] Activity coverage is not inferred mastery
+  [PASS] Foregone learning outcomes are never invented
+  [PASS] Comparable pre/post change is descriptive and calculable
+  [PASS] Only executed policy receives a recorded outcome
+  [PASS] Unexecuted policy receives no credit even when it chose the same action
+  [PASS] Unexecuted shortest policy has no fabricated outcome
+  [PASS] Policy comparison retains exactly the original admissible alternatives
+  [PASS] Policy comparison retains exactly the original admissible alternatives
+  [PASS] Policy comparison retains exactly the original admissible alternatives
+  [PASS] Scientific evaluation deterministically replays without fitting
+  [PASS] Empty data preserve no-data rather than zero ability
+  [PASS] Absent curriculum does not produce a false zero coverage
+  [PASS] Payload mutation without registry commitment is rejected
+  [PASS] Training on information after the frozen cutoff is rejected
+  [PASS] Future outcome cannot be forecast evidence
+  [PASS] Unknown model version cannot be treated as an identified forecast
+  [PASS] Mixed real/synthetic scientific records are rejected
+  [PASS] Individual pilot evaluation cannot pool another student
+  [PASS] Duplicate physical assessment attempt cannot inflate denominators
+  [PASS] Duplicate forecast identities are rejected
+  [PASS] Nonfinite committed probability is invalid
+  [PASS] Unknown/string boolean cannot acquire independence authority
+  [PASS] Forecast must have been recorded strictly before the outcome
+  [PASS] Adulterated policy choice is rejected by replay of original validator
+  [PASS] Comparison from different alternatives/time state is rejected
+  [PASS] Execution cannot be attributed to another decision input
+  [PASS] Policy cannot receive execution credit for an action it did not choose
+  [PASS] Active time cannot exceed observed execution clock
+  [PASS] Unknown delayed contact interval is not immediate retention evidence
+  [PASS] Assisted application response is not an independent outcome
+  [PASS] Unknown answer exposure preserves unknown transfer independence
+  [PASS] Unknown transfer instrument cannot self-establish transfer
+  [PASS] Missing outcome is counted and excluded without favorable imputation
+  [PASS] Explicit abstention stays in forecast denominator
+  [PASS] Abstention has an explicit reason
+  [PASS] Out-of-window result cannot validate registered horizon
+  [PASS] Previously answered item cannot be a first observed item
+  [PASS] Previously exposed template cannot establish independent transfer
+  [PASS] Partial activity receives no completed-intervention outcome credit
+  [PASS] Partial execution still contributes observed invested time
+  [PASS] Missing activity time is not silently replaced by zero
+  [PASS] Known subtotal reports its limited coverage
+  [PASS] Incomplete exam blueprint cannot establish representative exam score
+  [PASS] Changing future labels cannot change any frozen baseline
+  [PASS] Only a prior eligible outcome can update future temporal reference
+  [PASS] Later difficulty/classification metadata cannot leak into forecast eligibility
+  [PASS] Scientific CLI executes JSON contract and real policy replay
+  [PASS] Scientific CLI replay executes independently
+  [PASS] Scientific CLI produces identical replay artifact bytes
+  [PASS] Native and JSON scientific tables preserve the same input identity
+  [PASS] Portable scientific contract preserves all target results
+  [PASS] Portable scientific artifact carries no operational authority
+  [PASS] Scientific CLI refuses overwriting prior evidence artifact
+  [PASS] Unknown scoring source cannot establish transfer success
+  [PASS] Unknown difficulty is reported as its own uncalibrated stratum
+  [PASS] Complete predeclared equal-weight exam blueprint has a known denominator
+  [PASS] An earlier question presentation is prior exposure even without a submitted answer
+  [PASS] Unanswered forecast remains pending instead of becoming an incorrect response
+  [PASS] Late-recorded execution cannot validate a duration reference at earlier cutoff
+  [PASS] Duration comparison with no known prefix reference is explicitly unavailable
+  [PASS] Nested synthetic decision cannot be laundered into a real registry
+  [PASS] Even a claimed audit cannot relabel synthetic records as personal evidence
+  [PASS] Changing actual executed policy removes contextual outcome credit
+  [PASS] Actual conservative execution receives its own observed followup
+  [PASS] Paired observational change is calculated separately from policy effect
+  [PASS] Individual scientific protocol remains unstarted
+  [PASS] No personal experiment starts automatically
+  [PASS] Pilot does not require manual flashcard creation
+  [PASS] Pilot does not require manual review scheduling
+  [PASS] Observed budget consumption is calculable without inventing foregone learning
+  [PASS] Observed time and planning estimate remain distinct from causal opportunity cost
+  [PASS] Single-class discrimination is explicitly not established
+  [PASS] A mixed-origin decision cannot be hidden inside a purportedly real registry
+
+=========================================================
+RESULTADO FINAL DOS TESTES
+Passaram:  1054
+Falharam:  4
+Tempo:     121.991 segundos
+=========================================================
+
+FALHAS REGISTRADAS:
+  - UTF-8 curriculum labels survive CSV decoding (Esperado: 'Direito Tribut<U+00E1>rio: exce<U+00E7><U+00E3>o, aten<U+00E7><U+00E3>o e mem<U+00F3>ria' | Obtido: 'Direito Tribut<U+00E1>rio: exce<U+00E7><U+00E3>o, aten<U+00E7><U+00E3>o e mem<U+00F3>ria')
+  - Optional UTF-8 BOM preserves header identity (Esperado: 'Direito Tribut<U+00E1>rio: exce<U+00E7><U+00E3>o, aten<U+00E7><U+00E3>o e mem<U+00F3>ria' | Obtido: 'Direito Tribut<U+00E1>rio: exce<U+00E7><U+00E3>o, aten<U+00E7><U+00E3>o e mem<U+00F3>ria')
+  - Locale C preserves recorded discipline labels through the full pipeline -> Esperado TRUE, obtido FALSE ou NA
+  - Locale C preserves recorded topic labels through the full pipeline -> Esperado TRUE, obtido FALSE ou NA

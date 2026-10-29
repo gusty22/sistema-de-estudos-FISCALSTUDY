@@ -152,8 +152,14 @@ class ProspectivePredictionIntegrationTest {
         // A fresh ephemeral TEST key. No operational key or personal database is touched.
         var pair=java.security.KeyPairGenerator.getInstance("RSA"); pair.initialize(2048);
         var keys=pair.generateKeyPair();
-        Path privateKey=directory.resolve("fixture-private.der");
+        Path privateKey=directory.resolve("chave sintética ação privada.der");
         Files.write(privateKey,keys.getPrivate().getEncoded());
+        Path invalid=directory.resolve("invalid-format.pem");
+        Files.writeString(invalid,"-----BEGIN PRIVATE KEY-----\n"+Base64.getEncoder().encodeToString(keys.getPrivate().getEncoded())+"\n-----END PRIVATE KEY-----");
+        assertThrows(IllegalStateException.class,()->new ProspectiveExportAttestor(invalid.toString(),"fixture").attest(Map.of(),"SYNTHETIC_FIXTURE"));
+        Path oversized=directory.resolve("oversized.der");Files.write(oversized,new byte[65537]);
+        var tooLarge=assertThrows(IllegalStateException.class,()->new ProspectiveExportAttestor(oversized.toString(),"fixture").attest(Map.of(),"SYNTHETIC_FIXTURE"));
+        assertTrue(tooLarge.getCause().getMessage().contains("size limit"));
         var signer=new ProspectiveExportAttestor(privateKey.toString(),"SYNTHETIC-INTEGRATION-INSTALLATION");
         ReflectionTestUtils.setField(ledger,"attestor",signer);
         for(int n=0;n<24;n++) {
@@ -188,6 +194,9 @@ class ProspectivePredictionIntegrationTest {
         Files.writeString(output,json.writeValueAsString(snapshot));
         String pem="-----BEGIN PUBLIC KEY-----\n"+Base64.getMimeEncoder(64,new byte[]{10}).encodeToString(keys.getPublic().getEncoded())+"\n-----END PUBLIC KEY-----\n";
         Files.writeString(Path.of("target/prospective-fixture-public.pem"),pem);
+        var other=pair.generateKeyPair();
+        Files.writeString(Path.of("target/prospective-other-fixture-public.pem"),
+            "-----BEGIN PUBLIC KEY-----\n"+Base64.getMimeEncoder(64,new byte[]{10}).encodeToString(other.getPublic().getEncoded())+"\n-----END PUBLIC KEY-----\n");
         assertEquals(snapshot,new ProspectiveExportAttestor("","").attest(snapshot,"SYNTHETIC_FIXTURE"));
         assertThrows(IllegalStateException.class,()->new ProspectiveExportAttestor(privateKey.toString(),"").attest(snapshot,"SYNTHETIC_FIXTURE"));
         assertThrows(IllegalStateException.class,()->new ProspectiveExportAttestor(directory.resolve("missing").toString(),"fixture").attest(snapshot,"SYNTHETIC_FIXTURE"));

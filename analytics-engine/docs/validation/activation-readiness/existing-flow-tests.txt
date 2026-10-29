@@ -1,0 +1,43 @@
+
+> frontend@0.0.0 test
+> node --test tests/*.test.mjs
+
+node:internal/modules/package_json_reader:301
+  throw new ERR_MODULE_NOT_FOUND(packageName, fileURLToPath(base), null);
+        ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'react' imported from /workspace/fiscalstudy/frontend/src/utils/accessibility.ts
+    at Object.getPackageJSONURL (node:internal/modules/package_json_reader:301:9)
+    at packageResolve (node:internal/modules/esm/resolve:768:81)
+    at moduleResolve (node:internal/modules/esm/resolve:859:18)
+    at defaultResolve (node:internal/modules/esm/resolve:992:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:701:20)
+    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:721:38)
+    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:759:56)
+    at #resolve (node:internal/modules/esm/loader:683:17)
+    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:603:35)
+    at ModuleJob.syncLink (node:internal/modules/esm/module_job:163:33) {
+  code: 'ERR_MODULE_NOT_FOUND'
+}
+
+Node.js v24.19.0
+✖ tests/accessibility-and-interaction.test.mjs (609.187852ms)
+✔ tests/dashboard-pedagogical-integrity.test.mjs (503.607577ms)
+✔ tests/knowledge-model-contracts.test.mjs (287.069539ms)
+✔ tests/learning-contracts.test.mjs (674.415376ms)
+✔ tests/prospective-preparation.test.mjs (542.031662ms)
+✔ tests/prospective-recovery.test.mjs (587.875636ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 5
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3231.654921
+
+✖ failing tests:
+
+test at tests/accessibility-and-interaction.test.mjs:1:1
+✖ tests/accessibility-and-interaction.test.mjs (609.187852ms)
+  'test failed'

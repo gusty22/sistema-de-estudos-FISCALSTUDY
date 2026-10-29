@@ -6,6 +6,8 @@ import json
 import os
 import subprocess
 import sys
+import stat
+import tempfile
 from datetime import datetime, timezone
 
 MAX_EXPORT_BYTES = 32 * 1024 * 1024  # Project policy for this local tool.
@@ -14,11 +16,61 @@ ENGINE = Path(__file__).resolve().parents[1]
 def sha(data):
     return hashlib.sha256(data).hexdigest()
 
+def bounded_read(path, limit):
+    # Bound the read itself, including growth/replacement after stat().
+    with Path(path).open("rb") as stream:
+        if not stat.S_ISREG(os.fstat(stream.fileno()).st_mode):
+            raise ValueError("Regular evidence/key file required")
+        raw = stream.read(limit + 1)
+    if len(raw) > limit:
+        raise ValueError("Evidence/key exceeds local processing limit")
+    return raw
+
+
+def make_private_directory(path):
+    path.mkdir(mode=0o700, exist_ok=False)
+    if os.name != "nt":
+        if stat.S_IMODE(path.stat().st_mode) & 0o077:
+            raise RuntimeError("Private POSIX directory required")
+        return "POSIX_0700"
+    # chmod is not a Windows DACL. Restrict BEFORE copying any input, then audit.
+    command = r"""
+$ErrorActionPreference='Stop'
+# Select the Windows PowerShell system module, not a PS7 module inherited via PSModulePath.
+$env:PSModulePath=$PSHOME+'/Modules'
+Import-Module Microsoft.PowerShell.Security -ErrorAction Stop
+$p=$env:FISCALSTUDY_PRIVATE_DIRECTORY
+if ([IO.DriveInfo]::new([IO.Path]::GetPathRoot($p)).DriveFormat -ne 'NTFS') { throw 'NTFS required' }
+$user=[Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+$allowed=@($user,'S-1-5-18','S-1-5-32-544')
+$acl=[Security.AccessControl.DirectorySecurity]::new()
+$acl.SetAccessRuleProtection($true,$false)
+foreach($sid in $allowed) {
+  $rule=[Security.AccessControl.FileSystemAccessRule]::new(
+    [Security.Principal.SecurityIdentifier]::new($sid), 'FullControl',
+    'ContainerInherit,ObjectInherit', 'None', 'Allow')
+  $acl.AddAccessRule($rule)
+}
+Set-Acl -LiteralPath $p -AclObject $acl
+$checked=Get-Acl -LiteralPath $p
+if (!$checked.AreAccessRulesProtected) { throw 'Inherited directory ACL' }
+$rules=$checked.GetAccessRules($true,$true,[Security.Principal.SecurityIdentifier])
+foreach($rule in $rules) {
+  if ($rule.AccessControlType -eq 'Allow' -and $rule.IdentityReference.Value -notin $allowed) { throw 'Broad ACL' }
+}
+if (!($rules | Where-Object { $_.IdentityReference.Value -eq $user -and $_.AccessControlType -eq 'Allow' })) { throw 'Owner access absent' }
+"""
+    env = os.environ.copy()
+    env["FISCALSTUDY_PRIVATE_DIRECTORY"] = str(path)
+    check = subprocess.run(["powershell.exe", "-NoProfile", "-NonInteractive", "-Command", command],
+                           env=env, capture_output=True, timeout=30, check=False)
+    if check.returncode:
+        raise RuntimeError("Cannot establish/audit private NTFS directory; no input copied")
+    return "NTFS_PROTECTED_USER_SYSTEM_ADMINISTRATORS"
+
+
 def validate_export(path, synthetic_test=False, trusted_custody=False):
-    path = Path(path)
-    if path.stat().st_size > MAX_EXPORT_BYTES:
-        raise ValueError("Export exceeds local processing policy")
-    raw = path.read_bytes()
+    raw = bounded_read(path, MAX_EXPORT_BYTES)
     envelope = json.loads(raw.decode("utf-8"))
     if envelope.get("contractVersion") != "prospective-question-v1" or envelope.get("can_apply") is not False or envelope.get("can_schedule") is not False:
         raise ValueError("Unsupported authority/contract")
@@ -47,12 +99,13 @@ def evaluate_local(input_path, output, rscript="Rscript", synthetic_test=False,
     attested = bool(trusted_public_key and trusted_source_id)
     raw, source = validate_export(input_path, synthetic_test, attested)
     output = Path(output).resolve()
-    output.mkdir(mode=0o700, exist_ok=False)  # Never overwrite/reuse an existing report directory.
+    storage_privacy = make_private_directory(output)  # Refuse reuse; audit before input copy.
     private_write(output / "input-envelope.json", raw)
     manifest = {
         "contract_version": "personal-pilot-execution-v1",
         "status": "RUNNING",
         "source_kind": source,
+        "storage_privacy": storage_privacy,
         "created_at": datetime.now(timezone.utc).isoformat(),
         "input_file_sha256": sha(raw),
         "workflow_protocol": "personal-prospective-pilot-v2",
@@ -65,21 +118,42 @@ def evaluate_local(input_path, output, rscript="Rscript", synthetic_test=False,
             ["lab/prospective_evaluation.R", "lab/attested_prospective_evaluation.R", "lab/prospective_scorecard.R", "lab/individual_calibration.R", "lab/personal_pilot.py"]])},
     }
     error = None
+    trusted_bytes = None
+    temporary_root = None
     try:
         argv = [rscript, str(ENGINE / ("lab/attested_prospective_evaluation.R" if attested else "lab/prospective_evaluation.R")),
-                str(output / "input-envelope.json"), str(output / "metrics.json")]
+                str(output / "input-envelope.json"), str(output / "pending-metrics.json")]
         if attested:
             # Freeze the externally provisioned public key for replay; never accept an embedded key.
-            private_write(output / "trusted-public.pem", Path(trusted_public_key).read_bytes())
+            trusted_bytes = bounded_read(trusted_public_key, 64 * 1024)
+            private_write(output / "trusted-public.pem", trusted_bytes)
             argv += [str(output / "trusted-public.pem"), trusted_source_id,
                      "synthetic-test" if synthetic_test else "operational"]
+        # R rejects spaces in R_TempDir on POSIX; reports/inputs may still use them.
+        temporary_root = tempfile.TemporaryDirectory(prefix="fiscalstudy-r-")
+        temporary = Path(temporary_root.name) / "private"
+        manifest["temporary_storage_privacy"] = make_private_directory(temporary)
+        r_temp = str(temporary)
+        if os.name == "nt" and " " in r_temp:
+            import ctypes
+            buffer = ctypes.create_unicode_buffer(32768)
+            count = ctypes.windll.kernel32.GetShortPathNameW(r_temp, buffer, len(buffer))
+            if not count or count >= len(buffer):
+                raise RuntimeError("R requires a no-space private TEMP directory")
+            r_temp = buffer.value
+        if " " in r_temp:
+            raise RuntimeError("R requires a no-space private TEMP directory")
+        child_env = os.environ.copy()
+        for name in ("TMPDIR", "TMP", "TEMP"):
+            child_env[name] = r_temp
         run = subprocess.run(
             argv,
-            cwd=ENGINE, capture_output=True, timeout=120, check=False)
+            cwd=ENGINE, env=child_env, capture_output=True, timeout=120, check=False)
         private_write(output / "r-output.log", run.stdout + run.stderr)
         if run.returncode:
             raise RuntimeError("R evaluation failed; private log retained")
-        metrics = json.loads((output / "metrics.json").read_text(encoding="utf-8"))
+        metrics_bytes = bounded_read(output / "pending-metrics.json", MAX_EXPORT_BYTES)
+        metrics = json.loads(metrics_bytes.decode("utf-8"))
         if metrics.get("can_apply") is not False or metrics.get("can_schedule") is not False:
             raise RuntimeError("Unexpected analytical authority")
         envelope = json.loads(raw.decode("utf-8"))
@@ -96,9 +170,6 @@ def evaluate_local(input_path, output, rscript="Rscript", synthetic_test=False,
                          "VERIFIED_SIGNATURE_EXTERNALLY_TRUSTED_INSTALLATION")
         if attested and metrics.get("source_authentication") != expected_auth:
             raise RuntimeError("Custody verification missing from R report")
-        manifest["source_authentication"] = metrics.get("source_authentication", "NOT_AUTHENTICATED")
-        if attested:
-            manifest["custody"] = metrics["custody"]
         n = metrics["scored_count"]
         score = metrics["scientific_scorecard"]
         if (score.get("version") != "prospective-scorecard-v1" or score.get("n") != n
@@ -106,8 +177,19 @@ def evaluate_local(input_path, output, rscript="Rscript", synthetic_test=False,
                 or (n == 0 and metrics["metrics"].get("status") != "INSUFFICIENT_EVIDENCE")
                 or (n > 0 and metrics["metrics"].get("n") != n)):
             raise RuntimeError("Incomplete scientific scorecard")
-        if input_path.read_bytes() != raw:
+        if bounded_read(input_path, MAX_EXPORT_BYTES) != raw:
             raise RuntimeError("Input changed during execution")
+        if attested and bounded_read(trusted_public_key, 64 * 1024) != trusted_bytes:
+            raise RuntimeError("External trust file changed during execution")
+        if bounded_read(output / "input-envelope.json", MAX_EXPORT_BYTES) != raw:
+            raise RuntimeError("Frozen input was replaced")
+        if attested and bounded_read(output / "trusted-public.pem", 64 * 1024) != trusted_bytes:
+            raise RuntimeError("Frozen trust file was replaced")
+        private_write(output / "metrics.json", metrics_bytes)
+        (output / "pending-metrics.json").unlink()
+        manifest["source_authentication"] = metrics.get("source_authentication", "NOT_AUTHENTICATED")
+        if attested:
+            manifest["custody"] = metrics["custody"]
         manifest["status"] = "SUCCEEDED_SOFTWARE_EVALUATION_ONLY"
         manifest["metrics_sha256"] = sha((output / "metrics.json").read_bytes())
     except Exception as failed:
@@ -115,6 +197,8 @@ def evaluate_local(input_path, output, rscript="Rscript", synthetic_test=False,
         manifest["failure_type"] = type(failed).__name__
         error = RuntimeError("Evaluation incomplete; inspect local private report")
     finally:
+        if temporary_root is not None:
+            temporary_root.cleanup()
         # On POSIX enforce private outputs; Windows ACLs must be checked separately.
         for file in output.iterdir():
             if file.is_file():

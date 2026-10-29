@@ -1,0 +1,2 @@
+Authenticated Java -> export -> R: synthetic custody, strict chronology, identity, help, exposure, tamper and baseline/replay checks passed. No personal experiment.
+Activation boundary: bounded key input, explicit fixture Boolean and original file/key substitution rejected.
