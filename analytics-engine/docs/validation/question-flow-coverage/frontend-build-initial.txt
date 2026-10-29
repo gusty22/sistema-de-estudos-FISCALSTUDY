@@ -1,0 +1,50 @@
+
+> frontend@0.0.0 build
+> tsc -b && vite build
+
+vite v8.3.4 building client environment for production...
+transforming...
+✓ 2035 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                      0.54 kB │ gzip:   0.32 kB
+dist/assets/AssistenteObjetivoWizard-ChSpmBVF.css    6.47 kB │ gzip:   1.60 kB
+dist/assets/HistoricoSessoes-DvaDkD-i.css            6.49 kB │ gzip:   1.59 kB
+dist/assets/MeusConcursos-jSRze-lF.css               8.90 kB │ gzip:   1.96 kB
+dist/assets/ConfiguracoesAdminView-D31Y8GBW.css     10.75 kB │ gzip:   2.21 kB
+dist/assets/MapaConteudos-Bcg_C7fx.css              11.71 kB │ gzip:   2.48 kB
+dist/assets/CadernosSimulados-Buuo7XsN.css          15.95 kB │ gzip:   3.05 kB
+dist/assets/EditalVerticalizado-9e1NXt08.css        22.23 kB │ gzip:   4.27 kB
+dist/assets/PlanejamentoAdaptativo-C_TGVPVI.css     22.82 kB │ gzip:   3.72 kB
+dist/assets/CicloRevisoes-BLTmw2ZU.css              23.39 kB │ gzip:   4.33 kB
+dist/assets/QuestionViewer-Chxp0tb-.css             40.10 kB │ gzip:   7.18 kB
+dist/assets/ImportStudio-CHGLdada.css               40.76 kB │ gzip:   6.87 kB
+dist/assets/AnalyticsView-BG-mUMZT.css              50.65 kB │ gzip:   8.75 kB
+dist/assets/index-CcXSFI2n.css                     167.46 kB │ gzip:  25.65 kB
+dist/assets/lock-DJed4Dp3.js                         0.23 kB │ gzip:   0.21 kB
+dist/assets/upload-Bv4UR-of.js                       0.25 kB │ gzip:   0.21 kB
+dist/assets/calendar-wisjtJxr.js                     0.28 kB │ gzip:   0.22 kB
+dist/assets/chart-column-DqEiU0Ja.js                 0.30 kB │ gzip:   0.23 kB
+dist/assets/lightbulb-Bmtiu3jb.js                    0.31 kB │ gzip:   0.24 kB
+dist/assets/settings-BFc_r84x.js                     0.51 kB │ gzip:   0.27 kB
+dist/assets/jsx-runtime-Dk72oS4N.js                  8.77 kB │ gzip:   3.33 kB
+dist/assets/HistoricoSessoes-DYLzAcig.js            10.49 kB │ gzip:   3.45 kB
+dist/assets/MapaConteudos-CZzr5nzA.js               13.31 kB │ gzip:   4.42 kB
+dist/assets/MeusConcursos-DxQELxq_.js               15.97 kB │ gzip:   4.12 kB
+dist/assets/AssistenteObjetivoWizard-C3Xw3yBp.js    23.38 kB │ gzip:   6.34 kB
+dist/assets/PlanejamentoAdaptativo-B7RHjy9A.js      26.70 kB │ gzip:   7.86 kB
+dist/assets/ConfiguracoesAdminView-DV2Q7TO9.js      31.13 kB │ gzip:   7.85 kB
+dist/assets/CadernosSimulados-DDrWKkC7.js           36.76 kB │ gzip:   9.45 kB
+dist/assets/CicloRevisoes-GOOl7H_Z.js               37.72 kB │ gzip:   9.56 kB
+dist/assets/AnalyticsView-zp9-jMWz.js               82.09 kB │ gzip:  19.40 kB
+dist/assets/QuestionViewer-De-Qzcl9.js              93.37 kB │ gzip:  25.73 kB
+dist/assets/EditalVerticalizado-Cf_N-VXU.js        101.55 kB │ gzip:  26.08 kB
+dist/assets/ImportStudio-nsWP3jW0.js               166.10 kB │ gzip:  37.22 kB
+dist/assets/index-BzcfALMw.js                      591.59 kB │ gzip: 158.75 kB
+
+[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 643ms

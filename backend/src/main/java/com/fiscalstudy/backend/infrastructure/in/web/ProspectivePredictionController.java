@@ -9,6 +9,10 @@ import java.util.Map;
 public class ProspectivePredictionController {
     private final ProspectivePredictionService service;
     public ProspectivePredictionController(ProspectivePredictionService service) { this.service=service; }
+    @GetMapping("/learning-lab/prospective-status")
+    public ResponseEntity<Map<String,Object>> status() {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(service.captureStatus());
+    }
     public record PreparationRequest(String attemptId,String sessionId) {}
     @PostMapping("/questions/{questionId}/predictions")
     public ResponseEntity<?> prepare(@PathVariable String questionId,@RequestBody PreparationRequest request) {
@@ -21,6 +25,7 @@ public class ProspectivePredictionController {
     }
     @GetMapping("/learning-lab/prospective-export")
     public ResponseEntity<Map<String,Object>> export() {
-        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(service.exportSnapshot());
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore())
+            .header("X-FiscalStudy-Export-Kind","PROSPECTIVE_EVENT_SNAPSHOT").body(service.exportSnapshot());
     }
 }

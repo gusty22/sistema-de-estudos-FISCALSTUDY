@@ -13,6 +13,9 @@ import {
 import type { QuestionItem } from './BancoQuestoes';
 import { useSimplifiedMode } from '../../context/SimplifiedModeContext';
 import './ResolucaoQuestaoModal.css';
+import { ProspectivePreparation } from '../../utils/prospectivePreparation';
+import { readAttemptJournal } from '../../utils/attemptJournal';
+import { prospectiveCaptureEnabled, modalCaptureSession } from '../../utils/prospectiveCapture';
 import { AttemptSubmission, annotateAttempt } from '../../utils/attemptSubmission';
 import { useModalA11y, handleKeyActivate } from '../../utils/accessibility';
 
@@ -30,6 +33,7 @@ interface AttemptFeedback {
 
 export interface ResolucaoQuestaoModalProps {
   question: QuestionItem;
+  captureScope?: string;
   currentIndex: number;
   totalInBatch: number;
   onClose: () => void;
@@ -50,6 +54,7 @@ const ERROR_TAXONOMIES = [
 
 export const ResolucaoQuestaoModal: React.FC<ResolucaoQuestaoModalProps> = ({
   question,
+  captureScope = 'bank',
   currentIndex,
   totalInBatch,
   onClose,
@@ -76,11 +81,26 @@ export const ResolucaoQuestaoModal: React.FC<ResolucaoQuestaoModalProps> = ({
   const sessionIdRef = useRef<string>('bank-session-' + crypto.randomUUID());
   const pendingAttemptRef = useRef<AttemptSubmission | null>(null);
   const submittingRef = useRef(false);
+  const prospectiveRef = useRef<ProspectivePreparation | null>(null);
+  const [captureEnabled, setCaptureEnabled] = useState(false);
+  const [preparation, setPreparation] = useState<'PREPARING' | 'READY' | 'ERROR'>('PREPARING');
+  const [revision, setRevision] = useState(0);
+  const [readyScope, setReadyScope] = useState('');
+  const [helpDeclaration, setHelpDeclaration] = useState('UNKNOWN');
+  const scope = captureScope + '|' + question.questionId + '|' + revision;
+  const scopeRef = useRef(scope); scopeRef.current = scope;
+  const canAnswer = preparation === 'READY' && readyScope === scope;
+
 
   // Resetar estado local ao mudar de questão
   useEffect(() => {
+    scopeRef.current = scope;
     pendingAttemptRef.current = null;
+    prospectiveRef.current = null;
     submittingRef.current = false;
+    setHelpDeclaration('UNKNOWN');
+    setPreparation('PREPARING');
+    setReadyScope('');
     setSelectedOption(null);
     setConfidence(3);
     setPensouContrario(false);
@@ -92,7 +112,35 @@ export const ResolucaoQuestaoModal: React.FC<ResolucaoQuestaoModalProps> = ({
     setActiveTimeMs(0);
     setAnkiState('idle');
     setAnkiMessage(null);
-  }, [question.questionId]);
+    let active = true;
+    prospectiveCaptureEnabled().then(async enabled => {
+      if (!active) return;
+      setCaptureEnabled(enabled);
+      if (enabled) {
+        const sid = modalCaptureSession(captureScope);
+        sessionIdRef.current = sid;
+        const intent = new ProspectivePreparation(question.questionId, sid);
+        prospectiveRef.current = intent;
+        await intent.prepare();
+        if (!active) return;
+        const saved = readAttemptJournal(question.questionId, sid);
+        if (saved?.payload) {
+          pendingAttemptRef.current = new AttemptSubmission(saved.payload, saved.attemptId);
+          const letter = String(saved.payload.selectedOption);
+          setSelectedOption(question.options.find((o,i) => extractLetter(o,i) === letter) || letter);
+          setConfidence(Number(saved.payload.confidenceLevel));
+          setActiveTimeMs(Number(saved.payload.activeTimeMs));
+          setHelpDeclaration(saved.payload.usedHelp === true ? 'YES' : saved.payload.usedHelp === false ? 'NO' : 'UNKNOWN');
+        }
+        if (intent.recoveredResult) setFeedback(intent.recoveredResult);
+        fetch('/api/v1/questions/' + encodeURIComponent(question.questionId) + '/presented', {
+          method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:sid})
+        }).catch(() => {});
+      }
+      if (active) { setReadyScope(scope); setPreparation('READY'); }
+    }).catch(() => { if (active) setPreparation('ERROR'); });
+    return () => { active = false; if (scopeRef.current === scope) scopeRef.current = ''; };
+  }, [question.questionId, captureScope, revision]);
 
   // Cronômetro de tempo ativo gasto na questão
   useEffect(() => {
@@ -215,7 +263,8 @@ export const ResolucaoQuestaoModal: React.FC<ResolucaoQuestaoModalProps> = ({
 
   // Submissão da resposta
   const handleSubmit = async () => {
-    if (!selectedOption || isSubmitting || submittingRef.current || feedback) return;
+    if (!selectedOption || isSubmitting || submittingRef.current || feedback || !canAnswer) return;
+    const submittedScope = scope;
     submittingRef.current = true;
 
     setIsSubmitting(true);
@@ -231,11 +280,13 @@ export const ResolucaoQuestaoModal: React.FC<ResolucaoQuestaoModalProps> = ({
         sessionId: sessionIdRef.current,
         origin: 'REAL_STUDY',
         studyMode: 'BANCO_QUESTOES',
-        pensouContrario
+        pensouContrario,
+        ...(captureEnabled && helpDeclaration !== 'UNKNOWN' ? {usedHelp:helpDeclaration === 'YES',helpType:helpDeclaration === 'YES' ? 'MATERIAL_APOIO' : 'NENHUM'} : {})
       };
 
-      pendingAttemptRef.current ??= new AttemptSubmission(payload);
+      pendingAttemptRef.current ??= new AttemptSubmission(payload, captureEnabled ? prospectiveRef.current!.attemptId : undefined, captureEnabled);
       const data: AttemptFeedback = await pendingAttemptRef.current.send(question.questionId);
+      if (scopeRef.current !== submittedScope) return;
       {
         setFeedback(data);
         const acerto = data.isCorrect === true || data.gabaritoStatus === 'ANULADA';
@@ -252,11 +303,11 @@ export const ResolucaoQuestaoModal: React.FC<ResolucaoQuestaoModalProps> = ({
         onQuestionAnswered(question.questionId, acerto);
       }
     } catch (e) {
+      if (scopeRef.current !== submittedScope) return;
       console.error('Erro ao submeter resposta:', e);
       alert('Não foi possível confirmar a gravação. Tente novamente para reenviar a mesma tentativa. ' + (e instanceof Error ? e.message : ''));
     } finally {
-      submittingRef.current = false;
-      setIsSubmitting(false);
+      if (scopeRef.current === submittedScope) { submittingRef.current = false; setIsSubmitting(false); }
     }
   };
 
@@ -337,6 +388,7 @@ export const ResolucaoQuestaoModal: React.FC<ResolucaoQuestaoModalProps> = ({
     <div className="resolucao-modal-backdrop" onClick={handleClose}>
       <div
         className="resolucao-modal-container"
+        data-question-id={question.questionId}
         role="dialog"
         aria-modal="true"
         aria-labelledby="resolucao-modal-title"
@@ -433,6 +485,16 @@ export const ResolucaoQuestaoModal: React.FC<ResolucaoQuestaoModalProps> = ({
             </div>
           )}
 
+          {!canAnswer && !feedback && <p role={preparation === 'ERROR' ? 'alert' : 'status'}>
+            {preparation === 'ERROR' ? 'Não foi possível preparar a questão. Sua resposta ainda não foi enviada.' : 'Preparando questão...'}
+            {preparation === 'ERROR' && <button onClick={() => setRevision(n => n+1)}>Tentar novamente</button>}
+          </p>}
+          {captureEnabled && !feedback && <label>Ajuda nesta tentativa
+            <select aria-label="Ajuda nesta tentativa" value={helpDeclaration} disabled={!!pendingAttemptRef.current}
+              onChange={e => setHelpDeclaration(e.target.value)}>
+              <option value="UNKNOWN">Não informada</option><option value="NO">Não usei ajuda</option><option value="YES">Usei ajuda</option>
+            </select>
+          </label>}
           {/* Alternativas */}
           <div className="resolucao-options-list" role="radiogroup" aria-label="Alternativas da questão">
             {rawOptions.map((opt, idx) => {
@@ -468,16 +530,17 @@ export const ResolucaoQuestaoModal: React.FC<ResolucaoQuestaoModalProps> = ({
                   key={idx}
                   role="radio"
                   aria-checked={isSelected}
-                  tabIndex={feedback ? -1 : 0}
+                  tabIndex={feedback || !canAnswer ? -1 : 0}
+                  aria-disabled={Boolean(feedback) || !canAnswer}
                   aria-label={`Alternativa ${letter}: ${cleanText}`}
                   className={`resolucao-option-card ${optionStatusClass} ${feedback ? 'disabled' : ''}`}
                   onClick={() => {
-                    if (!feedback && !pendingAttemptRef.current) {
+                    if (!feedback && !pendingAttemptRef.current && canAnswer) {
                       setSelectedOption(opt);
                     }
                   }}
                   onKeyDown={(e) => {
-                    if (!feedback && !pendingAttemptRef.current) {
+                    if (!feedback && !pendingAttemptRef.current && canAnswer) {
                       handleKeyActivate(e, () => setSelectedOption(opt));
                     }
                   }}
@@ -689,7 +752,7 @@ export const ResolucaoQuestaoModal: React.FC<ResolucaoQuestaoModalProps> = ({
                 <button
                   type="button"
                   className="btn-confirm-answer"
-                  disabled={!selectedOption || isSubmitting}
+                  disabled={!selectedOption || isSubmitting || !canAnswer}
                   aria-busy={isSubmitting}
                   onClick={handleSubmit}
                 >
@@ -699,6 +762,11 @@ export const ResolucaoQuestaoModal: React.FC<ResolucaoQuestaoModalProps> = ({
               </>
             ) : (
               <div style={{ display: 'flex', gap: '0.6rem' }}>
+                {captureEnabled && <button onClick={() => {
+                  void recordSessionSummary();
+                  sessionMetricsRef.current = {...sessionMetricsRef.current, questionsCount:0, correctCount:0, totalActiveTimeMs:0, confidenceSum:0};
+                  modalCaptureSession(captureScope, true); setRevision(n => n+1);
+                }}>Nova tentativa</button>}
                 <button
                   type="button"
                   className="btn-footer-close"

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { AttemptSubmission, annotateAttempt, requestJson } from '../utils/attemptSubmission';
+import { prospectiveCaptureEnabled } from '../utils/prospectiveCapture';
 import { ProspectivePreparation } from '../utils/prospectivePreparation';
 import { readAttemptJournal, restoreQuestionSession, saveQuestionSession } from '../utils/attemptJournal';
 import { cachedStudyPreferences } from '../utils/studyPreferences';
@@ -178,6 +179,8 @@ const QuestionViewer: React.FC = () => {
   const prospectiveRef = useRef<ProspectivePreparation | null>(null);
   const [prospectiveStatus, setProspectiveStatus] = useState<'PREPARING' | 'READY' | 'ERROR'>('PREPARING');
   const [prospectiveRetry, setProspectiveRetry] = useState(0);
+  const [captureEnabled, setCaptureEnabled] = useState<boolean | null>(null);
+  const [helpDeclaration, setHelpDeclaration] = useState('UNKNOWN');
   const [partialHistoryRecovery, setPartialHistoryRecovery] = useState(false);
 
   // Configuração da Sessão Personalizada (Fase 8)
@@ -397,16 +400,16 @@ const QuestionViewer: React.FC = () => {
       const isInput = activeEl instanceof HTMLInputElement || activeEl instanceof HTMLTextAreaElement || activeEl?.getAttribute('contenteditable') === 'true';
       if (isInput) return;
 
-      if (!feedback && !pendingAttemptRef.current && prospectiveRef.current?.ready && prospectiveRef.current.questionId === question?.questionId && ['1', '2', '3', '4', '5'].includes(e.key)) {
+      if (!feedback && !pendingAttemptRef.current && (captureEnabled === false || (prospectiveRef.current?.ready && prospectiveRef.current.questionId === question?.questionId)) && ['1', '2', '3', '4', '5'].includes(e.key)) {
         setConfidence(Number(e.key));
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [feedback, question?.questionId]);
+  }, [feedback, question?.questionId, captureEnabled]);
 
   const handleSelectOption = (opt: string) => {
-    if (feedback || pendingAttemptRef.current || !prospectiveRef.current?.ready || prospectiveRef.current.questionId !== question?.questionId) return;
+    if (feedback || pendingAttemptRef.current || (captureEnabled !== false && (!prospectiveRef.current?.ready || prospectiveRef.current.questionId !== question?.questionId))) return;
     if (selectedOption && selectedOption !== opt) {
       setOptionSwitchCount((prev) => prev + 1);
       const fromLetter = selectedOption.match(/^([A-E])\)?/)?.[1] || selectedOption.charAt(0);
@@ -530,36 +533,43 @@ const QuestionViewer: React.FC = () => {
   useEffect(() => {
     if (!question || feedback) return;
     let active = true;
-    let intent = prospectiveRef.current;
-    if (!intent || intent.questionId !== question.questionId || intent.sessionId !== sessionId) {
-      try { intent = new ProspectivePreparation(question.questionId, sessionId); }
-      catch { setProspectiveStatus('ERROR'); return; }
-      prospectiveRef.current = intent;
-    }
     setProspectiveStatus('PREPARING');
-    const preparedIntent = intent;
-    preparedIntent.prepare().then(() => {
+    prospectiveCaptureEnabled().then(enabled => {
       if (!active) return;
-      const saved = readAttemptJournal(question.questionId, sessionId);
-      if (saved?.payload) {
-        pendingAttemptRef.current = new AttemptSubmission(saved.payload, saved.attemptId);
-        const letter = String(saved.payload.selectedOption);
-        const options = question.options.map(o => typeof o === 'string' ? o : (o.label + ') ' + o.text));
-        const restored = options.find(o => o.startsWith(letter)) ||
-          (options.length === 2 && (letter === 'C' || letter === 'E') ? options[letter === 'C' ? 0 : 1] : letter);
-        setSelectedOption(restored); setConfidence(Number(saved.payload.confidenceLevel));
-        setActiveTimeMs(Number(saved.payload.activeTimeMs));
+      setCaptureEnabled(enabled);
+      if (!enabled) { prospectiveRef.current = null; setProspectiveStatus('READY'); return; }
+      let intent = prospectiveRef.current;
+      if (!intent || intent.questionId !== question.questionId || intent.sessionId !== sessionId) {
+        try { intent = new ProspectivePreparation(question.questionId, sessionId); }
+        catch { setProspectiveStatus('ERROR'); return; }
+        prospectiveRef.current = intent;
       }
-      if (preparedIntent.recoveredResult) setFeedback(preparedIntent.recoveredResult);
-      setProspectiveStatus('READY');
-    })
-      .catch(() => { if (active) setProspectiveStatus('ERROR'); });
+      setProspectiveStatus('PREPARING');
+      const preparedIntent = intent;
+      preparedIntent.prepare().then(() => {
+        if (!active) return;
+        const saved = readAttemptJournal(question.questionId, sessionId);
+        if (saved?.payload) {
+          pendingAttemptRef.current = new AttemptSubmission(saved.payload, saved.attemptId);
+          const letter = String(saved.payload.selectedOption);
+          const options = question.options.map(o => typeof o === 'string' ? o : (o.label + ') ' + o.text));
+          const restored = options.find(o => o.startsWith(letter)) ||
+            (options.length === 2 && (letter === 'C' || letter === 'E') ? options[letter === 'C' ? 0 : 1] : letter);
+          setSelectedOption(restored); setConfidence(Number(saved.payload.confidenceLevel));
+          setActiveTimeMs(Number(saved.payload.activeTimeMs));
+          setHelpDeclaration(saved.payload.usedHelp === true ? 'YES' : saved.payload.usedHelp === false ? 'NO' : 'UNKNOWN');
+        }
+        if (preparedIntent.recoveredResult) setFeedback(preparedIntent.recoveredResult);
+        setProspectiveStatus('READY');
+      })
+        .catch(() => { if (active) setProspectiveStatus('ERROR'); });
+    }).catch(() => { if (active) setProspectiveStatus('ERROR'); });
     return () => { active = false; };
   }, [question?.questionId, sessionId, feedback, prospectiveRetry]);
 
   // Rebuild the whole visible session map from SERVER-confirmed outcomes after a restart.
   useEffect(() => {
-    if (!sessionQuestions.length) return;
+    if (!sessionQuestions.length || captureEnabled !== true) return;
     let active = true;
     Promise.all(sessionQuestions.map(async item => {
       const saved = readAttemptJournal(item.questionId, sessionId);
@@ -583,11 +593,11 @@ const QuestionViewer: React.FC = () => {
       setPartialHistoryRecovery(false);
     }).catch(() => { if (active) setPartialHistoryRecovery(true); });
     return () => { active = false; };
-  }, [sessionId, sessionQuestions]);
+  }, [sessionId, sessionQuestions, captureEnabled]);
 
-  const prospectiveReady = prospectiveStatus === 'READY' &&
-    prospectiveRef.current?.questionId === question?.questionId &&
-    prospectiveRef.current?.sessionId === sessionId && prospectiveRef.current.ready;
+  const prospectiveReady = prospectiveStatus === 'READY' && (captureEnabled === false ||
+    (prospectiveRef.current?.questionId === question?.questionId &&
+    prospectiveRef.current?.sessionId === sessionId && prospectiveRef.current.ready));
 
 
   // Carrega Concursos e Disciplinas disponíveis
@@ -629,6 +639,7 @@ const QuestionViewer: React.FC = () => {
     submittingRef.current = false;
     setFeedback(null);
     setSelectedOption(null);
+    setHelpDeclaration('UNKNOWN');
     setConfidence(0);
     setIsSubmitting(false);
     setSelectedCausaErro('');
@@ -849,8 +860,8 @@ const QuestionViewer: React.FC = () => {
         await handleSubmit();
       }
 
-      const pending = question ? readAttemptJournal(question.questionId, sessionId) : null;
-      if (pending?.payload && !pending.result) {
+      const pending = captureEnabled && question ? readAttemptJournal(question.questionId, sessionId) : null;
+      if ((pending?.payload && !pending.result) || (!captureEnabled && pendingAttemptRef.current && !pendingAttemptRef.current.confirmed)) {
         alert('Confirme ou recupere a resposta pendente antes de encerrar.'); return;
       }
       // 2. Finaliza no backend
@@ -1029,12 +1040,14 @@ const QuestionViewer: React.FC = () => {
           causaErro: selectedCausaErro || undefined,
           naCordaBamba: naCordaBamba,
           pensouContrario: pensouContrario,
-          usedHelp: hasApoio,
-          helpType: hasApoio ? 'MATERIAL_APOIO' : 'NENHUM',
+          ...((hasApoio || (captureEnabled && helpDeclaration !== 'UNKNOWN')) ? {
+            usedHelp: hasApoio || helpDeclaration === 'YES',
+            helpType: hasApoio || helpDeclaration === 'YES' ? 'MATERIAL_APOIO' : 'NENHUM'
+          } : {}),
           interventionType: currentIntervention,
           origin: 'REAL_STUDY',
           ...bioPayload
-        }, prospectiveRef.current!.attemptId);
+        }, captureEnabled ? prospectiveRef.current!.attemptId : undefined, captureEnabled === true);
       const result = await pendingAttemptRef.current.send(question.questionId);
       if (submissionScopeRef.current !== submissionScope) return;
       {
@@ -1952,6 +1965,12 @@ const QuestionViewer: React.FC = () => {
             >
               {isSubmitting ? 'Gravando...' : pendingAttemptRef.current ? 'Reenviar tentativa' : 'Responder'}
             </button>
+            {captureEnabled && !feedback && <label>Ajuda nesta tentativa
+              <select aria-label="Ajuda nesta tentativa" value={helpDeclaration} disabled={!!pendingAttemptRef.current}
+                onChange={e => setHelpDeclaration(e.target.value)}>
+                <option value="UNKNOWN">Não informada</option><option value="NO">Não usei ajuda</option><option value="YES">Usei ajuda</option>
+              </select>
+            </label>}
             {!prospectiveReady && !feedback && (
               <p role={prospectiveStatus === 'ERROR' ? 'alert' : 'status'}>
                 {prospectiveStatus === 'ERROR' ? 'Não foi possível preparar a questão. Sua resposta ainda não foi enviada.' : 'Preparando questão...'}

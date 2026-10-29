@@ -1,0 +1,4 @@
+Authenticated Java -> export -> R: synthetic custody, strict chronology, identity, help, exposure, tamper and baseline/replay checks passed. No personal experiment.
+Activation boundary: bounded key input, explicit fixture Boolean and original file/key substitution rejected.
+Missing verifier or external key fails closed; no authenticated result.
+Valid other RSA public key rejected; key-size error identifies the limit guard.

@@ -1,0 +1,9 @@
+Traceback (most recent call last):
+  File "/workspace/fiscalstudy/analytics-engine/tests/fixtures/authentic_prospective/replay.py", line 95, in <module>
+    main()
+  File "/workspace/fiscalstudy/analytics-engine/tests/fixtures/authentic_prospective/replay.py", line 33, in main
+    result = evaluate_local(copied_input, root / "private run", args.rscript, True,
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/fiscalstudy/analytics-engine/lab/personal_pilot.py", line 208, in evaluate_local
+    raise error
+RuntimeError: Evaluation incomplete; inspect local private report

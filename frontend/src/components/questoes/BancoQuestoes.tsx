@@ -656,7 +656,8 @@ export const BancoQuestoes: React.FC<BancoQuestoesProps> = ({
                       className="question-options-preview"
                       role="button"
                       tabIndex={0}
-                      onClick={() => setResolvendoIndex(qIndex)}
+                      data-question-id={q.questionId}
+                        onClick={() => setResolvendoIndex(qIndex)}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
                           e.preventDefault();
@@ -735,6 +736,7 @@ export const BancoQuestoes: React.FC<BancoQuestoesProps> = ({
 
                       <button
                         className="btn-q-action primary"
+                        data-question-id={q.questionId}
                         onClick={() => setResolvendoIndex(qIndex)}
                         aria-label={`Abrir e resolver questão ${q.questionId}`}
                         title="Abrir questão para resolução focada"
@@ -791,6 +793,7 @@ export const BancoQuestoes: React.FC<BancoQuestoesProps> = ({
       {/* Modal Focado de Resolução de Questão do Banco */}
       {resolvendoIndex !== null && questions[resolvendoIndex] && (
         <ResolucaoQuestaoModal
+          captureScope={'bank:' + (activeConcurso?.id || 'all')}
           question={questions[resolvendoIndex]}
           currentIndex={resolvendoIndex}
           totalInBatch={questions.length}

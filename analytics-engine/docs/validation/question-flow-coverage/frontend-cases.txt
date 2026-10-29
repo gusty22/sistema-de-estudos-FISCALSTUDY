@@ -1,0 +1,91 @@
+✔ handleKeyActivate fires callback on Enter and Space, ignoring other keys (1.480262ms)
+✔ submitting attempt rejects without false success on 500 internal server error (83.407438ms)
+✔ submitting attempt rejects on malformed non-JSON server error response (1.055625ms)
+✔ confidence level bounds are clamped between 1 and 5 and cannot submit 0 (0.291137ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 338.17074
+✔ 1. Fila vazia: não injeta disciplinas ou tópicos fictícios (1.587693ms)
+✔ 2. Fila com dados reais de revisão e Robin Hood: mapeia sem inventar dados (0.358548ms)
+✔ 3. Proteção matemática: getCurrentActivity e getNextQueueIndex nunca geram NaN (0.396115ms)
+✔ 4. Proteção de sessão: prepareSessionPayload rejeita atividade inexistente (0.243265ms)
+✔ 5. Estados explícitos de interface do Dashboard (0.454873ms)
+✔ 7. Recuperação após carregamento bem-sucedido (0.17969ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 162.337316
+✔ EPIC 02 Contrato 1: Tratamento de insuficiência de evidências (SEM_EVIDENCIAS para N=0 e PRELIMINAR para N<10) (2.303778ms)
+✔ EPIC 02 Contrato 2: Denominador auditado explícito sem nota percentual cega (0.309124ms)
+✔ EPIC 02 Contrato 3: Escala ordinal pura de confiança e detecção de pontos cegos (6.825193ms)
+✔ EPIC 02 Contrato 4: Metadados contextuais registrados sem pesos multiplicadores arbitrários (0.486029ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 71.238219
+✔ a transport retry preserves attempt identity and the original payload (56.837391ms)
+✔ concurrent submissions share a single in-flight request (0.75279ms)
+✔ HTTP failure never becomes a success result (34.448919ms)
+✔ post-answer annotations target the confirmed attempt, not a new answer (4.731966ms)
+✔ preferences normalize supported choices without inventing a learning profile (0.537006ms)
+✔ only confirmed persisted preferences update the running UI (5.121868ms)
+✔ ingestion authorization stays in memory and is restricted to its API (2.714054ms)
+✔ annotateAttempt handles HTTP 409 conflict and propagates descriptive error without mutating original attempt (3.614635ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 297.000442
+✔ default-off capture does not consult server or reserve an experimental intent (1.880342ms)
+✔ explicit frontend opt-in still requires exact non-executable host authorization (99.26573ms)
+✔ modal reopens keep identity, bank and active scopes differ, explicit new intent keeps old journals (1.716657ms)
+✔ ordinary disabled submission ignores obsolete/corrupt experimental journals (1.204067ms)
+✔ journaled answer without server prediction fails recovery rather than backfilling (2.31932ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 251.10574
+✔ pre-answer preparation sends only identity and retries the same reserved attempt (147.242856ms)
+✔ preparation rejects mismatched acknowledgments and executable authority (1.639471ms)
+✔ concurrent preparation shares one request and confirmed preparation does not refreeze (1.327262ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 403.669765
+✔ reload after preparation acknowledgment loss retains UUID (155.181431ms)
+✔ reload after answer acknowledgment loss preserves exact payload and outcome (6.722059ms)
+✔ question switch isolates journals and cached session survives frontend restart (0.570126ms)
+✔ damaged storage fails closed without generating another intent (0.436686ms)
+✔ a cached success is never accepted without current server confirmation (3.566362ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 484.990316

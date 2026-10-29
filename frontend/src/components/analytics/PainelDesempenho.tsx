@@ -64,7 +64,7 @@ export const PainelDesempenho: React.FC<PainelDesempenhoProps> = ({
 
   // Exportação para R
   const handleExportR = async () => {
-    setExportStatus('Exportando dataset para o motor em R...');
+    setExportStatus('Exportando CSV descritivo para R...');
     try {
       const res = await fetch('/api/v1/analytics/export');
       if (!res.ok) throw new Error('Falha no download');
@@ -76,7 +76,7 @@ export const PainelDesempenho: React.FC<PainelDesempenhoProps> = ({
       document.body.appendChild(a);
       a.click();
       a.remove();
-      setExportStatus('✓ CSV exportado para análise psicométrica!');
+      setExportStatus('✓ CSV descritivo exportado; não é snapshot prospectivo autenticado.');
       setTimeout(() => setExportStatus(null), 3500);
     } catch {
       setExportStatus('Erro na exportação');
@@ -142,7 +142,7 @@ export const PainelDesempenho: React.FC<PainelDesempenhoProps> = ({
           {!isSimplifiedMode && (
             <button className="btn-export-r" onClick={handleExportR}>
               <Download className="w-4 h-4 inline mr-1.5" />
-              Dataset para R
+              CSV descritivo para R
             </button>
           )}
         </div>

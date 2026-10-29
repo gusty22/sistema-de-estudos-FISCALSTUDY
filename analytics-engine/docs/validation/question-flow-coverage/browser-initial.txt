@@ -1,0 +1,20 @@
+locator.click: Timeout 30000ms exceeded.
+Call log:
+[2m  - waiting for getByRole('button', { name: /Banco de Questões/ })[22m
+[2m    - locator resolved to <button class="nav-btn ">…</button>[22m
+[2m  - attempting click action[22m
+[2m    - waiting for element to be visible, enabled and stable[22m
+[2m  - element was detached from the DOM, retrying[22m
+
+    at /workspace/fiscalstudy/frontend/tests/browser/question-flow-coverage.cjs:14:60 {
+  name: 'TimeoutError'
+}
+Traceback (most recent call last):
+  File "/workspace/fiscalstudy/frontend/tests/fixtures/question_flow_coverage/run.py", line 61, in <module>
+    if __name__=='__main__':main()
+                            ^^^^^^
+  File "/workspace/fiscalstudy/frontend/tests/fixtures/question_flow_coverage/run.py", line 43, in main
+    subprocess.run(['node',str(ROOT/'frontend/tests/browser/question-flow-coverage.cjs')],cwd=ROOT,env=env,check=True,timeout=200)
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['node', '/workspace/fiscalstudy/frontend/tests/browser/question-flow-coverage.cjs']' returned non-zero exit status 1.

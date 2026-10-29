@@ -1,6 +1,6 @@
 {
   "version": "pilot-activation-gate-v1",
-  "base_main": "8724b3f72bbda51de369e93e357cbbf720f52a7f",
+  "base_main": "091ccb89a08e549af8ccf3424160345f6a1a1187",
   "pilot_status": "NOT_STARTED",
   "activation_allowed": false,
   "scope": "PERSONAL_INSTALLATION_READINESS_NOT_A_SCIENTIFIC_VALIDITY_CLAIM",
@@ -28,7 +28,7 @@
     {
       "id": "normal_question_flow_coverage",
       "state": "FAIL",
-      "evidence_or_blocker": "QuestionViewer covered; ResolucaoQuestaoModal lacks forecast/help declaration; legacy CSV script is unsupported"
+      "evidence_or_blocker": "Ordinary bank modal and QuestionViewer now guarded and tested full-stack off/on; active fallback tested with real parent in synthetic fixture. Full coverage remains FAIL: specialized reverse-engineering, all simulated configurations and arbitrary external clients not homologated."
     },
     {
       "id": "signed_auditable_export",
@@ -52,5 +52,22 @@
   "operational_key_provisioned": false,
   "personal_collection_started": false,
   "can_apply": false,
-  "can_schedule": false
+  "can_schedule": false,
+  "default_capture_enabled": false,
+  "capture_gate": "Frontend explicit opt-in AND host capture-authorized AND host capture-enabled; no mutable client authorization",
+  "covered_future_scope": "Ordinary QuestionViewer and bank modal only, after later explicit authorization and personal installation gates",
+  "capture_fixture_results": {
+    "scope": "SYNTHETIC_ONLY_SOFTWARE",
+    "off": {
+      "forecasts": 0,
+      "unforecasted_answers": 2
+    },
+    "on_local_example": {
+      "forecasts": 7,
+      "scored": 2,
+      "excluded_or_pending": 5,
+      "unforecasted_answers": 1
+    },
+    "personal_profile": "NOT_CREATED"
+  }
 }

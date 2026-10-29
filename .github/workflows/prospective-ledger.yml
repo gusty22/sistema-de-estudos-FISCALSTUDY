@@ -74,6 +74,7 @@ jobs:
         run: |
           npm ci --ignore-scripts
           npm test
+          node --test --test-isolation=none tests/prospective-capture-gate.test.mjs
           npm run build
       - name: Full Spring and Chromium prospective homologation
         timeout-minutes: 10
@@ -93,11 +94,11 @@ jobs:
           export FISCALSTUDY_PLAYWRIGHT_MODULE="$FISCALSTUDY_BROWSER_DIR/tools/node_modules/playwright"
           "$FISCALSTUDY_BROWSER_DIR/tools/node_modules/.bin/playwright" install --with-deps chromium
           mvn -B -ntp -f backend/pom.xml package -DskipTests
-          java -jar backend/target/backend-0.0.1-SNAPSHOT.jar --spring.profiles.active=isolated --fiscalstudy.event-origin=REAL_STUDY --fiscalstudy.prospective.source-kind=SYNTHETIC_FIXTURE > "$FISCALSTUDY_BROWSER_DIR/backend.log" 2>&1 &
+          setsid java -jar backend/target/backend-0.0.1-SNAPSHOT.jar --spring.profiles.active=isolated --fiscalstudy.event-origin=REAL_STUDY --fiscalstudy.prospective.source-kind=SYNTHETIC_FIXTURE --fiscalstudy.prospective.capture-authorized=true --fiscalstudy.prospective.capture-enabled=true > "$FISCALSTUDY_BROWSER_DIR/backend.log" 2>&1 &
           backend_pid=$!
-          (cd frontend && npm run dev -- --host 127.0.0.1 --strictPort) > "$FISCALSTUDY_BROWSER_DIR/frontend.log" 2>&1 &
+          (cd frontend && exec setsid env VITE_FISCALSTUDY_PROSPECTIVE_CAPTURE=true npm run dev -- --host 127.0.0.1 --strictPort) > "$FISCALSTUDY_BROWSER_DIR/frontend.log" 2>&1 &
           frontend_pid=$!
-          trap 'kill "$backend_pid" "$frontend_pid" 2>/dev/null || true' EXIT
+          trap 'kill -- -"$backend_pid" -"$frontend_pid" 2>/dev/null || true' EXIT
           python3 - <<'PY'
           import urllib.request,time,os,pathlib
           for url in ("http://127.0.0.1:8080/","http://127.0.0.1:5173/"):
@@ -120,6 +121,13 @@ jobs:
           Rscript lab/prospective_evaluation.R "$FISCALSTUDY_BROWSER_DIR/browser-export.json" "$FISCALSTUDY_BROWSER_DIR/browser-metrics-replay.json"
           cmp "$FISCALSTUDY_BROWSER_DIR/browser-metrics.json" "$FISCALSTUDY_BROWSER_DIR/browser-metrics-replay.json"
           Rscript -e 'x<-jsonlite::fromJSON(file.path(Sys.getenv("FISCALSTUDY_BROWSER_DIR"),"browser-metrics.json"));stopifnot(x$source_kind=="SYNTHETIC_FIXTURE",x$scored_count==1,!x$can_apply,!x$can_schedule)'
+      - name: Actual modal and viewer routes with capture disabled and explicitly enabled only in fixtures
+        timeout-minutes: 10
+        env:
+          OMP_NUM_THREADS: '1'
+        run: |
+          export FISCALSTUDY_PLAYWRIGHT_MODULE="$FISCALSTUDY_BROWSER_DIR/tools/node_modules/playwright"
+          python3 frontend/tests/fixtures/question_flow_coverage/run.py --output "$RUNNER_TEMP/question-flow-coverage"
       - name: Retain explicitly synthetic integration evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -135,6 +143,10 @@ jobs:
             backend/target/prospective-fixture-public.pem
             backend/target/prospective-other-fixture-public.pem
             ${{ runner.temp }}/personal-pilot-synthetic/*.json
+            ${{ runner.temp }}/question-flow-coverage/*/browser-*.json
+            ${{ runner.temp }}/question-flow-coverage/*/metrics*.json
+            ${{ runner.temp }}/question-flow-coverage/*/failure.*
+            ${{ runner.temp }}/question-flow-coverage/*/*.log
             ${{ env.FISCALSTUDY_BROWSER_DIR }}/*.png
             ${{ env.FISCALSTUDY_BROWSER_DIR }}/browser-*.json
 
@@ -154,10 +166,15 @@ jobs:
           sparse-checkout: |
             backend
             analytics-engine
+            frontend
+            scripts
       - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3
         with:
           distribution: temurin
           java-version: '17'
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
         with:
           python-version: '3.13.7'
@@ -200,3 +217,14 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'R custody regressions failed' }
           python tests/fixtures/authentic_prospective/replay.py
           if ($LASTEXITCODE -ne 0) { throw 'Native Windows private replay failed' }
+      - name: Existing frontend and default-off gate on native Windows
+        working-directory: FiscalStudy ação/frontend
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          if ($LASTEXITCODE -ne 0) { throw 'Frontend fixture dependencies failed' }
+          npm test
+          if ($LASTEXITCODE -ne 0) { throw 'Frontend tests failed' }
+          node --test --test-isolation=none tests/prospective-capture-gate.test.mjs
+          if ($LASTEXITCODE -ne 0) { throw 'Default-off capture gate failed' }
+          npm run build
+          if ($LASTEXITCODE -ne 0) { throw 'Frontend build failed' }

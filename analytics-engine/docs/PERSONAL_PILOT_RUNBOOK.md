@@ -5,7 +5,7 @@ No diagnostic reserve creation, intervention randomization, FSRS override or aut
 
 See [authenticated custody and activation gate](AUTHENTIC_PROSPECTIVE_EVIDENCE_V1.md). No personal session is authorized or started by this operation. Provision/check the external public key and installation identity only after explicit authorization.
 
-The [final activation gate](PILOT_ACTIVATION_GATE_V1.md) is controlling: whole-application coverage FAIL, actual personal installation NOT_VERIFIED, pilot NOT_STARTED. Only a later explicit authorization scoped to QuestionViewer can cover a first observation. ResolucaoQuestaoModal and the legacy CSV PowerShell script are excluded.
+The [final activation gate](PILOT_ACTIVATION_GATE_V1.md) is controlling: whole-application coverage FAIL, actual personal installation NOT_VERIFIED, pilot NOT_STARTED. Only a later explicit authorization naming the supported ordinary-question scope can cover a first observation. The later [coverage matrix](QUESTION_FLOW_PROSPECTIVE_COVERAGE_V1.md) adds the ordinary bank modal to the technically tested future scope. Global coverage remains FAIL; the legacy CSV script and specialized targets remain excluded. No authorization was granted.
 
 ## Before collecting
 - Use the personal local installation deliberately, bound to127.0.0.1. Current application.yml declares REAL_STUDY; confirm effective runtime configuration. Never relabel an isolated/test profile as personal evidence.

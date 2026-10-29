@@ -1,5 +1,5 @@
 # scripts/export_pilot_session.ps1
-# FiscalStudy — Procedimento Automatizado de Exportação e Auditoria da Sessão Piloto Real
+# FiscalStudy — Exportação CSV descritiva legada; NÃO é snapshot prospectivo assinado
 
 param(
     [string]$BackendUrl = "http://localhost:8080",
@@ -10,7 +10,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 Write-Host "=================================================================" -ForegroundColor Cyan
-Write-Host "   FiscalStudy — Exportacao e Validacao da Sessao Piloto Real   " -ForegroundColor Cyan
+Write-Host "   FiscalStudy — Exportacao CSV Descritiva (sem autenticacao prospectiva)   " -ForegroundColor Cyan
 Write-Host "=================================================================" -ForegroundColor Cyan
 
 # 1. Verificar se o backend esta respondendo
@@ -33,7 +33,7 @@ if (!(Test-Path $OutputDir)) {
 $csvPath = Join-Path $OutputDir "fiscalstudy_attempts.csv"
 $manifestPath = Join-Path $OutputDir "export_manifest.json"
 
-Write-Host "[1/4] Baixando exportacao CSV autenticada (origin=REAL_STUDY)..." -ForegroundColor Yellow
+Write-Host "[1/4] Baixando exportacao CSV descritiva (origin=REAL_STUDY)..." -ForegroundColor Yellow
 & curl.exe -s -S "$BackendUrl/api/v1/analytics/export?origin=REAL_STUDY" -o "$csvPath"
 
 Write-Host "[2/4] Baixando manifesto correspondente..." -ForegroundColor Yellow
@@ -77,7 +77,7 @@ if ((Test-Path $rScriptPath) -and (Test-Path (Join-Path $AnalyticsDir "R\evaluat
     if (Test-Path $evalOutputJson) {
         Write-Host ""
         Write-Host "=================================================================" -ForegroundColor Green
-        Write-Host "   SESSAO PILOTO VALIDADA E PROCESSADA COM SUCESSO!             " -ForegroundColor Green
+        Write-Host "   CSV DESCRITIVO PROCESSADO; PILOTO NAO VALIDADO!             " -ForegroundColor Green
         Write-Host "=================================================================" -ForegroundColor Green
         Write-Host "Relatorio gerado em: $evalOutputJson" -ForegroundColor Cyan
     }

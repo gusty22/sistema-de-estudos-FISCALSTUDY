@@ -28,13 +28,18 @@ public class ProspectivePredictionService {
     private final Clock clock;
     private final String sourceKind;
     private ProspectiveExportAttestor attestor;
+    private boolean captureAuthorized=false;
+    private boolean captureEnabled=false;
 
     @org.springframework.beans.factory.annotation.Autowired
     public ProspectivePredictionService(JdbcTemplate jdbc, EventStoreRepository events,
             QuestionRepository questions, AttemptSubmissionService attempts, LearningEvidenceService memory,
-            @org.springframework.beans.factory.annotation.Value("${fiscalstudy.prospective.source-kind:LOCAL_EVENT_STORE_UNATTESTED}") String sourceKind, ProspectiveExportAttestor attestor) {
+            @org.springframework.beans.factory.annotation.Value("${fiscalstudy.prospective.source-kind:LOCAL_EVENT_STORE_UNATTESTED}") String sourceKind, ProspectiveExportAttestor attestor,
+            @org.springframework.beans.factory.annotation.Value("${fiscalstudy.prospective.capture-authorized:false}") boolean authorized,
+            @org.springframework.beans.factory.annotation.Value("${fiscalstudy.prospective.capture-enabled:false}") boolean enabled) {
         this(jdbc, events, questions, attempts, memory, Clock.systemUTC(), sourceKind);
         this.attestor=attestor;
+        this.captureAuthorized=authorized; this.captureEnabled=enabled;
     }
     public ProspectivePredictionService(JdbcTemplate jdbc, EventStoreRepository events,
             QuestionRepository questions, AttemptSubmissionService attempts, LearningEvidenceService memory,
@@ -58,8 +63,13 @@ public class ProspectivePredictionService {
         try { return json.writeValueAsString(value); }
         catch(Exception e) { throw new IllegalStateException("Cannot serialize prospective evidence",e); }
     }
+    public Map<String,Object> captureStatus() {
+        return Map.of("contractVersion",CONTRACT,"enabled",captureAuthorized&&captureEnabled,
+            "can_apply",false,"can_schedule",false);
+    }
     /** No answer, confidence, response duration or outcome is accepted by this contract. */
     public synchronized JsonNode prepare(String questionId,String sessionId,String attemptId) {
+        if(!captureAuthorized || !captureEnabled) throw conflict("Prospective capture is disabled or not authorized");
         uuid(attemptId);
         if(sessionId==null || sessionId.isBlank()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"Session required");
         return transaction.execute(tx -> {

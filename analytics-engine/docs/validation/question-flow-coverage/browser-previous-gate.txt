@@ -1,0 +1,7 @@
+Seeded 3 study items and 1 candidate; synthetic reservation follows verified provenance capture.
+Synthetic quarantine: real batch/bank/direct prediction denied; creation disabled.
+Synthetic source access: PDF/staging blocked; authorized exposure audited and compromised before content; replay idempotent.
+Real-browser synthetic homolocation passed; personal validation NOT_EXECUTED.
+Prospective sidecar evaluation: 1 scored, 1 excluded; can_apply=false
+Prospective sidecar evaluation: 1 scored, 1 excluded; can_apply=false
+Previous browser gate and R identical replay passed; synthetic only.

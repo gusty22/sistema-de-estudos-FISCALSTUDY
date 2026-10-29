@@ -1,0 +1,27 @@
+FISCALSTUDY — question-flow coverage, 2026-10-29
+Base main 091ccb89a08e549af8ccf3424160345f6a1a1187; PR46 merged, head 0f3af68.
+PR46 CI success before branch: 40945022312 (prospective Linux/Windows), 40945022556 (learner lab).
+Branch fix/prospective-question-flow-coverage. No merge/automerge; no personal database/collection/operational key.
+
+LOCAL LINUX VALIDATION
+Java relevant suite: 123 tests, 0 failures/errors/skips; explicit test-compile passed.
+Frontend: 35 individual cases passed (frontend-cases.txt), including 5 new gate cases; production build passed. Local Node24 default npm test reports 7 file-level suites; explicit --test-isolation=none executes/asserts individual cases.
+R4.6.1 UTF-8: 1058 passed, 0 failed. R locale C: 1054 passed, 4 INHERITED failures, unchanged from base gate; not hidden or counted as success.
+Python scientific lab: 63 passed. Existing R ledger + attested custody regressions passed. Signed Java fixture replay with explicit R4.6.1 passed, private POSIX/Unicode paths, overwrite refusal, byte-identical metrics. Six targets NOT_ESTABLISHED.
+Browser actual bank modal + QuestionViewer -> actual Java isolated SQLite -> actual export -> R baseline/replay passed, both modes:
+  DEFAULT OFF: 0 forecasts, 0 scored, 0 excluded, 2 unforecasted answers.
+  FIXTURE ON: 7 forecasts, 2 scored, 5 excluded/pending, 1 unforecasted answer.
+Active parent fallback uses a synthetic-only test entry, distinct from actual App handoff to viewer. No global coverage inference.
+Previous full browser gate also passed (source/quarantine, ack loss, reload/restart, rapid switch), R replay identical: 1 scored, 1 excluded.
+Legacy descriptive CSV header vs prospective event snapshot header asserted; unsigned snapshot is not authenticated personal data.
+
+NON-PASS / DEVELOPMENT ATTEMPTS (retained logs)
+Initial Maven offline packaging missed cached jar-plugin; online dependency resolution succeeded, final package passed.
+Initial fixture browser iterations: no contest; unselected bank topic; wrong accessible selector; missing orgao/cargo; actual fallback expected items instead of API questions (fixed source, legacy alias preserved); aggregate forecast assertion raced legitimate next-question preparation (replaced with per-UUID no-backfill assertion).
+First signed Python replay invocation inherited old system Rscript; explicit supported Rscript rerun passed. No source guard relaxed.
+Windows native Java/R/Python/NTFS and new frontend tests/build are configured in CI; local Linux is not Windows homologation. Consult completed exact-head CI before claiming PASS.
+
+ACTIVATION
+Global coverage FAIL: ordinary routes have software evidence; specialized reverse engineering, all simulado configurations and arbitrary external clients remain unsupported/unverified. Future scoped ordinary viewer+bank only after explicit authorization and personal checks.
+Personal installation/origin/clock/key custody/storage/signed personal export NOT_VERIFIED; authorization FAIL. Pilot NOT_STARTED, activation_allowed=false. can_apply=false, can_schedule=false.
+Synthetic software evidence is not personal history, predictive superiority, causal benefit, retention or transfer.

@@ -124,6 +124,8 @@ class DiagnosticQuarantineIntegrationTest {
   var attempts=new AttemptSubmissionService(repository,events,"REAL_STUDY");
   var memory=new LearningEvidenceService(jdbc);
   var ledger=new ProspectivePredictionService(jdbc,events,repository,attempts,memory,java.time.Clock.systemUTC(),"SYNTHETIC_FIXTURE");
+        org.springframework.test.util.ReflectionTestUtils.setField(ledger,"captureAuthorized",true);
+        org.springframework.test.util.ReflectionTestUtils.setField(ledger,"captureEnabled",true);
   var mvc=org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup(
    new com.fiscalstudy.backend.infrastructure.in.web.ProspectivePredictionController(ledger),
    new com.fiscalstudy.backend.infrastructure.in.web.QuestionController(new QuestionSelectionService(repository,events),attempts))

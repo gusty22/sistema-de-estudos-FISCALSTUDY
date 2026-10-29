@@ -72,3 +72,7 @@ O modelo atual é a própria referência Beta11 online, não um concorrente supe
 ## Reprodução e resultados
 
 Ver [fixture de integração e comandos](../tests/fixtures/authentic_prospective/README.md) e [logs/resultados](validation/authentic-prospective/results.txt). A fixture vem dos repositórios Java reais em SQLite temporário, não de preenchimento manual do contrato analítico. A chave de teste é efêmera e a fonte explicitamente sintética; seus rótulos internos de ramo REAL_STUDY exercitam regras, sem conceder origem pessoal.
+
+## Atualização do gate de cobertura
+
+A [matriz vigente dos fluxos](QUESTION_FLOW_PROSPECTIVE_COVERAGE_V1.md) supera as limitações históricas de modal descritas neste documento. Captura permanece desligada por padrão; cobertura global FAIL e piloto NOT_STARTED. O CSV legado é descritivo, sem autenticação prospectiva.
