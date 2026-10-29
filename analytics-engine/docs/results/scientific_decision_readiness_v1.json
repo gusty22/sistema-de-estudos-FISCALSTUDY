@@ -1,0 +1,102 @@
+{
+  "schema_version": "scientific-decision-readiness-v1",
+  "base_main": "abf91929bdc847c47400cec04d90acf6e66ad065",
+  "prior_gate": {
+    "pr": 43,
+    "commit": "6b1e3bfe33b6436eefc1aa730905bac30cde9751",
+    "state": "MERGED_BEFORE_THIS_OPERATION",
+    "ci": "SUCCESS",
+    "workflow_run": 40892602527,
+    "merge_commit": "abf91929bdc847c47400cec04d90acf6e66ad065"
+  },
+  "targets": [
+    {
+      "target_id": "DELAYED_ITEM_RETRIEVAL",
+      "implementation": "CONTRACT_ELIGIBILITY_PREQUENTIAL_SCORING_BASELINES_IMPLEMENTED",
+      "audited_personal_evaluations": 0,
+      "real_evidence_sufficiency": "NOT_ESTABLISHED",
+      "personal_model_validation": "NOT_ESTABLISHED",
+      "causal_effect": "NOT_ESTABLISHED"
+    },
+    {
+      "target_id": "NOVEL_ITEM_CORRECTNESS",
+      "implementation": "CONTRACT_ELIGIBILITY_PREQUENTIAL_SCORING_BASELINES_IMPLEMENTED",
+      "audited_personal_evaluations": 0,
+      "real_evidence_sufficiency": "NOT_ESTABLISHED",
+      "personal_model_validation": "NOT_ESTABLISHED",
+      "causal_effect": "NOT_ESTABLISHED"
+    },
+    {
+      "target_id": "APPLICATION_SUCCESS",
+      "implementation": "CONTRACT_ELIGIBILITY_PREQUENTIAL_SCORING_BASELINES_IMPLEMENTED",
+      "audited_personal_evaluations": 0,
+      "real_evidence_sufficiency": "NOT_ESTABLISHED",
+      "personal_model_validation": "NOT_ESTABLISHED",
+      "causal_effect": "NOT_ESTABLISHED"
+    },
+    {
+      "target_id": "TRANSFER_SUCCESS",
+      "implementation": "CONTRACT_ELIGIBILITY_PREQUENTIAL_SCORING_BASELINES_IMPLEMENTED",
+      "audited_personal_evaluations": 0,
+      "real_evidence_sufficiency": "NOT_ESTABLISHED",
+      "personal_model_validation": "NOT_ESTABLISHED",
+      "causal_effect": "NOT_ESTABLISHED"
+    },
+    {
+      "target_id": "ACTIVITY_DURATION_SECONDS",
+      "implementation": "CONTRACT_ELIGIBILITY_PREQUENTIAL_SCORING_BASELINES_IMPLEMENTED",
+      "audited_personal_evaluations": 0,
+      "real_evidence_sufficiency": "NOT_ESTABLISHED",
+      "personal_model_validation": "NOT_ESTABLISHED",
+      "causal_effect": "NOT_ESTABLISHED"
+    },
+    {
+      "target_id": "POST_INTERVENTION_SUCCESS",
+      "implementation": "CONTRACT_ELIGIBILITY_PREQUENTIAL_SCORING_BASELINES_IMPLEMENTED",
+      "audited_personal_evaluations": 0,
+      "real_evidence_sufficiency": "NOT_ESTABLISHED",
+      "personal_model_validation": "NOT_ESTABLISHED",
+      "causal_effect": "NOT_ESTABLISHED"
+    }
+  ],
+  "policy_evaluation": {
+    "same_states_and_admissible_alternatives": "REPLAY_ORIGINAL_ORCHESTRATOR",
+    "credit": "OBSERVED_COMPLETED_AUTHORIZED_EXECUTED_POLICY_ONLY",
+    "counterfactual_outcomes": "NOT_OBSERVED",
+    "comparison": "DECISION_COMPARISON_DISTINCT_FROM_PREDICTIVE_QUALITY_AND_OBSERVATIONAL_ASSOCIATION",
+    "causal_effect": "NOT_ESTABLISHED"
+  },
+  "historical_public_references": [
+    {
+      "path": "docs/results/contextual_human_v1.json",
+      "sha256": "93449a86bb3a525a9ce768a92ff1e234c7f5fe0cda4e032957097403108372b9",
+      "scope": "PUBLIC_HUMAN_DATASET",
+      "current_operation_reanalysis": false,
+      "new_target_contract_sufficiency": "NOT_ESTABLISHED",
+      "personal_policy_benefit": "NOT_ESTABLISHED"
+    },
+    {
+      "path": "docs/results/public_human_reference_v1.json",
+      "sha256": "3a93b31ba502f40d22db1762714bdd16dc0586fb2ac13f135f01b73afdc3c90f",
+      "scope": "PUBLIC_HUMAN_DATASET",
+      "current_operation_reanalysis": false,
+      "new_target_contract_sufficiency": "NOT_ESTABLISHED",
+      "personal_policy_benefit": "NOT_ESTABLISHED"
+    },
+    {
+      "path": "docs/results/recorded_day_validation_v1.json",
+      "sha256": "5786ca6eabc61970c6afd67e61f811eeeb8475cb544dad25afa0eeabd01dec64",
+      "scope": "RETROSPECTIVE_PUBLIC_HUMAN_SELF_REPORTED_RECALL; NOT_CAUSAL; NOT_CONCEPTUAL_MASTERY",
+      "current_operation_reanalysis": false,
+      "new_target_contract_sufficiency": "NOT_ESTABLISHED",
+      "personal_policy_benefit": "NOT_ESTABLISHED"
+    }
+  ],
+  "personal_data_accessed": false,
+  "personal_experiment_started": false,
+  "new_models_fitted": false,
+  "fsrs_modified": false,
+  "operational_database_accessed": false,
+  "can_apply": false,
+  "can_schedule": false
+}

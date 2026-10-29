@@ -63,5 +63,50 @@
     "collection_readiness": "TECHNICALLY_TESTED_SYNTHETICALLY_NOT_AUDITED_ON_PERSONAL_INSTALLATION"
   },
   "scoring_protocol_version": "personal-prospective-pilot-v1",
-  "scoring_contract_version": "prospective-evaluation-v1"
+  "scoring_contract_version": "prospective-evaluation-v1",
+  "decision_scientific_extension": {
+    "contract_version": "scientific-decision-evaluation-v1",
+    "status": "NOT_STARTED",
+    "scope": "FUTURE_ANALYTICAL_CONTRACT_ONLY",
+    "automatic_start": false,
+    "can_apply": false,
+    "can_schedule": false,
+    "manual_flashcards_required": false,
+    "manual_review_management_required": false,
+    "targets": [
+      "DELAYED_ITEM_RETRIEVAL",
+      "NOVEL_ITEM_CORRECTNESS",
+      "APPLICATION_SUCCESS",
+      "TRANSFER_SUCCESS",
+      "ACTIVITY_DURATION_SECONDS",
+      "POST_INTERVENTION_SUCCESS"
+    ],
+    "policy_versions": [
+      "EVIDENCE_CONTEXTUAL_V1",
+      "SHORTEST_ADMISSIBLE_V1",
+      "CURRICULAR_CONSERVATIVE_V1"
+    ],
+    "minimum_natural_evidence": {
+      "identity": "One pseudonymous student, stable attempt/item/session/activity IDs; no name or raw answer text needed for objective-key scoring",
+      "chronology": "Observed and recorded timestamps, append order, complete exported contact window; keep pending/cancelled records",
+      "forecast": "Committed model/state/policy versions, data/training cutoff, evidence IDs, probability or seconds, definition/horizon fixed before outcome",
+      "response": "Definitive/rubric criterion version, observed binary outcome, help/answer-exposure state; unknown stays unknown",
+      "execution": "Actual chosen candidate, executed policy or external substitution, explicit authorization/status, observed active seconds and pause-aware start/end",
+      "evaluation": "Versioned independently curated instrument/template/blueprint, classification/difficulty available at cutoff; actual prior item/template contacts",
+      "association": "Decision run and input identity, execution ID, later outcome ID and comparable pre-measure when available"
+    },
+    "collection_burden": "Automatic metadata from ordinary study when a future trusted exporter supports it; brief optional independent probes with fixed criteria, not manual flashcard creation or revision management",
+    "current_collection_readiness": "ORDINARY_QUESTION_CORRECTNESS_ONLY; new target/exposure/instrument/export fields are NOT asserted available on the personal installation",
+    "protected_novel_or_delayed_assessments": "NOT_ENABLED; independent source membership, exposure capture and instrument validity must be demonstrated before calling these personal targets eligible",
+    "analysis_plan": {
+      "scheme": "PREQUENTIAL_COMMITTED_FORECASTS_NOT_RETROSPECTIVE_RECONSTRUCTION",
+      "references": "Same-target same-definition prefix Beta11/recent20; duration prefix mean/median; no test-selected tuning",
+      "strata": "Definition/version/horizon/model/policy kept separate; difficulty UNKNOWN explicit; counts are not independent trials",
+      "stopping": "Choose collection/review windows before viewing outcomes; report all forecasts, missing data and withdrawals without outcome-dependent selection",
+      "sufficiency": "No arbitrary universal sample threshold; assess coverage, dependence and precision for each target; model validation remains NOT_ESTABLISHED",
+      "causal_design": "NOT_IMPLEMENTED; observational pre/post changes cannot demonstrate intervention benefit; any future randomized/counterbalanced N-of-1 requires separate explicit consent and protocol"
+    },
+    "data_minimization": "Private exported analytical files only; no operational SQLite access, tokens, direct identifiers or personal artifacts in Git",
+    "model_status": "All models and contextual policy remain EXPERIMENTAL; no student experiment initiated"
+  }
 }
