@@ -1,7 +1,9 @@
 # Ordinary-question observational pilot — workflow v2
 Status: NOT_PERSONALLY_EXECUTED. This is separate from protected novel/delayed assessments.
-Software readiness: existing Java→SQLite→R and browser flow plus new local evaluator tested synthetically in CI; this does not validate the actual personal installation.
+Software readiness: existing Java→SQLite→R/browser flow, and signed-export custody adapter tested synthetically; this does not validate the actual personal installation.
 No diagnostic reserve creation, intervention randomization, FSRS override or automatic planner policy is enabled.
+
+See [authenticated custody and activation gate](AUTHENTIC_PROSPECTIVE_EVIDENCE_V1.md). No personal session is authorized or started by this operation. Provision/check the external public key and installation identity only after explicit authorization.
 
 ## Before collecting
 - Use the personal local installation deliberately, bound to127.0.0.1. Current application.yml declares REAL_STUDY; confirm effective runtime configuration. Never relabel an isolated/test profile as personal evidence.
@@ -11,7 +13,7 @@ No diagnostic reserve creation, intervention randomization, FSRS override or aut
 - Scoring remains prospective-evaluation-v1 with scoring protocol v1; v2 versions this operational workflow, not a new predictive model.
 
 ## Start / stop
-Start by opening the normal question session yourself. Wait for server-confirmed preparation before answering; do not bypass error/pending states. Report help honestly. Confidence timing is not proven as a metacognitive probability.
+Only after explicit user authorization and the installation/custody gate, start by opening the normal question session yourself. Wait for server-confirmed preparation before answering; do not bypass error/pending states. Report help honestly. Confidence timing is not proven as a metacognitive probability.
 Stop through the normal end-session flow; resolve pending retries without clearing local journals/history. Do not delete events to obtain a cleaner dataset.
 This task does not start or enroll a real personal study session automatically.
 
@@ -23,9 +25,9 @@ $pilotExport = 'C:\PrivateFiscalStudy\export-001.json'
 if (Test-Path -LiteralPath $pilotExport) { throw 'Choose a new export file' }
 $pilotHeaders = @{ 'X-FiscalStudy-Admin-Token' = $env:FISCALSTUDY_ADMIN_TOKEN }
 Invoke-WebRequest -Uri 'http://127.0.0.1:8080/api/v1/learning-lab/prospective-export' -Headers $pilotHeaders -OutFile $pilotExport
-python analytics-engine/lab/personal_pilot.py --input $pilotExport --output 'C:\PrivateFiscalStudy\run-001'
+python analytics-engine/lab/personal_pilot.py --input $pilotExport --output 'C:\PrivateFiscalStudy\run-001' --trusted-public-key 'C:\PrivateFiscalStudy\trusted-public.pem' --trusted-source-id 'EXTERNAL-installation-id'
 ~~~
-The CLI opens only the exported JSON and local R process, not SQLite or a remote service. Existing output directories are refused. Rscript4.5.1 plus existing jsonlite/digest required; no dependencies installed by the CLI.
+The CLI opens only the exported JSON and local R process, not SQLite or a remote service. Existing output directories are refused. Rscript4.5.1 plus existing jsonlite/digest and OpenSSL required; no dependencies installed by the CLI.
 32MiB export/120second execution limits are local tool policies. Missing dependencies, incomplete reports, authority/hash mismatches or process failure produce FAILED, not a false success.
 Output includes immutable input copy, metrics.json, private R log and manifest with source/input/code hashes. POSIX directory0700/files0600; Windows owner-only ACL remains operator responsibility.
 Do not publish these artifacts. CI runs only explicitly labeled SYNTHETIC_FIXTURE with --synthetic-test; that flag cannot relabel personal/unknown input.

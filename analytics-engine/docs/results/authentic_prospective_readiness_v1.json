@@ -1,0 +1,66 @@
+{
+  "version": "authentic-prospective-readiness-v1",
+  "base_main": "be6c93f452899d873e544b13846c6b4798a0833d",
+  "software_gate": "PASS_SYNTHETIC_JAVA_SQLITE_SIGNED_EXPORT_R_BASELINE_REPLAY",
+  "personal_pilot_status": "NOT_STARTED",
+  "ready_for_personal_collection": false,
+  "personal_observations_evaluated": 0,
+  "personal_predictive_validity": "NOT_ESTABLISHED",
+  "ordinary_target": "QUESTION_CORRECTNESS_WITHOUT_DECLARED_HELP",
+  "model": "PERSONAL_BETA11_PREFIX_V1",
+  "capture_version": "ordinary-question-capture-v2",
+  "policy_version": "OBSERVATIONAL_NO_PLANNING_CHANGE_V1",
+  "future_activation_required": [
+    "Explicit user authorization",
+    "Audit actual personal installation/effective origin/clock/callers",
+    "Provision private installation-only signing key; independently trust public key/source ID",
+    "Set observation/review windows and private artifact storage before seeing outcomes",
+    "Verify first authenticated snapshot/coverage without retroactive forecasts"
+  ],
+  "custody": {
+    "signer": "Existing Java exportSnapshot with optional ProspectiveExportAttestor",
+    "verification": "External trusted public key/source identity; RSA SHA256 via OpenSSL; then existing R prefix audit",
+    "boundary": "Trusted local server/operator/database; not an independent timestamp or evidence of unobserved help",
+    "json_self_authorization": false,
+    "operational_key_created": false,
+    "operational_sqlite_opened": false
+  },
+  "scientific_targets": {
+    "DELAYED_ITEM_RETRIEVAL": {
+      "status": "NOT_ESTABLISHED",
+      "blocking_requirement": "Fixed delayed horizon and complete contact/independent retrieval evidence absent"
+    },
+    "NOVEL_ITEM_CORRECTNESS": {
+      "status": "NOT_ESTABLISHED",
+      "blocking_requirement": "No complete pre-exposure/variant/answer access history"
+    },
+    "APPLICATION_SUCCESS": {
+      "status": "NOT_ESTABLISHED",
+      "blocking_requirement": "Independent versioned instrument/criterion and committed target forecast absent"
+    },
+    "TRANSFER_SUCCESS": {
+      "status": "NOT_ESTABLISHED",
+      "blocking_requirement": "Independent transfer instrument/criterion and committed target forecast absent"
+    },
+    "ACTIVITY_DURATION_SECONDS": {
+      "status": "NOT_ESTABLISHED",
+      "blocking_requirement": "No duration forecast plus independently measured matching execution"
+    },
+    "POST_INTERVENTION_SUCCESS": {
+      "status": "NOT_ESTABLISHED",
+      "blocking_requirement": "No executed decision-linked independent followup forecast/measurement; no causal design"
+    }
+  },
+  "synthetic_test_denominators": {
+    "forecasts": 28,
+    "answers": 28,
+    "scored": 24,
+    "excluded": 4,
+    "unforecasted_answers": 1,
+    "personal_profile": "NOT_CREATED",
+    "interpretation": "SOFTWARE_ONLY_SAME_ITEM_SAME_SESSION_DEPENDENT_NOT_PERSONAL_BENEFIT"
+  },
+  "causal_policy_comparison": "NOT_IMPLEMENTED_NOT_AUTHORIZED",
+  "can_apply": false,
+  "can_schedule": false
+}

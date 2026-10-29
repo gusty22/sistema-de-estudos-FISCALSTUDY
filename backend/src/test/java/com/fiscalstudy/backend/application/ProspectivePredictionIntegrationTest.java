@@ -140,4 +140,56 @@ class ProspectivePredictionIntegrationTest {
         assertEquals(3,events.getAllEvents("ANSWER_SUBMITTED").size());
         assertEquals(1,events.getAllEvents("ATTEMPT_ANNOTATED").size());
     }
+    @Test void signedSnapshotTraversesActualPreparationAnswerAndExport() throws Exception {
+        // Use the real question repository as well as the real event store in this chain.
+        jdbc.update("INSERT INTO questions(id,enunciado,options_json,correct_option,disciplina,assunto,banca,ano) VALUES('q1','SYNTHETIC item','[\"A yes\",\"B no\",\"C alternative\",\"D alternative\"]','A','Math','Fractions','FCC',2026)");
+        questions=new com.fiscalstudy.backend.infrastructure.out.persistence.QuestionRepositoryImpl(jdbc);
+        assertEquals("q1",questions.findNextAvailableQuestion().orElseThrow().getId());
+        attempts=new AttemptSubmissionService(questions,events,"REAL_STUDY");
+        ReflectionTestUtils.setField(attempts,"learningEvidenceService",memory);
+        ledger=new ProspectivePredictionService(jdbc,events,questions,attempts,memory,Clock.systemUTC(),"SYNTHETIC_FIXTURE");
+        new QuestionSelectionService(questions,events).recordPresentation("q1","personal-session");
+        // A fresh ephemeral TEST key. No operational key or personal database is touched.
+        var pair=java.security.KeyPairGenerator.getInstance("RSA"); pair.initialize(2048);
+        var keys=pair.generateKeyPair();
+        Path privateKey=directory.resolve("fixture-private.der");
+        Files.write(privateKey,keys.getPrivate().getEncoded());
+        var signer=new ProspectiveExportAttestor(privateKey.toString(),"SYNTHETIC-INTEGRATION-INSTALLATION");
+        ReflectionTestUtils.setField(ledger,"attestor",signer);
+        for(int n=0;n<24;n++) {
+            String id=UUID.nameUUIDFromBytes(("synthetic-chain-"+n).getBytes(java.nio.charset.StandardCharsets.UTF_8)).toString();
+            var forecast=ledger.prepare("q1","personal-session",id);
+            String original=events.findByEventId("prediction:"+id).orElseThrow().getPayloadJson();
+            answer(id,n<20?"A":"B",false,4);
+            var prediction=events.findByEventId("prediction:"+id).orElseThrow();
+            var response=events.findByEventId("attempt:"+id).orElseThrow();
+            assertTrue(Instant.parse(prediction.getRecordedAt()).isBefore(Instant.parse(response.getOccurredAt())));
+            assertTrue(Instant.parse(prediction.getOccurredAt()).isBefore(Instant.parse(response.getOccurredAt())));
+            assertEquals(original,prediction.getPayloadJson());
+            assertEquals(n,forecast.path("nEvidence").asInt());
+        }
+        String helped=UUID.randomUUID().toString();ledger.prepare("q1","personal-session",helped);answer(helped,"A",true,4);
+        String unknown=UUID.randomUUID().toString();ledger.prepare("q1","personal-session",unknown);
+        attempts.submitAttempt("q1","A",4,12000,"personal-session",null,null,false,false,
+            null,null,null,null,null,null,null,null,null,"REGULAR",unknown);
+        assertFalse(json.readTree(events.findByEventId("attempt:"+unknown).orElseThrow().getPayloadJson()).path("helpDeclarationProvided").asBoolean());
+        String contradiction=UUID.randomUUID().toString();ledger.prepare("q1","personal-session",contradiction);
+        attempts.submitAttempt("q1","A",4,12000,"personal-session",null,null,false,false,
+            null,null,null,null,null,null,null,false,"MATERIAL_APOIO","REGULAR",contradiction);
+        String pending=UUID.randomUUID().toString();
+        assertEquals(24,ledger.prepare("q1","personal-session",pending).path("nEvidence").asInt());
+        answer(UUID.randomUUID().toString(),"B",false,4); // Deliberately unforecasted; reported in denominator.
+        var snapshot=ledger.exportSnapshot();
+        var verifier=java.security.Signature.getInstance("SHA256withRSA");verifier.initVerify(keys.getPublic());
+        verifier.update(((String)snapshot.get("attestationJson")).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        assertTrue(verifier.verify(Base64.getDecoder().decode((String)snapshot.get("signatureBase64"))));
+        assertFalse(Files.exists(Path.of("target/prospective-private.der")));
+        Path output=Path.of("target/prospective-attested-fixture.json");Files.createDirectories(output.getParent());
+        Files.writeString(output,json.writeValueAsString(snapshot));
+        String pem="-----BEGIN PUBLIC KEY-----\n"+Base64.getMimeEncoder(64,new byte[]{10}).encodeToString(keys.getPublic().getEncoded())+"\n-----END PUBLIC KEY-----\n";
+        Files.writeString(Path.of("target/prospective-fixture-public.pem"),pem);
+        assertEquals(snapshot,new ProspectiveExportAttestor("","").attest(snapshot,"SYNTHETIC_FIXTURE"));
+        assertThrows(IllegalStateException.class,()->new ProspectiveExportAttestor(privateKey.toString(),"").attest(snapshot,"SYNTHETIC_FIXTURE"));
+        assertThrows(IllegalStateException.class,()->new ProspectiveExportAttestor(directory.resolve("missing").toString(),"fixture").attest(snapshot,"SYNTHETIC_FIXTURE"));
+    }
 }

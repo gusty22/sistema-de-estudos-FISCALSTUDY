@@ -1,0 +1,175 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ----------------------< com.fiscalstudy:backend >-----------------------
+[INFO] Building FiscalStudy Backend 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ backend ---
+[INFO] Copying 2 resources from src/main/resources to target/classes
+[INFO] Copying 4 resources from src/main/resources to target/classes
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ backend ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ backend ---
+[INFO] Copying 3 resources from src/test/resources to target/test-classes
+[INFO] 
+[INFO] --- compiler:3.13.0:testCompile (default-testCompile) @ backend ---
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 75 source files with javac [debug parameters release 17] to target/test-classes
+[INFO] /workspace/fiscalstudy/backend/src/test/java/com/fiscalstudy/backend/infrastructure/in/web/TopicKnowledgeSecurityAndIntegrityTest.java: /workspace/fiscalstudy/backend/src/test/java/com/fiscalstudy/backend/infrastructure/in/web/TopicKnowledgeSecurityAndIntegrityTest.java uses or overrides a deprecated API.
+[INFO] /workspace/fiscalstudy/backend/src/test/java/com/fiscalstudy/backend/infrastructure/in/web/TopicKnowledgeSecurityAndIntegrityTest.java: Recompile with -Xlint:deprecation for details.
+[INFO] /workspace/fiscalstudy/backend/src/test/java/com/fiscalstudy/backend/application/DigitalTwinServiceTest.java: Some input files use unchecked or unsafe operations.
+[INFO] /workspace/fiscalstudy/backend/src/test/java/com/fiscalstudy/backend/application/DigitalTwinServiceTest.java: Recompile with -Xlint:unchecked for details.
+[INFO] 
+[INFO] --- surefire:3.2.5:test (default-test) @ backend ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running com.fiscalstudy.backend.infrastructure.config.DiagnosticQuarantineArchitectureTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.239 s -- in com.fiscalstudy.backend.infrastructure.config.DiagnosticQuarantineArchitectureTest
+[INFO] Running com.fiscalstudy.backend.infrastructure.config.DatabaseFoundationTest
+18:07:19.393 [main] INFO com.fiscalstudy.backend.infrastructure.config.SchemaMigration -- Verified pre-migration backup: /tmp/junit1447526198912219535/backups/before_migration_1793297239386_6529e378-bdc2-4fa6-8f7f-334a0af5c822.db
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.527 s -- in com.fiscalstudy.backend.infrastructure.config.DatabaseFoundationTest
+[INFO] Running com.fiscalstudy.backend.infrastructure.in.web.QuestionControllerTest
+18:07:19.684 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.fiscalstudy.backend.infrastructure.in.web.QuestionControllerTest]: QuestionControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+18:07:20.058 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.fiscalstudy.backend.FiscalStudyApplication for test class com.fiscalstudy.backend.infrastructure.in.web.QuestionControllerTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.3.4)
+
+2026-10-29T18:07:20.596Z  INFO 14367 --- [           main] c.f.b.i.in.web.QuestionControllerTest    : Starting QuestionControllerTest using Java 21.0.12.1 with PID 14367 (started by agent in /workspace/fiscalstudy/backend)
+2026-10-29T18:07:20.597Z  INFO 14367 --- [           main] c.f.b.i.in.web.QuestionControllerTest    : No active profile set, falling back to 1 default profile: "default"
+2026-10-29T18:07:21.706Z  INFO 14367 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-10-29T18:07:21.755Z  INFO 14367 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 42 ms. Found 0 JPA repository interfaces.
+2026-10-29T18:07:22.410Z  INFO 14367 --- [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-10-29T18:07:22.503Z  INFO 14367 --- [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.5.3.Final
+2026-10-29T18:07:22.557Z  INFO 14367 --- [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-10-29T18:07:22.886Z  INFO 14367 --- [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-10-29T18:07:22.933Z  INFO 14367 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-10-29T18:07:22.955Z  INFO 14367 --- [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection org.sqlite.jdbc4.JDBC4Connection@57f0bfc3
+2026-10-29T18:07:22.959Z  INFO 14367 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-10-29T18:07:23.414Z  INFO 14367 --- [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-10-29T18:07:23.419Z  INFO 14367 --- [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-10-29T18:07:24.047Z  INFO 14367 --- [           main] c.f.b.a.StagingDatabaseService           : StagingDatabaseService initialized with staging DB at: /workspace/fiscalstudy/backend/target/test-data/staging.db
+2026-10-29T18:07:24.349Z  WARN 14367 --- [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-10-29T18:07:24.975Z  INFO 14367 --- [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-10-29T18:07:24.975Z  INFO 14367 --- [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-10-29T18:07:24.977Z  INFO 14367 --- [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 1 ms
+2026-10-29T18:07:24.999Z  INFO 14367 --- [           main] c.f.b.i.in.web.QuestionControllerTest    : Started QuestionControllerTest in 4.73 seconds (process running for 7.215)
+2026-10-29T18:07:36.694Z  INFO 14367 --- [           main] c.f.b.a.AnkiIntegrationService           : Flashcard de ouro gerado para o Anki a partir do erro na questão q123: [CLOZE]
+2026-10-29T18:07:36.813Z  INFO 14367 --- [           main] c.f.b.a.AnkiIntegrationService           : Flashcard de ouro gerado para o Anki a partir do erro na questão q123: [CLOZE]
+2026-10-29T18:07:37.096Z  WARN 14367 --- [           main] c.f.b.a.AttemptSubmissionService         : Tentativa recebida para sessionId [sess_done] que já possuía sinal de encerramento. Gravando telemetria normalmente.
+[INFO] Tests run: 26, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 17.85 s -- in com.fiscalstudy.backend.infrastructure.in.web.QuestionControllerTest
+[INFO] Running com.fiscalstudy.backend.infrastructure.in.web.ProspectiveExportSecurityTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.019 s -- in com.fiscalstudy.backend.infrastructure.in.web.ProspectiveExportSecurityTest
+[INFO] Running com.fiscalstudy.backend.application.ProspectivePredictionIntegrationTest
+2026-10-29T18:07:37.696Z  INFO 14367 --- [           main] o.s.mock.web.MockServletContext          : Initializing Spring TestDispatcherServlet ''
+2026-10-29T18:07:37.696Z  INFO 14367 --- [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-10-29T18:07:37.697Z  INFO 14367 --- [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 1 ms
+[INFO] Tests run: 9, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.434 s -- in com.fiscalstudy.backend.application.ProspectivePredictionIntegrationTest
+[INFO] Running com.fiscalstudy.backend.application.QuarantineSourceExposureIntegrationTest
+2026-10-29T18:07:38.866Z  INFO 14367 --- [           main] c.f.b.a.StagingDatabaseService           : StagingDatabaseService initialized with staging DB at: /tmp/junit14599176376381898500/staging.db
+2026-10-29T18:07:38.970Z  INFO 14367 --- [           main] c.f.b.i.config.SchemaMigration           : Verified pre-migration backup: /tmp/junit9263273875407343803/backups/before_migration_1793297258964_144e1578-dac5-47c1-b11c-b4425683a5f2.db
+2026-10-29T18:07:38.985Z  INFO 14367 --- [           main] c.f.b.i.config.SchemaMigration           : Verified pre-migration backup: /tmp/junit9263273875407343803/backups/before_migration_1793297258981_d25460f9-818b-4c05-942f-57fde544e92a.db
+[ERROR] Tests run: 9, Failures: 0, Errors: 1, Skipped: 0, Time elapsed: 0.302 s <<< FAILURE! -- in com.fiscalstudy.backend.application.QuarantineSourceExposureIntegrationTest
+[ERROR] com.fiscalstudy.backend.application.QuarantineSourceExposureIntegrationTest.explicitCloudConsentCannotBypassAnActiveHold -- Time elapsed: 0.026 s <<< ERROR!
+java.net.SocketException: Operation not permitted
+	at java.base/sun.nio.ch.Net.socket0(Native Method)
+	at java.base/sun.nio.ch.Net.serverSocket(Net.java:556)
+	at java.base/sun.nio.ch.ServerSocketChannelImpl.<init>(ServerSocketChannelImpl.java:135)
+	at java.base/sun.nio.ch.ServerSocketChannelImpl.<init>(ServerSocketChannelImpl.java:116)
+	at java.base/sun.nio.ch.SelectorProviderImpl.openServerSocketChannel(SelectorProviderImpl.java:72)
+	at java.base/java.nio.channels.ServerSocketChannel.open(ServerSocketChannel.java:145)
+	at jdk.httpserver/sun.net.httpserver.ServerImpl.<init>(ServerImpl.java:143)
+	at jdk.httpserver/sun.net.httpserver.HttpServerImpl.<init>(HttpServerImpl.java:50)
+	at jdk.httpserver/sun.net.httpserver.DefaultHttpServerProvider.createHttpServer(DefaultHttpServerProvider.java:35)
+	at jdk.httpserver/com.sun.net.httpserver.HttpServer.create(HttpServer.java:152)
+	at com.fiscalstudy.backend.application.QuarantineSourceExposureIntegrationTest.explicitCloudConsentCannotBypassAnActiveHold(QuarantineSourceExposureIntegrationTest.java:121)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[INFO] Running com.fiscalstudy.backend.application.IngestionPipelineServiceTest
+[INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.382 s -- in com.fiscalstudy.backend.application.IngestionPipelineServiceTest
+[INFO] Running com.fiscalstudy.backend.application.AttemptIdentityRegressionTest
+[INFO] Tests run: 10, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.195 s -- in com.fiscalstudy.backend.application.AttemptIdentityRegressionTest
+[INFO] Running com.fiscalstudy.backend.application.LearningEvidenceServiceTest
+[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.173 s -- in com.fiscalstudy.backend.application.LearningEvidenceServiceTest
+[INFO] Running com.fiscalstudy.backend.application.ItemSourceProvenanceIntegrationTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.105 s -- in com.fiscalstudy.backend.application.ItemSourceProvenanceIntegrationTest
+[INFO] Running com.fiscalstudy.backend.application.AnkiPrivacyPolicyTest
+[ERROR] Tests run: 3, Failures: 0, Errors: 1, Skipped: 0, Time elapsed: 0.025 s <<< FAILURE! -- in com.fiscalstudy.backend.application.AnkiPrivacyPolicyTest
+[ERROR] com.fiscalstudy.backend.application.AnkiPrivacyPolicyTest.defaultOffMakesNoNetworkCalls -- Time elapsed: 0.001 s <<< ERROR!
+java.net.SocketException: Operation not permitted
+	at java.base/sun.nio.ch.Net.socket0(Native Method)
+	at java.base/sun.nio.ch.Net.serverSocket(Net.java:556)
+	at java.base/sun.nio.ch.ServerSocketChannelImpl.<init>(ServerSocketChannelImpl.java:135)
+	at java.base/sun.nio.ch.ServerSocketChannelImpl.<init>(ServerSocketChannelImpl.java:116)
+	at java.base/sun.nio.ch.SelectorProviderImpl.openServerSocketChannel(SelectorProviderImpl.java:72)
+	at java.base/java.nio.channels.ServerSocketChannel.open(ServerSocketChannel.java:145)
+	at jdk.httpserver/sun.net.httpserver.ServerImpl.<init>(ServerImpl.java:143)
+	at jdk.httpserver/sun.net.httpserver.HttpServerImpl.<init>(HttpServerImpl.java:50)
+	at jdk.httpserver/sun.net.httpserver.DefaultHttpServerProvider.createHttpServer(DefaultHttpServerProvider.java:35)
+	at jdk.httpserver/com.sun.net.httpserver.HttpServer.create(HttpServer.java:152)
+	at com.fiscalstudy.backend.application.AnkiPrivacyPolicyTest.defaultOffMakesNoNetworkCalls(AnkiPrivacyPolicyTest.java:15)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[INFO] Running com.fiscalstudy.backend.application.StagingDatabaseServiceTest
+2026-10-29T18:07:40.056Z  INFO 14367 --- [           main] c.f.b.a.StagingDatabaseService           : StagingDatabaseService initialized with staging DB at: /tmp/junit7751461539690368714/staging.db
+2026-10-29T18:07:40.059Z  INFO 14367 --- [           main] c.f.b.a.StagingDatabaseService           : Caderno de prova excluído com sucesso do staging: file1
+2026-10-29T18:07:40.074Z  INFO 14367 --- [           main] c.f.b.a.StagingDatabaseService           : StagingDatabaseService initialized with staging DB at: /tmp/junit12009420609855813866/staging.db
+2026-10-29T18:07:40.100Z  INFO 14367 --- [           main] c.f.b.a.StagingDatabaseService           : StagingDatabaseService initialized with staging DB at: /tmp/junit1301178381694384595/staging.db
+2026-10-29T18:07:40.125Z  INFO 14367 --- [           main] c.f.b.a.StagingDatabaseService           : StagingDatabaseService initialized with staging DB at: /tmp/junit8955738573310665962/staging.db
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.132 s -- in com.fiscalstudy.backend.application.StagingDatabaseServiceTest
+[INFO] Running com.fiscalstudy.backend.application.DiagnosticQuarantineIntegrationTest
+2026-10-29T18:07:40.289Z  INFO 14367 --- [           main] o.s.mock.web.MockServletContext          : Initializing Spring TestDispatcherServlet ''
+2026-10-29T18:07:40.289Z  INFO 14367 --- [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-10-29T18:07:40.289Z  INFO 14367 --- [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 0 ms
+[INFO] Tests run: 11, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.318 s -- in com.fiscalstudy.backend.application.DiagnosticQuarantineIntegrationTest
+[INFO] Running com.fiscalstudy.backend.application.AnkiIntegrationServiceTest
+2026-10-29T18:07:40.497Z  INFO 14367 --- [           main] c.f.b.a.AnkiIntegrationService           : Lote de flashcards gerado com base estrita no material estudado. Total: 15
+2026-10-29T18:07:40.530Z  INFO 14367 --- [           main] c.f.b.a.AnkiIntegrationService           : Flashcard de ouro gerado para o Anki a partir do erro na questão q-101: [CLOZE]
+[INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.104 s -- in com.fiscalstudy.backend.application.AnkiIntegrationServiceTest
+[INFO] Running com.fiscalstudy.backend.application.SourceReadBarrierIntegrationTest
+2026-10-29T18:07:40.621Z  WARN 14367 --- [           main] c.f.b.a.QuarantineSourceExposureService  : Read closure not persisted; lease remains uncertain: c7c9cf20-9d75-4457-b70d-7b3ca8a7c0ec
+[INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.137 s -- in com.fiscalstudy.backend.application.SourceReadBarrierIntegrationTest
+[INFO] Running com.fiscalstudy.backend.domain.cognitive.FsrsReferenceConformanceTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.003 s -- in com.fiscalstudy.backend.domain.cognitive.FsrsReferenceConformanceTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[ERROR] Errors: 
+[ERROR]   AnkiPrivacyPolicyTest.defaultOffMakesNoNetworkCalls:15 » Socket Operation not permitted
+[ERROR]   QuarantineSourceExposureIntegrationTest.explicitCloudConsentCannotBypassAnActiveHold:121 » Socket Operation not permitted
+[INFO] 
+[ERROR] Tests run: 122, Failures: 0, Errors: 2, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  31.868 s
+[INFO] Finished at: 2026-10-29T18:07:41Z
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-surefire-plugin:3.2.5:test (default-test) on project backend: 
+[ERROR] 
+[ERROR] Please refer to /workspace/fiscalstudy/backend/target/surefire-reports for the individual test results.
+[ERROR] Please refer to dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException

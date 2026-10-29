@@ -1,0 +1,83 @@
+FISCALSTUDY — cadeia prospectiva autenticada / resultados de software
+Base: be6c93f452899d873e544b13846c6b4798a0833d (main, PR #44 mesclada pelo mantenedor antes desta operação).
+CI de entrada: head 9aac8927d5d360db9e5cd45245c7f85b7bac9f7e, success, actions/runs/40912923885.
+Branch: lab/authentic-prospective-chain. Sem merge/automerge. Nenhum piloto pessoal iniciado.
+
+Gate Java final: 122 testes, 0 falhas, 0 erros, 0 skips; BUILD SUCCESS; 22.435 s.
+Teste-compile Maven: BUILD SUCCESS; 2.323 s. Java 21, release 17; Maven 3.9.11 isolados em /tmp.
+Wrapper original incompleto; nenhum POM/wrapper modificado. Dependências existentes em cache, execução offline.
+Classes executadas: ProspectivePredictionIntegrationTest, AttemptIdentityRegressionTest, LearningEvidenceServiceTest,
+FsrsReferenceConformanceTest, QuestionControllerTest, ProspectiveExportSecurityTest, DiagnosticQuarantineIntegrationTest,
+DiagnosticQuarantineArchitectureTest, DatabaseFoundationTest, QuarantineSourceExposureIntegrationTest,
+StagingDatabaseServiceTest, IngestionPipelineServiceTest, AnkiIntegrationServiceTest, AnkiPrivacyPolicyTest,
+SourceReadBarrierIntegrationTest, ItemSourceProvenanceIntegrationTest.
+
+R 4.6.1 / UTF-8: 1058 aprovados, 0 falhas; exit 0; 106.508 s.
+R 4.6.1 / C: 1054 aprovados, as MESMAS QUATRO falhas herdadas; exit 1; 105.797 s.
+Falhas herdadas (não ocultadas, não corrigidas fora do escopo):
+  1. UTF-8 curriculum labels survive CSV decoding
+  2. Optional UTF-8 BOM preserves header identity
+  3. Locale C preserves recorded discipline labels through the full pipeline
+  4. Locale C preserves recorded topic labels through the full pipeline
+Base comparativa preservada em ../scientific-decisions/final-UTF8.txt e final-C.txt (PR #44).
+Gates R separados de ledger, custódia assinada e prequential contextual: aprovados.
+Python laboratório final: 60 testes, OK, sem skips; 27.517 s. Dependências já declaradas, isoladas em /tmp/science-lab-deps.
+
+Cadeia efetivamente executada: questão disponível no QuestionRepositoryImpl -> preparação e previsão real ->
+appendEventOnce no EventStoreRepositoryImpl/SQLite temporário -> resposta avaliada pelo serviço -> snapshot assinado Java ->
+OpenSSL com raiz pública/identidade externas -> auditoria de identidade/tempo/ordem/prefixo R -> scorecard/baselines existentes.
+Fixture SOMENTE SINTÉTICA: 28 forecasts, 28 respostas, 24 scores, 4 exclusões, 1 resposta sem forecast.
+Exclusões: ajuda declarada, ajuda ausente, ajuda contraditória e uma previsão pendente.
+Teste usa um item/uma sessão: não é amostra independente nem evidência de benefício pessoal.
+Beta11: Brier 0.15893588481655266; recente20: Brier 0.15630514081636; fixo0.5: Brier 0.25.
+Diferença pareada modelo-menos-recente20: +0.0026307440001926696; 21 empates/3 piores. Aritmética de fixture, SEM superioridade científica.
+Guards exercitados: assinatura removida/adulterada/chave errada, source ID divergente, fixture relabelled, checksum recalculado,
+duplicação, identidade de estudante/attempt divergente, futuro/prefixo inválido, igualdade temporal proibida, ajuda Boolean inválida,
+ausência/contradição de ajuda e exposição conhecida; captura legada/unidentified history preservadas sem elegibilidade pessoal.
+Ajuda externa não observada e ausência completa de exposição NÃO são detectáveis com a captura atual; desconhecidos explícitos.
+
+Replay: mesmo snapshot assinado + chave pública + código; arquivos idênticos entre R4.6.1 e R4.5.0/Linux.
+R4.5.0 é checagem extra de compatibilidade; mínimo suportado permanece R4.5.1. Windows nativo não homologado aqui.
+Caminhos com espaços, serialização UTF-8/LF e recusa de sobrescrita aprovados; harness usa diretório temporário novo.
+SHA256 input interno: c612e529b963ac19f71eda05bd804bd572023f807bffe8b94a14aaa269ddaf90
+SHA256 envelope sintético Java: 586c6b511feed27d627e4d6a7e924a50bc8bf7aa17aeb3ee0f2890cf82d179d8
+SHA256 relatório R idêntico: c269c301a3dc798277553f22f2d58f708842f4719c5cfb6be0b82ce8651874e4
+As chaves de teste são efêmeras. Snapshot/public key atuais ficam no target ignorado; a CI publica somente artefatos sintéticos.
+Nova geração Java tem horários/IDs/chave diferentes: byte replay compara o MESMO artefato, não gerações distintas.
+
+Execuções intermediárias preservadas:
+java-initial/java-chain: gate parcial de 13/14 testes anterior ao repositório real da nova fixture.
+java-regression: 122 executados, 3 erros: fixture com duas alternativas rejeitada pelo validador original e dois sockets bloqueados.
+java-regression-corrected: fixture com quatro alternativas corrigida; restavam somente os dois sockets do sandbox.
+java-regression-final: acesso de rede permitido apenas para executar os testes com sockets locais; todos os 122 aprovados.
+Nenhum teste removido/ignorado para alcançar verde. Logs R incluem falhas intencionais de subprocessos em testes negativos.
+Uma tentativa de replay em caminho /tmp já existente foi recusada sem sobrescrever; replay final usa TemporaryDirectory.
+
+Prontidão pessoal: NÃO INICIADA. Zero observações pessoais autenticadas avaliadas nesta operação.
+Ativação depende de autorização explícita, auditoria da instalação/cobertura e provisionamento/custódia externa de chave operacional.
+Signature trust: servidor/operador/SQLite locais confiáveis; não fornece relógio externo, prova de honestidade ou defesa contra host malicioso.
+Seis novos alvos: NOT_ESTABLISHED. Validade pessoal e benefício/efeito causal: NOT_ESTABLISHED.
+Nenhum perfil pessoal criado de fixtures. FSRS, SQLite operacional, calendário, frontend e planejamento preservados.
+Autoridade experimental: can_apply=false, can_schedule=false.
+
+SHA256 dos logs/artefatos deste gate (sem o próprio results.txt):
+8b4c018a7df1f6635bbcc35be38251aef5c68489b8add745370531c7a4582020  contextual-prequential.txt
+7b80ff3f2ce119082782a084b71811877089456d650614d9cb7d2ee03ad3456f  inherited-locale-failures.json
+e10bf80646336422350c184dbe65e23733bd991104ef5a8f0320c53a117b786e  java-chain.txt
+b9578b4c04a736c41146d511f22280313f4f7841bf70e465956eaa77ad91f353  java-initial.txt
+1383e783012a90dffe9245fe35ada4961fa6358a656cc5661fd97c320d30271f  java-regression-corrected.txt
+6425667af4ace0c64149bca3112826e465cd95c2f4b3cb5cfbe84be3de80c960  java-regression-final.txt
+e2bb00d2f99b51af1b1ba37f30c8865a8aac817f125dbe9a9e4c5c65ace08d13  java-regression.txt
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  portable-replay-stderr.txt
+c441568e45d3b91a9e0dac458ba54553805843701642b4872543d1c7a1ccceff  portable-replay.json
+916518559ba2f09fe3a7f01a01c69c9d13ef6490bc91b9c16a24e2f7e80cb8eb  private-cli-final.txt
+b7ba78916ecddf04b5985c3244c6d282550a232be1e81f4d29b6caa5dae9ec55  python-lab-final.txt
+8a3efa5d1fccd1e129a53584928a1006e6f881518a9ca9b1c1e83641ee857dff  python-lab.txt
+28af7cd26b942522f2fceeae5177e57de19b303994c62a0d8e2f1ded1c9a2c51  r-chain-final.txt
+28af7cd26b942522f2fceeae5177e57de19b303994c62a0d8e2f1ded1c9a2c51  r-chain-initial.txt
+4d58c4b3c7a56a6f5db7b33cd12604370fef049c7dd55206a383eccffdbdab58  r-ledger-final.txt
+cc80904903b5cb3cf6bf182a43506262ae6afaf55f3ab2ee2a57aa9ed06a92e0  r-locale-C-final.txt
+c469bcbcf16795b8138e65feb42df4c94979d0a31ba0c1982189ce378a376a01  r-locale-C.txt
+4680b2e0102a00b8adc41643852899939388a46f046cc293248325d9f0b425f4  r-utf8-final.txt
+f465f4a422b1bdeb46ee737b880c0fe79ac01b5574aef824616caea5ae1aab48  r-utf8.txt
+999eba36727a7b08fd984ad083a2f74a29562c17464a2931da8c36e11464da30  test-compile.txt

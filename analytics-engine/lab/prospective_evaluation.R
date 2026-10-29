@@ -3,7 +3,7 @@ source("R/descriptive_analysis.R")
 source("lab/individual_calibration.R")
 source("lab/prospective_scorecard.R")
 
-evaluate_prospective <- function(path) {
+evaluate_prospective <- function(path, require_current_capture=FALSE) {
   envelope <- jsonlite::fromJSON(path, simplifyVector=FALSE)
   contract <- "prospective-question-v1"
   if (!identical(envelope$contractVersion,contract) || !identical(envelope$can_apply,FALSE) ||
@@ -32,7 +32,27 @@ evaluate_prospective <- function(path) {
   times <- lapply(rows,function(e)scalar_time(e$occurred_at))
   recorded <- lapply(rows,function(e)scalar_time(e$recorded_at))
   names(rows) <- names(payload) <- names(times) <- names(recorded) <- ids
-  eligible <- function(n) identical(n$origin,"REAL_STUDY") &&
+  if (any(vapply(ids,function(key) recorded[[key]]<times[[key]],logical(1))))
+    stop("Recording precedes occurrence")
+  if (length(recorded)>1L && any(diff(vapply(recorded,as.numeric,numeric(1)))<0))
+    stop("Append chronology regressed")
+  answer_ids <- ids[vapply(rows,function(e)identical(e$event_type,"ANSWER_SUBMITTED"),logical(1))]
+  attempts <- vapply(answer_ids,function(key) {
+    a <- rows[[key]]; n <- payload[[key]]
+    # Legacy unforecasted history may lack attempt UUIDs. Keep it in denominators,
+    # never invent identity or grant current-capture eligibility to it.
+    if (!is.null(n$helpDeclarationProvided) &&
+        (!uuid(n$attemptId) || !identical(key,paste0("attempt:",n$attemptId)) ||
+         !identical(n$questionId,a$aggregate_id))) stop("Invalid answer identity")
+    for (field in c("usedHelp","helpDeclarationProvided","answerExposed","answer_exposed"))
+      if (!is.null(n[[field]]) && (!is.logical(n[[field]]) || length(n[[field]])!=1L || is.na(n[[field]])))
+        stop("Malformed answer Boolean")
+    if (uuid(n$attemptId)) n$attemptId else NA_character_
+  },character(1))
+  if (anyDuplicated(attempts[!is.na(attempts)])) stop("Duplicate physical attempt")
+  eligible <- function(n, strict=FALSE) (!strict ||
+    (identical(n$helpDeclarationProvided,TRUE) && identical(n$helpType,"NENHUM"))) &&
+    !isTRUE(n$answerExposed) && !isTRUE(n$answer_exposed) && identical(n$origin,"REAL_STUDY") &&
     is.logical(n$isCorrect) && length(n$isCorrect)==1L &&
     identical(n$gabaritoStatus,"DEFINITIVO") && identical(n$usedHelp,FALSE)
   forecasts <- ids[vapply(rows,function(e)identical(e$event_type,"PREDICTION_COMMITTED"),logical(1))]
@@ -47,6 +67,9 @@ evaluate_prospective <- function(path) {
         !identical(f$evaluationHorizon,"FIRST_SUBMISSION_OF_RESERVED_ATTEMPT_IN_SESSION") ||
         !identical(f$can_apply,FALSE) || !identical(f$can_schedule,FALSE)) stop("Invalid forecast identity/authority")
     prediction_ids <- c(prediction_ids,f$predictionId)
+    strict <- identical(f$captureVersion,"ordinary-question-capture-v2")
+    if (strict && !identical(f$policyVersion,"OBSERVATIONAL_NO_PLANNING_CHANGE_V1"))
+      stop("Invalid observational policy version")
     created <- scalar_time(f$createdAt); cutoff_at <- scalar_time(f$dataCutoffAt)
     if (!identical(f$createdAt,e$occurred_at) || cutoff_at>created ||
         length(f$snapshotRowid)!=1L || !is.finite(f$snapshotRowid) || f$snapshotRowid<0 ||
@@ -56,7 +79,7 @@ evaluate_prospective <- function(path) {
     expected <- ids[vapply(ids,function(key) {
       r <- rows[[key]]
       identical(r$event_type,"ANSWER_SUBMITTED") && r$snapshot_rowid<=f$snapshotRowid &&
-        times[[key]]<cutoff_at && recorded[[key]]<=cutoff_at && eligible(payload[[key]])
+        times[[key]]<cutoff_at && recorded[[key]]<=cutoff_at && eligible(payload[[key]],strict)
     },logical(1))]
     evidence <- as.character(unlist(f$evidenceEventIds,use.names=FALSE))
     if (anyDuplicated(evidence) || !setequal(expected,evidence)) stop("Future/missing/ineligible forecast evidence")
@@ -77,13 +100,22 @@ evaluate_prospective <- function(path) {
     if (!attempt_key %in% ids) { exclusions[[id]] <- "PENDING_OUTCOME"; next }
     a <- rows[[attempt_key]]; y <- payload[[attempt_key]]
     if (!identical(a$event_type,"ANSWER_SUBMITTED") || a$snapshot_rowid<=e$snapshot_rowid ||
-        times[[attempt_key]]<created || times[[attempt_key]]<recorded[[id]] ||
+        times[[attempt_key]]<=created || times[[attempt_key]]<=recorded[[id]] ||
         recorded[[id]]<created || recorded[[attempt_key]]<times[[attempt_key]] || !identical(a$aggregate_id,f$questionId) ||
         !identical(a$session_id,f$sessionId) || !identical(y$attemptId,f$attemptId) ||
-        !identical(y$questionId,f$questionId) || !identical(y$prospectivePredictionId,f$predictionId))
+        !identical(y$questionId,f$questionId) || !identical(y$prospectivePredictionId,f$predictionId) ||
+        (!is.null(y$studentId) && !identical(y$studentId,input$studentId)))
       stop("Attempt association or precommit ordering invalid")
-    if (!identical(f$origin,"REAL_STUDY") || !eligible(y)) {
-      exclusions[[id]] <- "INELIGIBLE_OR_UNKNOWN_ORIGIN_HELP_OR_ANSWER_KEY"; next
+    if (isTRUE(require_current_capture) && !strict) {
+      exclusions[[id]] <- "LEGACY_CAPTURE_UNAUDITED_NOT_PERSONAL_EVIDENCE"; next
+    }
+    if (!identical(f$origin,"REAL_STUDY") || !eligible(y,strict)) {
+      exclusions[[id]] <- if (isTRUE(y$answerExposed) || isTRUE(y$answer_exposed)) "KNOWN_ANSWER_EXPOSURE" else
+        if (strict && !identical(y$helpDeclarationProvided,TRUE)) "MISSING_HELP_DECLARATION" else
+        if (identical(y$usedHelp,TRUE)) "DECLARED_HELP" else
+        if (strict && identical(y$usedHelp,FALSE) && !identical(y$helpType,"NENHUM")) "CONTRADICTORY_OR_UNKNOWN_HELP_TYPE" else
+        "INELIGIBLE_OR_UNKNOWN_ORIGIN_HELP_OR_ANSWER_KEY"
+      next
     }
     scored[[id]] <- list(prediction_id=f$predictionId,attempt_id=f$attemptId,
       question_id=f$questionId,session_id=f$sessionId,p=f$probability,y=as.integer(y$isCorrect),
@@ -114,6 +146,7 @@ evaluate_prospective <- function(path) {
   horizons <- lapply(levels(groups),function(g)metric(y[groups==g],p[groups==g]))
   names(horizons) <- levels(groups)
   list(contract_version="prospective-evaluation-v1",input_sha256=envelope$inputSha256,
+    source_authentication="NOT_AUTHENTICATED_BY_THIS_HASH_ONLY_EVALUATOR",
     source_kind=input$sourceKind,target="QUESTION_CORRECTNESS_WITHOUT_DECLARED_HELP",
     model="PERSONAL_BETA11_PREFIX_V1",metrics=metric(y,p),
     scientific_scorecard=prospective_scorecard(scored),
@@ -127,6 +160,9 @@ evaluate_prospective <- function(path) {
       identical(rows[[key]]$event_type,"ANSWER_SUBMITTED") &&
         !paste0("prediction:",payload[[key]]$attemptId) %in% forecasts
     },logical(1))),
+    unidentified_legacy_attempt_count=sum(is.na(attempts)),
+    capture_versions=unique(vapply(forecasts,function(id)
+      if(is.null(payload[[id]]$captureVersion)) "LEGACY_UNKNOWN" else payload[[id]]$captureVersion,character(1))),
     forecast_count=length(forecasts),scored_count=length(scored),excluded_count=length(exclusions),
     coverage=if(length(forecasts))length(scored)/length(forecasts) else NULL,
     unique_questions=length(unique(vapply(scored,function(r)r$question_id,character(1)))),
@@ -135,6 +171,12 @@ evaluate_prospective <- function(path) {
     exclusions=exclusions,predictions=scored,
     uncertainty="Wilson intervals describe observed bin rates only; model-parameter and dependence uncertainty not estimated",
     high_probability_errors=sum(p>=0.8 & y==0),
+    capture_limitations=list(assistance="DECLARED_ONLY_UNOBSERVED_HELP_NOT_DETECTABLE",
+      answer_exposure="NO_COMPLETE_OPERATIONAL_REVEAL_LOG",
+      prior_exposure="RECORDED_ATTEMPTS_AND_PRESENTATION_RECEIPTS_NOT_ALL_CONTACTS",
+      active_time="CLIENT_REPORTED_NOT_INDEPENDENT_DURATION_TARGET",
+      difficulty="NOT_SNAPSHOTTED_IN_THIS_FORECAST",
+      identity="SINGLE_LOCAL_USER_SOURCE_KEY_AND_INSTALLATION_SCOPE"),
     personal_validation="NOT_ESTABLISHED",causal_effect="NOT_EVALUATED",
     limitations=c("Not an FSRS recall evaluation","No conceptual mastery inference",
       "No individual superiority claim","No fixed delayed-retention test",
