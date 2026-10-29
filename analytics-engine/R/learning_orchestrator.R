@@ -25,6 +25,7 @@
 }
 .lo_false_capabilities <- function() list(can_describe = FALSE, can_predict = FALSE,
   can_propose = FALSE, can_apply = FALSE, can_schedule = FALSE)
+if (!exists("derive_pedagogical_needs", mode = "function")) source("R/pedagogical_decision.R")
 
 # Common additive envelope. Explicit missing/unknown states are data, not zero.
 build_specialist_result <- function(specialist_id, responsibility, target, student_id,
@@ -230,23 +231,26 @@ orchestrate_learning <- function(snapshot, context, specialists = list(), candid
   if (length(rejections)) rejections <- rejections[order(vapply(rejections, function(x) x$candidate_id, character(1)))]
   baseline <- if (length(admitted)) admitted[[order(vapply(admitted, function(x) x$estimated_minutes, numeric(1)), vapply(admitted, function(x) x$candidate_id, character(1)))[1L]]]$candidate_id else NULL
   preferred <- if (length(admitted)) admitted[[1L]]$candidate_id else NULL
+  needs <- derive_pedagogical_needs(snapshot$learner_evidence_profile, candidates, personal_verified)
+  initial_proposal <- if (!length(ids) && !length(integrity)) initial_inventory_recommendation(snapshot, context, candidates) else NULL
+  proposal <- if (!is.null(initial_proposal)) initial_proposal else list(candidate_id = preferred,
+    status = if (is.null(preferred)) "ABSTAIN" else "PROPOSED_NOT_APPLIED",
+    basis = "CONFIGURED_LEXICOGRAPHIC_POLICY_NOT_ESTIMATED_GAIN",
+    personal_inference = personal_verified, can_apply = FALSE, can_schedule = FALSE)
   list(schema_version = "1.0.0", run_id = snapshot$run_id, student_id = snapshot$student_id,
        cutoff = snapshot$cutoff, mode = "OBSERVATION_ONLY", policy = policy,
+       decision_policy = conservative_decision_policy(), pedagogical_needs = needs,
        context_used = list(contest_id = context$contest_id, available_minutes = context$available_minutes),
        authority_registry = authority_registry,
        evidence_state = evidence_state, personal_source_verified = personal_verified,
        integrity_codes = sort(unique(integrity)), evidence_ids = ids,
        learner_evidence_profile = snapshot$learner_evidence_profile,
        specialists = checked, conflicts = conflicts, admissible_candidates = admitted,
-       rejected_candidates = rejections, proposal = list(candidate_id = preferred,
-         status = if (is.null(preferred)) "ABSTAIN" else "PROPOSED_NOT_APPLIED",
-         basis = "CONFIGURED_LEXICOGRAPHIC_POLICY_NOT_ESTIMATED_GAIN",
-         personal_inference = personal_verified, can_apply = FALSE, can_schedule = FALSE),
+       rejected_candidates = rejections, proposal = proposal,
        baseline_comparison = list(policy = policy$baseline, candidate_id = baseline,
          agrees_with_proposal = if (is.null(preferred)) NULL else identical(preferred, baseline),
          benefit_difference = "NOT_ESTABLISHED"),
        uncertainty = list(expected_learning_gain = "NOT_ESTABLISHED", approval_probability = "NOT_APPLICABLE"),
-       evaluation_record = list(run_id = snapshot$run_id, candidate_id = preferred,
-         proposed_at = snapshot$cutoff, authorization = "NOT_AUTHORIZED", observed_outcome = "PENDING"),
+       evaluation_record = new_decision_ledger(snapshot$run_id, proposal),
        limitations = c("Software correctness is not pedagogical validation.", "Candidate priority is configured, not learned.", "No operational schedule or memory state is modified."))
 }

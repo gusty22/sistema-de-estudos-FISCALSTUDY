@@ -1,13 +1,13 @@
 # R/provenance.R
-# MÃÂ³dulo de Auditoria e VerificaÃÂ§ÃÂ£o de ProcedÃÂªncia dos Dados
+# Data provenance audit and verification module.
 # Projeto: FiscalStudy Analytics (R >= 4.0.0)
 
-#' Tipos CanÃÂ´nicos de ProcedÃÂªncia de Dados
+#' Canonical data provenance types.
 DATA_PROVENANCE_TYPES <- c(
-  "PROVEN_OPERATIONAL",   # Dados autenticados extraÃÂ­dos com custÃÂ³dia do banco operacional real
+  "PROVEN_OPERATIONAL",   # Authenticated data extracted under operational database custody.
   "DEMONSTRATION_SAMPLE", # Amostras ilustrativas de schema/desenvolvimento (ex: sample_data.csv)
-  "SYNTHETIC_FIXTURE",    # Fixtures sintÃÂ©ticas controladas de teste (armazenadas em tests/fixtures/)
-  "UNVERIFIED_SOURCE"     # Origem desconhecida, nÃÂ£o verificada ou sem cadeia de custÃÂ³dia
+  "SYNTHETIC_FIXTURE",    # Controlled test fixtures (stored in tests/fixtures/)
+  "UNVERIFIED_SOURCE"     # Unknown, unverified, or un-custodied source.
 )
 
 #' Calcula Hash Criptografico SHA-256 de Arquivo
@@ -50,12 +50,12 @@ compute_file_sha256 <- function(file_path) {
   compute_buffered_file_sha256(file_path)
 }
 
-#' Audita e Verifica a ProcedÃÂªncia de um Conjunto de Dados
+#' Audits and verifies provenance for a dataset.
 #' @param df data.frame com os dados a serem auditados
-#' @param declared_provenance String com a procedÃÂªncia declarada (opcional)
+#' @param declared_provenance Declared provenance string (optional).
 #' @param file_path Caminho do arquivo de origem (opcional)
-#' @param manifest Lista de metadados de manifesto de exportaÃÂ§ÃÂ£o (opcional)
-#' @return Lista padronizada de auditoria de procedÃÂªncia
+#' @param manifest Export manifest metadata (optional).
+#' @return Standard provenance audit list.
 verify_data_provenance <- function(df, declared_provenance = NULL, file_path = NULL, manifest = NULL) {
   reasons <- character(0)
   warnings <- character(0)
@@ -179,7 +179,7 @@ verify_data_provenance <- function(df, declared_provenance = NULL, file_path = N
     }
   }
   
-  # 1. DetecÃÂ§ÃÂ£o de Fixtures SintÃÂ©ticas de Teste
+  # 1. Detection of synthetic test fixtures.
   is_fixture_path <- grepl("fixtures|test_", path_str)
   if (is_fixture_path || (!is.null(declared_provenance) && declared_provenance == "SYNTHETIC_FIXTURE")) {
     return(list(
@@ -193,19 +193,19 @@ verify_data_provenance <- function(df, declared_provenance = NULL, file_path = N
     ))
   }
   
-  # 2. DetecÃÂ§ÃÂ£o de Amostras Demonstrativas (ex: sample_data.csv, operational_export_v1.csv derivado de sample_data)
+  # 2. Detection of demonstration samples.
   is_sample_name <- grepl("sample", path_str)
   has_round_times <- FALSE
   if ("active_time_ms" %in% names(df)) {
     time_num <- suppressWarnings(as.numeric(df$active_time_ms))
     time_clean <- time_num[!is.na(time_num) & time_num > 0]
     if (length(time_clean) > 0) {
-      # Verificar se a grande maioria dos tempos termina em milhares redondos (tÃÂ­pico de demo manual)
+      # Check whether most durations end in round thousands (typical manual demo data).
       has_round_times <- (sum(time_clean %% 1000 == 0) / length(time_clean)) > 0.70
     }
   }
   
-  # Assinatura idÃÂªntica aos 20 registros conhecidos de sample_data.csv
+  # Signature identical to the 20 known sample_data.csv records.
   is_known_sample_rows <- (nrow(df) == 20 &&
                            all(c("1", "2", "3", "4", "11", "12", "13", "14") %in% as.character(df$question_id)))
   
@@ -234,11 +234,9 @@ verify_data_provenance <- function(df, declared_provenance = NULL, file_path = N
     ))
   }
   
-  # 3. Auditoria Estrita de PretensÃÂ£o Operacional (PROVEN_OPERATIONAL)
+  # 3. Strict audit of an operational provenance claim.
   if (!is.null(declared_provenance) && declared_provenance == "PROVEN_OPERATIONAL") {
-    # Para ser aceito como PROVEN_OPERATIONAL, exige critÃÂ©rios objetivos:
-    # A) Manifesto estruturado de exportaÃÂ§ÃÂ£o com assinatura ou carimbo do banco
-    # B) Campos de rastreabilidade temporal e identificaÃÂ§ÃÂ£o de ambiente
+    # Acceptance requires an export manifest and traceable environment fields.
     has_valid_manifest <- (!is.null(manifest) && is.list(manifest) &&
                            !is.null(manifest$export_timestamp) &&
                            !is.null(manifest$database_source) &&
@@ -273,7 +271,7 @@ verify_data_provenance <- function(df, declared_provenance = NULL, file_path = N
         warnings = character(0)
       ))
     } else {
-      # Tentativa de declarar como operacional sem evidÃÂªncias de custÃÂ³dia
+      # Operational claim without sufficient custody evidence.
       reasons <- c(
         "Declarado como PROVEN_OPERATIONAL, mas falhou na auditoria de custodia.",
         if (!has_valid_manifest) "Manifesto de exportacao operacional integro ausente." else NULL,
@@ -301,7 +299,7 @@ verify_data_provenance <- function(df, declared_provenance = NULL, file_path = N
     }
   }
   
-  # 4. Caso PadrÃÂ£o: Origem NÃÂ£o Verificada
+  # 4. Default: unverified origin.
   list(
     provenance_type = "UNVERIFIED_SOURCE",
     is_proven_operational = FALSE,
@@ -313,11 +311,11 @@ verify_data_provenance <- function(df, declared_provenance = NULL, file_path = N
   )
 }
 
-#' Cria Estrutura CanÃÂ´nica de Manifesto de ExportaÃÂ§ÃÂ£o Operacional
-#' @param export_timestamp Timestamp ISO-8601 UTC do momento da extraÃÂ§ÃÂ£o
+#' Creates canonical operational export manifest structure.
+#' @param export_timestamp ISO-8601 UTC export timestamp.
 #' @param database_source Identificador do banco de dados (ex: 'fiscalstudy.db:event_store')
-#' @param student_id Identificador anÃÂ´nimo ou UUID do estudante
-#' @param is_production_environment Booleano indicando se a extraÃÂ§ÃÂ£o ÃÂ© de produÃÂ§ÃÂ£o real
+#' @param student_id Anonymous student identifier or UUID.
+#' @param is_production_environment Whether the export is from production.
 #' @param checksum Hash SHA-256 dos registros exportados (opcional)
 #' @return Lista de manifesto estruturada
 create_operational_manifest <- function(export_timestamp,

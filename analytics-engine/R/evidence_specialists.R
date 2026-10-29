@@ -36,13 +36,23 @@ validate_concept_relations <- function(relations, cutoff) {
   if (any(!status %in% c("CONFIRMED", "AI_PROPOSED"))) stop("Unknown classification status")
   key <- paste(relations$question_id, relations$concept_id, relations$relation_version, sep = "\r")
   if (anyDuplicated(key)) stop("Duplicate concept relation identity/version")
-  # Overlapping confirmed versions for the same edge are contradictory.
-  for (i in seq_len(nrow(relations))) for (j in seq_len(nrow(relations))) {
-    if (j <= i || !valid[i] || !valid[j] || status[i] != "CONFIRMED" || status[j] != "CONFIRMED") next
-    if (relations$question_id[i] == relations$question_id[j] && relations$concept_id[i] == relations$concept_id[j]) {
-      ei <- if (open[i]) Inf else as.numeric(end[i]); ej <- if (open[j]) Inf else as.numeric(end[j])
-      if (max(as.numeric(begin[i]), as.numeric(begin[j])) < min(ei, ej))
-        stop("Overlapping confirmed concept relation versions")
+  # Detect overlapping confirmed versions with a sorted interval sweep.  The
+  # previous pairwise comparison was quadratic; grouping each edge and keeping
+  # the furthest active end preserves its strict-open overlap semantics in
+  # O(n log n) time without assigning any learner outcome to a relation.
+  confirmed <- which(valid & status == "CONFIRMED")
+  if (length(confirmed) > 1L) {
+    edge <- paste(relations$question_id[confirmed], relations$concept_id[confirmed], sep = "\r")
+    for (group in split(confirmed, edge)) {
+      if (length(group) < 2L) next
+      starts <- as.numeric(begin[group])
+      ends <- ifelse(open[group], Inf, as.numeric(end[group]))
+      ordered <- order(starts, ends, as.character(relations$relation_version[group]))
+      furthest_end <- -Inf
+      for (pos in ordered) {
+        if (starts[pos] < furthest_end) stop("Overlapping confirmed concept relation versions")
+        furthest_end <- max(furthest_end, ends[pos])
+      }
     }
   }
   list(relations = relations, eligible = valid & status == "CONFIRMED",

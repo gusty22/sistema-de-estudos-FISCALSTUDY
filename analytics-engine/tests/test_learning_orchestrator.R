@@ -33,6 +33,15 @@ assert_equal(lo_run(registry = list())$proposal$status, "ABSTAIN", "Self-declare
 lo_empty <- lo_snapshot; lo_empty$evidence <- lo_empty$evidence[FALSE, ]
 assert_equal(lo_run(snapshot = lo_empty)$proposal$status, "ABSTAIN", "No attempts causes explicit abstention")
 assert_equal(lo_run(snapshot = lo_empty)$evidence_state, "NO_DATA", "No data distinct from zero mastery")
+lo_cold_inventory <- lo_candidates[2, ]
+lo_cold_inventory$candidate_id <- "cold-diagnostic"
+lo_cold_inventory$estimated_minutes <- 10
+lo_cold_inventory$inventory_verified <- TRUE
+lo_cold_inventory$curriculum_source_id <- "edital-verified-v1"
+lo_cold <- lo_run(snapshot = lo_empty, candidates = lo_cold_inventory)
+assert_equal(lo_cold$proposal$candidate_id, "cold-diagnostic", "No-history policy may propose a verified, reversible curriculum diagnostic")
+assert_false(lo_cold$proposal$personal_inference, "Cold-start recommendation never claims personal diagnosis")
+assert_true(any(vapply(lo_cold$pedagogical_needs, function(x) x$uncertainty == "PERSONAL_KNOWLEDGE_UNKNOWN", logical(1))), "Cold-start need retains unknown personal knowledge")
 lo_bad <- lo_snapshot; lo_bad$evidence$origin[1] <- "REAL_STUDY"
 assert_true("MIXED_ORIGIN" %in% lo_codes(lo_run(snapshot = lo_bad)), "Mixed real/artificial origins block candidates")
 lo_bad <- lo_snapshot; lo_bad$evidence$origin <- "REAL_STUDY"
