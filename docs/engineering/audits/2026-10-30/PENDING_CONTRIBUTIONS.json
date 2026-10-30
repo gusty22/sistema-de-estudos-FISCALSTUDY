@@ -68,20 +68,23 @@
       "pr": 79,
       "branch": "fix/r-locale-evidence-20261030",
       "commits": [
-        "477bf441097b2c76c40be86eb043967bd60cb958"
+        "477bf441097b2c76c40be86eb043967bd60cb958",
+        "e4ef48d89a02c1357e935a5ea55999b806cb2f37"
       ],
       "files": [
         "analytics-engine/tests/helpers/utf8_fixture.R",
         "analytics-engine/tests/test_export.R",
         "analytics-engine/tests/test_pipeline_evidence.R",
-        "analytics-engine/docs/UTF8_FIXTURE_VALIDATION.md"
+        "analytics-engine/docs/UTF8_FIXTURE_VALIDATION.md",
+        "analytics-engine/tests/fixtures/core_shadow/request.R"
       ],
       "priority": "P2",
       "risk": "low",
       "depends_on": [],
-      "status": "DRAFT_RECONCILING_CANONICAL_HASH_FIXTURE",
+      "status": "DRAFT_ALL_CI_SUCCESS_R_FULL_PASS_LOCAL_PYTHON_BLOCKED_ISSUE80",
       "evidence": "write.csv under Windows LC_CTYPE=C corrupts Unicode fixture before pipeline",
-      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/79"
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/79",
+      "tests": "R full1112 passed/0 failed;CI7/7success on e4ef48d;Python63tests,38passed,5failed,20skipped (Issue80)"
     }
   ],
   "backlog": [
@@ -114,5 +117,16 @@
     "No personal data"
   ],
   "latest_main_sha": "e877e468fb4e77d143137cee3a6c97eb488ffb85",
-  "audit_pull_request": 78
+  "audit_pull_request": 78,
+  "final_remote_scope": {
+    "branches": 68,
+    "pull_requests": 74,
+    "integrated": 54,
+    "equivalent": 10,
+    "rejected": 1,
+    "not_integrated_but_published": 3
+  },
+  "known_blockers": [
+    80
+  ]
 }

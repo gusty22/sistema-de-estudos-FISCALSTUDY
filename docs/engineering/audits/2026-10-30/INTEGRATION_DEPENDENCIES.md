@@ -1,17 +1,16 @@
 # Dependências de integração
 
-Base verificada: main@789f9053f3e90a366a9f09542a0f7331b9d8348b. Nenhuma recuperação histórica funcional permanece sem equivalente demonstrado. DAG pendente é de correções descobertas e evidência documental.
+Snapshot histórico789f905; main atual confirmada e877e46 após merge humano da #76. Nenhuma recuperação histórica funcional permanece sem equivalente demonstrado. DAG atual de PRs independentes:
 
 ```mermaid
 graph TD
-  M["main 789f905"] --> B["PR 76: limite do protocolo"]
-  M --> A["PR 74: auditor por SHAs"]
-  M --> D["PR da auditoria: inventário e evidências"]
-  B -. "desbloqueia repetição do CI herdado" .-> A
-  B -. "desbloqueia repetição do CI herdado" .-> D
+ M["main e877e46"] --> A["PR74: auditor por SHAs"]
+ M --> R["PR79: portabilidade de fixtures R"]
+ M --> D["PR78: inventário e evidências"]
+ R -. "limitação de validação local" .-> X["Issue80: ACL e crash R"]
 ```
 
-PRs de código independentes usam main como base; as setas pontilhadas são ordem de validação, não imports/commits pendentes. Priorizar #76; após merge manual, reconciliar main sem force, repetir checks de #74 e relatórios. Nenhum ciclo de implementação identificado. Não retargetar automaticamente uma filha se sua mãe for rejeitada.
+Não há dependência de imports/commits entre as três PRs; todas usam main como base. A seta pontilhada é bloqueio de validação, não pré-requisito de código. #76 já foi mesclada pelo mantenedor e eliminou o bloqueio anterior de CI; #74 foi reconciliada e revalidada. Ordem recomendada de revisão: governança#74, fixtures#79, inventário#78 (que registra os estados no instante de captura). Não há ciclo de implementação identificado. Depois de qualquer merge humano, atualizar referências, reconciliar sem force e reexecutar checks afetados.
 
 ## Cadeia histórica já integrada
 

@@ -1,6 +1,6 @@
 # Auditoria histórica de integração — FiscalStudy
 
-Snapshot inicial em 30/10/2026: main `789f9053f3e90a366a9f09542a0f7331b9d8348b`. Issue [#72](https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/issues/72). Auditoria em cópia isolada; checkout original preservado. Este documento é um checkpoint revisável, atualizado com resultados finais nesta mesma PR.
+Snapshot inicial em 30/10/2026: main `789f9053f3e90a366a9f09542a0f7331b9d8348b`. Issue [#72](https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/issues/72). Auditoria em cópia isolada; checkout original preservado. Resultados e limitações finais são registrados nesta PR, mantendo o snapshot histórico separado das novas alterações.
 
 ## Cobertura e método
 
@@ -91,7 +91,7 @@ Git não registra a branch original de criação; o destino real de cada PR e o 
 
 ## Limites e pendências
 
-Nenhum dado real, credencial, exportação pessoal ou vault externo foi utilizado. Suítes completas estão em validação; falhas de escrita no OneDrive não serão declaradas defeitos funcionais sem reprodução fora dessa restrição. main não está declarada consolidada: correções novas aguardam revisão/merge manual. Ver [MAIN_CONSOLIDATION_REPORT.md](MAIN_CONSOLIDATION_REPORT.md).
+Nenhum dado real, credencial, exportação pessoal ou vault externo foi utilizado. Backend443/443, frontend35/35+build, ingestão9/9 e MotorR1112/1112 foram validados. LaboratórioPython local permanece bloqueado com5 falhas e20 skips opcionais, conforme Issue80. Falhas de escrita do OneDrive foram reproduzidas e as suítes repetidas fora dele. main não está declarada consolidada: correções novas aguardam revisão/merge manual. Ver [MAIN_CONSOLIDATION_REPORT.md](MAIN_CONSOLIDATION_REPORT.md).
 
 ## Evidência detalhada e histórico de todas as PRs
 
@@ -169,3 +169,20 @@ Nenhum dado real, credencial, exportação pessoal ou vault externo foi utilizad
 | [#68](https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/68) | merged 2026-10-30T17:31:39Z | `main` | INTEGRATED | 0 |
 | [#70](https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/70) | merged 2026-10-30T20:00:59Z | `main` | INTEGRATED | 0 |
 | [#71](https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/71) | merged 2026-10-30T19:59:18Z | `main` | INTEGRATED | 0 |
+
+## Atualização final remota e novas branches
+
+Nova paginação completa:68 branches/0na página2;74 PRs/0na página2. main e877e468fb4e77d143137cee3a6c97eb488ffb85: merge humano confirmado da #76. As64 branches iniciais mantêm a classificação histórica; quatro novas unidades seguem abaixo. [FINAL_REMOTE_SNAPSHOT.json](FINAL_REMOTE_SNAPSHOT.json) captura os SHAs e estados. A referência da própria PRdocumental é o checkpoint remoto anterior ao commit final, evitando autorreferência de hash.
+
+| Branch nova | Classificação | PR | Situação |
+|---|---|---|---|
+| fix/agent-context-budget-20261030 | INTEGRATED | #76 | Merge humano confirmado;37 testes+CIaprovados |
+| fix/branch-audit-ancestry-20261030 | NOT_INTEGRATED | #74 | Draft publicado;19 testes,10 checks doHEADb2a4a86aprovados |
+| fix/r-locale-evidence-20261030 | NOT_INTEGRATED | #79 | Draft publicado;R1112/0;CI doHEADatual deve ser consultado;PythonIssue80 |
+| docs/historical-consolidation-audit-20261030 | NOT_INTEGRATED | #78 | Esta PR;relatórios publicados para revisão |
+
+Totais do refresh:54 INTEGRATED,10 EQUIVALENT,1 REJECTED,3 NOT_INTEGRATED. As três últimas têmPRs e não são contribuições esquecidas. Não declarar main consolidada antes da revisão/integração manual e da decisão sobre a limitação de validação.
+
+## Objetos locais adicionais preservados
+
+Além do escopo remoto,19 commits órfãos locais foram encontrados no clone preservado. [LOCAL_ORPHAN_EVIDENCE.json](LOCAL_ORPHAN_EVIDENCE.json) registra SHAs,paths,blobs e decisão de cadaum. Nenhum objeto foi apagado ou coletado porGC. Protótipos incrementais Epic02 foram substituídos pela reconstrução determinística do Event Store e pelos contratos observacionais atuais; seus antigos mapeamentos arbitrários de confiança/Brier não devem ser reintroduzidos. Três atualizações de dependências correspondem às decisões rejeitadas. Códigos/documentos idênticos ou evoluídos foram identificados porblob e revisão dos contratos; nenhum novo resgate foi justificado.

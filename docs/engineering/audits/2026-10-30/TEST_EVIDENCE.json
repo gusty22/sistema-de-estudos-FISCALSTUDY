@@ -80,13 +80,22 @@
     }
   },
   "r": {
-    "status": "FINAL_FIXTURE_VALIDATION_IN_PROGRESS",
-    "after_utf8_fix": {
+    "status": "PASSED_FULL_SUITE",
+    "command": "Rscript tests/test_runner.R",
+    "cwd": "analytics-engine",
+    "runtime": "R4.5.1",
+    "environment": "Installed R dependencies inherited through R_LIBS_USER; locale C; no new packages installed",
+    "tested_tree": "477bf44 plus exact core_shadow/request.R patch committed as e4ef48d",
+    "head_sha": "e4ef48d89a02c1357e935a5ea55999b806cb2f37",
+    "passed": 1112,
+    "failed": 0,
+    "seconds": 194.043,
+    "previous_checkpoint": {
       "passed": 1080,
       "failed": 1,
-      "seconds": 409.219
-    },
-    "remaining": "Fixture source hashing bypassed canonical compute_file_sha256; isolated correction in PR79 underway"
+      "seconds": 409.219,
+      "remaining_failure": "Fixture bypassed canonical source hash reader; repaired with identical-byte proof for all 12 files"
+    }
   },
   "laboratory_python": {
     "status": "BLOCKED_LOCAL_VALIDATION_ISSUE_80",
@@ -101,7 +110,11 @@
       "hex": "0xC0000005",
       "root_cause": "UNKNOWN",
       "module_reproduction": "12 tests,1 failure,1 skip"
-    }
+    },
+    "passed": 38,
+    "failed": 5,
+    "skipped": 20,
+    "issue": 80
   },
   "constraints": [
     "No disabled suites",

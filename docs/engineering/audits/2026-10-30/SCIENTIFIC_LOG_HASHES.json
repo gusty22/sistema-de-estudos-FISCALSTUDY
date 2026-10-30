@@ -1,0 +1,40 @@
+{
+  "note": "Raw logs remain local; only hashes are committed to avoid publishing machine paths.",
+  "logs": [
+    {
+      "name": "r-baseline.log",
+      "sha256": "0a88314faf777e0b20f3d38a620b80daeafd63e838b56cec9033a73091cd9dc8",
+      "bytes": 71221
+    },
+    {
+      "name": "r-green.log",
+      "sha256": "0dcb7b22bd3a5e536277e744303e83f53eddd775c5ec246c85e59a29c5f755f9",
+      "bytes": 71381
+    },
+    {
+      "name": "r-final.log",
+      "sha256": "3751e84c5e71d8dab0916b822b4b2bd4241d84a776abe351f7b085bcf18edb35",
+      "bytes": 73111
+    },
+    {
+      "name": "python-baseline.log",
+      "sha256": "2c3c706fef0a40ff1b042244d748dd825cf536faed751a8846c1934349a1c8f0",
+      "bytes": 28279
+    },
+    {
+      "name": "python-configured.log",
+      "sha256": "3b1dfd901a16854d53af25413135331e46e00c9241315beff021a9ddd1150fed",
+      "bytes": 22570
+    },
+    {
+      "name": "python-human-rerun.log",
+      "sha256": "758f20b1f7daebeddad16543353571dc08726c44e4c954882aea361f391af632",
+      "bytes": 2657
+    },
+    {
+      "name": "python-acl-elevated.log",
+      "sha256": "acaf5fdea22465b6ca316a11d81bd61b582e050cf0cc307fda6e32e416273de9",
+      "bytes": 13081
+    }
+  ]
+}
