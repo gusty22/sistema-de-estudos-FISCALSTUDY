@@ -35,7 +35,8 @@ if sys.platform == "win32":
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
-DEFAULT_VAULT_PATH = os.environ.get("FISCALSTUDY_OBSIDIAN_VAULT")
+_env_vault = os.environ.get("FISCALSTUDY_OBSIDIAN_VAULT")
+DEFAULT_VAULT_PATH = Path(_env_vault).resolve() if _env_vault else (Path(__file__).resolve().parent.parent / "knowledge")
 DEFAULT_DB_PATH = Path(__file__).resolve().parent.parent / "graphify-out" / "obsidian_fts.db"
 
 STOPWORDS = {
@@ -150,11 +151,17 @@ def get_db(db_path: Path):
     return conn
 
 def sync_vault(vault_path: Path, db_path: Path, verbose: bool = False, excludes=()):
+    if vault_path is None:
+        if verbose:
+            print("[ERRO] Vault não informado ou inexistente", file=sys.stderr)
+        return False
+    vault_path = Path(vault_path)
     if not vault_path.is_dir():
         if verbose:
             print(f"[ERRO] Vault não encontrado em: {vault_path}", file=sys.stderr)
         return False
         
+    db_path = Path(db_path)
     if db_path.resolve().is_relative_to(vault_path.resolve()):
         raise ValueError("O índice deve ficar fora da origem somente leitura")
     if db_path.name.casefold() in {"fiscalstudy.db", "staging.db"}:

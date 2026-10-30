@@ -1,12 +1,27 @@
 # FiscalStudy — protocolo compartilhado
 Leia este arquivo uma vez por tarefa. Execute os comandos a partir da raiz do repositório. Agentes sem execução usam os arquivos acessíveis e declaram a limitação.
 
-## Início e recuperação
-1. Confira repositório, `git status --short`, HEAD, main remota e PRs pertinentes; preserve trabalho local. Use branch própria baseada na referência verificada. Nunca push direto para main, merge ou automerge.
-2. Leia o índice compacto `.agents/memory/CONTEXT.md`; identifique o módulo e seu AGENTS.md antes de editar.
-3. Execute `python scripts/context.py doctor` se houver shell. Para localizar código: `locate SIMBOLO --module backend`; para decisões: `decision TERMOS`; para trechos: `docs TERMOS --path ARQUIVO`. Veja `--help` apenas se necessário.
-4. Grafo somente atualizado; homônimos exigem ID completo. Graphify é navegação estrutural, não compreensão semântica universal. Sem grafo, busca textual seletiva; sem Obsidian, documentos versionados. Confirme no código, contrato, chamadores e testes antes de implementar algo existente.
-5. Abra somente trechos pertinentes. Não leia acervo, relatório inteiro do grafo ou todas as skills. Não repita consulta sem nova evidência; amplie apenas por motivo objetivo.
+## Ciclo universal dos agentes
+1. **Ao iniciar**:
+   - Confira o repositório: `git status --short`, HEAD, main remota e PRs pertinentes; preserve o trabalho local. Use branch própria baseada na referência verificada. Nunca faça push direto para main, merge ou automerge.
+   - Consulte o contexto mínimo: leia o índice executivo `.agents/memory/CONTEXT.md`; identifique o módulo e seu AGENTS.md específico antes de editar.
+   - Consulte tarefas ativas e código real: execute `python scripts/context.py doctor` se houver shell. Para tarefas ativas: `python scripts/context.py task list` e `task show ID`; para código real: `locate SIMBOLO --module M`; para decisões: `decision TERMOS`; para trechos: `docs TERMOS --path ARQ`.
+   - Mantenha grafo e Obsidian sincronizados: Graphify é estrutural; Obsidian FTS5 é semântico (`knowledge/`). Sem grafo, faça busca textual seletiva; sem Obsidian, use fallback versionado. Confirme no código, contrato e testes antes de implementar algo existente.
+   - Abra somente trechos pertinentes com limites de linhas. Não leia o acervo inteiro, relatórios completos do grafo ou todas as skills. Não repita consultas sem nova evidência.
+
+2. **Durante a execução**:
+   - Reutilize serviços e contratos existentes; faça o menor diff completo, sem abstrações ou infraestrutura especulativas.
+   - Registre descobertas e checkpoints importantes incrementalmente: `python scripts/context.py task update ID --discoveries "..." --changes "..." --pending "..."`.
+   - Ative skills estritamente sob demanda: bug → systematic-debugging; implementação → implement/verificação; arquitetura → OpenSpec quando necessário; diff sensível → revisão/segurança. Catálogo: `docs/engineering/SKILLS.md`. Sem descoberta nativa, consulte apenas o SKILL.md específico.
+   - Em marcos de trabalho longo, mantenha checkpoint próprio em `docs/engineering/checkpoints/`, distinguindo local, commitado e publicado.
+
+3. **Ao concluir**:
+   - Execute testes pertinentes e `git diff --check`; alterações no backend exigem test-compile e suíte afetada. Não suprima falhas. Diferencie falhas herdadas usando a base.
+   - Atualize registros da tarefa: `python scripts/context.py task update ID --status VALIDATED --tests ... --evidence ... --pending ... --next ...`. Invariantes obrigatórias: nunca marque VALIDATED sem testes/evidências concretas nem MERGED sem confirmação expressa do GitHub/PR.
+   - Sincronize índices aplicáveis: após alteração de código estrutural ou modificação de notas técnicas, execute `python scripts/context.py update` uma vez.
+   - Declare pendências ativas, limitações verificadas e próxima ação objetiva antes de encerrar o turno ou submeter PR.
+   - Atualize documento canônico apenas por decisão, contrato, descoberta, evidência ou marco duradouro; nota por commit é desnecessária. Sync do Obsidian é explícito e nunca escreve no vault.
+   - Informe arquivos modificados, referência Git, comandos/resultados e limitações. Não declare economia de tokens, execução ou conclusão científica sem evidência.
 
 ## Limites comuns
 Backend Java/Spring Boot/SQLite; frontend React/TypeScript; ingestão Python; pesquisa em analytics-engine/R e lab.
@@ -15,15 +30,6 @@ Não altere FSRS, calendário, modelos ou políticas científicas em manutençã
 Não use IA generativa para cálculos determinísticos ou regras de banca. Não instale ferramentas sem revisar procedência, licença, executáveis, dependências e permissões.
 Fixtures verificam software, não aprendizagem pessoal. Correlação não demonstra causalidade; acerto não demonstra retenção; recuperação, aplicação e transferência são distintos. Incerteza e ausência de evidência permanecem explícitas.
 Políticas experimentais mantêm `can_apply=false` e `can_schedule=false`. Não modifique captura, custódia ou origem dos dados para facilitar testes.
-
-## Execução e conclusão
-Reutilize serviços/contratos; faça o menor diff completo, sem abstrações ou infraestrutura especulativas.
-Ative skills sob demanda: bug → systematic-debugging; implementação → implement/verificação; arquitetura → OpenSpec quando necessário; diff sensível → revisão/segurança. Catálogo: `docs/engineering/SKILLS.md`. Sem descoberta nativa, leia o SKILL.md específico; não copie todo o catálogo.
-Execute testes pertinentes e `git diff --check`; backend alterado exige test-compile e suíte afetada. Não suprima falhas. Diferencie falhas herdadas usando a base.
-Após mudança estrutural concluída: `python scripts/context.py update` uma vez. Ausência de índice opcional não bloqueia o produto.
-Atualize documento canônico apenas por decisão, contrato, descoberta, evidência ou marco duradouro; nota por commit é desnecessária. Sync de conhecimento é explícito e nunca escreve no vault.
-Informe arquivos, referência, comandos/resultados e limitações. Não declare economia de tokens, execução ou conclusão científica sem evidência.
-Em marcos de trabalho longo, mantenha checkpoint próprio em `docs/engineering/checkpoints/`, distinguindo local, commitado e publicado.
 
 ## Escopo e precedência
 As permissões e instruções de maior prioridade da plataforma continuam válidas. Este é o núcleo comum; AGENTS.md de módulo especializa seu escopo sem enfraquecer segurança/integridade. Adaptadores apenas descobrem este arquivo e não criam regras concorrentes. Respeite a ordem real da ferramenta; conflitos relevantes devem ser registrados, sem escolher silenciosamente uma regra permissiva. Detalhes: `docs/engineering/AGENT_COMPATIBILITY.md`.

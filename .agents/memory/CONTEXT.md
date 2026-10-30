@@ -16,6 +16,7 @@ Mapa mínimo:
 - Cadeia prospectiva: `analytics-engine/docs/AUTHENTIC_PROSPECTIVE_EVIDENCE_V1.md`.
 - Prontidão: `analytics-engine/docs/PILOT_ACTIVATION_GATE_V1.md`.
 - Arquitetura: `docs/architecture/`; especificações: `openspec/specs/`.
+- Memória técnica e tarefas: `knowledge/` (Obsidian técnico; diário em `07 - Diário de Desenvolvimento/`).
 - Procedimento e evidências de ferramentas: `docs/engineering/DEVELOPMENT_ENVIRONMENT.md`.
 - Contexto antigo: `docs/history/AGENT_CONTEXT_2026-10-29.md` (somente sob demanda).
 
@@ -24,8 +25,7 @@ Não acessar dados pessoais, provisionar chaves, alterar FSRS ou regras científ
 Políticas experimentais: `can_apply = false`, `can_schedule = false`.
 Fixtures demonstram comportamento de software, nunca aprendizagem real.
 
-Recuperação: identificar módulo → verificar índice com `python scripts/context_index.py` →
-se atualizado, Graphify com orçamento curto e caminho indicado pelo helper →
-decisões históricas via Obsidian somente se necessário → arquivos reais e testes pertinentes.
+Recuperação: identificar módulo → verificar tarefas ativas via `task list` → verificar índice →
+Graphify com orçamento curto e Obsidian FTS5 (`knowledge/`) sob demanda → arquivos reais e testes.
 Sem índice, usar `rg -n` em diretórios selecionados. Código e Git prevalecem.
 Skills são carregadas por tarefa, conforme `docs/engineering/SKILLS.md`.
