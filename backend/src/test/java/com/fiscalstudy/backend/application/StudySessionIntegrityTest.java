@@ -56,6 +56,19 @@ class StudySessionIntegrityTest {
   assertThrows(RuntimeException.class,()->service.recordStudySession(request("s1",5)));
   assertEquals(0,pages());assertEquals(0,count());
  }
+ @Test void payloadSerializationAfterReservationRollsBackAndRecovers() throws Exception {
+  doAnswer(call->{
+   Object value=call.getArgument(0);
+   if(value instanceof Map<?,?> map && map.containsKey("velocidadePaginasPorHora"))
+    throw new com.fasterxml.jackson.core.JsonProcessingException("injected payload failure"){};
+   return call.callRealMethod();
+  }).when(mapper).writeValueAsString(any());
+  assertThrows(RuntimeException.class,()->service.recordStudySession(request("s1",5)));
+  assertEquals(0,pages());assertEquals(0,count());
+  assertEquals(0,jdbc.queryForObject("SELECT COUNT(*) FROM study_session_recordings",Integer.class));
+  doCallRealMethod().when(mapper).writeValueAsString(any());
+  service.recordStudySession(request("s1",5));assertEquals(5,pages());assertEquals(1,count());
+ }
  @Test void receiptFailureRollsBackBothEventAndProgress(){
   jdbc.execute("CREATE TRIGGER fail_receipt BEFORE UPDATE ON study_session_recordings BEGIN SELECT RAISE(ABORT,'injected receipt failure'); END");
   assertThrows(RuntimeException.class,()->service.recordStudySession(request("s1",5)));

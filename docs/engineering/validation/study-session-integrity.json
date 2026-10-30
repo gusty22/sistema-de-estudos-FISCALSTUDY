@@ -22,6 +22,13 @@
       "errors": 42,
       "skipped": 5,
       "sha256": "ae1d42efa7940360e6e088f83c2bf9d9ddb868ade7ccf722edefc533e91b4740"
+    },
+    "sessions-reviewed.log": {
+      "tests": 26,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "fc92b8e21bfc228bf33f1999aedce9c62d98e25261f94cb0731814228704a447"
     }
   }
 }

@@ -18,7 +18,7 @@ Base: main `b59041859d2c445cbfe5f4b8d5f581f7ef7f5096` (PR #49 integrada). Escopo
 
 ## Validação
 
-[Evidência estruturada](validation/study-session-integrity.json). Reprodução válida: 7 testes, 6 falhas, 0 erros/skips. Gate final: **25 testes, zero falhas/erros/skips**, incluindo `test-compile`, 12 clientes concorrentes divididos entre duas instâncias do serviço, SQLite em diretório Unicode/com espaços, retry após nova conexão/instância, legado imutável, falha/recuperação em três fronteiras e Spring completo por HTTP.
+[Evidência estruturada](validation/study-session-integrity.json). Reprodução válida: 7 testes, 6 falhas, 0 erros/skips. Gate final: **26 testes, zero falhas/erros/skips**, incluindo `test-compile`, 12 clientes concorrentes divididos entre duas instâncias do serviço, SQLite em diretório Unicode/com espaços, retry após nova conexão/instância, legado imutável, falha/recuperação em três fronteiras e na serialização após a reserva e Spring completo por HTTP.
 
 ```sh
 cd backend
@@ -27,7 +27,7 @@ sh mvnw -B -ntp test-compile -Dtest=StudySessionIntegrityTest,StudySessionTransa
 
 As asserções de versão de migrations passaram a consultar `SchemaMigration.CURRENT_VERSION`, preservando idempotência, contagem e dados; as antigas expectativas fixas em três versões já falhavam na main com sete. O teste de fundação que esperava sete foi atualizado para a oitava versão nova.
 
-A suíte inteira da main atual foi executada antes da implementação: 408 testes, 10 falhas, 42 erros, cinco skips. A recuperação ampla será uma PR independente; não se declara a suíte inteira aprovada neste incremento. Não foram acessados bancos pessoais. Não se executaram R, navegador ou instalação pessoal Windows localmente. O workflow `Study session SQLite integrity` executa os mesmos 25 testes em Linux e Windows Server 2022; resultado remoto deve ser conferido no commit exato.
+A suíte inteira da main atual foi executada antes da implementação: 408 testes, 10 falhas, 42 erros, cinco skips. A recuperação ampla será uma PR independente; não se declara a suíte inteira aprovada neste incremento. Não foram acessados bancos pessoais. Não se executaram R, navegador ou instalação pessoal Windows localmente. O workflow `Study session SQLite integrity` executa os mesmos 26 testes em Linux e Windows Server 2022; resultado remoto deve ser conferido no commit exato.
 
 ## Requisitos e limites para piloto
 
