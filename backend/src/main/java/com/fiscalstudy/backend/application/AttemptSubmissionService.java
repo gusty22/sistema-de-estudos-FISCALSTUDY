@@ -111,8 +111,37 @@ public class AttemptSubmissionService {
             Boolean usedHelp, String helpType, String interventionType, String requestedAttemptId) {
         String attemptId = requireUuid(requestedAttemptId == null || requestedAttemptId.isBlank() ? java.util.UUID.randomUUID().toString() : requestedAttemptId);
         if(confidenceLevel<1 || confidenceLevel>5 || activeTimeMs<0) throw new IllegalArgumentException("Invalid confidence or duration");
+        String determinedOrigin = resolveOrigin(origin, sessionId).name();
+
+        String causaErroStr = (causaErro != null && !causaErro.isBlank()) ? causaErro.trim() : null;
+        boolean cordaBambaVal = Boolean.TRUE.equals(naCordaBamba);
+        boolean pensouContrarioVal = Boolean.TRUE.equals(pensouContrario);
+
+        long leituraVal = tempoLeituraMs != null ? tempoLeituraMs : activeTimeMs;
+        long hesitacaoVal = tempoHesitacaoMs != null ? tempoHesitacaoMs : 0L;
+        int trocasVal = trocasOpcaoCount != null ? trocasOpcaoCount : 0;
+        double distanciaVal = distanciaCursorPx != null ? distanciaCursorPx : 0.0;
+        double friccaoVal = friccaoCognitivaScore != null ? friccaoCognitivaScore : 0.0;
+        boolean chuteVal = Boolean.TRUE.equals(chuteEducadoDetectado);
+        String fluenciaVal = (fluenciaNeurologica != null && !fluenciaNeurologica.isBlank()) ? fluenciaNeurologica : (friccaoVal > 0.6 ? "CHUTE_EDUCADO_PROVAVEL" : (friccaoVal > 0.3 ? "FRICCAO_MODERADA" : "ALTA_FLUENCIA"));
+
+        boolean usedHelpVal = Boolean.TRUE.equals(usedHelp);
+        String helpTypeVal = (helpType != null && !helpType.isBlank()) ? helpType.trim() : (usedHelpVal ? "MATERIAL_APOIO" : "NENHUM");
+        String interventionVal = (interventionType != null && !interventionType.isBlank()) ? interventionType.trim() : "REGULAR";
+
+        java.util.Map<String,Object> responseData=new java.util.LinkedHashMap<>();
+        responseData.put("selectedOption",selectedOption==null?"":selectedOption.trim().toUpperCase(java.util.Locale.ROOT));
+        responseData.put("confidenceLevel",confidenceLevel); responseData.put("activeTimeMs",activeTimeMs);
+        responseData.put("origin",determinedOrigin); responseData.put("causaErro",causaErroStr);
+        responseData.put("naCordaBamba",cordaBambaVal); responseData.put("pensouContrario",pensouContrarioVal);
+        responseData.put("tempoLeituraMs",leituraVal); responseData.put("tempoHesitacaoMs",hesitacaoVal);
+        responseData.put("trocasOpcaoCount",trocasVal); responseData.put("distanciaCursorPx",distanciaVal);
+        responseData.put("friccaoCognitivaScore",friccaoVal); responseData.put("chuteEducadoDetectado",chuteVal);
+        responseData.put("helpDeclarationProvided",usedHelp!=null); responseData.put("usedHelp",usedHelpVal);
+        responseData.put("helpType",helpTypeVal); responseData.put("interventionType",interventionVal);
+        responseData.put("fluenciaNeurologica",fluenciaVal);
         var existing=eventStoreRepository.findByEventId("attempt:"+attemptId);
-        if(existing.isPresent()) return replay(existing.get(),questionId,sessionId,selectedOption,confidenceLevel,activeTimeMs,Boolean.TRUE.equals(usedHelp));
+        if(existing.isPresent()) return replay(existing.get(),questionId,sessionId,responseData);
 
         // A forecast may only be linked if it was already committed in an earlier request.
         var prospectiveEvent=eventStoreRepository.findByEventId("prediction:"+attemptId);
@@ -207,21 +236,6 @@ public class AttemptSubmissionService {
             concursoPoint = matched ? 1 : 0;
         }
 
-        String determinedOrigin = resolveOrigin(origin, sessionId).name();
-
-        String causaErroStr = (causaErro != null && !causaErro.isBlank()) ? causaErro.trim() : null;
-        String isCorrectStr = (isCorrect == null) ? "null" : String.valueOf(isCorrect);
-        boolean cordaBambaVal = Boolean.TRUE.equals(naCordaBamba);
-        boolean pensouContrarioVal = Boolean.TRUE.equals(pensouContrario);
-
-        long leituraVal = tempoLeituraMs != null ? tempoLeituraMs : activeTimeMs;
-        long hesitacaoVal = tempoHesitacaoMs != null ? tempoHesitacaoMs : 0L;
-        int trocasVal = trocasOpcaoCount != null ? trocasOpcaoCount : 0;
-        double distanciaVal = distanciaCursorPx != null ? distanciaCursorPx : 0.0;
-        double friccaoVal = friccaoCognitivaScore != null ? friccaoCognitivaScore : 0.0;
-        boolean chuteVal = Boolean.TRUE.equals(chuteEducadoDetectado);
-        String fluenciaVal = (fluenciaNeurologica != null && !fluenciaNeurologica.isBlank()) ? fluenciaNeurologica : (friccaoVal > 0.6 ? "CHUTE_EDUCADO_PROVAVEL" : (friccaoVal > 0.3 ? "FRICCAO_MODERADA" : "ALTA_FLUENCIA"));
-
         // Instrumentação Etapa 1: Exposição anterior à questão e rastreabilidade longitudinal
         int exposicaoAnteriorCount = eventStoreRepository.countPreviousAttempts(questionId);
         Double diasDesdeUltimaExposicao = null;
@@ -244,32 +258,22 @@ public class AttemptSubmissionService {
             }
         }
 
-        boolean usedHelpVal = Boolean.TRUE.equals(usedHelp);
-        String helpTypeVal = (helpType != null && !helpType.isBlank()) ? helpType.trim() : (usedHelpVal ? "MATERIAL_APOIO" : "NENHUM");
-        String interventionVal = (interventionType != null && !interventionType.isBlank()) ? interventionType.trim() : "REGULAR";
-
         java.util.Map<String,Object> prediction=learningEvidenceService==null ? java.util.Map.of("evidenceStatus","UNAVAILABLE") : learningEvidenceService.preview(questionId);
         java.time.Instant occurredAt=java.time.Instant.now();
         if(prospectiveEvent.isPresent() &&
            (!java.time.Instant.parse(prospectiveEvent.get().getOccurredAt()).isBefore(occurredAt) ||
             !java.time.Instant.parse(prospectiveEvent.get().getRecordedAt()).isBefore(occurredAt)))
             throw new AttemptConflictException("Forecast must strictly precede the answer");
-        java.util.Map<String,Object> fields=new java.util.LinkedHashMap<>();
-        fields.put("attemptId",attemptId); fields.put("questionId",questionId); fields.put("selectedOption",optionLetter);
+        java.util.Map<String,Object> fields=new java.util.LinkedHashMap<>(responseData);
+        fields.put("attemptId",attemptId); fields.put("questionId",questionId);
         fields.put("correctOption",question.getCorrectOption()); fields.put("isCorrect",isCorrect); fields.put("concursoPoint",concursoPoint);
-        fields.put("gabaritoStatus",status.name()); fields.put("confidenceLevel",confidenceLevel); fields.put("activeTimeMs",activeTimeMs);
-        fields.put("origin",determinedOrigin); fields.put("causaErro",causaErroStr); fields.put("naCordaBamba",cordaBambaVal); fields.put("pensouContrario",pensouContrarioVal);
-        fields.put("tempoLeituraMs",leituraVal); fields.put("tempoHesitacaoMs",hesitacaoVal); fields.put("trocasOpcaoCount",trocasVal);
-        fields.put("distanciaCursorPx",distanciaVal); fields.put("friccaoCognitivaScore",friccaoVal); fields.put("chuteEducadoDetectado",chuteVal);
-        // Preserve missing declarations for analysis; operational memory semantics are unchanged.
-        fields.put("helpDeclarationProvided",usedHelp!=null);
-        fields.put("fluenciaNeurologica",fluenciaVal); fields.put("usedHelp",usedHelpVal); fields.put("helpType",helpTypeVal);
+        fields.put("gabaritoStatus",status.name());
         fields.put("exposicaoAnteriorCount",exposicaoAnteriorCount); fields.put("diasDesdeUltimaExposicao",diasDesdeUltimaExposicao);
-        fields.put("resultadoAnterior",resultadoAnterior); fields.put("interventionType",interventionVal); fields.put("memoryPrediction",prediction);
+        fields.put("resultadoAnterior",resultadoAnterior); fields.put("memoryPrediction",prediction);
         if(prospectivePredictionId!=null) fields.put("prospectivePredictionId",prospectivePredictionId);
         String payload=json(fields);
         if(!eventStoreRepository.appendEventOnce("attempt:"+attemptId,"ANSWER_SUBMITTED","QUESTION",questionId,sessionId,occurredAt.toString(),payload)) {
-            return replay(eventStoreRepository.findByEventId("attempt:"+attemptId).orElseThrow(),questionId,sessionId,selectedOption,confidenceLevel,activeTimeMs,usedHelpVal);
+            return replay(eventStoreRepository.findByEventId("attempt:"+attemptId).orElseThrow(),questionId,sessionId,responseData);
         }
         boolean eligible="REAL_STUDY".equals(determinedOrigin) && isCorrect!=null && !usedHelpVal;
         if(learningEvidenceService!=null) project(attemptId,questionId,occurredAt,isCorrect,determinedOrigin,confidenceLevel,usedHelpVal,prediction);
@@ -344,11 +348,22 @@ public class AttemptSubmissionService {
         try { return objectMapper.writeValueAsString(value); }
         catch(com.fasterxml.jackson.core.JsonProcessingException e){ throw new IllegalArgumentException("Invalid event payload",e); }
     }
-    private com.fiscalstudy.backend.domain.AttemptResult replay(com.fiscalstudy.backend.domain.EventRecord event,String questionId,String sessionId,String option,int confidence,long activeTime,boolean help) {
+    private com.fiscalstudy.backend.domain.AttemptResult replay(com.fiscalstudy.backend.domain.EventRecord event,String questionId,String sessionId,java.util.Map<String,Object> responseData) {
         try {
             var n=objectMapper.readTree(event.getPayloadJson());
-            if(!event.getAggregateId().equals(questionId) || !java.util.Objects.equals(event.getSessionId(),sessionId) || !n.path("selectedOption").asText().equalsIgnoreCase(option==null?"":option.trim())) throw new AttemptConflictException("Attempt ID already belongs to a different submission");
-            if(n.path("confidenceLevel").asInt()!=confidence || n.path("activeTimeMs").asLong()!=activeTime || n.path("usedHelp").asBoolean()!=help) throw new AttemptConflictException("Attempt ID already belongs to different response data");
+            if(!"ANSWER_SUBMITTED".equals(event.getEventType()) || !"QUESTION".equals(event.getAggregateType()) ||
+               !java.util.Objects.equals(event.getAggregateId(),questionId) || !java.util.Objects.equals(event.getSessionId(),sessionId))
+                throw new AttemptConflictException("Attempt ID already belongs to a different submission");
+            // Compare only submitted evidence, never recompute answer keys, forecasts or exposure history.
+            // Round-trip JSON so small integer durations compare identically to persisted JSON numbers.
+            var requested=objectMapper.readTree(json(responseData));
+            for(var entry:responseData.entrySet()) {
+                var stored=n.get(entry.getKey());
+                if(stored==null && "helpDeclarationProvided".equals(entry.getKey()))
+                    stored=com.fasterxml.jackson.databind.node.BooleanNode.FALSE; // legacy absence remains unknown
+                if(!java.util.Objects.equals(stored,requested.get(entry.getKey())))
+                    throw new AttemptConflictException("Attempt ID already belongs to different response data");
+            }
             Boolean correct=n.hasNonNull("isCorrect")?n.get("isCorrect").asBoolean():null;
             if(learningEvidenceService!=null) {
                 java.util.Map<String,Object> prediction=objectMapper.convertValue(n.path("memoryPrediction"),new com.fasterxml.jackson.core.type.TypeReference<java.util.Map<String,Object>>(){});
