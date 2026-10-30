@@ -23,6 +23,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(StrategicSummaryController.class)
 class StrategicSummaryControllerTest {
 
+    @MockBean
+    private com.fiscalstudy.backend.application.QuarantineSourceExposureService quarantineSourceExposureService;
+
     @Autowired
     private MockMvc mockMvc;
 

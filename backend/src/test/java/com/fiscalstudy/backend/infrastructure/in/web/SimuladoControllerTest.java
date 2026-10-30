@@ -21,6 +21,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(SimuladoController.class)
 class SimuladoControllerTest {
 
+    @MockBean
+    private com.fiscalstudy.backend.application.QuarantineSourceExposureService quarantineSourceExposureService;
+
     @Autowired
     private MockMvc mockMvc;
 

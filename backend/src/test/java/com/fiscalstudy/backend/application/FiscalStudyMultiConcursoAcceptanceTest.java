@@ -47,43 +47,10 @@ public class FiscalStudyMultiConcursoAcceptanceTest {
         SingleConnectionDataSource dataSource = new SingleConnectionDataSource("jdbc:sqlite::memory:", true);
         jdbcTemplate = new JdbcTemplate(dataSource);
 
-        // Criação de schemas isolados
-        jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS event_store (" +
-                "event_id TEXT PRIMARY KEY, event_type TEXT NOT NULL, aggregate_type TEXT NOT NULL, " +
-                "aggregate_id TEXT NOT NULL, session_id TEXT, occurred_at TEXT NOT NULL, " +
-                "recorded_at TEXT NOT NULL, event_version INTEGER NOT NULL, schema_version TEXT NOT NULL, payload_json TEXT NOT NULL)");
-
-        jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS questions (" +
-                "id TEXT PRIMARY KEY, enunciado TEXT, options_json TEXT, correct_option TEXT, " +
-                "gabarito_status TEXT DEFAULT 'DEFINITIVO', banca TEXT, ano INTEGER, orgao TEXT, " +
-                "cargo TEXT, disciplina TEXT, assunto TEXT, dificuldade TEXT, status TEXT DEFAULT 'VALIDADA', " +
-                "justificativa TEXT, texto_apoio TEXT, texto_apoio_titulo TEXT, numero_original INTEGER, arquivo_origem TEXT, " +
-                "created_at TEXT DEFAULT CURRENT_TIMESTAMP)");
-
-        jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS concursos (" +
-                "id TEXT PRIMARY KEY, nome TEXT NOT NULL, orgao TEXT NOT NULL, banca TEXT, " +
-                "ano INTEGER, cargo TEXT, cargo_codigo TEXT, status TEXT DEFAULT 'ACTIVE', descricao TEXT, " +
-                "situacao TEXT DEFAULT 'PREVISTO', localidade TEXT, escolaridade TEXT, vagas INTEGER, salario REAL, " +
-                "link_edital TEXT, data_prova TEXT, data_prova_tipo TEXT DEFAULT 'INFORMADA_PELO_USUARIO', " +
-                "datas_importantes_json TEXT, disponibilidade_json TEXT, " +
-                "created_at TEXT DEFAULT CURRENT_TIMESTAMP, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)");
-
-        jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS editais (" +
-                "id TEXT PRIMARY KEY, concurso_id TEXT NOT NULL, titulo TEXT NOT NULL, versao TEXT NOT NULL DEFAULT '1.0', " +
-                "tipo TEXT NOT NULL DEFAULT 'ORIGINAL', filename TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP)");
-
-        jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS edital_topicos (" +
-                "id TEXT PRIMARY KEY, edital_id TEXT NOT NULL, concurso_id TEXT NOT NULL, disciplina TEXT NOT NULL, " +
-                "assunto TEXT NOT NULL, subassunto TEXT, peso REAL DEFAULT 1.0, questoes_previstas INTEGER, " +
-                "doc_origem TEXT, pagina_origem INTEGER, trecho_origem TEXT, tipo_classificacao TEXT DEFAULT 'EXPLICITA', " +
-                "confirmado_humano INTEGER DEFAULT 0, created_at TEXT DEFAULT CURRENT_TIMESTAMP)");
-
-        jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS support_materials (" +
-                "id TEXT PRIMARY KEY, tipo TEXT NOT NULL, titulo TEXT, conteudo_texto TEXT, media_path TEXT, " +
-                "doc_origem TEXT, pagina_inicio INTEGER, pagina_fim INTEGER, coordenadas_json TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP)");
-
-        jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS question_support_materials (" +
-                "question_id TEXT NOT NULL, material_id TEXT NOT NULL, PRIMARY KEY(question_id, material_id))");
+        // Use the same migrated schema/views/quarantine contracts as the application.
+        try(var connection=dataSource.getConnection()) {
+            com.fiscalstudy.backend.infrastructure.config.SchemaMigration.migrate(connection);
+        } catch(java.sql.SQLException e) {throw new IllegalStateException(e);}
 
         // Repositórios
         concursoRepository = new ConcursoRepositoryImpl(jdbcTemplate);

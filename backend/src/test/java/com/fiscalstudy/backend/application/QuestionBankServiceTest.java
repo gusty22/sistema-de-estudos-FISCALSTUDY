@@ -79,7 +79,7 @@ class QuestionBankServiceTest {
         when(jdbcTemplate.queryForList(contains("SELECT DISTINCT q.cargo"), eq(String.class), any(Object[].class)))
                 .thenReturn(List.of("Auditor Fiscal"));
 
-        when(jdbcTemplate.queryForObject(contains("COUNT(*) FROM questions q"), eq(Integer.class), any(Object[].class)))
+        when(jdbcTemplate.queryForObject(contains("COUNT(*) FROM study_questions q"), eq(Integer.class), any(Object[].class)))
                 .thenReturn(0);
 
         Map<String, Object> metadata = service.getFiltersMetadata(
@@ -101,10 +101,10 @@ class QuestionBankServiceTest {
         when(jdbcTemplate.queryForList(contains("SELECT DISTINCT disciplina FROM edital_topicos"), eq(String.class), anyString()))
                 .thenReturn(List.of("Auditoria", "Matemática"));
 
-        when(jdbcTemplate.queryForObject(contains("COUNT(*) FROM questions"), eq(Integer.class), eq("Auditoria"), eq("Auditoria")))
+        when(jdbcTemplate.queryForObject(contains("COUNT(*) FROM study_questions"), eq(Integer.class), eq("Auditoria"), eq("Auditoria")))
                 .thenReturn(229);
 
-        when(jdbcTemplate.queryForObject(contains("COUNT(*) FROM questions"), eq(Integer.class), eq("Matemática"), eq("Matemática")))
+        when(jdbcTemplate.queryForObject(contains("COUNT(*) FROM study_questions"), eq(Integer.class), eq("Matemática"), eq("Matemática")))
                 .thenReturn(0);
 
         when(jdbcTemplate.queryForList(contains("SELECT DISTINCT q.disciplina"), eq(String.class), any(Object[].class)))

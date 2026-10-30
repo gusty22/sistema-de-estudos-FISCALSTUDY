@@ -61,7 +61,7 @@ public class AnalyticsBridgeIntegrationTest {
     @Test
     void executeAnalyticsPipeline_ProducesReadOnlyArtifacts() throws Exception {
         String exec = bridgeService.resolveExecutable();
-        boolean hasExec = Files.isRegularFile(Path.of(exec));
+        boolean hasExec = com.fiscalstudy.backend.support.RscriptTestSupport.available(exec);
         assumeTrue(hasExec, "Rscript must be installed to run end-to-end bridge test");
 
         // Registrar tentativa válida

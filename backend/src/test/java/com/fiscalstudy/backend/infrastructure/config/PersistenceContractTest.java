@@ -39,14 +39,24 @@ class PersistenceContractTest {
         }
     }
     @Test void migratesARecoveryCopyWithoutChangingLearningHistory() throws Exception {
-        Path snapshot=Path.of("../db/recovery/fiscalstudy.db").toAbsolutePath().normalize();
-        Assumptions.assumeTrue(Files.isRegularFile(snapshot),"Recovery snapshot not available in this checkout");
+        // A reproducible pre-receipt (v7) recovery image; never discover or read a personal database.
+        Path snapshot=dir.resolve("synthetic-v7.db");
+        try(Connection c=DriverManager.getConnection("jdbc:sqlite:"+snapshot);Statement statement=c.createStatement()) {
+            SchemaMigration.migrate(c);
+            statement.execute("DROP TABLE study_session_recordings");
+            statement.execute("DELETE FROM schema_migrations WHERE version=8");
+            statement.execute("INSERT INTO questions(id,enunciado,disciplina) VALUES('historical-q','Synthetic history','Math')");
+            statement.execute("INSERT INTO event_store VALUES('historical-event','ANSWER_SUBMITTED','QUESTION','historical-q','historical-session','2026-10-01T10:00:00Z','2026-10-01T10:00:00Z',1,'v1','{\"origin\":\"AUTOMATED_TEST\",\"isCorrect\":true}')");
+        }
         Path copy=dir.resolve("existing-copy.db");Files.copy(snapshot,copy);
         try(Connection c=DriverManager.getConnection("jdbc:sqlite:"+copy);Statement s=c.createStatement()){
             long beforeQuestions,beforeEvents;
             try(ResultSet r=s.executeQuery("SELECT count(*) FROM questions")){r.next();beforeQuestions=r.getLong(1);}
             try(ResultSet r=s.executeQuery("SELECT count(*) FROM event_store")){r.next();beforeEvents=r.getLong(1);}
+            String payload;
+            try(ResultSet r=s.executeQuery("SELECT payload_json FROM event_store WHERE event_id='historical-event'")){assertTrue(r.next());payload=r.getString(1);}
             SchemaMigration.migrate(c);
+            try(ResultSet r=s.executeQuery("SELECT payload_json FROM event_store WHERE event_id='historical-event'")){assertTrue(r.next());assertEquals(payload,r.getString(1));}
             try(ResultSet r=s.executeQuery("SELECT count(*) FROM questions")){r.next();assertEquals(beforeQuestions,r.getLong(1));}
             try(ResultSet r=s.executeQuery("SELECT count(*) FROM event_store")){r.next();assertEquals(beforeEvents,r.getLong(1));}
         }

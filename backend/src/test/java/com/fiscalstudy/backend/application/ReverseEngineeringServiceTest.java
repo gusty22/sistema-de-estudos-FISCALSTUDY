@@ -28,33 +28,15 @@ class ReverseEngineeringServiceTest {
 
         jdbcTemplate = new JdbcTemplate(dataSource);
 
-        // Cria schema mínimo em memória
-        jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS reverse_engineering_sessions (" +
-                "id TEXT PRIMARY KEY, session_id TEXT NOT NULL, concurso_id TEXT, " +
-                "disciplina TEXT NOT NULL, assunto TEXT NOT NULL, banca TEXT NOT NULL, " +
-                "nivel_topico TEXT NOT NULL DEFAULT 'INTERMEDIARIO', " +
-                "total_questoes INTEGER NOT NULL DEFAULT 5, questoes_resolvidas INTEGER NOT NULL DEFAULT 0, " +
-                "questoes_corretas INTEGER NOT NULL DEFAULT 0, erros_questoes_numeros TEXT, " +
-                "alternativas_eliminadas_json TEXT, pegadinhas_detectadas_json TEXT, " +
-                "prescricao_recorte_texto TEXT, pdf_doc_nome TEXT, " +
-                "pagina_inicio_recorte INTEGER DEFAULT 16, pagina_fim_recorte INTEGER DEFAULT 22, " +
-                "paginas_puladas INTEGER DEFAULT 15, status TEXT NOT NULL DEFAULT 'EM_ANDAMENTO', " +
-                "created_at TEXT DEFAULT CURRENT_TIMESTAMP, completed_at TEXT)");
+        // Use the same migrated schema/views/quarantine contracts as the application.
+        try(var connection=dataSource.getConnection()) {
+            com.fiscalstudy.backend.infrastructure.config.SchemaMigration.migrate(connection);
+        } catch(java.sql.SQLException e) {throw new IllegalStateException(e);}
 
-        jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS questions (" +
-                "id TEXT PRIMARY KEY, enunciado TEXT, options_json TEXT, correct_option TEXT, " +
-                "disciplina TEXT, assunto TEXT, banca TEXT, ano INTEGER, orgao TEXT, cargo TEXT, gabarito_status TEXT, " +
-                "status TEXT DEFAULT 'VALIDADA', justificativa TEXT, texto_apoio TEXT, texto_apoio_titulo TEXT, numero_original INTEGER, arquivo_origem TEXT)");
-
-        jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS concursos (" +
-                "id TEXT PRIMARY KEY, nome TEXT, orgao TEXT, banca TEXT, ano INTEGER, cargo TEXT)");
-
-        jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS event_store (" +
-                "event_id TEXT PRIMARY KEY, event_type TEXT, aggregate_type TEXT, aggregate_id TEXT, " +
-                "session_id TEXT, event_version INTEGER, schema_version TEXT, payload_json TEXT, recorded_at TEXT)");
-
-        jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS edital_topicos (" +
-                "id TEXT PRIMARY KEY, concurso_id TEXT, disciplina TEXT, assunto TEXT, subassunto TEXT, peso INTEGER)");
+        // Five available synthetic items, not a production fallback or generated question bank.
+        for(int i=1;i<=5;i++) jdbcTemplate.update(
+            "INSERT INTO questions(id,enunciado,options_json,correct_option,disciplina,assunto,banca,ano,status) VALUES(?,?,?,?,?,?,?,?,?)",
+            "q"+i,"Synthetic question "+i,"[\"A option\",\"B option\"]","A","Direito Tributário","Substituição Tributária para Frente","FGV",2026,"VALIDADA");
 
         eventStoreRepository = mock(EventStoreRepository.class);
         service = new ReverseEngineeringService(jdbcTemplate, eventStoreRepository);
