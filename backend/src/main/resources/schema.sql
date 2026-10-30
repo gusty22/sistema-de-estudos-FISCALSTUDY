@@ -610,3 +610,8 @@ CREATE TABLE IF NOT EXISTS item_source_provenance_events (
  classification_snapshot_json TEXT NOT NULL, recorded_at TEXT NOT NULL,
  contract_version TEXT NOT NULL CHECK(contract_version='item-source-provenance-v1')
 );
+
+-- Private operational retry receipt. Not exported as analytical evidence.
+CREATE TABLE IF NOT EXISTS study_session_recordings (
+ session_id TEXT PRIMARY KEY NOT NULL, request_json TEXT NOT NULL, payload_json TEXT
+);

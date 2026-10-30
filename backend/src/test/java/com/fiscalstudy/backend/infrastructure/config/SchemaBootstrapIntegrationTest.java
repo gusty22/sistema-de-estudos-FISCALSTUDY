@@ -27,7 +27,7 @@ class SchemaBootstrapIntegrationTest {
     @Test void emptyInstallationIsMigratedBeforeApplicationUsesJdbc() throws Exception {
         assertEquals(DATA.resolve("main.db"),paths.mainDatabase());
         assertTrue(Files.isRegularFile(paths.stagingDatabase()));
-        assertEquals(3,jdbc.queryForObject("SELECT COUNT(*) FROM schema_migrations",Integer.class));
+        assertEquals(SchemaMigration.CURRENT_VERSION,jdbc.queryForObject("SELECT COUNT(*) FROM schema_migrations",Integer.class));
         assertEquals("ok",jdbc.queryForObject("PRAGMA quick_check",String.class));
         try(var backups=Files.list(paths.backupDirectory())) {
             assertEquals(0,backups.filter(p->p.getFileName().toString().startsWith("before_migration_")).count(),"A new database must not look like a pre-initialized legacy database");

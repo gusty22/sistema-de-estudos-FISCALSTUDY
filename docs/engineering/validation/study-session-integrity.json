@@ -1,0 +1,27 @@
+{
+  "base": "b59041859d2c445cbfe5f4b8d5f581f7ef7f5096",
+  "environment": "Linux, Temurin 17.0.21, Maven 3.9.9; isolated SQLite only",
+  "runs": {
+    "sessions-reproduction-valid.log": {
+      "tests": 7,
+      "failures": 6,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "4903d35ed5421822ba66827904bb17c48c777f57ab8e0e77281c270e2a67be9c"
+    },
+    "sessions-final-v2.log": {
+      "tests": 25,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "2afdaa2e911d8fe994e40a571223c1edbbe627acb52058f3170cf94b10417dec"
+    },
+    "current-main-full.log": {
+      "tests": 408,
+      "failures": 10,
+      "errors": 42,
+      "skipped": 5,
+      "sha256": "ae1d42efa7940360e6e088f83c2bf9d9ddb868ade7ccf722edefc533e91b4740"
+    }
+  }
+}
