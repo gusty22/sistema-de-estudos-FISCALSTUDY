@@ -19,7 +19,8 @@
       "pr": 74,
       "branch": "fix/branch-audit-ancestry-20261030",
       "commits": [
-        "d6fb57925e4d7cd96788c4770a6d9aa14ca362b5"
+        "d6fb57925e4d7cd96788c4770a6d9aa14ca362b5",
+        "b2a4a864e7298b6a79520098e46d8014cb9afbbc"
       ],
       "origin_commits": [
         "8976660e55c884d573cacaa421f8526de998a589"
@@ -32,10 +33,8 @@
       "priority": "P1",
       "risk": "low",
       "depends_on": [],
-      "validation_order_after": [
-        76
-      ],
-      "status": "DRAFT_CI_BLOCKED_BY_INHERITED_PROTOCOL_FAILURE",
+      "validation_order_after": [],
+      "status": "DRAFT_ALL_CI_CHECKS_SUCCESS_AWAITING_MANUAL_REVIEW",
       "tests": "19 passed; 2 regressions reproduced before fix",
       "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/74"
     },
@@ -55,38 +54,55 @@
       "priority": "P1",
       "risk": "low",
       "depends_on": [],
-      "status": "DRAFT_AWAITING_MANUAL_REVIEW",
+      "status": "MERGED_CONFIRMED_GITHUB",
       "tests": "37 distinct passed; protocol rechecked independently; CI Linux/Windows success",
-      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/76"
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/76",
+      "merge_commit": "e877e468fb4e77d143137cee3a6c97eb488ffb85",
+      "merged_at": "2026-10-30T20:53:17Z",
+      "merged_by": "maintainer"
     },
     {
       "id": "R-LOCALE-FIXTURE",
       "type": "audit_discovered_defect_not_historical_recovery",
       "issue": 77,
-      "pr": null,
+      "pr": 79,
       "branch": "fix/r-locale-evidence-20261030",
-      "commits": [],
+      "commits": [
+        "477bf441097b2c76c40be86eb043967bd60cb958"
+      ],
       "files": [
-        "analytics-engine/tests/test_pipeline_evidence.R"
+        "analytics-engine/tests/helpers/utf8_fixture.R",
+        "analytics-engine/tests/test_export.R",
+        "analytics-engine/tests/test_pipeline_evidence.R",
+        "analytics-engine/docs/UTF8_FIXTURE_VALIDATION.md"
       ],
       "priority": "P2",
       "risk": "low",
       "depends_on": [],
-      "status": "IN_PROGRESS_RED_REPRODUCED",
-      "evidence": "write.csv under Windows LC_CTYPE=C corrupts Unicode fixture before pipeline"
+      "status": "DRAFT_RECONCILING_CANONICAL_HASH_FIXTURE",
+      "evidence": "write.csv under Windows LC_CTYPE=C corrupts Unicode fixture before pipeline",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/79"
     }
   ],
   "backlog": [
     {
       "id": "TASK-2026-10-30-02",
       "classification": "NEEDS_EVIDENCE",
-      "reason": "Registro IN_PROGRESS sem commits ou PR; branch remota removida; intenção não equivale a implementação histórica recuperável",
+      "reason": "Registro IN_PROGRESS sem commits ou PR; branch remota removida; intenção não equivale a implementação histórica recuperável; Issue77 cobre somente portabilidade de fixtures, não toda confiabilidade R",
       "related_issue": 77
     },
     {
       "id": "PR-CONTRACT-ROBUSTNESS",
       "classification": "FUTURE_BACKLOG",
       "reason": "Validar existência da Issue e ciclos indiretos de dependências no verificador CI requer implementação futura separada"
+    },
+    {
+      "id": "WINDOWS-LAB-RUNTIME",
+      "issue": 80,
+      "classification": "NEEDS_EVIDENCE",
+      "status": "BLOCKED_LOCAL_VALIDATION",
+      "reason": "4 ACL failures confirmed; native R subprocess exit0xC0000005 root cause unknown; no tests disabled",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/issues/80"
     }
   ],
   "constraints": [
@@ -96,5 +112,7 @@
     "Append-only event store",
     "R observation-only",
     "No personal data"
-  ]
+  ],
+  "latest_main_sha": "e877e468fb4e77d143137cee3a6c97eb488ffb85",
+  "audit_pull_request": 78
 }

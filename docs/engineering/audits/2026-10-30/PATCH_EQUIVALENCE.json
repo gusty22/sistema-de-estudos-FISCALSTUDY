@@ -1,0 +1,55 @@
+{
+  "method": "git show --format= SHA | git patch-id --stable",
+  "pairs": [
+    {
+      "original": {
+        "sha": "5751d061d915ff89e6b996a4e92332069c5ede5b",
+        "patch_id": "2b9c5b01d9aa9429c1f5c4ce351e5229257017aa"
+      },
+      "recovery": {
+        "sha": "ceb8a7cdbd7621a32e2893b52634409f969824fa",
+        "patch_id": "2b9c5b01d9aa9429c1f5c4ce351e5229257017aa"
+      }
+    },
+    {
+      "original": {
+        "sha": "bfb9891658202e46c726ca6e982616e5b8dd99aa",
+        "patch_id": "2bd0467f98760354e52f61b1267c2a845c956eed"
+      },
+      "recovery": {
+        "sha": "8b9e563db5a721972342964c96df4c196ec41ec6",
+        "patch_id": "2bd0467f98760354e52f61b1267c2a845c956eed"
+      }
+    },
+    {
+      "original": {
+        "sha": "2f5badfa0fd060ad854818a0913552e0e045405f",
+        "patch_id": "3d4d2318eca825979f8a6911b2f7583a964d9213"
+      },
+      "recovery": {
+        "sha": "3e58261e6b34f60923b8b1283cc7a4916a33cd70",
+        "patch_id": "3d4d2318eca825979f8a6911b2f7583a964d9213"
+      }
+    },
+    {
+      "original": {
+        "sha": "64d84b200f482f9daf14dc5b44a6ca587d21b7b6",
+        "patch_id": "a5d25f6fac1a816f29790e0f2691eb3d685dbf25"
+      },
+      "recovery": {
+        "sha": "09b2738c63a628db78dbd658fa0769e7cf43c383",
+        "patch_id": "a5d25f6fac1a816f29790e0f2691eb3d685dbf25"
+      }
+    },
+    {
+      "original": {
+        "sha": "37e586a5bf57739aeee14a31a494b301cb611dab",
+        "patch_id": "ff92376f2087fddcd28980cc8d106c2548444f77"
+      },
+      "recovery": {
+        "sha": "af7143dfd94d06cdd63b5c05e7326348763f9cc6",
+        "patch_id": "ff92376f2087fddcd28980cc8d106c2548444f77"
+      }
+    }
+  ]
+}

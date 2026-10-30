@@ -1,0 +1,112 @@
+{
+  "as_of": "2026-10-30",
+  "product_source_sha": "789f9053f3e90a366a9f09542a0f7331b9d8348b",
+  "compatible_main_sha": "e877e468fb4e77d143137cee3a6c97eb488ffb85",
+  "compatibility": "git diff between these revisions changes only AGENTS.md; backend/frontend/ingestion/analytics source unchanged.",
+  "backend": {
+    "command": "mvn -o -B -ntp test-compile -Dfiscalstudy.tests.require-r=true -Dfiscalstudy.shadow.test.rscript=<installed-Rscript> test",
+    "environment": [
+      "Java17",
+      "Maven3.10.0",
+      "R4.5.1",
+      "R_LIBS_USER inherited installed jsonlite/digest",
+      "R bin on PATH",
+      "LANG=C",
+      "LC_ALL=C"
+    ],
+    "configured": {
+      "suites": 81,
+      "tests": 443,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 303,
+      "build": "SUCCESS"
+    },
+    "initial_attempt": {
+      "tests": 443,
+      "failures": 7,
+      "errors": 1,
+      "skipped": 0,
+      "seconds": 429,
+      "cause": "Rscript unavailable to shadow test plus invalid locale startup warnings polluting stdout; complete rerun passed without source/assert changes"
+    },
+    "cwd": "backend"
+  },
+  "frontend": {
+    "tests": {
+      "command": "node --test tests/*.test.mjs",
+      "passed": 35,
+      "failed": 0,
+      "skipped": 0
+    },
+    "build": {
+      "command": "npm run build",
+      "steps": [
+        "tsc -b",
+        "vite build"
+      ],
+      "exit_code": 0,
+      "modules": 2052,
+      "warning": "Existing main chunk 591.73 kB exceeds 500 kB recommendation"
+    },
+    "limitations": [
+      "No browser/Playwright or axe session",
+      "No visual homologation"
+    ]
+  },
+  "ingestion": {
+    "commands": [
+      "python -m unittest test_inventory_integrity -v",
+      "python -m unittest test_pipeline_resilience -v"
+    ],
+    "passed": 9,
+    "failed": 0,
+    "skipped": 0,
+    "scope": "Synthetic isolated fixtures only; no real PDF/OCR corpus accessed"
+  },
+  "governance": {
+    "audit_script": {
+      "passed": 19,
+      "red_regressions": 2
+    },
+    "context_budget": {
+      "distinct_passed": 37,
+      "independent_protocol_rerun": 6
+    },
+    "post_main_reconcile": {
+      "github_scripts_passed": 19,
+      "protocol_passed": 6
+    }
+  },
+  "r": {
+    "status": "FINAL_FIXTURE_VALIDATION_IN_PROGRESS",
+    "after_utf8_fix": {
+      "passed": 1080,
+      "failed": 1,
+      "seconds": 409.219
+    },
+    "remaining": "Fixture source hashing bypassed canonical compute_file_sha256; isolated correction in PR79 underway"
+  },
+  "laboratory_python": {
+    "status": "BLOCKED_LOCAL_VALIDATION_ISSUE_80",
+    "tests": 63,
+    "failures": 5,
+    "skips": 20,
+    "confirmed_environment_failures": 4,
+    "confirmed_cause": "Set-Acl SeSecurityPrivilege unavailable, reproduced in elevated isolated run",
+    "optional_skips": "FSRS and pyBKT unavailable in installed environment",
+    "native_failure": {
+      "exit_code": 3221225477,
+      "hex": "0xC0000005",
+      "root_cause": "UNKNOWN",
+      "module_reproduction": "12 tests,1 failure,1 skip"
+    }
+  },
+  "constraints": [
+    "No disabled suites",
+    "No personal data or operational database used",
+    "Local OneDrive I/O restriction recorded; reruns outside OneDrive",
+    "Raw logs not committed because they contain machine paths"
+  ]
+}
