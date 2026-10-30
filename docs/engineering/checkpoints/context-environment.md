@@ -5,6 +5,6 @@ Objetivo: protocolo universal, recuperação seletiva e evidências sem alteraç
 
 Concluído: AGENTS central; imports Claude/Gemini; ponteiros Copilot/Cursor; CLI context.py; FTS5 somente leitura/sync explícito; grafo restrito incremental; 2 skills; segurança CI; ArchUnit; benchmark e matriz de compatibilidade.
 Verificado: Python 10+6+3 testes; Java 19 após rebase; flags R falsas; Gitleaks sem achados no diff verificado; cinco recuperações corretas. Graphify sem mudança retorna fresh.
-Estado Git: implementação preservada em commit; atualização final de referência/validação acompanha este checkpoint. Nenhum merge/automerge. Publicação deve ser confirmada pela PR associada à branch, não presumida pela documentação.
+Estado Git: commits 9b8c134 e 328c40e publicados na PR #48 (https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/48), em rascunho e sem merge/automerge. Este marco acrescenta a inclusão explícita de ArchUnit na CI e evidências do run 328c40e; confirmar o HEAD pelo Git.
 Limites: outros agentes CONFIGURED_NOT_TESTED; R sem parser opcional, dois TSX parciais; vault pessoal não lido/sincronizado; quick_validate requer PyYAML ausente. Relatórios em VALIDATION.md e AGENT_COMPATIBILITY.md.
-Próxima ação objetiva: conferir CI da PR e revisão humana; validar descoberta em instalações reais dos demais agentes antes de marcar VERIFIED.
+CI 328c40e: Gitleaks, ferramentas Linux/Windows e CodeQL nas três linguagens aprovados. Próxima ação objetiva: conferir CI do novo HEAD e revisão humana; validar descoberta em instalações reais dos demais agentes antes de marcar VERIFIED.

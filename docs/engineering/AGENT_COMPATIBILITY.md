@@ -15,7 +15,7 @@ Nenhuma configuração aqui modifica permissões, autenticação, provedor ou MC
 
 VERIFIED significa execução observada no escopo indicado; CONFIGURED_NOT_TESTED significa apenas arquivos/formato e referências testados. NOT_AVAILABLE é ausência de runtime identificável, não incompatibilidade intrínseca. NOT_SUPPORTED aplica-se a capacidade explicitamente ausente (ex.: CodeQL para R), não a um agente não executado.
 
-A CLI foi exercitada em Windows. Jobs Linux/Windows são configurados na CI; só seus resultados confirmam execução em Linux. Testes determinísticos verificam caminhos/imports/orçamento/fallback, não comportamento de modelos.
+A CLI e os testes determinísticos foram exercitados em Windows e Linux na CI do commit 328c40e: [Security controls 40976806901](https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40976806901), todos aprovados. Isso não executa os modelos/agentes externos. Testes determinísticos verificam caminhos/imports/orçamento/fallback, não comportamento de modelos.
 
 ## Validação real por instalação
 Sem chamar API paga nem instalar agente nesta operação. Em cada instalação futura, registrar versão, configuração ativa, instruções carregadas e respostas para:

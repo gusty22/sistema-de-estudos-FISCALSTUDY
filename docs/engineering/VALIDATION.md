@@ -29,3 +29,7 @@ Base inicial: 091ccb89; rebase sem conflitos sobre main 6489a1f6455161aec4cb581a
 - Agentes externos não foram executados. Matriz distingue configuração de runtime. Linux/Windows em CI ainda precisam de evidência do run correspondente.
 
 Após rebase, o checkout esparso retirou .cursor da árvore local; git sparse-checkout add .cursor restaurou o arquivo já commitado e os seis testes de protocolo passaram. Não houve perda do adaptador.
+
+## CI verificada antes do ajuste final de inclusão ArchUnit
+Commit 328c40e: [Security controls](https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40976806901) aprovado, incluindo Gitleaks e os 19 testes em Linux e Windows. [CodeQL](https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40976806962) aprovado para as três linguagens; execução bem-sucedida não comprova ausência de todos os problemas.
+O gate prospectivo usa lista explícita; DevelopmentArchitectureTest foi acrescentado para manter as duas invariantes na CI. Essa inclusão não modifica teste ou fonte operacional. O novo HEAD requer seu próprio resultado de CI.
