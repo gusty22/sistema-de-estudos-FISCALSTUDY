@@ -37,6 +37,20 @@
       "errors": 0,
       "skipped": 4,
       "sha256": "c944996a48cdb130052b8e8ad0a9d738933139717536e7dd0a9088e3aed662aa"
+    },
+    "weights-order-before.log": {
+      "tests": 2,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "612717e9a5b267b3d26ec4251259f6bc97994a63c709d17e6a1562858b37e813"
+    },
+    "weights-order-isolated.log": {
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "83840ce2dd92f8ba78b122d7a1aa75d3c3d7dda7243f64349661e53615d56566"
     }
   },
   "baseline_unsuccessful": [
@@ -290,5 +304,24 @@
     "browser recovery on personal Windows",
     "personal database migration",
     "scientific collection activation"
-  ]
+  ],
+  "initial_full_r_ci": {
+    "head": "64d84b200f482f9daf14dc5b44a6ca587d21b7b6",
+    "run_id": 41047191188,
+    "linux": {
+      "job_id": 124034053674,
+      "tests": 422,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "windows": {
+      "job_id": 124034054165,
+      "tests": 422,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "cause": "missing-current-run test shared analytics output with earlier real-R test; legitimate outside-artifact refusal produced400"
+    }
+  }
 }
