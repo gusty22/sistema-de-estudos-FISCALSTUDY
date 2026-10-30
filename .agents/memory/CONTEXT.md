@@ -7,6 +7,7 @@ Confirme `git status --short`, `git log -3 --oneline` e referência remota antes
 A existência dos contratos não demonstra benefício pedagógico. Piloto pessoal não iniciado.
 
 Mapa mínimo:
+- Shadow Core Java → orquestrador R: `docs/architecture/CORE_LEARNING_SHADOW.md` (contrato/auditoria) e `CORE_LEARNING_SHADOW_VALIDATION.md` (gates). Desligado por padrão, sem efeitos no planejamento ou validação pessoal.
 - Backend: `backend/src/main/java/com/fiscalstudy/backend` (application, domain, infrastructure).
 - Interface: `frontend/src` (React/TypeScript).
 - Pesquisa: `analytics-engine/R`, `analytics-engine/lab`; ler seu AGENTS.md.

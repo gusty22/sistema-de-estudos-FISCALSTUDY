@@ -27,9 +27,13 @@ public class LearningEvidenceService {
         return jdbc.query("SELECT * FROM learning_memory_state WHERE question_id = ?", (r,n) -> FsrsCardState.of(r.getDouble("stability"),r.getDouble("difficulty"),r.getInt("reps"),r.getInt("lapses"),Instant.parse(r.getString("last_reviewed_at")),Instant.parse(r.getString("due_at"))),questionId).stream().findFirst().orElse(null);
     }
     public Map<String,Object> preview(String questionId) {
+        return preview(questionId, Instant.now());
+    }
+    /** Read-only, explicit-time preview for reproducible observation snapshots. */
+    public Map<String,Object> preview(String questionId, Instant predictedAt) {
+        Objects.requireNonNull(predictedAt);
         Map<String,Object> result = new LinkedHashMap<>();
         FsrsCardState current=state(questionId);
-        Instant predictedAt = Instant.now();
         result.put("modelVersion",MODEL_VERSION);
         result.put("recallBefore",current == null ? null : current.getRetrievability(predictedAt));
         result.put("evidenceStatus",current == null ? "COLD_START" : "UNCALIBRATED_ITEM_ESTIMATE");

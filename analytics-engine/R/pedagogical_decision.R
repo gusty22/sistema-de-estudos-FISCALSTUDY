@@ -174,7 +174,7 @@ choose_contextual_policy <- function(candidates, context, policy = c("EVIDENCE_C
     if (policy == "SHORTEST_ADMISSIBLE_V1") {rank[i] <- 1L; rules[i] <- "SHORTEST_ADMISSIBLE"}
     if (policy == "CURRICULAR_CONSERVATIVE_V1") {rank[i] <- if (activity == "LEARN_NEW") 1L else 2L; rules[i] <- "CURRICULAR_CONSERVATIVE"}
   }
-  ordering <- order(rank, admitted$estimated_minutes, admitted$candidate_id, method = "radix")
+  ordering <- if (nrow(admitted)) order(rank, admitted$estimated_minutes, admitted$candidate_id, method = "radix") else integer()
   selectable_order <- ordering[selectable[ordering]]
   selected <- if (length(selectable_order)) selectable_order[1L] else integer()
   chosen <- if (length(selected)) admitted$candidate_id[selected] else NULL

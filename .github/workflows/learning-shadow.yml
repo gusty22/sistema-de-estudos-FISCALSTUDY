@@ -1,0 +1,41 @@
+name: Observation-only learning shadow
+on:
+  pull_request:
+    paths:
+      - 'backend/**'
+      - 'analytics-engine/**'
+      - '.github/workflows/learning-shadow.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  synthetic-shadow:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2022]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: r-lib/actions/setup-r@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05
+        with:
+          r-version: '4.5.1'
+          use-public-rspm: true
+      - name: Existing R dependencies
+        run: Rscript -e 'install.packages(c("jsonlite","digest"),repos="https://cloud.r-project.org")'
+      - name: Resolve R for existing bridge contract tests
+        shell: bash
+        run: Rscript -e 'cat("FISCALSTUDY_RSCRIPT=",normalizePath(Sys.which("Rscript"),winslash="/"),"\n",sep="")' >> "$GITHUB_ENV"
+      - name: Compile and exercise actual Java to R with temporary synthetic SQLite
+        working-directory: backend
+        run: mvn -B -ntp "-Dtest=LearningShadowIntegrationTest,LearningEvidenceServiceTest,FsrsReferenceConformanceTest,AnalyticsBridgeProvenanceContractTest" test
+      - name: R and scientific contract regressions
+        working-directory: analytics-engine
+        run: Rscript tests/test_runner.R

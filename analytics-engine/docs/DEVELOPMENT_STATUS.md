@@ -1,3 +1,7 @@
+## Core Java → orquestrador contextual shadow v1 — 2026-10-30
+
+Integração separada e desligada por padrão, usando snapshot Java somente leitura, HMAC efêmero entre processos, especialistas existentes, admissão única, três políticas, rastro e laboratório original. [Auditoria/contrato](../../docs/architecture/CORE_LEARNING_SHADOW.md) e [evidências/limites](../../docs/architecture/CORE_LEARNING_SHADOW_VALIDATION.md). Base final b590418 após rebase, JDK17: gate Java pertinente 100/0/0/0; R UTF-8 1090/0; locale C mantém as quatro falhas da base (não aprovado). Backend completo: 408 testes na base, 421 na branch, mesmas 10 falhas/44 erros/4 skips herdados. Windows/instalação pessoal não homologados. Piloto NOT_STARTED, cobertura global FAIL e seis alvos NOT_ESTABLISHED preservados; nenhum efeito no planejamento.
+
 ## Cobertura dos fluxos prospectivos de questões — 2026-10-29
 
 Base main `091ccb8`, PR #46 integrada e CIs de `0f3af68` aprovadas. Captura agora desligada por padrão também no QuestionViewer: opt-in explícito no frontend e autorização/habilitação do host são exigidos; o servidor recusa preparo direto sem suas duas flags. Modal do banco usa preparação, journal, UUID estável e recuperação confirmada, sem inferir ausência de ajuda. Reabertura não vira novo desfecho; nova tentativa capturada exige ação explícita. Fallback de SessaoEstudoAtiva corrigido para ler `questions` da API, preservando `items` legado.
