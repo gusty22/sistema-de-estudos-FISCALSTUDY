@@ -1,9 +1,9 @@
-# Checkpoint da recuperação da suíte
+# Checkpoint final da recuperação da suíte
 
-Main auditada b590418; dependência explícita PR #59/head642e2c8. Worktree própria /workspace/fiscalstudy-suite, branch fix/backend-suite-recovery.
+Main auditada b590418; dependência explícita PR #59/head642e2c8. PR #61 draft empilhada, branch fix/backend-suite-recovery, worktree exclusiva /workspace/fiscalstudy-suite. Nenhum merge/automerge.
 
-Commitado: fixtures/slices canônicos; consultas/CSV/autoridade observacional; recibo de recuperação sintético; probe R; exportação padrão isolada e workflow completo. Local ainda não publicado: documentação e comentário editorial. Build limpo local: 422 testes, zero falhas/erros, quatro skips por runtime R ausente; hashes e nomes em validation/backend-suite-recovery.json. Nenhum índice pessoal, banco pessoal, R/FSRS ou política alterado.
+Código publicado e testado:37e586a5bf57739aeee14a31a494b301cb611dab. Suíte completa com R:run41048183453, Linux e Windows422/0falhas/0erros/0skips, logs conferidos. Gate prospectivo41048183610, sessões, tentativas, CodeQL e Security controls aprovados nesse código. Build limpo local422/0/0/4skips(R ausente), repetição após isolamento igualmente aprovada.
 
-PR de sessões nativa: head642e2c8, run41046249051, Linux/Windows35/35, sem skips. Próximo: publicar PR draft empilhada da suíte, conferir execução real com R/Windows e registrar limitações de piloto. Não mergear.
+Resolvidos:10 falhas/42 erros herdados por schemas/slices/stubs/assertivas de contrato; skip de snapshot pessoal substituído por imagem sintética; quatro integrações R realmente executadas na CI; fixture compartilhada corrigida após reprodução de ordem; exportação padrão isolada. Motor R/FSRS/políticas e históricos preservados. Evidências/casos anteriores em validation/backend-suite-recovery.json.
 
-Publicado: PR #61 draft, empilhada sobre #59. No head64d84b2, suíte com R Linux422/0/0/0; Windows422/1/0/0 por fixture que compartilhava manifesto. Reprodução local2/1; saída exclusiva corrigida e reteste2/0, sem alterar a recusa legítima de produção. Novo commit e repetição nativa em preparação.
+Esta atualização final é somente documental sobre o código verificado. Restam clientes que recriam ID/não verificam HTTP, revisão/integração das PRs e homologação da instalação pessoal Windows; auditoria de legado se houver migração de base antiga. Coleta científica possui gates adicionais e não foi ativada. Próximo trabalho deve partir da main que o mantenedor efetivamente integrar, sem presumir merge dessas drafts.

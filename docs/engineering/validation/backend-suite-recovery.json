@@ -51,6 +51,13 @@
       "errors": 0,
       "skipped": 0,
       "sha256": "83840ce2dd92f8ba78b122d7a1aa75d3c3d7dda7243f64349661e53615d56566"
+    },
+    "recovered-after-isolation-full.log": {
+      "tests": 422,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 4,
+      "sha256": "9d27d8a63666f203b653f1bae492d629da00a3c4a7b9cad7d7b2dfa3e385cc17"
     }
   },
   "baseline_unsuccessful": [
@@ -323,5 +330,29 @@
       "skipped": 0,
       "cause": "missing-current-run test shared analytics output with earlier real-R test; legitimate outside-artifact refusal produced400"
     }
+  },
+  "final_full_r_ci": {
+    "head": "37e586a5bf57739aeee14a31a494b301cb611dab",
+    "run_id": 41048183453,
+    "linux": {
+      "job_id": 124037377448,
+      "tests": 422,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "windows": {
+      "job_id": 124037377159,
+      "tests": 422,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "prospective_run_id": 41048183610,
+    "prospective_status": "success",
+    "codeql": "success",
+    "security": "success",
+    "session_gate": "success",
+    "attempt_gate": "success"
   }
 }
