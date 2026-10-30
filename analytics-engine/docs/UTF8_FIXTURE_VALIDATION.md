@@ -1,4 +1,4 @@
-# UTF-8 fixtures under Windows locale C
+# Portable Windows fixtures: UTF-8 and canonical source hashes
 
 Issue: [#77](https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/issues/77).
 
@@ -34,3 +34,13 @@ SQLite contract or experimental authority changes.
   explicitly skipped when their packages are absent.
 
 This validates software transport only, not learning outcomes or model efficacy.
+
+## Final canonical hash fixture and validation
+
+The full rerun exposed one additional fixture portability defect: core_shadow/request.R called digest(file=TRUE) directly while production already uses compute_file_sha256 to read the same bytes safely. All 12 source hashes from the canonical helper matched independent readBin byte hashes. The fixture now reuses that helper and explicitly rejects missing or malformed SHA-256 values; original provenance and authority assertions remain intact. No production file changed.
+
+Final complete R suite with installed dependencies inherited by subprocesses: `Rscript tests/test_runner.R`, 1112 checks passed, zero failures, 194.043 seconds. The preceding UTF-8-only checkpoint had 1080 passes and one remaining hash-fixture failure. Standalone attempts without inherited jsonlite failed and are not counted as successful.
+
+Python laboratory configured run: 63 tests, 5 failures, 20 optional skips. Four failures reproduce Set-Acl/SeSecurityPrivilege restrictions, including an elevated isolated rerun (9 tests, 4 failures). The fifth reproduces native R exit 3221225477 (0xC0000005), without output, in the frozen-calibration future-label test (module rerun: 12 tests, 1 failure, 1 optional skip). Root cause of that native crash remains unknown. These limitations are tracked separately in Issue #80; no assertions or security checks were disabled. Optional FSRS/pyBKT packages were not installed.
+
+This PR is ready for manual review of the fixture changes, with local Python validation explicitly blocked by Issue #80. Full R validation passes; it does not establish scientific efficacy. CI must be checked again on the updated HEAD.
