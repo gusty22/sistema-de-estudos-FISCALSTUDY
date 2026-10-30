@@ -62,7 +62,7 @@ class AnalyticsBridgeProvenanceContractTest {
         };
         var cycle = new RobinHoodCycleService(null, null, mapper);
         var bridge = new AnalyticsBridgeService(projection, cycle, mapper, paths);
-        assumeTrue(Files.isRegularFile(Path.of(bridge.resolveExecutable())), "Local Rscript required");
+        assumeTrue(com.fiscalstudy.backend.support.RscriptTestSupport.available(bridge.resolveExecutable()), "Local Rscript required");
         assumeTrue(Files.isRegularFile(engine.resolve("run_analytics.R")), "Local R engine required");
         var result = bridge.executeAnalyticsPipeline();
         assertTrue(result.success(), () -> result.message() + "\n" + result.logs());

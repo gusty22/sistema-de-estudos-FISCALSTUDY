@@ -125,10 +125,10 @@ class SwotCycleCalibratorServiceTest {
         assertNotNull(cycle.getBlocos());
         assertFalse(cycle.getBlocos().isEmpty());
 
-        // O primeiro bloco deve ser a emergência de Crédito Tributário
-        var primeiroBloco = cycle.getBlocos().get(0);
-        assertTrue(primeiroBloco.getDisciplina().startsWith("Direito Tributário"));
-        assertTrue(primeiroBloco.getMensagemEuDoPassado().contains("Pós-Simulado SWOT") || primeiroBloco.getMensagemEuDoPassado().contains("Crédito Tributário") || primeiroBloco.getMensagemEuDoPassado().contains("Emergência"));
+        // The preview arithmetic above is unchanged. Observational weights cannot execute it.
+        assertNull(robinHoodCycleService.getActiveWeights());
+        assertTrue(cycle.getBlocos().stream().noneMatch(b -> "EMERGENCIA_ROBIN_HOOD".equals(b.getType().name())));
+
     }
 
     @Test
