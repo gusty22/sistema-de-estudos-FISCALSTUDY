@@ -29,7 +29,7 @@ class PersistenceContractTest {
         try(Connection c=source.getConnection()){SchemaMigration.migrate(c);SchemaMigration.migrate(c);}
         assertEquals("Preserved",jdbc.queryForObject("SELECT nome FROM study_notebooks WHERE id='old'",String.class));
         assertEquals(90,jdbc.queryForObject("SELECT tempo_minutos FROM study_notebooks WHERE id='old'",Integer.class));
-        assertEquals(3,jdbc.queryForObject("SELECT count(*) FROM schema_migrations",Integer.class));
+        assertEquals(SchemaMigration.CURRENT_VERSION,jdbc.queryForObject("SELECT count(*) FROM schema_migrations",Integer.class));
         Path legacy=dir.resolve("legacy.db");
         try(Connection c=DriverManager.getConnection("jdbc:sqlite:"+legacy);Statement s=c.createStatement()){
             s.execute("CREATE TABLE study_notebooks(id TEXT PRIMARY KEY,nome TEXT NOT NULL,concurso_id TEXT,tipo TEXT,modo_resolucao TEXT,filtros_json TEXT,quantidade INTEGER,created_at TEXT,last_executed_at TEXT)");

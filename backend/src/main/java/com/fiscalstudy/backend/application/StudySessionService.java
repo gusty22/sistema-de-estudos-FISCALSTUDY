@@ -21,15 +21,21 @@ public class StudySessionService {
     private final StudyMaterialRepository studyMaterialRepository;
     private final ObjectMapper objectMapper;
     private final EventOrigin instanceOrigin;
+    private final org.springframework.jdbc.core.JdbcTemplate jdbc;
+    private final org.springframework.transaction.support.TransactionTemplate transaction;
 
     public StudySessionService(EventStoreRepository eventStoreRepository,
                                StudyMaterialRepository studyMaterialRepository,
                                ObjectMapper objectMapper,
-                               @Value("${fiscalstudy.event-origin:REAL_STUDY}") String configuredOrigin) {
+                               @Value("${fiscalstudy.event-origin:REAL_STUDY}") String configuredOrigin,
+                               org.springframework.jdbc.core.JdbcTemplate jdbc) {
         this.eventStoreRepository = eventStoreRepository;
         this.studyMaterialRepository = studyMaterialRepository;
         this.objectMapper = objectMapper;
         this.instanceOrigin = EventOrigin.fromString(configuredOrigin);
+        this.jdbc = jdbc;
+        this.transaction = new org.springframework.transaction.support.TransactionTemplate(
+                new org.springframework.jdbc.datasource.DataSourceTransactionManager(Objects.requireNonNull(jdbc.getDataSource())));
     }
 
     public Map<String, Object> recordStudySession(Map<String, Object> sessionData) {
@@ -39,6 +45,41 @@ public class StudySessionService {
         String hint=String.valueOf(sessionData.get("origin"));
         if(sessionPrefix.startsWith("test-")||sessionPrefix.startsWith("mock-")||sessionPrefix.startsWith("e2e-")||"AUTOMATED_TEST".equals(hint)) origin="AUTOMATED_TEST";
         else if(sessionPrefix.startsWith("demo-")||sessionPrefix.startsWith("sample-")||"DEMONSTRATION".equals(hint)) origin="DEMONSTRATION";
+        if(sessionId==null || sessionId.isBlank()) throw new IllegalArgumentException("Session ID is required");
+        var request=new TreeMap<String,Object>(sessionData);
+        request.put("sessionId",sessionId);request.put("origin",origin);
+        final String requestJson=serialize(request);
+        final String id=sessionId;
+        final var requestNode=readJson(requestJson);
+        // The first SQL statement obtains SQLite's writer lock, before any read/modify/write.
+        // Concurrent processes use the same unique receipt and the database's busy timeout.
+        return transaction.execute(status -> {
+            int inserted=jdbc.update("INSERT INTO study_session_recordings(session_id,request_json) VALUES(?,?) ON CONFLICT(session_id) DO NOTHING",id,requestJson);
+            if(inserted==0) {
+                var receipt=jdbc.queryForMap("SELECT request_json,payload_json FROM study_session_recordings WHERE session_id=?",id);
+                if(!requestNode.equals(readJson((String)receipt.get("request_json")))) conflict();
+                return response((String)receipt.get("payload_json"));
+            }
+            var historical=eventStoreRepository.getEventPayloads(id,"STUDY_SESSION_RECORDED");
+            if(!historical.isEmpty()) {
+                // Existing summaries use the first historical recording. Never rewrite or reapply its progress.
+                var original=readJson(historical.get(0));
+                for(var field:request.entrySet()) {
+                    if(!Objects.equals(original.get(field.getKey()),requestNode.get(field.getKey()))) conflict();
+                }
+                jdbc.update("UPDATE study_session_recordings SET payload_json=? WHERE session_id=?",historical.get(0),id);
+                return response(historical.get(0));
+            }
+            var result=recordInsideTransaction(request);
+            var payload=new LinkedHashMap<>(result);payload.remove("status");
+            jdbc.update("UPDATE study_session_recordings SET payload_json=? WHERE session_id=?",serialize(payload),id);
+            return result;
+        });
+    }
+
+    private Map<String,Object> recordInsideTransaction(Map<String,Object> sessionData) {
+        String sessionId=(String)sessionData.get("sessionId");
+        String origin=(String)sessionData.get("origin");
         String concursoId = (String) sessionData.get("concursoId");
         String disciplina = (String) sessionData.get("disciplina");
         String topicoId = (String) sessionData.get("topicoId");
@@ -109,17 +150,6 @@ public class StudySessionService {
         double velPagsHora = hoursDuration > 0 ? Math.round((finalPaginasLidas / hoursDuration) * 10.0) / 10.0 : 0.0;
         double velQuestoesHora = hoursDuration > 0 ? Math.round((qFeitas / hoursDuration) * 10.0) / 10.0 : 0.0;
 
-        // Atualiza progresso do material se materialId e páginas lidas foram fornecidos
-        if ("REAL_STUDY".equals(origin) && materialId != null && !materialId.isBlank() && finalPaginasLidas > 0) {
-            Optional<StudyMaterial> matOpt = studyMaterialRepository.findById(materialId);
-            if (matOpt.isPresent()) {
-                StudyMaterial mat = matOpt.get();
-                mat.setPaginaAtual(Math.min(mat.getTotalPaginas() > 0 ? mat.getTotalPaginas() : Integer.MAX_VALUE,
-                        mat.getPaginaAtual() + finalPaginasLidas));
-                studyMaterialRepository.save(mat);
-            }
-        }
-
         Map<String, Object> payloadMap = new LinkedHashMap<>();
         payloadMap.put("sessionId", sessionId);
         payloadMap.put("concursoId", concursoId);
@@ -144,12 +174,7 @@ public class StudySessionService {
         payloadMap.put("notas", notas);
         payloadMap.put("origin", origin);
 
-        String payloadJson = "{}";
-        try {
-            payloadJson = objectMapper.writeValueAsString(payloadMap);
-        } catch (Exception e) {
-            logger.error("Falha ao serializar payload de estudo", e);
-        }
+        String payloadJson = serialize(payloadMap);
 
         eventStoreRepository.appendEvent(
                 "STUDY_SESSION_RECORDED",
@@ -161,9 +186,37 @@ public class StudySessionService {
                 payloadJson
         );
 
+        // Atualiza progresso do material se materialId e páginas lidas foram fornecidos
+        if ("REAL_STUDY".equals(origin) && materialId != null && !materialId.isBlank() && finalPaginasLidas > 0) {
+            Optional<StudyMaterial> matOpt = studyMaterialRepository.findById(materialId);
+            if (matOpt.isPresent()) {
+                StudyMaterial mat = matOpt.get();
+                mat.setPaginaAtual(Math.min(mat.getTotalPaginas() > 0 ? mat.getTotalPaginas() : Integer.MAX_VALUE,
+                        mat.getPaginaAtual() + finalPaginasLidas));
+                studyMaterialRepository.save(mat);
+            }
+        }
+
         Map<String, Object> response = new LinkedHashMap<>(payloadMap);
         response.put("status", "RECORDED");
         return response;
+    }
+
+    private String serialize(Object value) {
+        try {return objectMapper.writeValueAsString(value);}
+        catch(com.fasterxml.jackson.core.JsonProcessingException e){throw new IllegalStateException("Session serialization failed; nothing persisted",e);}
+    }
+    private com.fasterxml.jackson.databind.JsonNode readJson(String value) {
+        if(value==null) throw new IllegalStateException("Incomplete session receipt");
+        try{return objectMapper.readTree(value);}
+        catch(com.fasterxml.jackson.core.JsonProcessingException e){throw new IllegalStateException("Invalid session receipt",e);}
+    }
+    private Map<String,Object> response(String payload) {
+        var result=objectMapper.convertValue(readJson(payload),new com.fasterxml.jackson.core.type.TypeReference<LinkedHashMap<String,Object>>(){});
+        result.put("status","RECORDED");return result;
+    }
+    private static void conflict() {
+        throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.CONFLICT,"Session already recorded with different data");
     }
 
     public Map<String, Object> getStudyTimeSummary(String concursoId) {

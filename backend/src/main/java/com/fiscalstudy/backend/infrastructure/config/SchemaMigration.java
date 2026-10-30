@@ -9,6 +9,7 @@ import java.util.*;
 
 /** Additive, transactional SQLite migrations; never rewrites historical events. */
 public final class SchemaMigration {
+    public static final int CURRENT_VERSION = 8;
     public SchemaMigration(DataSource source, DatabasePaths paths) {
         paths.createDirectories();
         try(Connection c=source.getConnection()) { snapshotBeforeMigration(c,paths); migrate(c); }
@@ -20,7 +21,7 @@ public final class SchemaMigration {
         try(Statement s=c.createStatement();ResultSet r=s.executeQuery("SELECT count(*) FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")){populated=r.next()&&r.getInt(1)>0;}
         if(!populated)return;
         boolean current=false;
-        try(Statement s=c.createStatement();ResultSet r=s.executeQuery("SELECT 1 FROM schema_migrations WHERE version=7")){current=r.next();}catch(SQLException missingVersionTable){/* legacy baseline */}
+        try(Statement s=c.createStatement();ResultSet r=s.executeQuery("SELECT 1 FROM schema_migrations WHERE version="+CURRENT_VERSION)){current=r.next();}catch(SQLException missingVersionTable){/* legacy baseline */}
         if(current)return;
         java.nio.file.Path backup=paths.backupDirectory().resolve("before_migration_"+Instant.now().toEpochMilli()+"_"+UUID.randomUUID()+".db");
         int code=c.unwrap(org.sqlite.SQLiteConnection.class).getDatabase().backup("main",backup.toString(),null);
@@ -90,6 +91,7 @@ public final class SchemaMigration {
             if(!applied(c,5)) record(c,5,"Diagnostic quarantine foundation; operational shared view");
             if(!applied(c,6)) record(c,6,"Auditable unmapped source exposure receipts");
             if(!applied(c,7)) record(c,7,"Persistent read barriers and captured item-source provenance");
+            if(!applied(c,8)) record(c,8,"Atomic study session recording receipts");
             c.commit();
         } catch(Exception e){c.rollback();throw new SQLException("Migration rolled back",e);}
         finally{c.setAutoCommit(auto);}
