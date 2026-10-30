@@ -47,3 +47,7 @@ analytics-engine/output/figures/
 
 # Graphify artefatos gerados
 graphify-out/
+
+# Obsidian Technical Vault - ignora configurações e layouts pessoais da UI
+knowledge/.obsidian/
+knowledge/.trash/
