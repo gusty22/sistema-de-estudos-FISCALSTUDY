@@ -147,7 +147,7 @@ class QuarantineSourceExposureIntegrationTest {
   }
   jdbc.execute("DROP VIEW diagnostic_source_exposures");
   new SchemaMigration(jdbc.getDataSource(),paths);
-  assertEquals(7,count("schema_migrations"));assertEquals(0,count("diagnostic_source_exposures"));
+  assertEquals(SchemaMigration.CURRENT_VERSION,count("schema_migrations"));assertEquals(0,count("diagnostic_source_exposures"));
   assertEquals(1,count("diagnostic_reservation_events"));
  }
 

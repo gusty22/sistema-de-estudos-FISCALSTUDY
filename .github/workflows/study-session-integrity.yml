@@ -23,4 +23,4 @@ jobs:
           java-version: '17'
       - name: Compile and inject SQLite failures and concurrency
         working-directory: backend
-        run: mvn -B -ntp test-compile -Dtest=StudySessionIntegrityTest,StudySessionTransactionIntegrationTest,RoutineAndStudyIntegrationTest,ActiveTimeAndConfidenceIntegrationTest,SchemaBootstrapIntegrationTest,DatabaseFoundationTest test
+        run: mvn -B -ntp test-compile "-Dtest=StudySessionIntegrityTest,StudySessionTransactionIntegrationTest,RoutineAndStudyIntegrationTest,ActiveTimeAndConfidenceIntegrationTest,SchemaBootstrapIntegrationTest,DatabaseFoundationTest,QuarantineSourceExposureIntegrationTest" test
