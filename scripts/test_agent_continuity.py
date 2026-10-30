@@ -318,30 +318,32 @@ class TestAgentContinuity(unittest.TestCase):
         # -------------------------------------------------------------------------
         # CRITÉRIO 8: O estado MERGED somente aparece após confirmação efetiva no Git
         # -------------------------------------------------------------------------
-        # Tentativa 1: Agente tenta declarar MERGED sem confirmação
+        # Tentativa 1: Agente tenta declarar MERGED sem evidência remota verificável (ou apenas com booleano)
         with self.assertRaises(ValueError) as ctx:
             task_registry.update_task(
                 task_id=task_id,
                 status="MERGED",
-                pr_confirmed=False,
+                pr="https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/60",
+                commits=["unmerged_commit_456"],
+                pr_confirmed=True,
                 tasks_dir=self.tasks_dir,
             )
-        self.assertIn("sem confirmação expressa do GitHub", str(ctx.exception),
-                      "Critério 8 Falhou: MERGED não foi bloqueado na ausência de confirmação")
+        self.assertIn("sem evidência confiável do estado remoto", str(ctx.exception),
+                      "Critério 8 Falhou: MERGED não foi bloqueado na ausência de confirmação remota verificável")
 
-        # Tentativa 2: Agente declara MERGED após confirmação efetiva do PR
+        # Tentativa 2: Agente declara MERGED com confirmação remota comprovada
         pr_url = "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/60"
         merged_task = task_registry.update_task(
             task_id=task_id,
             status="MERGED",
             pr=pr_url,
-            commits=["eb664e8", "a1b2c3d"],
-            pr_confirmed=True,
+            commits=["61fcc28"],
+            remote_verifier=lambda pr, cm, tb: (True, "Merge confirmado em origin/main via PR #60"),
             tasks_dir=self.tasks_dir,
         )
-        self.assertEqual(merged_task["status"], "MERGED", "Critério 8 Falhou: MERGED não aceito após confirmação expressa")
+        self.assertEqual(merged_task["status"], "MERGED", "Critério 8 Falhou: MERGED não aceito após confirmação expressa e verificável")
         self.assertEqual(merged_task["pr"], pr_url)
-        self.assertIn("eb664e8", merged_task["commits"])
+        self.assertIn("61fcc28", merged_task["commits"])
 
     def test_deterministic_vs_agent_boundary(self):
         """

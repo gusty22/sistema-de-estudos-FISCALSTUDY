@@ -16,6 +16,7 @@ import sys
 import re
 import json
 import datetime
+import subprocess
 from pathlib import Path
 
 if sys.platform == "win32":
@@ -253,6 +254,60 @@ def create_task(
     return task
 
 
+def verify_remote_merge(
+    pr: str,
+    commits: list,
+    target_branch: str = "origin/main",
+    root: Path = ROOT,
+    remote_verifier=None,
+) -> tuple[bool, str]:
+    """
+    Verifica se a tarefa foi efetivamente mesclada no Git remoto (ex: origin/main).
+    Não aceita apenas um booleano manual: exige confirmação rastreável.
+    """
+    if not pr or not pr.startswith("http") or "/pull/" not in pr:
+        return False, "URL de Pull Request válida é obrigatória para o estado MERGED."
+
+    if remote_verifier is not None:
+        return remote_verifier(pr, commits, target_branch)
+
+    clean_commits = [c.strip().strip("`") for c in (commits or []) if c and not c.startswith("**") and " " not in c.strip()]
+    if not clean_commits:
+        return False, "Nenhum commit rastreável registrado na tarefa para verificação remota."
+
+    # 1. Verifica ancestralidade no git se o commit for acessível a partir do target_branch
+    for commit in clean_commits:
+        try:
+            res = subprocess.run(
+                ["git", "merge-base", "--is-ancestor", commit, target_branch],
+                cwd=root,
+                capture_output=True,
+                timeout=10,
+            )
+            if res.returncode == 0:
+                return True, f"Commit {commit} confirmado como ancestral de {target_branch}."
+        except Exception:
+            pass
+
+    # 2. Verifica se commits estão listados nos ramos remotos contendo o target_branch
+    for commit in clean_commits:
+        try:
+            res = subprocess.run(
+                ["git", "branch", "-r", "--contains", commit],
+                cwd=root,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                timeout=10,
+            )
+            if target_branch in res.stdout:
+                return True, f"Commit {commit} confirmado como integrado em {target_branch}."
+        except Exception:
+            pass
+
+    return False, f"Nenhum commit da tarefa ({', '.join(clean_commits)}) foi encontrado em {target_branch}. O merge no GitHub ainda não foi confirmado remotamente."
+
+
 def update_task(
     task_id: str,
     status: str = None,
@@ -271,6 +326,7 @@ def update_task(
     pr: str = None,
     commits: list = None,
     pr_confirmed: bool = False,
+    remote_verifier=None,
     tasks_dir: Path = TASKS_DIR,
 ) -> dict:
     """Atualiza incrementalmente um registro de tarefa existente."""
@@ -294,10 +350,21 @@ def update_task(
             if not active_tests or active_tests == "Nenhum teste registrado.":
                 raise ValueError("Invariante violada: não é permitido transitar para VALIDATED sem especificação dos testes executados.")
 
-        # Invariante 2: Não declarar MERGED sem confirmação explícita
+        # Invariante 2: Não declarar MERGED sem evidência confiável do estado remoto
         if status_upper == "MERGED":
-            if not pr_confirmed:
-                raise ValueError("Invariante violada: não é permitido declarar MERGED sem confirmação expressa do GitHub / PR confirmada.")
+            active_pr = (pr or task.get("pr") or "").strip()
+            active_commits = (commits or task.get("commits") or [])
+            repo_root = ROOT
+            if tasks_dir != TASKS_DIR and tasks_dir.parent.exists():
+                repo_root = tasks_dir.parents[1] if (tasks_dir.name == "07 - Diário de Desenvolvimento" and len(tasks_dir.parents) >= 2) else ROOT
+            is_merged, reason = verify_remote_merge(
+                pr=active_pr,
+                commits=active_commits,
+                root=repo_root,
+                remote_verifier=remote_verifier,
+            )
+            if not is_merged:
+                raise ValueError(f"Invariante violada: não é permitido declarar MERGED sem evidência confiável do estado remoto. {reason}")
 
         task["status"] = status_upper
 

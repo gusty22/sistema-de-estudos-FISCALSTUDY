@@ -96,19 +96,34 @@ class TestTaskRegistry(unittest.TestCase):
             objective="Verificar bloqueio de MERGED",
             tasks_dir=self.temp_dir,
         )
+        # 1. Falha sem URL de PR
         with self.assertRaises(ValueError) as ctx:
             task_registry.update_task(
                 task_id="TASK-004",
                 status="MERGED",
                 tasks_dir=self.temp_dir,
             )
-        self.assertIn("sem confirmação expressa", str(ctx.exception))
+        self.assertIn("sem evidência confiável do estado remoto", str(ctx.exception))
 
+        # 2. Falha mesmo com booleano manual se não houver confirmação remota real
+        with self.assertRaises(ValueError) as ctx2:
+            task_registry.update_task(
+                task_id="TASK-004",
+                status="MERGED",
+                pr="https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/99",
+                commits=["unmerged_commit_hash_123"],
+                pr_confirmed=True,
+                tasks_dir=self.temp_dir,
+            )
+        self.assertIn("sem evidência confiável do estado remoto", str(ctx2.exception))
+
+        # 3. Transita com sucesso quando há verificação confiável de estado remoto
         updated = task_registry.update_task(
             task_id="TASK-004",
             status="MERGED",
             pr="https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/99",
-            pr_confirmed=True,
+            commits=["61fcc28"],
+            remote_verifier=lambda pr, cm, tb: (True, "Verificado commit integrado em origin/main"),
             tasks_dir=self.temp_dir,
         )
         self.assertEqual(updated["status"], "MERGED")
