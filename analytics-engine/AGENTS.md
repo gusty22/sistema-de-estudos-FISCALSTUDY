@@ -2,6 +2,7 @@
 # Projeto: FiscalStudy Analytics
 
 > **Papel:** Diretrizes fundamentais e invioláveis para agentes e desenvolvedores operando no repositório `fiscalstudy-analytics`.
+> **Protocolo Universal:** Este módulo herda e especializa o protocolo compartilhado de `AGENTS.md` na raiz do repositório (procedimento obrigatório Ao Iniciar, Durante a Execução e Ao Concluir).
 
 ---
 

@@ -131,6 +131,16 @@ class TestTaskRegistry(unittest.TestCase):
         self.assertEqual(len(planned_only), 1)
         self.assertEqual(planned_only[0]["id"], "T-1")
 
+    def test_commits_round_trip_no_label_pollution(self):
+        task_registry.create_task("T-5", "Tarefa 5", "Obj 5", tasks_dir=self.temp_dir)
+        task_registry.update_task("T-5", commits=["commit1", "commit2"], tasks_dir=self.temp_dir)
+        loaded = task_registry.get_task("T-5", tasks_dir=self.temp_dir)
+        self.assertEqual(loaded["commits"], ["commit1", "commit2"])
+        # Atualização subsequente sem alterar commits não deve poluir a lista com cabeçalhos
+        task_registry.update_task("T-5", changes="Mudança X", tasks_dir=self.temp_dir)
+        reloaded = task_registry.get_task("T-5", tasks_dir=self.temp_dir)
+        self.assertEqual(reloaded["commits"], ["commit1", "commit2"])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -197,11 +197,14 @@ def parse_markdown(text: str) -> dict:
             data["next_action"] = content
         elif header == "Rastreamento de Git e PR":
             for l in lines[1:]:
-                if l.startswith("- **PR**:"):
-                    data["pr"] = l.split(":", 1)[1].strip()
-                elif re.match(r"^\s*-\s*[`\"]?(.*?)[`\"]?$", l):
-                    cm = re.match(r"^\s*-\s*[`\"]?(.*?)[`\"]?$", l).group(1)
-                    if cm and "Nenhum commit" not in cm and not cm.startswith("**PR**"):
+                l_str = l.strip()
+                if l_str.startswith("- **PR**:"):
+                    data["pr"] = l_str.split(":", 1)[1].strip()
+                elif l_str.startswith("- **Commits Relacionados**:"):
+                    continue
+                elif re.match(r"^\s*-\s*[`\"]?(.*?)[`\"]?$", l_str):
+                    cm = re.match(r"^\s*-\s*[`\"]?(.*?)[`\"]?$", l_str).group(1)
+                    if cm and "Nenhum commit" not in cm and "Commits Relacionados" not in cm and not cm.startswith("**PR**"):
                         data["commits"].append(cm)
 
     return data
@@ -325,7 +328,8 @@ def update_task(
     if pr:
         task["pr"] = pr
     if commits:
-        task["commits"] = list(dict.fromkeys(task.get("commits", []) + commits))
+        valid_commits = [c for c in commits if c and "Commits Relacionados" not in c and not c.startswith("**PR**")]
+        task["commits"] = list(dict.fromkeys([c for c in task.get("commits", []) if "Commits Relacionados" not in c] + valid_commits))
 
     task["updated_at"] = now_iso()
     path.write_text(render_markdown(task), encoding="utf-8")
