@@ -33,3 +33,15 @@ Políticas experimentais mantêm `can_apply=false` e `can_schedule=false`. Não 
 
 ## Escopo e precedência
 As permissões e instruções de maior prioridade da plataforma continuam válidas. Este é o núcleo comum; AGENTS.md de módulo especializa seu escopo sem enfraquecer segurança/integridade. Adaptadores apenas descobrem este arquivo e não criam regras concorrentes. Respeite a ordem real da ferramenta; conflitos relevantes devem ser registrados, sem escolher silenciosamente uma regra permissiva. Detalhes: `docs/engineering/AGENT_COMPATIBILITY.md`.
+
+
+## Publicacao obrigatoria de cada tarefa (Antigravity, Codex e outros agentes)
+- Cada tarefa independente deve ter Issue (criada pelo proprio agente com a conta conectada do mantenedor), branch exclusiva e PR **draft publicado assim que houver o primeiro commit verificavel**, nao apenas ao final. Nao encerre a tarefa com commits locais sem PR.
+- Antes de criar a branch, confirme `gh api user` = `gusty22`; se nao estiver autenticado assim, pare e solicite reconexao, em vez de publicar em nome de um bot. Credenciais jamais sao versionadas.
+- Para tarefa independente, baseie a branch na `origin/main` atual. Para tarefa dependente, crie branch a partir da branch da PR-mae ainda aberta, declare `Depends-on: #NUMERO` e abra PR empilhada **contra essa branch**, nunca diretamente na main ate a dependente estar pronta.
+- Execute `python scripts/agent_pr.py --issue NUM --title "..." --summary "..." --tests "..." --risks "..."` apos o primeiro commit e novamente ao atualizar os resultados. Adicione `--depends-on NUM_DA_PR_MAE` quando necessario. O script faz push sem force e cria/atualiza o PR draft na conta do proprietario.
+- Ao abrir ou atualizar PR: examine o diff, status dos workflows, `PR contract and dependencies`, testes de modulo, conflitos e versao da base. Corrija falhas; nao anuncie conclusao, prontidao nem merge sem evidencia.
+- Se a PR-mae for mesclada, o proprio agente deve reconciliar sua branch com a nova main, resolver conflitos com revisao semantica, reexecutar testes e retarget da PR-filha para main. Se a PR-mae for rejeitada, nao promova automaticamente a filha.
+- **Nao chamar merge/automerge, nao fazer push direto na main, nao usar force-push para contornar revisao.** A aprovacao e integracao final pertencem ao mantenedor.
+- Todo trabalho termina com link de PR, numero da Issue, base/HEAD, CI, testes, riscos, dependencias e pendencias. Se a publicacao falhar, reportar o erro, reter commits e nao declarar entregue.
+- Documentacao e comando operacional: `docs/engineering/AGENT_PR_WORKFLOW.md`. A automacao de PR nao amplia permissoes de acesso ou autoridade cientifica do Motor R.
