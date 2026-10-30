@@ -37,7 +37,7 @@ public class RobinHoodWeightsIntegrationTest {
     }
 
     @Test
-    void injectWeights_InjectsEmergencyBlockIntoRobinHoodCycle() throws Exception {
+    void legacyObservationalWeightsCannotInjectEmergencyBlock() throws Exception {
         String jsonPayload = """
                 {
                   "contract_version": "1.0.0",
@@ -70,31 +70,21 @@ public class RobinHoodWeightsIntegrationTest {
                 }
                 """;
 
-        // 1. Injetar pesos no backend
         mockMvc.perform(post("/api/v1/cycle/robin-hood/inject-weights")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonPayload))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.contract_version").value("1.0.0"))
-                .andExpect(jsonPath("$.critical_topics[0].discipline").value("Auditoria"));
-
-        // 2. Verificar active-weights
+                        .contentType(MediaType.APPLICATION_JSON).content(jsonPayload))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(header().string("X-FiscalStudy-Analytics-Status","OBSERVATIONAL_ONLY"));
         mockMvc.perform(get("/api/v1/cycle/robin-hood/active-weights"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.source_model").value("survival_logistic_regression_wilson_v1"));
-
-        // 3. Gerar ciclo Robin Hood e verificar bloco emergencial na posição 0 (sequence 1)
+                .andExpect(status().isOk()).andExpect(content().string(""));
         mockMvc.perform(get("/api/v1/cycle/robin-hood?concursoId=c_robin"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.blocos[0].type").value("EMERGENCIA_ROBIN_HOOD"))
-                .andExpect(jsonPath("$.blocos[0].disciplina").value(containsString("Auditoria")))
-                .andExpect(jsonPath("$.blocos[0].duracaoMinutos").value(15))
-                .andExpect(jsonPath("$.blocos[0].mensagemEuDoPassado").value(containsString("Alerta Metacognitivo")));
+                .andExpect(jsonPath("$.blocos[?(@.type == 'EMERGENCIA_ROBIN_HOOD')]").isEmpty());
     }
 
     @Test
-    void syncWeights_SyncsFromFileIfPresent() throws Exception {
-        mockMvc.perform(post("/api/v1/cycle/robin-hood/sync-weights"))
-                .andExpect(status().isOk());
+    void missingWeightsFileCannotGrantAuthority(@org.junit.jupiter.api.io.TempDir java.nio.file.Path temporary) throws Exception {
+        mockMvc.perform(post("/api/v1/cycle/robin-hood/sync-weights").param("path",temporary.resolve("missing.json").toString()))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(header().string("X-FiscalStudy-Analytics-Status","NO_APPLICABLE_ANALYTICS"));
     }
 }
