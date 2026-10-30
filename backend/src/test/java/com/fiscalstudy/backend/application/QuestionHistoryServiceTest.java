@@ -111,7 +111,7 @@ class QuestionHistoryServiceTest {
         r2.put("gabarito_status", "DEFINITIVO");
 
         when(jdbcTemplate.queryForList(contains("json_valid(payload_json)"))).thenReturn(List.of(r1, r2));
-        when(jdbcTemplate.queryForList(contains("FROM questions"))).thenReturn(List.of(Map.of("c", 100)));
+        when(jdbcTemplate.queryForList(contains("FROM study_questions"))).thenReturn(List.of(Map.of("c", 100)));
 
         PerformanceXRayDTO xray = service.getPerformanceXRay("concurso-1");
 

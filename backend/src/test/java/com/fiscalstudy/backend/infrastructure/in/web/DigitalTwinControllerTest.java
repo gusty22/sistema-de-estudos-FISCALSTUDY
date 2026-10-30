@@ -18,6 +18,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(DigitalTwinController.class)
 class DigitalTwinControllerTest {
 
+    @MockBean
+    private com.fiscalstudy.backend.application.QuarantineSourceExposureService quarantineSourceExposureService;
+
     @Autowired
     private MockMvc mockMvc;
 

@@ -25,6 +25,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(value=IngestionController.class, properties="fiscalstudy.security.admin-token=isolated-test-token")
 public class IngestionControllerTest {
 
+    @MockBean
+    private com.fiscalstudy.backend.application.QuarantineSourceExposureService quarantineSourceExposureService;
+
     @Autowired
     private MockMvc mockMvc;
 

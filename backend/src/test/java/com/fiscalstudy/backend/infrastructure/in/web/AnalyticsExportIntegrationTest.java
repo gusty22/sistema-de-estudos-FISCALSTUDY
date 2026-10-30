@@ -91,16 +91,7 @@ public class AnalyticsExportIntegrationTest {
 
     private String runR(String expression)throws Exception {
         String executable = resolveRscript();
-        boolean hasExec = Files.isRegularFile(Path.of(executable));
-        if (!hasExec) {
-            try {
-                var testRes = com.fiscalstudy.backend.infrastructure.process.BoundedProcess.run(
-                        java.util.List.of(executable, "--version"), Path.of(".").toAbsolutePath(), java.time.Duration.ofSeconds(5), java.util.Map.of());
-                hasExec = (testRes.exitCode() == 0);
-            } catch (Exception e) {
-                hasExec = false;
-            }
-        }
+        boolean hasExec = com.fiscalstudy.backend.support.RscriptTestSupport.available(executable);
         org.junit.jupiter.api.Assumptions.assumeTrue(hasExec, "Rscript executable must be available for cross-language tests");
         String libs = System.getenv("FISCALSTUDY_R_LIBS");
         if (libs != null && !libs.isBlank()) expression = ".libPaths(c('" + libs.replace("\\", "/") + "', .libPaths())); " + expression;
@@ -202,14 +193,24 @@ public class AnalyticsExportIntegrationTest {
                 "VALUES ('evt-missing-1', 'ANSWER_SUBMITTED', 'QUESTION', 'q3', 's1', '2026-10-13T11:05:00Z', '2026-10-13T11:05:00Z', 1, 'v1', " +
                 "'{\"questionId\":\"q3\",\"selectedOption\":\"A\",\"isCorrect\":null,\"concursoPoint\":0,\"gabaritoStatus\":\"AUSENTE\",\"confidenceLevel\":3,\"activeTimeMs\":15000,\"origin\":\"REAL_STUDY\"}')");
 
-        mockMvc.perform(get("/api/v1/analytics/export"))
+        var result=mockMvc.perform(get("/api/v1/analytics/export"))
                 .andExpect(status().isOk())
                 // Q2 (Annulled): is_correct = NA, concurso_point = 1
                 .andExpect(content().string(containsString("\"q2\",\"C\",NA,\"ANULADA\",5,18000")))
-                .andExpect(content().string(containsString(",1\n")))
                 // Q3 (Missing): is_correct = NA, concurso_point = 0
                 .andExpect(content().string(containsString("\"q3\",\"A\",NA,\"AUSENTE\",3,15000")))
-                .andExpect(content().string(containsString(",0\n")));
+                .andReturn();
+        // concurso_point is followed by FSRS columns; assert its named column, not the line ending.
+        var lines=result.getResponse().getContentAsString().split("\\n");
+        var header=java.util.Arrays.asList(lines[0].split(",",-1));
+        int point=header.indexOf("concurso_point"),correct=header.indexOf("is_correct");
+        assertTrue(point>=0);assertTrue(correct>=0);
+        for(String line:java.util.Arrays.copyOfRange(lines,1,lines.length)) {
+            var values=line.split(",",-1);
+            assertEquals("NA",values[correct]);
+            if(values[0].equals("\"q2\"")) assertEquals("1",values[point]);
+            else {assertEquals("\"q3\"",values[0]);assertEquals("0",values[point]);}
+        }
 
         mockMvc.perform(get("/api/v1/analytics/export/manifest"))
                 .andExpect(status().isOk())
