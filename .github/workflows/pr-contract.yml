@@ -30,7 +30,7 @@ jobs:
         with:
           python-version: '3.13.7'
       - name: Unit checks for PR contract
-        run: python -m unittest discover -s .github/scripts -p 'test_check_pr_contract.py' -v
+        run: python -m unittest discover -s .github/scripts -p 'test_*.py' -v
       - name: Verify PR author, scope, dependency and branch freshness
         run: python .github/scripts/check_pr_contract.py "$GITHUB_EVENT_PATH"
         env:
