@@ -31,8 +31,11 @@ jobs:
       - name: Existing R dependencies
         run: Rscript -e 'install.packages(c("jsonlite","digest"),repos="https://cloud.r-project.org")'
       - name: Resolve R for existing bridge contract tests
-        shell: bash
-        run: Rscript -e 'cat("FISCALSTUDY_RSCRIPT=",normalizePath(Sys.which("Rscript"),winslash="/"),"\n",sep="")' >> "$GITHUB_ENV"
+        shell: Rscript {0}
+        run: |
+          executable <- normalizePath(Sys.which("Rscript"), winslash = "/", mustWork = TRUE)
+          stopifnot(nzchar(executable))
+          cat(paste0("FISCALSTUDY_RSCRIPT=", executable, "\n"), file = Sys.getenv("GITHUB_ENV"), append = TRUE)
       - name: Compile and exercise actual Java to R with temporary synthetic SQLite
         working-directory: backend
         run: mvn -B -ntp "-Dtest=LearningShadowIntegrationTest,LearningEvidenceServiceTest,FsrsReferenceConformanceTest,AnalyticsBridgeProvenanceContractTest" test
