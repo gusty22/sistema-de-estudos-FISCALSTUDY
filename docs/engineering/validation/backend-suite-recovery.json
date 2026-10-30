@@ -1,0 +1,294 @@
+{
+  "main_base": "b59041859d2c445cbfe5f4b8d5f581f7ef7f5096",
+  "stack_base": "642e2c885a37221269361e80ed0c84241e04ebf6",
+  "scope": "backend only; unchanged R, FSRS, CSV schemas and authority flags",
+  "runs": {
+    "current-main-full.log": {
+      "tests": 408,
+      "failures": 10,
+      "errors": 42,
+      "skipped": 5,
+      "sha256": "ae1d42efa7940360e6e088f83c2bf9d9ddb868ade7ccf722edefc533e91b4740"
+    },
+    "suite-foundation.log": {
+      "tests": 52,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "16f0b2825193e1ce57e4e4461e94f988e94211183a046d84b5b291ccd7c4480d"
+    },
+    "suite-contracts.log": {
+      "tests": 30,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 2,
+      "sha256": "b2e35ad2f3c6dd98067fdfa626de1ba6c6d301c12841ee9350c293fb6704f222"
+    },
+    "export-isolation-reproduction.log": {
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "a78770ed93355f4e15165335a12d91c202cc4051b9b50ddea69064241b779fc5"
+    },
+    "recovered-clean-full.log": {
+      "tests": 422,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 4,
+      "sha256": "c944996a48cdb130052b8e8ad0a9d738933139717536e7dd0a9088e3aed662aa"
+    }
+  },
+  "baseline_unsuccessful": [
+    {
+      "test": "com.fiscalstudy.backend.application.FiscalStudyMultiConcursoAcceptanceTest#testCriterio12_SimulacaoImportacaoDryRun",
+      "status": "error"
+    },
+    {
+      "test": "com.fiscalstudy.backend.application.FiscalStudyMultiConcursoAcceptanceTest#testCriterio13_SessaoPersonalizada",
+      "status": "error"
+    },
+    {
+      "test": "com.fiscalstudy.backend.application.FiscalStudyMultiConcursoAcceptanceTest#testCriterio14_ConfiancaCausaErroEAnulada",
+      "status": "error"
+    },
+    {
+      "test": "com.fiscalstudy.backend.application.FiscalStudyMultiConcursoAcceptanceTest#testCriterio8e9_AlternativaAusenteECorrecaoManual",
+      "status": "error"
+    },
+    {
+      "test": "com.fiscalstudy.backend.application.FiscalStudyMultiConcursoAcceptanceTest#testCriterio11_CancelamentoDeProcessamento",
+      "status": "error"
+    },
+    {
+      "test": "com.fiscalstudy.backend.application.FiscalStudyMultiConcursoAcceptanceTest#testCriterio4e5e6_UploadProvaEGabaritoMultiplosCargos",
+      "status": "error"
+    },
+    {
+      "test": "com.fiscalstudy.backend.application.FiscalStudyMultiConcursoAcceptanceTest#testCriterio7_TextoBaseCompartilhado",
+      "status": "error"
+    },
+    {
+      "test": "com.fiscalstudy.backend.application.FiscalStudyMultiConcursoAcceptanceTest#testCriterio10_PersistenciaAposReinicializacao",
+      "status": "error"
+    },
+    {
+      "test": "com.fiscalstudy.backend.application.MediaRoutingServiceTest#testLeisConsolidadasPrescribesPdf",
+      "status": "failure"
+    },
+    {
+      "test": "com.fiscalstudy.backend.application.MediaRoutingServiceTest#testCognitiveLockAfterThreeConsecutiveErrors",
+      "status": "failure"
+    },
+    {
+      "test": "com.fiscalstudy.backend.application.QuestionBankServiceTest#testEditalDisciplineCoverage",
+      "status": "failure"
+    },
+    {
+      "test": "com.fiscalstudy.backend.application.QuestionHistoryServiceTest#testPerformanceXRayCalculation",
+      "status": "failure"
+    },
+    {
+      "test": "com.fiscalstudy.backend.application.ReverseEngineeringServiceTest#testPrescription_AllCorrect",
+      "status": "error"
+    },
+    {
+      "test": "com.fiscalstudy.backend.application.ReverseEngineeringServiceTest#testStartSession_Selects5Questions",
+      "status": "error"
+    },
+    {
+      "test": "com.fiscalstudy.backend.application.ReverseEngineeringServiceTest#testCanonicalPrescription_Questions3And4Wrong",
+      "status": "error"
+    },
+    {
+      "test": "com.fiscalstudy.backend.application.SwotCycleCalibratorServiceTest#testSundaySwotRecalibrationTransfersHours",
+      "status": "failure"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.config.PersistenceContractTest#freshAndLegacySchemasConvergeWithoutLosingRows",
+      "status": "failure"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.config.PersistenceContractTest#migratesARecoveryCopyWithoutChangingLearningHistory",
+      "status": "skipped"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.config.SchemaBootstrapIntegrationTest#emptyInstallationIsMigratedBeforeApplicationUsesJdbc",
+      "status": "failure"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.AnalyticsBridgeIntegrationTest#executeAnalyticsPipeline_ProducesReadOnlyArtifacts",
+      "status": "skipped"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.AnalyticsBridgeProvenanceContractTest#transportsMatchingManifestWithoutPromotingSyntheticEvidence",
+      "status": "skipped"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.AnalyticsExportIntegrationTest#integratedLifecycle_StudySessionToRValidation_SegregatedAsTest",
+      "status": "skipped"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.AnalyticsExportIntegrationTest#export_AnnulledAndMissingGabaritoQuestions_SegregatedPedagogically",
+      "status": "failure"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.AnalyticsExportIntegrationTest#export_InconsistentAttemptRecordedBetweenCsvAndManifest_DetectedAndRejectedByR",
+      "status": "skipped"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.ConcursoControllerTest#testCreateProgressiveConcursoWithDatesAndDisponibilidadeReturns200",
+      "status": "error"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.ConcursoControllerTest#testCreateConcursoReturns200",
+      "status": "error"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.ConcursoControllerTest#testListConcursosReturns200",
+      "status": "error"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.ConcursoControllerTest#testArchiveConcursoReturns200",
+      "status": "error"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.ConcursoControllerTest#testGetConcursoByIdReturns200",
+      "status": "error"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.ConcursoControllerTest#testCreateConcursoWithoutNomeReturns400",
+      "status": "error"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.ConcursoControllerTest#testActivateConcursoReturns200",
+      "status": "error"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.DigitalTwinControllerTest#testGetDigitalTwinStatusEndpoint",
+      "status": "error"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.EditalControllerTest#testAddTopicoReturns200",
+      "status": "error"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.EditalControllerTest#testGetEditalVerticalizadoReturns200",
+      "status": "error"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.EditalControllerTest#testConfirmTopicoReturns200",
+      "status": "error"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.EditalControllerTest#testUploadEditalTxtReturns200",
+      "status": "error"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.IngestionControllerTest#testSimulateImportReturns200",
+      "status": "error"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.IngestionControllerTest#testUpdateQuestionReturns200",
+      "status": "error"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.IngestionControllerTest#testImportDataWithQuestionsReturns200",
+      "status": "error"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.IngestionControllerTest#administrativeEndpointRejectsMissingToken",
+      "status": "error"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.IngestionControllerTest#testCreateSessionReturns200",
+      "status": "error"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.IngestionControllerTest#testUploadEmptyFileReturns400WithStructuredJson",
+      "status": "error"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.IngestionControllerTest#testCancelProcessingReturns200WithCancelledStatus",
+      "status": "error"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.IngestionControllerTest#testGetSessionQuestionsReturns200",
+      "status": "error"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.IngestionControllerTest#testUploadDocumentReturns200",
+      "status": "error"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.IngestionControllerTest#testImportDataReturns200",
+      "status": "error"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.RobinHoodCycleControllerTest#testGetRobinHoodCycle",
+      "status": "error"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.RobinHoodCycleControllerTest#testRecalibrateFromSwot",
+      "status": "error"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.RobinHoodCycleControllerTest#testGetLatestSwotCalibration",
+      "status": "error"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.RobinHoodWeightsIntegrationTest#injectWeights_InjectsEmergencyBlockIntoRobinHoodCycle",
+      "status": "failure"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.RobinHoodWeightsIntegrationTest#syncWeights_SyncsFromFileIfPresent",
+      "status": "failure"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.SimuladoControllerTest#testGetSimuladosDashboardEndpoint",
+      "status": "error"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.SimuladoControllerTest#testGenerateSimuladoEndpoint",
+      "status": "error"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.StrategicSummaryControllerTest#testSendToAnkiEndpoint",
+      "status": "error"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.StrategicSummaryControllerTest#testGetSummaryByIdEndpoint",
+      "status": "error"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.StrategicSummaryControllerTest#testGetSummariesEndpoint",
+      "status": "error"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.StrategicSummaryControllerTest#testGenerateSummaryEndpoint",
+      "status": "error"
+    }
+  ],
+  "native_session_gate": {
+    "head": "642e2c885a37221269361e80ed0c84241e04ebf6",
+    "run_id": 41046249051,
+    "linux_job": 124030938458,
+    "windows_job": 124030938824,
+    "tests_per_job": 35,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "remaining_local_skips": [
+    "AnalyticsBridgeIntegrationTest#executeAnalyticsPipeline_ProducesReadOnlyArtifacts",
+    "AnalyticsBridgeProvenanceContractTest#transportsMatchingManifestWithoutPromotingSyntheticEvidence",
+    "AnalyticsExportIntegrationTest#export_InconsistentAttemptRecordedBetweenCsvAndManifest_DetectedAndRejectedByR",
+    "AnalyticsExportIntegrationTest#integratedLifecycle_StudySessionToRValidation_SegregatedAsTest"
+  ],
+  "not_established": [
+    "personal Windows installation",
+    "browser recovery on personal Windows",
+    "personal database migration",
+    "scientific collection activation"
+  ]
+}

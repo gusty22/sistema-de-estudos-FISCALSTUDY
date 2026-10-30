@@ -417,7 +417,7 @@ public class AnalyticsProjectionService {
             String questionsCsv = exportQuestionsV1Csv(originFilter, null);
             String eventsCsv = exportEventsV1Csv(null, null);
 
-            // 1. Salvar no diretório analytics/ do projeto
+            // 1. Salvar somente na saída analytics configurada para esta instalação
             Path localAnalyticsDir = Objects.requireNonNull(analyticsPaths,"Analytics output must be configured").output();
             Files.createDirectories(localAnalyticsDir);
             Path qPath = localAnalyticsDir.resolve("questions_v1.csv");
