@@ -10,6 +10,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import org.springframework.http.MediaType;
 import static org.hamcrest.Matchers.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -147,6 +148,29 @@ public class AnalyticsControllerTest {
                 .andExpect(content().contentType("text/csv; charset=UTF-8"))
                 .andExpect(content().string(containsString("rowid,event_id,event_type,aggregate_type,aggregate_id,session_id,occurred_at,recorded_at,event_version,schema_version,payload_json")))
                 .andExpect(content().string(containsString("\"e1\",\"ANSWER_SUBMITTED\",\"QUESTION\",\"q1\",\"s1\"")));
+    }
+
+    @Autowired
+    private com.fiscalstudy.backend.infrastructure.config.AnalyticsPaths analyticsPaths;
+
+    @Test
+    void localExportMustUseConfiguredIsolatedDirectory() throws Exception {
+        var result=mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/v1/analytics/export/sync-to-local"))
+                .andExpect(status().isOk()).andReturn();
+        var body=new com.fasterxml.jackson.databind.ObjectMapper().readTree(result.getResponse().getContentAsString());
+        assertEquals(analyticsPaths.output().resolve("questions_v1.csv"),java.nio.file.Path.of(body.path("analytics_questions_v1").asText()));
+        assertEquals(analyticsPaths.output().resolve("events_v1.csv"),java.nio.file.Path.of(body.path("analytics_events_v1").asText()));
+        assertEquals(2,body.size(),"No implicit external personal directory should be written");
+    }
+
+    @Test
+    void explicitExportTargetRemainsOptIn(@org.junit.jupiter.api.io.TempDir java.nio.file.Path destination) throws Exception {
+        var result=mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/v1/analytics/export/sync-to-local")
+                .param("targetDir",destination.toString())).andExpect(status().isOk()).andReturn();
+        var body=new com.fasterxml.jackson.databind.ObjectMapper().readTree(result.getResponse().getContentAsString());
+        assertEquals(3,body.size());
+        org.junit.jupiter.api.Assertions.assertTrue(java.nio.file.Files.isRegularFile(destination.resolve("questions_v1.csv")));
+        org.junit.jupiter.api.Assertions.assertTrue(java.nio.file.Files.isRegularFile(destination.resolve("events_v1.csv")));
     }
 
     @Test
