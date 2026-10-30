@@ -1,28 +1,29 @@
-# AGENTS.md — Diretrizes Operacionais e Arquitetura do FiscalStudy
+# FiscalStudy — protocolo compartilhado
+Leia este arquivo uma vez por tarefa. Execute os comandos a partir da raiz do repositório. Agentes sem execução usam os arquivos acessíveis e declaram a limitação.
 
-## 1. Protocolo de Inicialização e Contexto Mínimo
-- **Passo 1 (Obrigatório ao iniciar)**: Consulte o índice executivo em `.agents/memory/CONTEXT.md` para recuperar o estado do projeto, stack, ferramentas ativas e localização das especificações.
-- **Passo 2 (Localização Estrutural via Grafo)**: Para localizar onde componentes, classes e métodos estão implementados ou rastrear dependências, consulte o Graphify (`graphify query "<pergunta>"` ou `graphify explain "<nó>"`), sem varrer arquivos inteiros.
-- **Passo 3 (Leitura seletiva)**: NÃO leia documentação extensa. Acesse o módulo em docs/architecture/modules/MODULOS_ESPECIFICACOES.md ou consulte a base via scripts/obsidian_kb.py.
+## Início e recuperação
+1. Confira repositório, `git status --short`, HEAD, main remota e PRs pertinentes; preserve trabalho local. Use branch própria baseada na referência verificada. Nunca push direto para main, merge ou automerge.
+2. Leia o índice compacto `.agents/memory/CONTEXT.md`; identifique o módulo e seu AGENTS.md antes de editar.
+3. Execute `python scripts/context.py doctor` se houver shell. Para localizar código: `locate SIMBOLO --module backend`; para decisões: `decision TERMOS`; para trechos: `docs TERMOS --path ARQUIVO`. Veja `--help` apenas se necessário.
+4. Grafo somente atualizado; homônimos exigem ID completo. Graphify é navegação estrutural, não compreensão semântica universal. Sem grafo, busca textual seletiva; sem Obsidian, documentos versionados. Confirme no código, contrato, chamadores e testes antes de implementar algo existente.
+5. Abra somente trechos pertinentes. Não leia acervo, relatório inteiro do grafo ou todas as skills. Não repita consulta sem nova evidência; amplie apenas por motivo objetivo.
 
-## 2. Postura de Engenharia Pragmática (Diretrizes Ponytail / YAGNI)
-- **O melhor código é o que não precisou ser escrito**: Reutilize sempre componentes, utilitários e serviços existentes antes de criar novos.
-- **Escopo estrito**: Entregue apenas a menor mudança completa necessária para atender à solicitação. Não adicione abstrações genéricas ou antecipações especulativas.
-- **Sem dependências supérfluas**: Não introduza microsserviços, message brokers (Kafka/RabbitMQ) ou bancos em memória (Redis) nesta fase. Mantenha a arquitetura simples e local-first.
+## Limites comuns
+Backend Java/Spring Boot/SQLite; frontend React/TypeScript; ingestão Python; pesquisa em analytics-engine/R e lab.
+Event store APPEND-ONLY; R nunca escreve no SQLite operacional. Mantenha local-first e fallback resiliente.
+Não altere FSRS, calendário, modelos ou políticas científicas em manutenção de ferramentas. Não acesse dados pessoais para recuperar contexto; não versione credenciais, chaves, exportações ou índices.
+Não use IA generativa para cálculos determinísticos ou regras de banca. Não instale ferramentas sem revisar procedência, licença, executáveis, dependências e permissões.
+Fixtures verificam software, não aprendizagem pessoal. Correlação não demonstra causalidade; acerto não demonstra retenção; recuperação, aplicação e transferência são distintos. Incerteza e ausência de evidência permanecem explícitas.
+Políticas experimentais mantêm `can_apply=false` e `can_schedule=false`. Não modifique captura, custódia ou origem dos dados para facilitar testes.
 
-## 3. Stack e Restrições Arquiteturais
-- **Backend:** Java LTS + Spring Boot + SQLite local.
-- **Frontend:** React + TypeScript + Vite (Tecnologia Calma: tema ardósia/paper, tipografia relaxante, responsivo para desktop/tablet).
-- **Ingestão:** Python com PyMuPDF/Docling (isolamento de staging em `db/staging.db` vs produção em `db/fiscalstudy.db`).
-- **Analytics:** Motor R (`digital_twin_engine.R`) com comunicação assíncrona; R nunca escreve diretamente no SQLite.
-- **Imutabilidade:** O log de eventos (`event_store`) é estritamente **APPEND-ONLY**. Eventos históricos nunca são alterados ou apagados.
-- **IA Generativa:** Proibido utilizar IA generativa para lógica determinística, cálculos de notas ou regras de bancas examinadoras.
+## Execução e conclusão
+Reutilize serviços/contratos; faça o menor diff completo, sem abstrações ou infraestrutura especulativas.
+Ative skills sob demanda: bug → systematic-debugging; implementação → implement/verificação; arquitetura → OpenSpec quando necessário; diff sensível → revisão/segurança. Catálogo: `docs/engineering/SKILLS.md`. Sem descoberta nativa, leia o SKILL.md específico; não copie todo o catálogo.
+Execute testes pertinentes e `git diff --check`; backend alterado exige test-compile e suíte afetada. Não suprima falhas. Diferencie falhas herdadas usando a base.
+Após mudança estrutural concluída: `python scripts/context.py update` uma vez. Ausência de índice opcional não bloqueia o produto.
+Atualize documento canônico apenas por decisão, contrato, descoberta, evidência ou marco duradouro; nota por commit é desnecessária. Sync de conhecimento é explícito e nunca escreve no vault.
+Informe arquivos, referência, comandos/resultados e limitações. Não declare economia de tokens, execução ou conclusão científica sem evidência.
+Em marcos de trabalho longo, mantenha checkpoint próprio em `docs/engineering/checkpoints/`, distinguindo local, commitado e publicado.
 
-## 4. Eficiência de Tokens e Execução de Comandos
-- **Comandos compactos**: Sempre adicione limitadores de saída (ex: `git log -n 5`, `Select-Object -First 20`, `--quiet`).
-- **Edições cirúrgicas**: Prefira substituições de blocos (`replace_file_content`) em vez de reescrever arquivos completos.
-- **Erros pontuais**: Reporte apenas o stack trace relevante e o arquivo/linha exata da falha.
-
-## 5. Protocolo de Testes e Validação Obrigatória
-- Testes automatizados são rigorosamente obrigatórios antes de considerar uma tarefa pronta (`mvnw.cmd test-compile` e suítes específicas do módulo).
-- Commits devem ser orgânicos, atômicos e com mensagens objetivas de engenharia.
+## Escopo e precedência
+As permissões e instruções de maior prioridade da plataforma continuam válidas. Este é o núcleo comum; AGENTS.md de módulo especializa seu escopo sem enfraquecer segurança/integridade. Adaptadores apenas descobrem este arquivo e não criam regras concorrentes. Respeite a ordem real da ferramenta; conflitos relevantes devem ser registrados, sem escolher silenciosamente uma regra permissiva. Detalhes: `docs/engineering/AGENT_COMPATIBILITY.md`.

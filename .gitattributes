@@ -1,0 +1,2 @@
+# Keep the measured artifact stable across Windows and Linux.
+docs/engineering/context-benchmark.json text eol=lf

@@ -1,0 +1,16 @@
+name: FiscalStudy first-party sources
+paths:
+  - backend/src/main
+  - frontend/src
+  - ingestion
+  - scripts
+  - analytics-engine/lab
+  - .github/scripts
+paths-ignore:
+  - '**/node_modules/**'
+  - '**/target/**'
+  - '**/dist/**'
+  - '**/venv/**'
+  - '**/.venv/**'
+  - '**/data/**'
+  - '**/output/**'

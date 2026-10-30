@@ -1,10 +1,7 @@
 ---
 name: graphify
-description: Turn any folder of files into a navigable knowledge graph
+description: Atualizar o índice local restrito após uma tarefa.
 ---
-
-# Workflow: graphify
-
-Follow the graphify skill to run the full pipeline.
-
-If no path argument is given, use `.` (current directory).
+Execute `python scripts/context_index.py --update` na raiz.
+Leia status JSON; erro/indisponibilidade são limitações explícitas.
+Não instale outra ferramenta homônima. Veja docs/engineering/DEVELOPMENT_ENVIRONMENT.md.

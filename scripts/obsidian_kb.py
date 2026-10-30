@@ -25,6 +25,9 @@ import json
 import sqlite3
 import argparse
 import unicodedata
+import hashlib
+import fnmatch
+from contextlib import closing
 from pathlib import Path
 
 # Suporte adequado a saída UTF-8 no Windows
@@ -32,7 +35,7 @@ if sys.platform == "win32":
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
-DEFAULT_VAULT_PATH = Path(r"C:\Users\washi\OneDrive\Área de Trabalho\fiscalstudy-platform\obsidian\FiscalStudy-Obsidian")
+DEFAULT_VAULT_PATH = os.environ.get("FISCALSTUDY_OBSIDIAN_VAULT")
 DEFAULT_DB_PATH = Path(__file__).resolve().parent.parent / "graphify-out" / "obsidian_fts.db"
 
 STOPWORDS = {
@@ -146,15 +149,33 @@ def get_db(db_path: Path):
     """)
     return conn
 
-def sync_vault(vault_path: Path, db_path: Path, verbose: bool = False):
-    if not vault_path.exists():
+def sync_vault(vault_path: Path, db_path: Path, verbose: bool = False, excludes=()):
+    if not vault_path.is_dir():
         if verbose:
             print(f"[ERRO] Vault não encontrado em: {vault_path}", file=sys.stderr)
         return False
         
+    if db_path.resolve().is_relative_to(vault_path.resolve()):
+        raise ValueError("O índice deve ficar fora da origem somente leitura")
+    if db_path.name.casefold() in {"fiscalstudy.db", "staging.db"}:
+        raise ValueError("Banco operacional não é um destino de índice")
+    if db_path.exists():
+        with closing(sqlite3.connect(db_path.resolve().as_uri() + "?mode=ro", uri=True)) as existing:
+            tables = {row[0] for row in existing.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+        allowed = {"notes_meta", "notes_fts", "fingerprints", "index_source", "sqlite_sequence"}
+        if any(t not in allowed and not t.startswith("notes_fts_") for t in tables):
+            raise ValueError("Destino contém tabelas de outro banco")
     conn = get_db(db_path)
     cur = conn.cursor()
-    
+    cur.execute("CREATE TABLE IF NOT EXISTS index_source (root TEXT NOT NULL)")
+    source = cur.execute("SELECT root FROM index_source").fetchone()
+    if source and source[0] != str(vault_path.resolve()):
+        conn.close()
+        raise ValueError("Índice pertence a outra origem; use outro --db")
+    if not source:
+        cur.execute("INSERT INTO index_source VALUES (?)", (str(vault_path.resolve()),))
+    cur.execute("CREATE TABLE IF NOT EXISTS fingerprints (rel_path TEXT PRIMARY KEY, digest TEXT)")
+    fingerprints = dict(cur.execute("SELECT rel_path, digest FROM fingerprints"))
     db_records = {row[0]: row[1] for row in cur.execute("SELECT rel_path, mtime FROM notes_meta").fetchall()}
     vault_files = {}
     
@@ -162,26 +183,34 @@ def sync_vault(vault_path: Path, db_path: Path, verbose: bool = False):
     updated_count = 0
     deleted_count = 0
     
-    for root, dirs, files in os.walk(vault_path):
-        if ".obsidian" in root or ".trash" in root:
-            continue
+    excluded_dirs = {".obsidian", ".trash", ".git", "private", ".private", "privado",
+                     "pessoal", "personal", "node_modules", "__pycache__", ".venv", "venv"}
+    for root, dirs, files in os.walk(vault_path, followlinks=False):
+        dirs[:] = [d for d in dirs if d.casefold() not in excluded_dirs
+                   and not d.startswith(".") and not (Path(root) / d).is_symlink()
+                   and not (hasattr(Path, "is_junction") and (Path(root) / d).is_junction())
+                   and not any(fnmatch.fnmatch((Path(root) / d).relative_to(vault_path).as_posix(), e) for e in excludes)]
         for f in files:
-            if f.endswith(".md"):
-                full_p = Path(root) / f
-                rel_p = str(full_p.relative_to(vault_path)).replace("\\", "/")
+            full_p = Path(root) / f
+            rel_p = full_p.relative_to(vault_path).as_posix()
+            if (full_p.suffix.lower() == ".md" and not full_p.is_symlink()
+                    and not f.startswith((".", "~")) and not f.endswith(".tmp.md")
+                    and not any(fnmatch.fnmatch(rel_p, e) for e in excludes)):
                 vault_files[rel_p] = full_p
-                
+
     # Detectar remoções
     for rel_p in db_records:
         if rel_p not in vault_files:
             cur.execute("DELETE FROM notes_meta WHERE rel_path = ?", (rel_p,))
             cur.execute("DELETE FROM notes_fts WHERE rel_path = ?", (rel_p,))
+            cur.execute("DELETE FROM fingerprints WHERE rel_path = ?", (rel_p,))
             deleted_count += 1
             
     # Indexar / Atualizar
     for rel_p, full_p in vault_files.items():
         mtime = full_p.stat().st_mtime
-        if rel_p in db_records and db_records[rel_p] == mtime:
+        digest = hashlib.sha256(full_p.read_bytes()).hexdigest()
+        if fingerprints.get(rel_p) == digest:
             continue
             
         try:
@@ -192,6 +221,7 @@ def sync_vault(vault_path: Path, db_path: Path, verbose: bool = False):
             except Exception:
                 continue
                 
+        cur.execute("INSERT OR REPLACE INTO fingerprints VALUES (?, ?)", (rel_p, digest))
         fm, clean_content = extract_frontmatter_and_content(text)
         title = full_p.stem
         
@@ -232,7 +262,7 @@ def search_vault(query: str, db_path: Path, limit: int = 5, max_chars: int = 800
     if not db_path.exists():
         return []
         
-    conn = get_db(db_path)
+    conn = sqlite3.connect(db_path.resolve().as_uri() + "?mode=ro", uri=True)
     cur = conn.cursor()
     
     raw_tokens = re.findall(r"[A-Za-z0-9_Á-ú]+", query)
@@ -264,9 +294,10 @@ def search_vault(query: str, db_path: Path, limit: int = 5, max_chars: int = 800
         SELECT title, section, rel_path, wikilinks,
                snippet(notes_fts, 2, '[[HIGHLIGHT]]', '[[/HIGHLIGHT]]', '...', 35) as snip,
                content,
-               bm25(notes_fts, 10.0, 5.0, 1.0, 2.0) as rank
+               bm25(notes_fts, 10.0, 5.0, 1.0, 0.0, 2.0) as rank
         FROM notes_fts
         WHERE notes_fts MATCH ?
+        ORDER BY rank
         LIMIT 60
     """
     
@@ -332,7 +363,7 @@ def search_vault(query: str, db_path: Path, limit: int = 5, max_chars: int = 800
             "section": section,
             "rel_path": rel_path,
             "score": round(score, 3),
-            "excerpt": excerpt,
+            "excerpt": excerpt[:max_chars],
             "related_wikilinks": links
         })
         
@@ -340,29 +371,35 @@ def search_vault(query: str, db_path: Path, limit: int = 5, max_chars: int = 800
     
     # Ordenar pelos scores ponderados mais altos
     scored_results.sort(key=lambda x: x["score"], reverse=True)
-    return scored_results[:limit]
+    return scored_results[:max(1, min(limit, 20))]
 
 def main():
     parser = argparse.ArgumentParser(description="Motor de busca FTS5 / BM25 para o cofre Obsidian")
     parser.add_argument("--sync", action="store_true", help="Atualiza o índice a partir dos arquivos Markdown")
     parser.add_argument("--query", "-q", type=str, help="Termo ou pergunta em linguagem natural para pesquisar")
     parser.add_argument("--limit", "-n", type=int, default=4, help="Número máximo de trechos retornados")
-    parser.add_argument("--vault", type=str, default=str(DEFAULT_VAULT_PATH), help="Caminho do vault Obsidian")
+    parser.add_argument("--vault", type=str, default=DEFAULT_VAULT_PATH, help="Caminho do vault Obsidian")
     parser.add_argument("--db", type=str, default=str(DEFAULT_DB_PATH), help="Caminho do arquivo SQLite FTS")
     parser.add_argument("--json", action="store_true", help="Exibe saída puramente em formato JSON")
     
+    parser.add_argument("--exclude", action="append", default=[], help="Glob relativo adicional excluído da indexação")
+    parser.add_argument("--max-chars", type=int, default=800)
     args = parser.parse_args()
-    vault_p = Path(args.vault)
+    if not 1 <= args.limit <= 20 or not 1 <= args.max_chars <= 4000:
+        parser.error("limit 1..20; max-chars 1..4000")
+    vault_p = Path(args.vault) if args.vault else None
     db_p = Path(args.db)
     
-    if args.sync or not db_p.exists():
-        sync_vault(vault_p, db_p, verbose=not args.json)
-        
+    if args.sync:
+        if vault_p is None:
+            parser.error("--sync exige --vault ou FISCALSTUDY_OBSIDIAN_VAULT")
+        if not sync_vault(vault_p, db_p, verbose=not args.json, excludes=args.exclude):
+            parser.exit(2, "Origem indisponível; índice não atualizado\n")
+
     if args.query:
-        # Garante sincronização rápida das notas
-        sync_vault(vault_p, db_p, verbose=False)
-            
-        results = search_vault(args.query, db_p, limit=args.limit)
+        if not db_p.exists():
+            parser.exit(2, "Índice indisponível; execute --sync com origem autorizada\n")
+        results = search_vault(args.query, db_p, limit=args.limit, max_chars=args.max_chars)
         
         if args.json:
             print(json.dumps(results, indent=2, ensure_ascii=False))
