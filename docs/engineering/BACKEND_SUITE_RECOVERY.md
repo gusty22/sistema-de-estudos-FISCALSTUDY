@@ -41,7 +41,7 @@ Consumidores que liam o antigo `<projeto>/analytics` ou o caminho pessoal fixo d
 | Reprodução do destino indevido | 1 | 1 | 0 | 0 |
 | `clean test-compile test`, Java 17/Maven 3.9.9/Linux | 422 | 0 | 0 | 4 (R) |
 
-O build limpo foi executado depois de todos os ajustes funcionais. Uma tentativa intermediária sem permissão de rede falhou nos servidores HTTP loopback de Anki/quarentena e na expectativa de migration ainda não trazida da PR #59; a execução final permitiu a rede das fixtures, sem enfraquecer ou omitir esses testes. Falhas de compilação de uma primeira versão da nova fixture de exportação foram corrigidas antes da reprodução válida; não foram apresentadas como defeito de produto.
+O build limpo foi executado depois de todos os ajustes de produção e das correções da suíte original. A retificação posterior de isolamento de uma fixture é descrita abaixo. Uma tentativa intermediária sem permissão de rede falhou nos servidores HTTP loopback de Anki/quarentena e na expectativa de migration ainda não trazida da PR #59; a execução final permitiu a rede das fixtures, sem enfraquecer ou omitir esses testes. Falhas de compilação de uma primeira versão da nova fixture de exportação foram corrigidas antes da reprodução válida; não foram apresentadas como defeito de produto.
 
 ```sh
 cd backend
@@ -57,3 +57,9 @@ O workflow `Full backend suite with R transport` usa Java 17 e R 4.5.1 em Linux 
 Revisões independentes da skill `code-review`: Standards, zero violações materiais; uma observação editorial de comentário de saída foi atendida. Spec, zero violações funcionais; estratégia de compatibilidade documentada acima e evidência final devem acompanhar a entrega. Revisores não executaram os testes e não substituem a validação.
 
 O helper de contexto foi executado uma vez por worktree; grafo opcional indisponível/stale, sem sincronização de cofre pessoal. Não se mediu desempenho nem se iniciou coleta. Os impedimentos operacionais e os gates científicos separados estão em [WINDOWS_STUDY_PILOT_READINESS.md](WINDOWS_STUDY_PILOT_READINESS.md).
+
+## Retificação a partir da suíte completa nativa
+
+No head `64d84b2`, [run41047191188](https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41047191188), Linux aprovou **422 testes sem falhas/erros/skips**, incluindo as quatro integrações R reais. Windows executou os mesmos 422, sem skips, mas um teste esperava 422 e recebeu 400: um teste R anterior deixara `SUCCEEDED` em `target/test-data/analytics/current-run.json`. A API corretamente recusou carregar um caminho fora do artefato dessa execução.
+
+A contaminação foi reproduzida em Linux ao apontar a fixture para um diretório com manifesto anterior: dois testes, uma falha. A classe `RobinHoodWeightsIntegrationTest` agora tem saída analítica exclusiva via `DynamicPropertySource` e descarte de contexto; o mesmo comando com diretório global contaminado passou, dois testes sem falhas/erros/skips. Status/headers esperados e código de produção não foram afrouxados. Revisão suplementar Standards/Spec: zero achados materiais. Conferir a repetição nativa no novo head antes de declarar Windows completo aprovado.

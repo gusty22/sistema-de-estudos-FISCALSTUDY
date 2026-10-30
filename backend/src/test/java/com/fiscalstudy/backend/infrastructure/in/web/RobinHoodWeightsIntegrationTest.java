@@ -16,7 +16,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@org.springframework.test.annotation.DirtiesContext(classMode=org.springframework.test.annotation.DirtiesContext.ClassMode.AFTER_CLASS)
 public class RobinHoodWeightsIntegrationTest {
+
+    private static final java.nio.file.Path OUTPUT=java.nio.file.Path.of("target","weights-boundary-"+java.util.UUID.randomUUID()).toAbsolutePath();
+    @org.springframework.test.context.DynamicPropertySource
+    static void isolatedAnalytics(org.springframework.test.context.DynamicPropertyRegistry registry) {
+        registry.add("fiscalstudy.analytics-dir",OUTPUT::toString);
+    }
 
     @Autowired
     private MockMvc mockMvc;
