@@ -1,0 +1,349 @@
+{
+  "base_commit": "6489a1f6455161aec4cb581aeae14b76e64c19a3",
+  "environment": {
+    "os": "Linux amd64",
+    "jdk": "Temurin 17.0.21",
+    "maven": "3.9.9",
+    "database": "isolated SQLite files; no personal operational database"
+  },
+  "reproduction_before_fix": {
+    "tests": 24,
+    "failures": 14,
+    "errors": 0,
+    "skipped": 0
+  },
+  "first_full_branch_run": {
+    "tests": 405,
+    "failures": 10,
+    "errors": 42,
+    "skipped": 5,
+    "note": "Before adding the full-Spring retry test; includes 17 new passing retry cases."
+  },
+  "clean_main_full_run": {
+    "tests": 388,
+    "failures": 10,
+    "errors": 42,
+    "skipped": 5
+  },
+  "same_unsuccessful_test_ids_and_statuses": true,
+  "initial_targeted_run_including_legacy_export_suite": {
+    "tests": 104,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 2,
+    "note": "Includes the inherited AnalyticsExportIntegrationTest failure and two inherited skips."
+  },
+  "final_integrity_gate": {
+    "tests": 90,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "full_spring_retry_included": true
+  },
+  "wrapper_bootstrap": {
+    "result": "PASS",
+    "version": "3.9.9",
+    "archive_sha512_verified_against_maven_central": true,
+    "distribution_sha256_pinned": true
+  },
+  "not_executed": [
+    "Windows wrapper",
+    "browser E2E",
+    "local R runtime and R suites",
+    "performance benchmarks",
+    "personal installation validation"
+  ],
+  "inherited_unsuccessful_tests": [
+    {
+      "test": "com.fiscalstudy.backend.application.FiscalStudyMultiConcursoAcceptanceTest#testCriterio12_SimulacaoImportacaoDryRun",
+      "status": "error",
+      "type": "org.springframework.jdbc.UncategorizedSQLException"
+    },
+    {
+      "test": "com.fiscalstudy.backend.application.FiscalStudyMultiConcursoAcceptanceTest#testCriterio13_SessaoPersonalizada",
+      "status": "error",
+      "type": "org.springframework.jdbc.UncategorizedSQLException"
+    },
+    {
+      "test": "com.fiscalstudy.backend.application.FiscalStudyMultiConcursoAcceptanceTest#testCriterio14_ConfiancaCausaErroEAnulada",
+      "status": "error",
+      "type": "org.springframework.jdbc.UncategorizedSQLException"
+    },
+    {
+      "test": "com.fiscalstudy.backend.application.FiscalStudyMultiConcursoAcceptanceTest#testCriterio8e9_AlternativaAusenteECorrecaoManual",
+      "status": "error",
+      "type": "org.springframework.jdbc.UncategorizedSQLException"
+    },
+    {
+      "test": "com.fiscalstudy.backend.application.FiscalStudyMultiConcursoAcceptanceTest#testCriterio11_CancelamentoDeProcessamento",
+      "status": "error",
+      "type": "org.springframework.jdbc.UncategorizedSQLException"
+    },
+    {
+      "test": "com.fiscalstudy.backend.application.FiscalStudyMultiConcursoAcceptanceTest#testCriterio4e5e6_UploadProvaEGabaritoMultiplosCargos",
+      "status": "error",
+      "type": "org.springframework.jdbc.UncategorizedSQLException"
+    },
+    {
+      "test": "com.fiscalstudy.backend.application.FiscalStudyMultiConcursoAcceptanceTest#testCriterio7_TextoBaseCompartilhado",
+      "status": "error",
+      "type": "org.springframework.jdbc.UncategorizedSQLException"
+    },
+    {
+      "test": "com.fiscalstudy.backend.application.FiscalStudyMultiConcursoAcceptanceTest#testCriterio10_PersistenciaAposReinicializacao",
+      "status": "error",
+      "type": "org.springframework.jdbc.UncategorizedSQLException"
+    },
+    {
+      "test": "com.fiscalstudy.backend.application.MediaRoutingServiceTest#testLeisConsolidadasPrescribesPdf",
+      "status": "failure",
+      "type": "org.opentest4j.AssertionFailedError"
+    },
+    {
+      "test": "com.fiscalstudy.backend.application.MediaRoutingServiceTest#testCognitiveLockAfterThreeConsecutiveErrors",
+      "status": "failure",
+      "type": "org.opentest4j.AssertionFailedError"
+    },
+    {
+      "test": "com.fiscalstudy.backend.application.QuestionBankServiceTest#testEditalDisciplineCoverage",
+      "status": "failure",
+      "type": "org.opentest4j.AssertionFailedError"
+    },
+    {
+      "test": "com.fiscalstudy.backend.application.QuestionHistoryServiceTest#testPerformanceXRayCalculation",
+      "status": "failure",
+      "type": "org.opentest4j.AssertionFailedError"
+    },
+    {
+      "test": "com.fiscalstudy.backend.application.ReverseEngineeringServiceTest#testPrescription_AllCorrect",
+      "status": "error",
+      "type": "org.springframework.jdbc.UncategorizedSQLException"
+    },
+    {
+      "test": "com.fiscalstudy.backend.application.ReverseEngineeringServiceTest#testStartSession_Selects5Questions",
+      "status": "error",
+      "type": "org.springframework.jdbc.UncategorizedSQLException"
+    },
+    {
+      "test": "com.fiscalstudy.backend.application.ReverseEngineeringServiceTest#testCanonicalPrescription_Questions3And4Wrong",
+      "status": "error",
+      "type": "org.springframework.jdbc.UncategorizedSQLException"
+    },
+    {
+      "test": "com.fiscalstudy.backend.application.SwotCycleCalibratorServiceTest#testSundaySwotRecalibrationTransfersHours",
+      "status": "failure",
+      "type": "org.opentest4j.AssertionFailedError"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.config.PersistenceContractTest#freshAndLegacySchemasConvergeWithoutLosingRows",
+      "status": "failure",
+      "type": "org.opentest4j.AssertionFailedError"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.config.PersistenceContractTest#migratesARecoveryCopyWithoutChangingLearningHistory",
+      "status": "skipped",
+      "type": "org.opentest4j.TestAbortedException"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.config.SchemaBootstrapIntegrationTest#emptyInstallationIsMigratedBeforeApplicationUsesJdbc",
+      "status": "failure",
+      "type": "org.opentest4j.AssertionFailedError"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.AnalyticsBridgeIntegrationTest#executeAnalyticsPipeline_ProducesReadOnlyArtifacts",
+      "status": "skipped",
+      "type": "org.opentest4j.TestAbortedException"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.AnalyticsBridgeProvenanceContractTest#transportsMatchingManifestWithoutPromotingSyntheticEvidence",
+      "status": "skipped",
+      "type": "org.opentest4j.TestAbortedException"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.AnalyticsExportIntegrationTest#integratedLifecycle_StudySessionToRValidation_SegregatedAsTest",
+      "status": "skipped",
+      "type": "org.opentest4j.TestAbortedException"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.AnalyticsExportIntegrationTest#export_AnnulledAndMissingGabaritoQuestions_SegregatedPedagogically",
+      "status": "failure",
+      "type": "java.lang.AssertionError"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.AnalyticsExportIntegrationTest#export_InconsistentAttemptRecordedBetweenCsvAndManifest_DetectedAndRejectedByR",
+      "status": "skipped",
+      "type": "org.opentest4j.TestAbortedException"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.ConcursoControllerTest#testCreateProgressiveConcursoWithDatesAndDisponibilidadeReturns200",
+      "status": "error",
+      "type": "java.lang.IllegalStateException"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.ConcursoControllerTest#testCreateConcursoReturns200",
+      "status": "error",
+      "type": "java.lang.IllegalStateException"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.ConcursoControllerTest#testListConcursosReturns200",
+      "status": "error",
+      "type": "java.lang.IllegalStateException"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.ConcursoControllerTest#testArchiveConcursoReturns200",
+      "status": "error",
+      "type": "java.lang.IllegalStateException"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.ConcursoControllerTest#testGetConcursoByIdReturns200",
+      "status": "error",
+      "type": "java.lang.IllegalStateException"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.ConcursoControllerTest#testCreateConcursoWithoutNomeReturns400",
+      "status": "error",
+      "type": "java.lang.IllegalStateException"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.ConcursoControllerTest#testActivateConcursoReturns200",
+      "status": "error",
+      "type": "java.lang.IllegalStateException"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.DigitalTwinControllerTest#testGetDigitalTwinStatusEndpoint",
+      "status": "error",
+      "type": "java.lang.IllegalStateException"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.EditalControllerTest#testAddTopicoReturns200",
+      "status": "error",
+      "type": "java.lang.IllegalStateException"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.EditalControllerTest#testGetEditalVerticalizadoReturns200",
+      "status": "error",
+      "type": "java.lang.IllegalStateException"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.EditalControllerTest#testConfirmTopicoReturns200",
+      "status": "error",
+      "type": "java.lang.IllegalStateException"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.EditalControllerTest#testUploadEditalTxtReturns200",
+      "status": "error",
+      "type": "java.lang.IllegalStateException"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.IngestionControllerTest#testSimulateImportReturns200",
+      "status": "error",
+      "type": "java.lang.IllegalStateException"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.IngestionControllerTest#testUpdateQuestionReturns200",
+      "status": "error",
+      "type": "java.lang.IllegalStateException"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.IngestionControllerTest#testImportDataWithQuestionsReturns200",
+      "status": "error",
+      "type": "java.lang.IllegalStateException"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.IngestionControllerTest#administrativeEndpointRejectsMissingToken",
+      "status": "error",
+      "type": "java.lang.IllegalStateException"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.IngestionControllerTest#testCreateSessionReturns200",
+      "status": "error",
+      "type": "java.lang.IllegalStateException"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.IngestionControllerTest#testUploadEmptyFileReturns400WithStructuredJson",
+      "status": "error",
+      "type": "java.lang.IllegalStateException"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.IngestionControllerTest#testCancelProcessingReturns200WithCancelledStatus",
+      "status": "error",
+      "type": "java.lang.IllegalStateException"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.IngestionControllerTest#testGetSessionQuestionsReturns200",
+      "status": "error",
+      "type": "java.lang.IllegalStateException"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.IngestionControllerTest#testUploadDocumentReturns200",
+      "status": "error",
+      "type": "java.lang.IllegalStateException"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.IngestionControllerTest#testImportDataReturns200",
+      "status": "error",
+      "type": "java.lang.IllegalStateException"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.RobinHoodCycleControllerTest#testGetRobinHoodCycle",
+      "status": "error",
+      "type": "java.lang.IllegalStateException"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.RobinHoodCycleControllerTest#testRecalibrateFromSwot",
+      "status": "error",
+      "type": "java.lang.IllegalStateException"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.RobinHoodCycleControllerTest#testGetLatestSwotCalibration",
+      "status": "error",
+      "type": "java.lang.IllegalStateException"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.RobinHoodWeightsIntegrationTest#injectWeights_InjectsEmergencyBlockIntoRobinHoodCycle",
+      "status": "failure",
+      "type": "java.lang.AssertionError"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.RobinHoodWeightsIntegrationTest#syncWeights_SyncsFromFileIfPresent",
+      "status": "failure",
+      "type": "java.lang.AssertionError"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.SimuladoControllerTest#testGetSimuladosDashboardEndpoint",
+      "status": "error",
+      "type": "java.lang.IllegalStateException"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.SimuladoControllerTest#testGenerateSimuladoEndpoint",
+      "status": "error",
+      "type": "java.lang.IllegalStateException"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.StrategicSummaryControllerTest#testSendToAnkiEndpoint",
+      "status": "error",
+      "type": "java.lang.IllegalStateException"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.StrategicSummaryControllerTest#testGetSummaryByIdEndpoint",
+      "status": "error",
+      "type": "java.lang.IllegalStateException"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.StrategicSummaryControllerTest#testGetSummariesEndpoint",
+      "status": "error",
+      "type": "java.lang.IllegalStateException"
+    },
+    {
+      "test": "com.fiscalstudy.backend.infrastructure.in.web.StrategicSummaryControllerTest#testGenerateSummaryEndpoint",
+      "status": "error",
+      "type": "java.lang.IllegalStateException"
+    }
+  ],
+  "local_log_sha256": {
+    "fiscalstudy-full-suite.log": "dd86cb719efc1be2038e0ab64330d4d77c6f9888e0b45dc2d4666525c8dff681",
+    "fiscalstudy-baseline-suite.log": "e3485cda29831efaef68c4dd7cd99ad76b76142e054edba678b89317fbacc1f8",
+    "fiscalstudy-integrity-gate.log": "acf7b8c7117d594497592ff89932d18686db7f5c2d50981108177e07c2cefa95",
+    "fiscalstudy-wrapper.log": "778e64333847410c9542f337ede1e2fe2d94a8b353828029b6c387a0de24cb6d"
+  }
+}

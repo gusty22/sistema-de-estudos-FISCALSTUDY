@@ -33,6 +33,66 @@ class AttemptIdentityRegressionTest {
   assertFalse(answer(UUID.randomUUID().toString(),"B",null).getIsCorrect());
   assertEquals(2,events.getAllEvents("ANSWER_SUBMITTED").size());
  }
+ @org.junit.jupiter.params.ParameterizedTest
+ @org.junit.jupiter.params.provider.ValueSource(strings={"helpType","interventionType","causaErro","origin","naCordaBamba","pensouContrario","tempoLeituraMs","tempoHesitacaoMs","trocasOpcaoCount","distanciaCursorPx","friccaoCognitivaScore","chuteEducadoDetectado","fluenciaNeurologica","usedHelp"})
+ void httpRetryRejectsChangedEvidence(String field) throws Exception {
+  String id=UUID.randomUUID().toString();
+  var request=new LinkedHashMap<String,Object>();
+  request.put("attemptId",id);request.put("selectedOption","A");request.put("confidenceLevel",4);
+  request.put("activeTimeMs",1200);request.put("sessionId","session-1");
+  var mvc=org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup(
+    new com.fiscalstudy.backend.infrastructure.in.web.QuestionController(mock(QuestionSelectionService.class),service)).build();
+  var mapper=new ObjectMapper();
+  mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/v1/questions/q1/attempts")
+    .contentType("application/json").content(mapper.writeValueAsString(request)))
+    .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk());
+  String persisted=events.findByEventId("attempt:"+id).orElseThrow().getPayloadJson();
+  Object changed=switch(field){
+   case "origin" -> "DEMONSTRATION";
+   case "usedHelp" -> false; // unknown -> explicit no-help is a change of evidence
+   case "naCordaBamba","pensouContrario","chuteEducadoDetectado" -> true;
+   case "tempoLeituraMs","tempoHesitacaoMs","trocasOpcaoCount" -> 7;
+   case "distanciaCursorPx","friccaoCognitivaScore" -> 0.25;
+   default -> "CHANGED";
+  };
+  request.put(field,changed);
+  mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/v1/questions/q1/attempts")
+    .contentType("application/json").content(mapper.writeValueAsString(request)))
+    .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isConflict());
+  assertEquals(persisted,events.findByEventId("attempt:"+id).orElseThrow().getPayloadJson());
+  assertEquals(1,events.getAllEvents("ANSWER_SUBMITTED").size());
+ }
+ @Test void equivalentDefaultsAndWhitespaceRemainRetryable(){
+  String id=UUID.randomUUID().toString();answer(id,"a","  cause  ");
+  assertTrue(service.submitAttempt("q1"," A ",4,1200,"session-1",null,"cause",null,null,
+    1200L,0L,0,0.0,0.0,false,"ALTA_FLUENCIA",false," NENHUM "," REGULAR ",id).getIsCorrect());
+  assertEquals(1,events.getAllEvents("ANSWER_SUBMITTED").size());
+ }
+ @Test void conflictingConcurrentEvidenceHasOneWinner() throws Exception {
+  String id=UUID.randomUUID().toString();
+  events=spy(events);service=new AttemptSubmissionService(questions,events,"REAL_STUDY");
+  var barrier=new CyclicBarrier(2);var reads=new java.util.concurrent.atomic.AtomicInteger();
+  doAnswer(call->{if(reads.incrementAndGet()<=2){barrier.await(10,TimeUnit.SECONDS);return Optional.empty();}return call.callRealMethod();})
+    .when(events).findByEventId("attempt:"+id);
+  var pool=Executors.newFixedThreadPool(2);
+  try {
+   var results=pool.invokeAll(List.<Callable<String>>of(
+    ()->{try{answer(id,"A","first");return "OK";}catch(AttemptSubmissionService.AttemptConflictException e){return "CONFLICT";}},
+    ()->{try{answer(id,"A","second");return "OK";}catch(AttemptSubmissionService.AttemptConflictException e){return "CONFLICT";}}));
+   assertEquals(Set.of("OK","CONFLICT"),Set.of(results.get(0).get(),results.get(1).get()));
+  } finally {pool.shutdownNow();}
+  assertEquals(1,events.getAllEvents("ANSWER_SUBMITTED").size());
+ }
+ @Test void legacyMissingHelpFlagRemainsUnknown() throws Exception {
+  String sourceId=UUID.randomUUID().toString();
+  service.submitAttempt("q1","A",4,1200,"session-1",null,null,false,false,null,null,null,null,null,null,null,null,null,null,sourceId);
+  var original=events.findByEventId("attempt:"+sourceId).orElseThrow();
+  var payload=(com.fasterxml.jackson.databind.node.ObjectNode)new ObjectMapper().readTree(original.getPayloadJson());
+  String id=UUID.randomUUID().toString();payload.put("attemptId",id);payload.remove("helpDeclarationProvided");
+  events.appendEventOnce("attempt:"+id,"ANSWER_SUBMITTED","QUESTION","q1","session-1",original.getOccurredAt(),payload.toString());
+  assertTrue(service.submitAttempt("q1","A",4,1200,"session-1",null,null,false,false,null,null,null,null,null,null,null,null,null,null,id).getIsCorrect());
+  assertThrows(AttemptSubmissionService.AttemptConflictException.class,()->answer(id,"A",null));
+ }
  @Test void replayUsesPersistedAnswerKey(){
   String id=UUID.randomUUID().toString(); answer(id,"A",null);
   when(questions.findById("q1")).thenReturn(Optional.of(new Question("q1","Changed",List.of("A yes","B no"),"B","Math","Fractions","FCC",2026)));
