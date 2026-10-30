@@ -5,20 +5,158 @@ source("R/descriptive_analysis.R")
 source("lab/prospective_scorecard.R")
 source("lab/individual_calibration.R")
 
+scientific_target_matrix <- function() {
+  list(
+    DELAYED_ITEM_RETRIEVAL = list(
+      target_id = "DELAYED_ITEM_RETRIEVAL",
+      target_name = "Delayed Item Retrieval (Active Spaced Practice)",
+      instrument_required = "Spaced active retrieval probe without hints or answer disclosure",
+      unit_of_analysis = "item retrieval",
+      preparation_event = "DEFINITION_REGISTERED with min_retention_seconds > 0 and prior learning contact",
+      frozen_forecast = "FORECAST_COMMITTED with training_cutoff <= data_cutoff <= occurred_at < outcome",
+      future_outcome = "OUTCOME_OBSERVED binary response in {0, 1} strictly after retention window",
+      scoring_criterion = "DEFINITIVE_ANSWER_KEY or INDEPENDENT_BLINDED_RUBRIC; EQUAL_WEIGHT_BINARY_V1 or FIXED_SUCCESS_CRITERION_V1",
+      provenance = "Homogeneous audit origin (REAL_STUDY with authorized custody or SYNTHETIC_FIXTURE); canonical payload SHA-256",
+      evidence_of_independence = "Item-specific retention interval; template sharing cannot fabricate item retention lag",
+      assistance = "Strictly NONE; answer_exposed strictly FALSE; any hint or exposure disqualifies",
+      prior_exposure = "At least one prior contact before data cutoff; zero intervening contacts between forecast and outcome",
+      temporal_window = "retention_lag_seconds >= min_retention_seconds; delay_seconds in [min_delay_seconds, max_delay_seconds]",
+      eligibility = "lag >= min_retention, window valid, assistance==NONE, answer_exposed==FALSE, no intervening contact",
+      exclusion_reasons = c("DELAYED_RETRIEVAL_INTERVAL_NOT_ESTABLISHED", "INTERVENING_ITEM_CONTACT", "ASSISTANCE_OR_EXPOSURE_UNKNOWN_OR_PRESENT", "OUTCOME_OUTSIDE_PREDECLARED_HORIZON", "SCORING_RULE_MISMATCH", "RETENTION_INTERVAL_NOT_DEFINED"),
+      scientific_limitations = "Delayed retrieval demonstrates item-level trace access, not conceptual mastery, transfer or lifetime retention",
+      evaluation_capacity = "SYNTHETIC_CONTRACT_ONLY in automated software test suite; personal pilot NOT_ESTABLISHED"
+    ),
+    NOVEL_ITEM_CORRECTNESS = list(
+      target_id = "NOVEL_ITEM_CORRECTNESS",
+      target_name = "Novel Item Correctness (First Observed Presentation)",
+      instrument_required = "First observed question presentation in designated exam or unexposed practice session",
+      unit_of_analysis = "first observed item response",
+      preparation_event = "DEFINITION_REGISTERED; optional representative exam blueprint with predeclared equal weight",
+      frozen_forecast = "FORECAST_COMMITTED strictly before question presentation or attempt",
+      future_outcome = "OUTCOME_OBSERVED binary response in {0, 1}",
+      scoring_criterion = "DEFINITIVE_ANSWER_KEY or INDEPENDENT_BLINDED_RUBRIC",
+      provenance = "Append-only verified single student event stream with payload hashes",
+      evidence_of_independence = "Zero historical contacts with unit_id and zero historical contacts with template_id",
+      assistance = "Strictly NONE; answer_exposed strictly FALSE",
+      prior_exposure = "Zero previous contacts (learning, prompt, or outcome) with item or template",
+      temporal_window = "delay_seconds in [min_delay_seconds, max_delay_seconds]",
+      eligibility = "No prior item or template contact; registered before outcome; assistance NONE; answer unexposed",
+      exclusion_reasons = c("PRIOR_ITEM_OR_TEMPLATE_EXPOSURE", "ASSISTANCE_OR_EXPOSURE_UNKNOWN_OR_PRESENT", "OUTCOME_OUTSIDE_PREDECLARED_HORIZON"),
+      scientific_limitations = "First observed attempt within study platform does not prove lifetime semantic novelty; does not measure retention or transfer",
+      evaluation_capacity = "SYNTHETIC_CONTRACT_ONLY in automated software test suite; personal pilot NOT_ESTABLISHED"
+    ),
+    APPLICATION_SUCCESS = list(
+      target_id = "APPLICATION_SUCCESS",
+      target_name = "Independent Application Problem Success",
+      instrument_required = "Independent application instrument requiring operational execution of rules on concrete case",
+      unit_of_analysis = "independent application problem",
+      preparation_event = "DEFINITION_REGISTERED with classification=INDEPENDENT_APPLICATION, classification_status=CONFIRMED, independent_instrument=TRUE",
+      frozen_forecast = "FORECAST_COMMITTED before application attempt",
+      future_outcome = "OUTCOME_OBSERVED binary response in {0, 1}",
+      scoring_criterion = "DEFINITIVE_ANSWER_KEY or INDEPENDENT_BLINDED_RUBRIC",
+      provenance = "Single student verified event ledger with canonical payload hashes",
+      evidence_of_independence = "Audited classification INDEPENDENT_APPLICATION; verified independent template_id != UNKNOWN",
+      assistance = "Strictly NONE; answer_exposed strictly FALSE",
+      prior_exposure = "Zero prior exposure to this application unit or its application template",
+      temporal_window = "delay_seconds in [min_delay_seconds, max_delay_seconds]",
+      eligibility = "Confirmed independent application classification, known unexposed template, no assistance",
+      exclusion_reasons = c("INDEPENDENT_INSTRUMENT_NOT_ESTABLISHED", "TEMPLATE_INDEPENDENCE_UNKNOWN", "PRIOR_ITEM_OR_TEMPLATE_EXPOSURE", "ASSISTANCE_OR_EXPOSURE_UNKNOWN_OR_PRESENT"),
+      scientific_limitations = "Success in a single concrete application case does not guarantee transfer across diverse non-isomorphic contexts",
+      evaluation_capacity = "SYNTHETIC_CONTRACT_ONLY in automated software test suite; personal pilot NOT_ESTABLISHED"
+    ),
+    TRANSFER_SUCCESS = list(
+      target_id = "TRANSFER_SUCCESS",
+      target_name = "Independent Conceptual Transfer Success",
+      instrument_required = "Independent transfer instrument with varied superficial structure and deep conceptual equivalence",
+      unit_of_analysis = "independent transfer instrument",
+      preparation_event = "DEFINITION_REGISTERED with classification=INDEPENDENT_TRANSFER, classification_status=CONFIRMED, independent_instrument=TRUE",
+      frozen_forecast = "FORECAST_COMMITTED before transfer attempt",
+      future_outcome = "OUTCOME_OBSERVED binary response in {0, 1}",
+      scoring_criterion = "DEFINITIVE_ANSWER_KEY or INDEPENDENT_BLINDED_RUBRIC",
+      provenance = "Append-only verified single student event stream with payload hashes",
+      evidence_of_independence = "Substantive structural independence: differing template_id from previously practiced items; confirmed transfer classification",
+      assistance = "Strictly NONE; answer_exposed strictly FALSE",
+      prior_exposure = "Zero prior exposure to transfer item or transfer template; question identity change alone is rejected",
+      temporal_window = "delay_seconds in [min_delay_seconds, max_delay_seconds]",
+      eligibility = "Confirmed independent transfer classification, distinct template, zero prior template contact, assistance NONE",
+      exclusion_reasons = c("INDEPENDENT_INSTRUMENT_NOT_ESTABLISHED", "TEMPLATE_INDEPENDENCE_UNKNOWN", "PRIOR_ITEM_OR_TEMPLATE_EXPOSURE", "ASSISTANCE_OR_EXPOSURE_UNKNOWN_OR_PRESENT"),
+      scientific_limitations = "Does not establish spontaneous unprompted transfer in high-stakes concurso examination contexts",
+      evaluation_capacity = "SYNTHETIC_CONTRACT_ONLY in automated software test suite; personal pilot NOT_ESTABLISHED"
+    ),
+    ACTIVITY_DURATION_SECONDS = list(
+      target_id = "ACTIVITY_DURATION_SECONDS",
+      target_name = "Activity Active Duration Telemetry",
+      instrument_required = "Telemetrically instrumented study activity with active interaction clock and pause detection",
+      unit_of_analysis = "completed activity",
+      preparation_event = "DEFINITION_REGISTERED with scoring_source=ACTIVE_TIME_TELEMETRY",
+      frozen_forecast = "FORECAST_COMMITTED in non-negative seconds strictly before execution started_at",
+      future_outcome = "OUTCOME_OBSERVED with value == active_seconds and linked execution_id",
+      scoring_criterion = "ACTIVE_TIME_TELEMETRY with value matching execution active_seconds",
+      provenance = "Operational telemetry recorded in append-only events",
+      evidence_of_independence = "Execution clock validation: started_at <= ended_at <= et[event], active_seconds <= ended_at - started_at",
+      assistance = "Strictly NONE; answer_exposed strictly FALSE",
+      prior_exposure = "Prior completed authorized executions of same definition establish prefix mean/median baselines",
+      temporal_window = "Forecast committed before execution started_at; duration observed after execution ended_at",
+      eligibility = "Completed authorized execution; active_seconds finite and non-negative; clock consistent with outcome",
+      exclusion_reasons = c("NO_COMPLETED_AUTHORIZED_EXECUTION", "ACTIVE_DURATION_NOT_ESTABLISHED", "DURATION_EXECUTION_DISAGREEMENT", "EXECUTION_UNIT_OR_SCOPE_MISMATCH", "FORECAST_AFTER_EXECUTION_STARTED", "FORECAST_EXECUTED_POLICY_MISMATCH"),
+      scientific_limitations = "Active duration measures interaction time, not cognitive depth, attention quality, or learning rate",
+      evaluation_capacity = "SYNTHETIC_CONTRACT_ONLY in automated software test suite; personal pilot NOT_ESTABLISHED"
+    ),
+    POST_INTERVENTION_SUCCESS = list(
+      target_id = "POST_INTERVENTION_SUCCESS",
+      target_name = "Post-Intervention Assessment Outcome",
+      instrument_required = "Independent post-assessment administered following an authorized completed learning activity",
+      unit_of_analysis = "independent post-intervention assessment",
+      preparation_event = "DEFINITION_REGISTERED with classification=INDEPENDENT_POST_ASSESSMENT and post-execution delay window",
+      frozen_forecast = "FORECAST_COMMITTED before outcome, associated with specific executed policy version",
+      future_outcome = "OUTCOME_OBSERVED binary response in {0, 1} strictly following execution completion",
+      scoring_criterion = "DEFINITIVE_ANSWER_KEY or INDEPENDENT_BLINDED_RUBRIC",
+      provenance = "Followup link binding execution_id, outcome_id, and optional pre_outcome_id",
+      evidence_of_independence = "Independent post-assessment classification; optional pre-measure strictly before activity started_at",
+      assistance = "Strictly NONE; answer_exposed strictly FALSE",
+      prior_exposure = "Zero prior exposure to post-assessment item or template",
+      temporal_window = "Outcome occurred strictly after ended_at; post-lag = occurred_at - ended_at in [min_delay, max_delay]",
+      eligibility = "Execution completed and authorized; post-lag within window; policy version matches; zero assistance",
+      exclusion_reasons = c("NO_COMPLETED_AUTHORIZED_EXECUTION", "POST_ASSESSMENT_OUTSIDE_REGISTERED_WINDOW", "FOLLOWUP_BEFORE_EXECUTION_COMPLETED", "FOLLOWUP_SCOPE_OR_EXECUTION_MISMATCH", "FOLLOWUP_OUTSIDE_REGISTERED_WINDOW", "ACTIVITY_NOT_FULLY_EXECUTED_AS_AUTHORIZED_POLICY", "INCOMPARABLE_OR_LATE_PRE_MEASURE"),
+      scientific_limitations = "Measures post-intervention descriptive outcome and pre/post change, NOT causal treatment effect or counterfactual uplift",
+      evaluation_capacity = "SYNTHETIC_CONTRACT_ONLY in automated software test suite; personal pilot NOT_ESTABLISHED"
+    )
+  )
+}
+
 scientific_prediction_targets <- function() {
   ids <- c("DELAYED_ITEM_RETRIEVAL", "NOVEL_ITEM_CORRECTNESS", "APPLICATION_SUCCESS",
     "TRANSFER_SUCCESS", "ACTIVITY_DURATION_SECONDS", "POST_INTERVENTION_SUCCESS")
   units <- c("item retrieval", "first observed item response", "independent application problem",
     "independent transfer instrument", "completed activity", "independent post-intervention assessment")
-  setNames(lapply(seq_along(ids), function(i) list(target_id=ids[i], unit_of_analysis=units[i],
-    value_type=if(i==5) "SECONDS" else "BINARY_PREDECLARED_CRITERION",
-    horizon="EXPLICIT_PRECOMMITTED_DEFINITION_WINDOW_SECONDS",
-    baseline=if(i==5) c("PREFIX_MEAN_SECONDS", "PREFIX_MEDIAN_SECONDS") else
-      c("PREFIX_BETA11", "PREFIX_RECENT20_BETA11"),
-    metrics=if(i==5) c("MAE", "RMSE", "SIGNED_ERROR") else
-      c("BRIER", "LOG_LOSS", "CALIBRATION_BINS", "OBSERVED_RATE_WILSON"),
-    technical_status="IMPLEMENTED_EXPERIMENTAL", personal_validation="NOT_ESTABLISHED",
-    causal_effect="NOT_ESTABLISHED")), ids)
+  matrix_specs <- scientific_target_matrix()
+  setNames(lapply(seq_along(ids), function(i) {
+    id <- ids[i]
+    m <- matrix_specs[[id]]
+    list(target_id=id, unit_of_analysis=units[i],
+      value_type=if(i==5) "SECONDS" else "BINARY_PREDECLARED_CRITERION",
+      horizon="EXPLICIT_PRECOMMITTED_DEFINITION_WINDOW_SECONDS",
+      baseline=if(i==5) c("PREFIX_MEAN_SECONDS", "PREFIX_MEDIAN_SECONDS") else
+        c("PREFIX_BETA11", "PREFIX_RECENT20_BETA11"),
+      metrics=if(i==5) c("MAE", "RMSE", "SIGNED_ERROR") else
+        c("BRIER", "LOG_LOSS", "CALIBRATION_BINS", "OBSERVED_RATE_WILSON"),
+      instrument_required=m$instrument_required,
+      preparation_event=m$preparation_event,
+      frozen_forecast=m$frozen_forecast,
+      future_outcome=m$future_outcome,
+      scoring_criterion=m$scoring_criterion,
+      provenance=m$provenance,
+      evidence_of_independence=m$evidence_of_independence,
+      assistance_rule=m$assistance,
+      prior_exposure_rule=m$prior_exposure,
+      temporal_window=m$temporal_window,
+      eligibility_predicates=m$eligibility,
+      exclusion_reasons=m$exclusion_reasons,
+      scientific_limitations=m$scientific_limitations,
+      evaluation_capacity=m$evaluation_capacity,
+      technical_status="IMPLEMENTED_EXPERIMENTAL", personal_validation="NOT_ESTABLISHED",
+      causal_effect="NOT_ESTABLISHED")
+  }), ids)
 }
 
 .se_specs <- list(

@@ -182,3 +182,76 @@ x<-sci_x;original<-contextual_gate_fixture("unknown");original$snapshot$evidence
 x$decisions<-list(scientific_policy_record("decision-current",original));x$events$origin<-"REAL_STUDY"
 msg<-tryCatch({sci_run(x);"NO_ERROR"},error=function(e)conditionMessage(e))
 assert_equal(msg,"SYNTHETIC_DECISION_IN_REAL_REGISTRY","A mixed-origin decision cannot be hidden inside a purportedly real registry")
+
+# Verification of the 6 targets matrix and contractual dimensions
+matrix_specs<-scientific_target_matrix()
+assert_equal(length(matrix_specs),6L,"Target matrix defines all six scientific prediction targets")
+expected_keys<-c("target_id","target_name","instrument_required","unit_of_analysis","preparation_event",
+  "frozen_forecast","future_outcome","scoring_criterion","provenance","evidence_of_independence",
+  "assistance","prior_exposure","temporal_window","eligibility","exclusion_reasons",
+  "scientific_limitations","evaluation_capacity")
+for(t_name in names(matrix_specs)) {
+  target<-matrix_specs[[t_name]]
+  assert_true(all(expected_keys %in% names(target)),paste0("Target ",t_name," defines all required contractual dimensions"))
+  assert_equal(target$evaluation_capacity,"SYNTHETIC_CONTRACT_ONLY in automated software test suite; personal pilot NOT_ESTABLISHED",
+    paste0("Target ",t_name," preserves NOT_ESTABLISHED personal validation"))
+}
+assert_true(all(vapply(sci_r$targets,function(t)!is.null(t$instrument_required)&&!is.null(t$exclusion_reasons),logical(1))),
+  "Evaluator output targets include enriched matrix dimensions")
+
+# Rigorous edge case tests for eligibility, chronology and exclusions of the six targets
+# 1. DELAYED_ITEM_RETRIEVAL: Intervening item contact between forecast and outcome
+x<-sci_x
+origin_dt<-as.POSIXct("2026-10-26T12:00:00Z",format="%Y-%m-%dT%H:%M:%SZ",tz="UTC")
+stamp_dt<-function(s)format(origin_dt+s,"%Y-%m-%dT%H:%M:%SZ",tz="UTC")
+intervening_exp<-data.frame(exposure_id="intervening-exposure",unit_id="item-1",template_id="template-item-1",
+  scope_id="tax",kind="LEARNING",forecast_id=NA_character_,stringsAsFactors=FALSE)
+x$exposures<-rbind(x$exposures,intervening_exp)
+intervening_ev<-data.frame(event_id="intervening-exposure",student_id="SYNTHETIC-gate-student",
+  occurred_at=stamp_dt(2.5*86400),recorded_at=stamp_dt(2.5*86400),
+  origin="SYNTHETIC_FIXTURE",source_id="fixture-ledger",evidence_version="fixture-science-1",
+  event_type="EXPOSURE_OBSERVED",append_order=0,payload_sha256="",session_id="fixture-session",stringsAsFactors=FALSE)
+x$events<-rbind(x$events,intervening_ev)
+x$events<-x$events[order(x$events$recorded_at,x$events$event_id),];x$events$append_order<-seq_len(nrow(x$events))
+r<-sci_run(x)
+assert_true("INTERVENING_ITEM_CONTACT" %in% r$audits$`forecast-1`$codes,"Intervening item contact disqualifies delayed retention evidence")
+assert_equal(r$audits$`forecast-1`$status,"NOT_SCORED","Intervening contact leads to un-scored forecast")
+
+# 2. APPLICATION_SUCCESS: Unknown template independence
+x<-sci_x
+x$forecasts$template_id[x$forecasts$forecast_id=="forecast-3"]<-"UNKNOWN"
+x$outcomes$template_id[x$outcomes$outcome_id=="outcome-3"]<-"UNKNOWN"
+r<-sci_run(x)
+assert_true("TEMPLATE_INDEPENDENCE_UNKNOWN" %in% r$audits$`forecast-3`$codes,"Unknown template ID disqualifies application problem independence")
+
+# 3. TRANSFER_SUCCESS: Fractional outcome violates binary criterion
+x<-sci_x
+x$outcomes$value[x$outcomes$outcome_id=="outcome-4"]<-0.5
+r<-sci_run(x)
+assert_true("BINARY_CRITERION_REQUIRED" %in% r$audits$`forecast-4`$codes,"Fractional score violates binary success criterion for transfer")
+
+# 4. ACTIVITY_DURATION_SECONDS: Disagreement between execution and outcome active time
+x<-sci_x
+x$outcomes$active_seconds[x$outcomes$outcome_id=="outcome-5"]<-110
+x$outcomes$value[x$outcomes$outcome_id=="outcome-5"]<-110
+r<-sci_run(x)
+assert_true("DURATION_EXECUTION_DISAGREEMENT" %in% r$audits$`forecast-5`$codes,"Disagreement between execution and outcome active seconds is caught")
+
+# 5. POST_INTERVENTION_SUCCESS: Outcome outside registered post-intervention delay window
+x<-sci_x
+x$definitions$max_delay_seconds[x$definitions$definition_id=="def-6"]<-10
+r<-sci_run(x)
+assert_true("POST_ASSESSMENT_OUTSIDE_REGISTERED_WINDOW" %in% r$audits$`forecast-6`$codes,"Post-intervention outcome exceeding maximum window is excluded")
+
+# 6. FOLLOWUP: Late pre-measure recorded after intervention start
+x<-sci_x
+x$events$recorded_at[x$events$event_id=="pre-post"]<-x$events$occurred_at[x$events$event_id=="execution-current"]
+x$events<-x$events[order(x$events$recorded_at,x$events$event_id),];x$events$append_order<-seq_len(nrow(x$events))
+r<-sci_run(x)
+assert_true("INCOMPARABLE_OR_LATE_PRE_MEASURE" %in% r$policy_comparison$followups$`followup-current`$pre_measure_codes,
+  "Late pre-measure recorded after activity started cannot provide baseline for pre/post change")
+
+# 7. DELAYED_ITEM_RETRIEVAL definition: Zero retention interval is invalid
+x<-sci_x
+x$definitions$min_retention_seconds[x$definitions$definition_id=="def-1"]<-0
+assert_true(sci_error(sci_run(x)),"Definition for DELAYED_ITEM_RETRIEVAL without positive retention interval is rejected")
