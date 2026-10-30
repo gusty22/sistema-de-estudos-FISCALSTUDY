@@ -1,0 +1,17 @@
+{
+  "scope": "ISOLATED_TEST_COMPOSITION_NO_MAIN_MERGE",
+  "source_commits": {
+    "baseline": "9a6ecac2536df6d6cf57d252587c5699868f1945",
+    "memory": "04320817714c29bc41f61ef9f2766251f1acc499",
+    "utf8": "4ff7f22a5a271a47b27bb75263d76f01cdc37d13",
+    "confidence": "a86d4061574a855df8f8e31b80c45014b931b40b"
+  },
+  "manual_compositions": [
+    "R/export_results.R: confidence metrics plus UTF-8 serializer",
+    "tests/test_export.R: retain both assertion sets",
+    "tests/test_pipeline_evidence.R: Unicode round trip plus conditional denominators"
+  ],
+  "production_database_access": false,
+  "can_apply": false,
+  "can_schedule": false
+}
