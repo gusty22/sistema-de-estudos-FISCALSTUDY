@@ -24,6 +24,7 @@ Conforme estabelecido na governança do projeto e na suite de pesquisa (`analyti
 
 ## 2. Contratos Científicos Canônicos
 
+- `analytics-engine/docs/LEARNING_TARGETS_MEASUREMENT_MATRIX_V1.md`: Matriz formal dos seis alvos científicos de aprendizagem em 15 dimensões contratuais.
 - `analytics-engine/docs/LEARNER_MODEL_VALIDATION.md`: Metodologia de validação prospectiva e prequencial sem vazamento temporal (*temporal data leakage*).
 - `analytics-engine/docs/MEMORY_EVIDENCE_CONTRACT.md`: Contrato de representação de memória, estabilidade e dificuldade do algoritmo FSRS.
 - `analytics-engine/docs/DATA_PROVENANCE_AUDIT.md`: Barreira de custódia de dados e rastreabilidade de eventos de estudo.
@@ -31,6 +32,7 @@ Conforme estabelecido na governança do projeto e na suite de pesquisa (`analyti
 ---
 
 ## Vínculos Relacionados
+- [[Matriz de Instrumentos e Alvos Científicos]]
 - [[Psicometria e Modelo R]]
 - [[Ciclo em 4 Estágios]]
 - [[Recuperação Ativa]]
