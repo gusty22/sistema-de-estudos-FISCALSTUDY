@@ -20,11 +20,18 @@ public class AnalyticsProjectionService {
     private final EventStoreRepository eventStoreRepository;
     private final QuestionRepository questionRepository;
     private final ObjectMapper objectMapper;
+    private final com.fiscalstudy.backend.infrastructure.config.AnalyticsPaths analyticsPaths;
 
     public AnalyticsProjectionService(EventStoreRepository eventStoreRepository, QuestionRepository questionRepository) {
+        this(eventStoreRepository,questionRepository,null);
+    }
+    @org.springframework.beans.factory.annotation.Autowired
+    public AnalyticsProjectionService(EventStoreRepository eventStoreRepository, QuestionRepository questionRepository,
+            com.fiscalstudy.backend.infrastructure.config.AnalyticsPaths analyticsPaths) {
         this.eventStoreRepository = eventStoreRepository;
         this.questionRepository = questionRepository;
         this.objectMapper = new ObjectMapper();
+        this.analyticsPaths = analyticsPaths;
     }
 
     public AnalyticsOverviewDTO computeOverview() {
@@ -411,7 +418,7 @@ public class AnalyticsProjectionService {
             String eventsCsv = exportEventsV1Csv(null, null);
 
             // 1. Salvar no diretório analytics/ do projeto
-            Path localAnalyticsDir = Files.exists(Paths.get("analytics")) ? Paths.get("analytics") : Paths.get("../analytics");
+            Path localAnalyticsDir = Objects.requireNonNull(analyticsPaths,"Analytics output must be configured").output();
             Files.createDirectories(localAnalyticsDir);
             Path qPath = localAnalyticsDir.resolve("questions_v1.csv");
             Path ePath = localAnalyticsDir.resolve("events_v1.csv");
@@ -425,7 +432,6 @@ public class AnalyticsProjectionService {
             if (customTargetDir != null && !customTargetDir.isBlank()) {
                 targetDirs.add(customTargetDir);
             }
-            targetDirs.add("C:\\Users\\washi\\Downloads\\fiscalstudy-analytics");
 
             for (String tDir : targetDirs) {
                 try {
