@@ -25,6 +25,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(EditalController.class)
 public class EditalControllerTest {
 
+    @MockBean
+    private com.fiscalstudy.backend.application.QuarantineSourceExposureService quarantineSourceExposureService;
+
     @Autowired
     private MockMvc mockMvc;
 

@@ -28,27 +28,13 @@ class MediaRoutingServiceTest {
         ds.setSuppressClose(true);
         jdbcTemplate = new JdbcTemplate(ds);
 
-        // Cria tabelas essenciais para o teste
-        jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS event_store (" +
-                "event_id TEXT PRIMARY KEY, event_type TEXT, aggregate_type TEXT, aggregate_id TEXT, " +
-                "session_id TEXT, occurred_at TEXT, recorded_at TEXT, event_version INTEGER, schema_version TEXT, payload_json TEXT)");
+        // Use the same migrated schema/views/quarantine contracts as the application.
+        try(var connection=ds.getConnection()) {
+            com.fiscalstudy.backend.infrastructure.config.SchemaMigration.migrate(connection);
+        } catch(java.sql.SQLException e) {throw new IllegalStateException(e);}
 
-        jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS questions (" +
-                "id TEXT PRIMARY KEY, disciplina TEXT, assunto TEXT, status TEXT DEFAULT 'VALIDADA', " +
-                "justificativa TEXT, texto_apoio TEXT, texto_apoio_titulo TEXT, numero_original INTEGER, arquivo_origem TEXT)");
-
-        jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS question_attempts (" +
-                "id TEXT PRIMARY KEY, aggregate_id TEXT, is_correct INTEGER)");
-
-        jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS topic_material_links (" +
-                "id TEXT PRIMARY KEY, topico_id TEXT, material_id TEXT, pagina_inicio INTEGER, pagina_fim INTEGER)");
-
-        jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS edital_topicos (" +
-                "id TEXT PRIMARY KEY, disciplina TEXT, assunto TEXT)");
-
-        jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS cognitive_lock_records (" +
-                "id TEXT PRIMARY KEY, session_id TEXT, concurso_id TEXT, disciplina TEXT, assunto TEXT, " +
-                "consecutive_errors INTEGER, chat_dialogue_json TEXT, resolved BOOLEAN, created_at TEXT, resolved_at TEXT)");
+        // Explicit legacy compatibility source exercised by the familiarity test.
+        jdbcTemplate.execute("CREATE TABLE question_attempts(id TEXT PRIMARY KEY,aggregate_id TEXT,is_correct INTEGER)");
 
         eventStoreRepository = mock(EventStoreRepository.class);
         ObjectMapper objectMapper = new ObjectMapper();
