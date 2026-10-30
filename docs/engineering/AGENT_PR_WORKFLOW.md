@@ -69,3 +69,7 @@ Em **Settings → Rules → Rulesets** (ou Branch protection rules, quando dispo
 - R experimental é observacional, sem alterar FSRS ou agendamento, salvo PR específica aprovada e validada.
 - Usar fixtures sintéticas isoladas; nem logs nem artefatos do CI devem conter histórico pessoal.
 - Revisar conflitos semanticamente em contratos, migrations, testes e métricas antes do merge.
+
+## Auditoria periodica de branches esquecidas
+
+O workflow `.github/workflows/branch-integration-audit.yml` roda semanalmente (e permite execucao manual). Ele consulta as branches e PRs de forma **somente-leitura**, publica tabela de candidatas no resumo do GitHub Actions e gera avisos para branches sem integracao comprovada pelo historico. Nao cria commits, Issues ou PRs por bot e nao faz merges. Historico divergente pode ser squash/cherry-pick; cada candidata requer revisao semantica, nunca merge automatico. O resultado e um mecanismo de detecao complementar ao PR obrigatorio, nao certificacao de que todo codigo historico chegou a main.
