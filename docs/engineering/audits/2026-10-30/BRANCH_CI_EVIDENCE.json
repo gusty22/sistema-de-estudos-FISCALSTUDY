@@ -1,0 +1,1729 @@
+{
+  "captured_date": "2026-10-30",
+  "main_sha": "789f9053f3e90a366a9f09542a0f7331b9d8348b",
+  "limitation": "Check-runs metadata only; no check on a historical HEAD is not proof that tests never ran. Historical check success does not validate current main.",
+  "branches": [
+    {
+      "branch": "chore/pr41-pedagogical-decision",
+      "sha": "0eb98d1108a0aca4965d567fe23b0e19548ad5f5",
+      "total_count": 1,
+      "checks": [
+        {
+          "name": "synthetic-integrity",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40820600877/job/123271924584",
+          "started_at": "2026-10-29T04:57:23Z",
+          "completed_at": "2026-10-29T05:00:44Z"
+        }
+      ]
+    },
+    {
+      "branch": "chore/development-context-security",
+      "sha": "03dcc721c6cb479fba43f515bfea809a323db8db",
+      "total_count": 9,
+      "checks": [
+        {
+          "name": "CodeQL",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/runs/123808756579",
+          "started_at": "2026-10-30T00:05:15Z",
+          "completed_at": "2026-10-30T00:05:17Z"
+        },
+        {
+          "name": "context-tools (windows-latest)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40977313652/job/123808447575",
+          "started_at": "2026-10-30T00:04:27Z",
+          "completed_at": "2026-10-30T00:04:46Z"
+        },
+        {
+          "name": "windows-synthetic-custody",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40977313655/job/123808447041",
+          "started_at": "2026-10-30T00:04:26Z",
+          "completed_at": "2026-10-30T00:07:59Z"
+        },
+        {
+          "name": "context-tools (ubuntu-24.04)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40977313652/job/123808446982",
+          "started_at": "2026-10-30T00:04:27Z",
+          "completed_at": "2026-10-30T00:04:33Z"
+        },
+        {
+          "name": "isolated-ledger",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40977313655/job/123808446867",
+          "started_at": "2026-10-30T00:04:26Z",
+          "completed_at": "2026-10-30T00:07:57Z"
+        },
+        {
+          "name": "analyze (javascript-typescript)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40977313857/job/123808446860",
+          "started_at": "2026-10-30T00:04:27Z",
+          "completed_at": "2026-10-30T00:05:35Z"
+        },
+        {
+          "name": "analyze (java-kotlin)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40977313857/job/123808446856",
+          "started_at": "2026-10-30T00:04:27Z",
+          "completed_at": "2026-10-30T00:06:18Z"
+        },
+        {
+          "name": "secrets",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40977313652/job/123808446526",
+          "started_at": "2026-10-30T00:04:26Z",
+          "completed_at": "2026-10-30T00:04:39Z"
+        },
+        {
+          "name": "analyze (python)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40977313857/job/123808446362",
+          "started_at": "2026-10-30T00:04:27Z",
+          "completed_at": "2026-10-30T00:05:25Z"
+        }
+      ]
+    },
+    {
+      "branch": "dependabot/npm_and_yarn/frontend/types/node-26.6.5",
+      "sha": "529eae2e2ca97f67fc8a7164a6a3917f3de36e06",
+      "total_count": 9,
+      "checks": [
+        {
+          "name": "CodeQL",
+          "status": "completed",
+          "conclusion": "neutral",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/runs/124040064988",
+          "started_at": "2026-10-30T11:34:02Z",
+          "completed_at": "2026-10-30T11:34:05Z"
+        },
+        {
+          "name": "secrets",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41048889274/job/124039735598",
+          "started_at": "2026-10-30T11:33:14Z",
+          "completed_at": "2026-10-30T11:33:24Z"
+        },
+        {
+          "name": "context-tools (ubuntu-24.04)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41048889274/job/124039735570",
+          "started_at": "2026-10-30T11:33:14Z",
+          "completed_at": "2026-10-30T11:33:21Z"
+        },
+        {
+          "name": "isolated-ledger",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41048889262/job/124039735511",
+          "started_at": "2026-10-30T11:33:14Z",
+          "completed_at": "2026-10-30T11:37:45Z"
+        },
+        {
+          "name": "windows-synthetic-custody",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41048889262/job/124039735257",
+          "started_at": "2026-10-30T11:33:14Z",
+          "completed_at": "2026-10-30T11:36:32Z"
+        },
+        {
+          "name": "analyze (python)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41048889268/job/124039735190",
+          "started_at": "2026-10-30T11:33:14Z",
+          "completed_at": "2026-10-30T11:34:12Z"
+        },
+        {
+          "name": "context-tools (windows-latest)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41048889274/job/124039735125",
+          "started_at": "2026-10-30T11:33:15Z",
+          "completed_at": "2026-10-30T11:33:37Z"
+        },
+        {
+          "name": "analyze (javascript-typescript)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41048889268/job/124039735006",
+          "started_at": "2026-10-30T11:33:14Z",
+          "completed_at": "2026-10-30T11:34:13Z"
+        },
+        {
+          "name": "analyze (java-kotlin)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41048889268/job/124039734807",
+          "started_at": "2026-10-30T11:33:14Z",
+          "completed_at": "2026-10-30T11:34:22Z"
+        }
+      ]
+    },
+    {
+      "branch": "chore/agent-pr-governance-20261030",
+      "sha": "f9efd38a2d48bcfe8a8eb86a3d455fb0eeb2dc9e",
+      "total_count": 11,
+      "checks": [
+        {
+          "name": "PR contract and dependencies",
+          "status": "completed",
+          "conclusion": "failure",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41119837634/job/124283456073",
+          "started_at": "2026-10-30T20:00:34Z",
+          "completed_at": "2026-10-30T20:01:05Z"
+        },
+        {
+          "name": "PR contract and dependencies",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41101212243/job/124219117047",
+          "started_at": "2026-10-30T17:46:28Z",
+          "completed_at": "2026-10-30T17:47:08Z"
+        },
+        {
+          "name": "windows-synthetic-custody",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41101187465/job/124218827211",
+          "started_at": "2026-10-30T17:45:29Z",
+          "completed_at": "2026-10-30T17:49:12Z"
+        },
+        {
+          "name": "secrets",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41101187471/job/124218827107",
+          "started_at": "2026-10-30T17:45:28Z",
+          "completed_at": "2026-10-30T17:45:42Z"
+        },
+        {
+          "name": "context-tools (windows-latest)",
+          "status": "completed",
+          "conclusion": "cancelled",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41101187471/job/124218827056",
+          "started_at": "2026-10-30T17:45:29Z",
+          "completed_at": "2026-10-30T17:46:17Z"
+        },
+        {
+          "name": "isolated-ledger",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41101187465/job/124218826987",
+          "started_at": "2026-10-30T17:45:29Z",
+          "completed_at": "2026-10-30T17:51:05Z"
+        },
+        {
+          "name": "context-tools (ubuntu-24.04)",
+          "status": "completed",
+          "conclusion": "failure",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41101187471/job/124218826845",
+          "started_at": "2026-10-30T17:45:29Z",
+          "completed_at": "2026-10-30T17:45:46Z"
+        },
+        {
+          "name": "CodeQL",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/runs/124218802336",
+          "started_at": "2026-10-30T17:45:22Z",
+          "completed_at": "2026-10-30T17:45:24Z"
+        },
+        {
+          "name": "analyze (python)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41101187468/job/124218549560",
+          "started_at": "2026-10-30T17:44:47Z",
+          "completed_at": "2026-10-30T17:45:32Z"
+        },
+        {
+          "name": "analyze (java-kotlin)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41101187468/job/124218549451",
+          "started_at": "2026-10-30T17:44:47Z",
+          "completed_at": "2026-10-30T17:46:41Z"
+        },
+        {
+          "name": "analyze (javascript-typescript)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41101187468/job/124218549248",
+          "started_at": "2026-10-30T17:44:33Z",
+          "completed_at": "2026-10-30T17:46:37Z"
+        }
+      ]
+    },
+    {
+      "branch": "docs/execution-and-validation",
+      "sha": "24fd22454ee93083a93da0c1bf3ca020f77e8876",
+      "total_count": 0,
+      "checks": []
+    },
+    {
+      "branch": "docs/context-checkpoint",
+      "sha": "46471e5fa576aa479341d8166c149b665ac98ed3",
+      "total_count": 0,
+      "checks": []
+    },
+    {
+      "branch": "experiment/fsrs-memory-lab",
+      "sha": "04320817714c29bc41f61ef9f2766251f1acc499",
+      "total_count": 1,
+      "checks": [
+        {
+          "name": "synthetic-integrity",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40433710351/job/121957261529",
+          "started_at": "2026-10-27T01:37:56Z",
+          "completed_at": "2026-10-27T01:40:37Z"
+        }
+      ]
+    },
+    {
+      "branch": "docs/production-round-20261025",
+      "sha": "36cb8598ca7ba9af5c3658539102b03adfc8d7ff",
+      "total_count": 0,
+      "checks": []
+    },
+    {
+      "branch": "experiment/learner-baseline-comparison",
+      "sha": "ced195f082ff357cab9252ad093d74fa1d269f5d",
+      "total_count": 0,
+      "checks": []
+    },
+    {
+      "branch": "experiment/learner-lab-mvp",
+      "sha": "4705bd7c4bc5203dbc03921e45c2174ec522745c",
+      "total_count": 0,
+      "checks": []
+    },
+    {
+      "branch": "experiment/learner-lab-results",
+      "sha": "0d3e6803a71682fa6b0efc0d63ac92766e1cd634",
+      "total_count": 0,
+      "checks": []
+    },
+    {
+      "branch": "experiment/individual-calibration-identifiability",
+      "sha": "756c7bbd3ebed7f68b4bbad76dc4a69dac73ca61",
+      "total_count": 1,
+      "checks": [
+        {
+          "name": "synthetic-integrity",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40505119086/job/122192621982",
+          "started_at": "2026-10-27T12:37:19Z",
+          "completed_at": "2026-10-27T12:40:48Z"
+        }
+      ]
+    },
+    {
+      "branch": "feat/analytics-engine-integration",
+      "sha": "da3955f3637ee9520df8f73a107b85cb286cea86",
+      "total_count": 0,
+      "checks": []
+    },
+    {
+      "branch": "experiment/r-contextual-prequential-v1",
+      "sha": "ea41ff021456597737c8d442fa46663bb2f249bc",
+      "total_count": 2,
+      "checks": [
+        {
+          "name": "synthetic-integrity",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40682871698/job/122797746269",
+          "started_at": "2026-10-28T11:49:06Z",
+          "completed_at": "2026-10-28T11:52:22Z"
+        },
+        {
+          "name": "human-replication",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40682871649/job/122797745857",
+          "started_at": "2026-10-28T11:49:06Z",
+          "completed_at": "2026-10-28T11:51:57Z"
+        }
+      ]
+    },
+    {
+      "branch": "experiment/recorded-day-heldout-validation",
+      "sha": "1ddc6c04e8669e28518392f6a76945ff1140c0ee",
+      "total_count": 2,
+      "checks": [
+        {
+          "name": "untouched-cohort",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40570319488/job/122422468465",
+          "started_at": "2026-10-27T19:34:23Z",
+          "completed_at": "2026-10-27T19:46:26Z"
+        },
+        {
+          "name": "synthetic-integrity",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40570319564/job/122422468035",
+          "started_at": "2026-10-27T19:34:23Z",
+          "completed_at": "2026-10-27T19:38:15Z"
+        }
+      ]
+    },
+    {
+      "branch": "experiment/public-human-memory-validation",
+      "sha": "486c3b90b596ac55b466975bd7c63fd575114584",
+      "total_count": 2,
+      "checks": [
+        {
+          "name": "synthetic-integrity",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40545194894/job/122333803905",
+          "started_at": "2026-10-27T16:52:40Z",
+          "completed_at": "2026-10-27T16:56:58Z"
+        },
+        {
+          "name": "retrospective-human-memory",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40545194657/job/122333802849",
+          "started_at": "2026-10-27T16:52:40Z",
+          "completed_at": "2026-10-27T16:58:22Z"
+        }
+      ]
+    },
+    {
+      "branch": "feature/analytics-fsrs-retrieval",
+      "sha": "c006b12338798a94931fb9bdd1f4ee81c42d28cb",
+      "total_count": 0,
+      "checks": []
+    },
+    {
+      "branch": "feature/analytics-runtime",
+      "sha": "89819ba0a9d6540b16b21cc3d934c39a75708c0d",
+      "total_count": 0,
+      "checks": []
+    },
+    {
+      "branch": "feature/antigravity-multiagent-foundation",
+      "sha": "865379a245a4751e7c4f1a6d8547d2976e62cc2c",
+      "total_count": 3,
+      "checks": [
+        {
+          "name": "context-tools (ubuntu-24.04)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41119665379/job/124282877129",
+          "started_at": "2026-10-30T19:59:18Z",
+          "completed_at": "2026-10-30T19:59:24Z"
+        },
+        {
+          "name": "secrets",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41119665379/job/124282876921",
+          "started_at": "2026-10-30T19:59:18Z",
+          "completed_at": "2026-10-30T19:59:26Z"
+        },
+        {
+          "name": "context-tools (windows-latest)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41119665379/job/124282876430",
+          "started_at": "2026-10-30T19:59:18Z",
+          "completed_at": "2026-10-30T19:59:39Z"
+        }
+      ]
+    },
+    {
+      "branch": "feature/backend-fsrs-export-contract",
+      "sha": "d1f4e26af17bb95848f4d932731c85835a0c6fa7",
+      "total_count": 0,
+      "checks": []
+    },
+    {
+      "branch": "feature/document-ingestion",
+      "sha": "40640990a284ed218c76598e3828f03a5ad12087",
+      "total_count": 0,
+      "checks": []
+    },
+    {
+      "branch": "feature/diagnostic-quarantine-foundation",
+      "sha": "7ede739d038a0ff2dc59a74fd5bdbf00cf5a73a5",
+      "total_count": 2,
+      "checks": [
+        {
+          "name": "synthetic-integrity",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40616701681/job/122580960998",
+          "started_at": "2026-10-28T01:43:46Z",
+          "completed_at": "2026-10-28T01:46:58Z"
+        },
+        {
+          "name": "isolated-ledger",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40616701737/job/122580822415",
+          "started_at": "2026-10-28T01:43:21Z",
+          "completed_at": "2026-10-28T01:45:57Z"
+        }
+      ]
+    },
+    {
+      "branch": "feature/database-contracts",
+      "sha": "c4bccacdde684ade19c963b3de9868154337ed13",
+      "total_count": 0,
+      "checks": []
+    },
+    {
+      "branch": "feature/contextual-orchestrator-shadow",
+      "sha": "db2d2390ff2cad72a749e7851154114344d13baf",
+      "total_count": 15,
+      "checks": [
+        {
+          "name": "CodeQL",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/runs/124034518957",
+          "started_at": "2026-10-30T11:20:04Z",
+          "completed_at": "2026-10-30T11:20:07Z"
+        },
+        {
+          "name": "isolated-ledger",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41047200703/job/124034337534",
+          "started_at": "2026-10-30T11:19:43Z",
+          "completed_at": "2026-10-30T11:24:35Z"
+        },
+        {
+          "name": "windows-synthetic-custody",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41047200703/job/124034337122",
+          "started_at": "2026-10-30T11:19:44Z",
+          "completed_at": "2026-10-30T11:22:42Z"
+        },
+        {
+          "name": "context-tools (ubuntu-24.04)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41047200693/job/124034085054",
+          "started_at": "2026-10-30T11:19:39Z",
+          "completed_at": "2026-10-30T11:19:46Z"
+        },
+        {
+          "name": "synthetic-shadow (ubuntu-24.04)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41047200732/job/124034084934",
+          "started_at": "2026-10-30T11:19:02Z",
+          "completed_at": "2026-10-30T11:21:06Z"
+        },
+        {
+          "name": "analyze (javascript-typescript)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41047200691/job/124034084883",
+          "started_at": "2026-10-30T11:19:37Z",
+          "completed_at": "2026-10-30T11:20:23Z"
+        },
+        {
+          "name": "context-tools (windows-latest)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41047200693/job/124034084876",
+          "started_at": "2026-10-30T11:19:24Z",
+          "completed_at": "2026-10-30T11:19:41Z"
+        },
+        {
+          "name": "analyze (python)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41047200691/job/124034084834",
+          "started_at": "2026-10-30T11:19:18Z",
+          "completed_at": "2026-10-30T11:20:13Z"
+        },
+        {
+          "name": "synthetic-integrity",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41047200670/job/124034084583",
+          "started_at": "2026-10-30T11:19:02Z",
+          "completed_at": "2026-10-30T11:23:35Z"
+        },
+        {
+          "name": "analyze (java-kotlin)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41047200691/job/124034084504",
+          "started_at": "2026-10-30T11:19:15Z",
+          "completed_at": "2026-10-30T11:20:42Z"
+        },
+        {
+          "name": "synthetic-shadow (windows-2022)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41047200732/job/124034084414",
+          "started_at": "2026-10-30T11:19:11Z",
+          "completed_at": "2026-10-30T11:23:07Z"
+        },
+        {
+          "name": "secrets",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41047200693/job/124034084402",
+          "started_at": "2026-10-30T11:19:05Z",
+          "completed_at": "2026-10-30T11:19:13Z"
+        },
+        {
+          "name": "sqlite-retry-contract",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41047200803/job/124034084339",
+          "started_at": "2026-10-30T11:19:02Z",
+          "completed_at": "2026-10-30T11:19:44Z"
+        },
+        {
+          "name": "session-transaction (ubuntu-24.04)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41047200653/job/124034084165",
+          "started_at": "2026-10-30T11:19:02Z",
+          "completed_at": "2026-10-30T11:19:50Z"
+        },
+        {
+          "name": "session-transaction (windows-2022)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41047200653/job/124034083961",
+          "started_at": "2026-10-30T11:19:02Z",
+          "completed_at": "2026-10-30T11:20:31Z"
+        }
+      ]
+    },
+    {
+      "branch": "feature/learner-evidence-r",
+      "sha": "4b1bd9a26d53512d8e6a135c030126b4a025c8ed",
+      "total_count": 0,
+      "checks": []
+    },
+    {
+      "branch": "feature/individual-learning-orchestrator",
+      "sha": "44691c0c576b5c697a5c0cff63384142546189a5",
+      "total_count": 1,
+      "checks": [
+        {
+          "name": "synthetic-integrity",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40803467345/job/123216764861",
+          "started_at": "2026-10-29T01:57:16Z",
+          "completed_at": "2026-10-29T02:00:35Z"
+        }
+      ]
+    },
+    {
+      "branch": "feature/epic-02-knowledge-model",
+      "sha": "e086c8441fde149eeb1b4557f3e3d7b6bfb602ea",
+      "total_count": 0,
+      "checks": []
+    },
+    {
+      "branch": "feature/frente-c-learning-instruments",
+      "sha": "2c9c2ec71498d0495e39126ead5cb2f19804b0f9",
+      "total_count": 10,
+      "checks": [
+        {
+          "name": "CodeQL",
+          "status": "completed",
+          "conclusion": "neutral",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/runs/124204269654",
+          "started_at": "2026-10-30T17:12:04Z",
+          "completed_at": "2026-10-30T17:12:07Z"
+        },
+        {
+          "name": "secrets",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41096601234/job/124203860888",
+          "started_at": "2026-10-30T17:11:32Z",
+          "completed_at": "2026-10-30T17:11:41Z"
+        },
+        {
+          "name": "context-tools (ubuntu-24.04)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41096601234/job/124203860875",
+          "started_at": "2026-10-30T17:11:24Z",
+          "completed_at": "2026-10-30T17:11:30Z"
+        },
+        {
+          "name": "context-tools (windows-latest)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41096601234/job/124203860358",
+          "started_at": "2026-10-30T17:11:19Z",
+          "completed_at": "2026-10-30T17:11:41Z"
+        },
+        {
+          "name": "synthetic-shadow (windows-2022)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41096601032/job/124203859529",
+          "started_at": "2026-10-30T17:11:18Z",
+          "completed_at": "2026-10-30T17:15:39Z"
+        },
+        {
+          "name": "synthetic-integrity",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41096601049/job/124203859209",
+          "started_at": "2026-10-30T17:11:19Z",
+          "completed_at": "2026-10-30T17:15:58Z"
+        },
+        {
+          "name": "synthetic-shadow (ubuntu-24.04)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41096601032/job/124203859139",
+          "started_at": "2026-10-30T17:11:18Z",
+          "completed_at": "2026-10-30T17:14:02Z"
+        },
+        {
+          "name": "analyze (python)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41096600659/job/124203858070",
+          "started_at": "2026-10-30T17:11:18Z",
+          "completed_at": "2026-10-30T17:12:15Z"
+        },
+        {
+          "name": "analyze (javascript-typescript)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41096600659/job/124203857834",
+          "started_at": "2026-10-30T17:11:18Z",
+          "completed_at": "2026-10-30T17:12:16Z"
+        },
+        {
+          "name": "analyze (java-kotlin)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41096600659/job/124203857452",
+          "started_at": "2026-10-30T17:11:18Z",
+          "completed_at": "2026-10-30T17:13:19Z"
+        }
+      ]
+    },
+    {
+      "branch": "feature/prospective-question-ledger",
+      "sha": "3c223bec5cb6d872b638fcf0a8f68545f20a5ded",
+      "total_count": 2,
+      "checks": [
+        {
+          "name": "isolated-ledger",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40588309369/job/122485868032",
+          "started_at": "2026-10-27T21:38:03Z",
+          "completed_at": "2026-10-27T21:41:53Z"
+        },
+        {
+          "name": "synthetic-integrity",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40588309402/job/122485849070",
+          "started_at": "2026-10-27T21:38:00Z",
+          "completed_at": "2026-10-27T21:41:13Z"
+        }
+      ]
+    },
+    {
+      "branch": "feature/obsidian-knowledge-migration",
+      "sha": "fd44358d1edf17704dd3b88e8b44832a90116301",
+      "total_count": 10,
+      "checks": [
+        {
+          "name": "CodeQL",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/runs/124083725948",
+          "started_at": "2026-10-30T13:17:19Z",
+          "completed_at": "2026-10-30T13:17:22Z"
+        },
+        {
+          "name": "synthetic-integrity",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41061853390/job/124083531468",
+          "started_at": "2026-10-30T13:16:57Z",
+          "completed_at": "2026-10-30T13:20:50Z"
+        },
+        {
+          "name": "context-tools (ubuntu-24.04)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41061853341/job/124083286547",
+          "started_at": "2026-10-30T13:16:25Z",
+          "completed_at": "2026-10-30T13:16:32Z"
+        },
+        {
+          "name": "context-tools (windows-latest)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41061853341/job/124083286275",
+          "started_at": "2026-10-30T13:16:24Z",
+          "completed_at": "2026-10-30T13:16:42Z"
+        },
+        {
+          "name": "secrets",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41061853341/job/124083286017",
+          "started_at": "2026-10-30T13:16:24Z",
+          "completed_at": "2026-10-30T13:16:33Z"
+        },
+        {
+          "name": "analyze (java-kotlin)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41061853354/job/124083285941",
+          "started_at": "2026-10-30T13:16:25Z",
+          "completed_at": "2026-10-30T13:17:30Z"
+        },
+        {
+          "name": "analyze (javascript-typescript)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41061853354/job/124083285774",
+          "started_at": "2026-10-30T13:16:24Z",
+          "completed_at": "2026-10-30T13:17:30Z"
+        },
+        {
+          "name": "synthetic-shadow (ubuntu-24.04)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41061853332/job/124083285450",
+          "started_at": "2026-10-30T13:16:24Z",
+          "completed_at": "2026-10-30T13:19:19Z"
+        },
+        {
+          "name": "analyze (python)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41061853354/job/124083285431",
+          "started_at": "2026-10-30T13:16:25Z",
+          "completed_at": "2026-10-30T13:17:29Z"
+        },
+        {
+          "name": "synthetic-shadow (windows-2022)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41061853332/job/124083284978",
+          "started_at": "2026-10-30T13:16:25Z",
+          "completed_at": "2026-10-30T13:19:34Z"
+        }
+      ]
+    },
+    {
+      "branch": "feature/learning-backend",
+      "sha": "530e592ef2ae6ca3bd7d9f907a58a9a7a8a0e971",
+      "total_count": 0,
+      "checks": []
+    },
+    {
+      "branch": "feature/pedagogical-inventory-b",
+      "sha": "a0a61262c78c1a808a2e267c2cdd158dd2f8859e",
+      "total_count": 15,
+      "checks": [
+        {
+          "name": "CodeQL",
+          "status": "completed",
+          "conclusion": "neutral",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/runs/124203942088",
+          "started_at": "2026-10-30T17:11:26Z",
+          "completed_at": "2026-10-30T17:11:29Z"
+        },
+        {
+          "name": "synthetic-integrity",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41096498769/job/124203515281",
+          "started_at": "2026-10-30T17:10:38Z",
+          "completed_at": "2026-10-30T17:15:31Z"
+        },
+        {
+          "name": "analyze (python)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41096498860/job/124203514694",
+          "started_at": "2026-10-30T17:10:38Z",
+          "completed_at": "2026-10-30T17:11:36Z"
+        },
+        {
+          "name": "analyze (java-kotlin)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41096498860/job/124203514634",
+          "started_at": "2026-10-30T17:10:37Z",
+          "completed_at": "2026-10-30T17:12:09Z"
+        },
+        {
+          "name": "context-tools (windows-latest)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41096498543/job/124203514270",
+          "started_at": "2026-10-30T17:10:38Z",
+          "completed_at": "2026-10-30T17:10:59Z"
+        },
+        {
+          "name": "secrets",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41096498543/job/124203514168",
+          "started_at": "2026-10-30T17:10:37Z",
+          "completed_at": "2026-10-30T17:10:46Z"
+        },
+        {
+          "name": "analyze (javascript-typescript)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41096498860/job/124203514029",
+          "started_at": "2026-10-30T17:10:37Z",
+          "completed_at": "2026-10-30T17:11:41Z"
+        },
+        {
+          "name": "isolated-ledger",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41096498548/job/124203513912",
+          "started_at": "2026-10-30T17:10:37Z",
+          "completed_at": "2026-10-30T17:15:26Z"
+        },
+        {
+          "name": "session-transaction (windows-2022)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41096498616/job/124203513805",
+          "started_at": "2026-10-30T17:10:38Z",
+          "completed_at": "2026-10-30T17:12:36Z"
+        },
+        {
+          "name": "context-tools (ubuntu-24.04)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41096498543/job/124203513697",
+          "started_at": "2026-10-30T17:10:38Z",
+          "completed_at": "2026-10-30T17:10:45Z"
+        },
+        {
+          "name": "session-transaction (ubuntu-24.04)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41096498616/job/124203513605",
+          "started_at": "2026-10-30T17:10:37Z",
+          "completed_at": "2026-10-30T17:11:22Z"
+        },
+        {
+          "name": "synthetic-shadow (ubuntu-24.04)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41096498752/job/124203513255",
+          "started_at": "2026-10-30T17:10:37Z",
+          "completed_at": "2026-10-30T17:13:58Z"
+        },
+        {
+          "name": "windows-synthetic-custody",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41096498548/job/124203513209",
+          "started_at": "2026-10-30T17:10:37Z",
+          "completed_at": "2026-10-30T17:13:55Z"
+        },
+        {
+          "name": "sqlite-retry-contract",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41096498668/job/124203513031",
+          "started_at": "2026-10-30T17:10:37Z",
+          "completed_at": "2026-10-30T17:11:14Z"
+        },
+        {
+          "name": "synthetic-shadow (windows-2022)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41096498752/job/124203512699",
+          "started_at": "2026-10-30T17:10:38Z",
+          "completed_at": "2026-10-30T17:14:55Z"
+        }
+      ]
+    },
+    {
+      "branch": "feature/r-temporal-baseline-audit",
+      "sha": "aac5ab8e6ec37f33971af6df6096e77c5e893c09",
+      "total_count": 0,
+      "checks": []
+    },
+    {
+      "branch": "feature/quarantine-source-exposure",
+      "sha": "8c269d590ff3b054d01a48f21eb5b24eca5496a7",
+      "total_count": 2,
+      "checks": [
+        {
+          "name": "synthetic-integrity",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40620796791/job/122594281787",
+          "started_at": "2026-10-28T02:25:45Z",
+          "completed_at": "2026-10-28T02:28:11Z"
+        },
+        {
+          "name": "isolated-ledger",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40620796933/job/122594281217",
+          "started_at": "2026-10-28T02:25:45Z",
+          "completed_at": "2026-10-28T02:29:17Z"
+        }
+      ]
+    },
+    {
+      "branch": "feature/prospective-scientific-scorecard",
+      "sha": "9a74468355f4147b324b5a390346f612bade4b9a",
+      "total_count": 2,
+      "checks": [
+        {
+          "name": "isolated-ledger",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40605586248/job/122544143406",
+          "started_at": "2026-10-27T23:57:20Z",
+          "completed_at": "2026-10-28T00:00:41Z"
+        },
+        {
+          "name": "synthetic-integrity",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40605586193/job/122544143403",
+          "started_at": "2026-10-27T23:57:21Z",
+          "completed_at": "2026-10-28T00:00:39Z"
+        }
+      ]
+    },
+    {
+      "branch": "feature/source-provenance-read-barrier",
+      "sha": "4bb4d42d4f8c9c2aba9f739f2eef02e08c1c785f",
+      "total_count": 2,
+      "checks": [
+        {
+          "name": "synthetic-integrity",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40631609970/job/122629037679",
+          "started_at": "2026-10-28T04:18:49Z",
+          "completed_at": "2026-10-28T04:21:28Z"
+        },
+        {
+          "name": "isolated-ledger",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40631609983/job/122629037637",
+          "started_at": "2026-10-28T04:18:50Z",
+          "completed_at": "2026-10-28T04:21:47Z"
+        }
+      ]
+    },
+    {
+      "branch": "feature/study-frontend",
+      "sha": "a5febc7a0f7313f218414c41c657196b17befa59",
+      "total_count": 0,
+      "checks": []
+    },
+    {
+      "branch": "fix/analytics-bridge-provenance",
+      "sha": "d5e4ba99a4fb21f594d5bf84b7f68dc206d820bb",
+      "total_count": 0,
+      "checks": []
+    },
+    {
+      "branch": "fix/analytics-utf8-transport",
+      "sha": "4ff7f22a5a271a47b27bb75263d76f01cdc37d13",
+      "total_count": 1,
+      "checks": [
+        {
+          "name": "synthetic-integrity",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40439793177/job/121977124013",
+          "started_at": "2026-10-27T02:40:29Z",
+          "completed_at": "2026-10-27T02:42:47Z"
+        }
+      ]
+    },
+    {
+      "branch": "fix/analytics-learning-evidence",
+      "sha": "0398e526f520ec6c992898511eaa262267a06a9c",
+      "total_count": 0,
+      "checks": []
+    },
+    {
+      "branch": "fix/backend-annotation-order",
+      "sha": "d180e6c7e76b0862790c4c840f9247111aa08e3c",
+      "total_count": 0,
+      "checks": []
+    },
+    {
+      "branch": "fix/backend-error-taxonomy",
+      "sha": "2f9d510edd8ec1a10d0ae30f817d14b2f1f38566",
+      "total_count": 0,
+      "checks": []
+    },
+    {
+      "branch": "fix/backend-pedagogical-reasons",
+      "sha": "791be285cdc8c1b0d623a2f32eb7b7374443f6e2",
+      "total_count": 0,
+      "checks": []
+    },
+    {
+      "branch": "fix/backend-operational-integrity",
+      "sha": "dcfce2e2f5c58a0f9b6acce227278d3a896c35c1",
+      "total_count": 3,
+      "checks": [
+        {
+          "name": "windows-synthetic-custody",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40994777154/job/123865256231",
+          "started_at": "2026-10-30T02:59:09Z",
+          "completed_at": "2026-10-30T03:02:17Z"
+        },
+        {
+          "name": "isolated-ledger",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40994777154/job/123865255956",
+          "started_at": "2026-10-30T02:59:09Z",
+          "completed_at": "2026-10-30T03:03:12Z"
+        },
+        {
+          "name": "sqlite-retry-contract",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40994777089/job/123865255950",
+          "started_at": "2026-10-30T02:59:09Z",
+          "completed_at": "2026-10-30T02:59:58Z"
+        }
+      ]
+    },
+    {
+      "branch": "fix/backend-ungraded-revisions",
+      "sha": "e5320d055bc288ff590b33a9ce65e772f56890c9",
+      "total_count": 0,
+      "checks": []
+    },
+    {
+      "branch": "fix/contextual-integration-gate",
+      "sha": "6b1e3bfe33b6436eefc1aa730905bac30cde9751",
+      "total_count": 1,
+      "checks": [
+        {
+          "name": "synthetic-integrity",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40892602527/job/123513118980",
+          "started_at": "2026-10-29T14:33:10Z",
+          "completed_at": "2026-10-29T14:37:06Z"
+        }
+      ]
+    },
+    {
+      "branch": "fix/backend-suite-recovery-rebased",
+      "sha": "d63568b2f30102801afa99558639b4fab05413eb",
+      "total_count": 16,
+      "checks": [
+        {
+          "name": "CodeQL",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/runs/124208951700",
+          "started_at": "2026-10-30T17:21:17Z",
+          "completed_at": "2026-10-30T17:21:22Z"
+        },
+        {
+          "name": "windows-synthetic-custody",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41097981582/job/124208598661",
+          "started_at": "2026-10-30T17:20:39Z",
+          "completed_at": "2026-10-30T17:22:49Z"
+        },
+        {
+          "name": "isolated-ledger",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41097981582/job/124208598403",
+          "started_at": "2026-10-30T17:20:39Z",
+          "completed_at": "2026-10-30T17:24:20Z"
+        },
+        {
+          "name": "context-tools (windows-latest)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41097981712/job/124208596591",
+          "started_at": "2026-10-30T17:20:39Z",
+          "completed_at": "2026-10-30T17:20:59Z"
+        },
+        {
+          "name": "secrets",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41097981712/job/124208596219",
+          "started_at": "2026-10-30T17:20:39Z",
+          "completed_at": "2026-10-30T17:20:48Z"
+        },
+        {
+          "name": "session-transaction (windows-2022)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41097981593/job/124208595964",
+          "started_at": "2026-10-30T17:20:39Z",
+          "completed_at": "2026-10-30T17:21:57Z"
+        },
+        {
+          "name": "analyze (javascript-typescript)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41097981481/job/124208595932",
+          "started_at": "2026-10-30T17:20:39Z",
+          "completed_at": "2026-10-30T17:21:28Z"
+        },
+        {
+          "name": "analyze (java-kotlin)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41097981481/job/124208595920",
+          "started_at": "2026-10-30T17:20:39Z",
+          "completed_at": "2026-10-30T17:22:41Z"
+        },
+        {
+          "name": "session-transaction (ubuntu-24.04)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41097981593/job/124208595903",
+          "started_at": "2026-10-30T17:20:39Z",
+          "completed_at": "2026-10-30T17:21:26Z"
+        },
+        {
+          "name": "context-tools (ubuntu-24.04)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41097981712/job/124208595796",
+          "started_at": "2026-10-30T17:20:39Z",
+          "completed_at": "2026-10-30T17:20:45Z"
+        },
+        {
+          "name": "full-suite (windows-2022)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41097981465/job/124208595616",
+          "started_at": "2026-10-30T17:20:38Z",
+          "completed_at": "2026-10-30T17:24:51Z"
+        },
+        {
+          "name": "analyze (python)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41097981481/job/124208595417",
+          "started_at": "2026-10-30T17:20:38Z",
+          "completed_at": "2026-10-30T17:21:27Z"
+        },
+        {
+          "name": "synthetic-shadow (windows-2022)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41097981477/job/124208595323",
+          "started_at": "2026-10-30T17:20:39Z",
+          "completed_at": "2026-10-30T17:24:49Z"
+        },
+        {
+          "name": "full-suite (ubuntu-24.04)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41097981465/job/124208595234",
+          "started_at": "2026-10-30T17:20:38Z",
+          "completed_at": "2026-10-30T17:22:50Z"
+        },
+        {
+          "name": "synthetic-shadow (ubuntu-24.04)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41097981477/job/124208594970",
+          "started_at": "2026-10-30T17:20:38Z",
+          "completed_at": "2026-10-30T17:23:04Z"
+        },
+        {
+          "name": "sqlite-retry-contract",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41097981450/job/124208594873",
+          "started_at": "2026-10-30T17:20:38Z",
+          "completed_at": "2026-10-30T17:21:22Z"
+        }
+      ]
+    },
+    {
+      "branch": "fix/backend-suite-recovery",
+      "sha": "8c071f88cf0e2b3b350433312a30662cd3ba98df",
+      "total_count": 16,
+      "checks": [
+        {
+          "name": "CodeQL",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/runs/124210230772",
+          "started_at": "2026-10-30T17:23:49Z",
+          "completed_at": "2026-10-30T17:23:52Z"
+        },
+        {
+          "name": "synthetic-shadow (windows-2022)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41098344524/job/124209853767",
+          "started_at": "2026-10-30T17:23:06Z",
+          "completed_at": "2026-10-30T17:27:37Z"
+        },
+        {
+          "name": "context-tools (windows-latest)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41098344692/job/124209853714",
+          "started_at": "2026-10-30T17:23:07Z",
+          "completed_at": "2026-10-30T17:23:29Z"
+        },
+        {
+          "name": "context-tools (ubuntu-24.04)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41098344692/job/124209853638",
+          "started_at": "2026-10-30T17:23:06Z",
+          "completed_at": "2026-10-30T17:23:15Z"
+        },
+        {
+          "name": "analyze (javascript-typescript)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41098345007/job/124209853376",
+          "started_at": "2026-10-30T17:23:06Z",
+          "completed_at": "2026-10-30T17:24:04Z"
+        },
+        {
+          "name": "analyze (java-kotlin)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41098345007/job/124209853334",
+          "started_at": "2026-10-30T17:23:06Z",
+          "completed_at": "2026-10-30T17:24:31Z"
+        },
+        {
+          "name": "secrets",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41098344692/job/124209853245",
+          "started_at": "2026-10-30T17:23:06Z",
+          "completed_at": "2026-10-30T17:23:15Z"
+        },
+        {
+          "name": "full-suite (ubuntu-24.04)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41098344687/job/124209853206",
+          "started_at": "2026-10-30T17:23:06Z",
+          "completed_at": "2026-10-30T17:25:38Z"
+        },
+        {
+          "name": "analyze (python)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41098345007/job/124209853193",
+          "started_at": "2026-10-30T17:23:06Z",
+          "completed_at": "2026-10-30T17:23:58Z"
+        },
+        {
+          "name": "isolated-ledger",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41098344529/job/124209852839",
+          "started_at": "2026-10-30T17:23:05Z",
+          "completed_at": "2026-10-30T17:27:26Z"
+        },
+        {
+          "name": "full-suite (windows-2022)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41098344687/job/124209852704",
+          "started_at": "2026-10-30T17:23:06Z",
+          "completed_at": "2026-10-30T17:26:21Z"
+        },
+        {
+          "name": "synthetic-shadow (ubuntu-24.04)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41098344524/job/124209852614",
+          "started_at": "2026-10-30T17:23:06Z",
+          "completed_at": "2026-10-30T17:26:01Z"
+        },
+        {
+          "name": "sqlite-retry-contract",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41098344681/job/124209852511",
+          "started_at": "2026-10-30T17:23:06Z",
+          "completed_at": "2026-10-30T17:23:51Z"
+        },
+        {
+          "name": "windows-synthetic-custody",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41098344529/job/124209852337",
+          "started_at": "2026-10-30T17:23:05Z",
+          "completed_at": "2026-10-30T17:26:19Z"
+        },
+        {
+          "name": "session-transaction (ubuntu-24.04)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41098344528/job/124209852198",
+          "started_at": "2026-10-30T17:23:05Z",
+          "completed_at": "2026-10-30T17:23:47Z"
+        },
+        {
+          "name": "session-transaction (windows-2022)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41098344528/job/124209851808",
+          "started_at": "2026-10-30T17:23:06Z",
+          "completed_at": "2026-10-30T17:24:24Z"
+        }
+      ]
+    },
+    {
+      "branch": "fix/maestro-contest-scope",
+      "sha": "aeb4ff0da54b8216f7c9cf81ee51f78260d71c6d",
+      "total_count": 0,
+      "checks": []
+    },
+    {
+      "branch": "fix/frontend-accessibility-flows",
+      "sha": "da5bc26e46957a01d952ba38ae6be379a13c6340",
+      "total_count": 0,
+      "checks": []
+    },
+    {
+      "branch": "fix/dashboard-pedagogical-integrity",
+      "sha": "45ae555c5369aa2738af6b68f81184f4b2b6f61a",
+      "total_count": 0,
+      "checks": []
+    },
+    {
+      "branch": "fix/planning-contest-scope",
+      "sha": "70bd415b6d8af3746c13500c7bdbc97306708bb6",
+      "total_count": 0,
+      "checks": []
+    },
+    {
+      "branch": "fix/prospective-activation-readiness",
+      "sha": "0f3af6879a08fe301b98e7a5e1c407625e3eeda8",
+      "total_count": 3,
+      "checks": [
+        {
+          "name": "synthetic-integrity",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40945022556/job/123698036368",
+          "started_at": "2026-10-29T19:59:45Z",
+          "completed_at": "2026-10-29T20:04:06Z"
+        },
+        {
+          "name": "windows-synthetic-custody",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40945022312/job/123698035509",
+          "started_at": "2026-10-29T19:59:45Z",
+          "completed_at": "2026-10-29T20:02:38Z"
+        },
+        {
+          "name": "isolated-ledger",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40945022312/job/123698035078",
+          "started_at": "2026-10-29T19:59:44Z",
+          "completed_at": "2026-10-29T20:03:49Z"
+        }
+      ]
+    },
+    {
+      "branch": "fix/r-evidence-audit-integrity",
+      "sha": "4db0ac08c70e0c651b9bc345e6e9d6b634b2a6e7",
+      "total_count": 0,
+      "checks": []
+    },
+    {
+      "branch": "fix/r-ordinal-confidence-contract",
+      "sha": "a7f135be6fd535339efafe019d7a33ab4e33cd8f",
+      "total_count": 1,
+      "checks": [
+        {
+          "name": "synthetic-integrity",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40500652269/job/122177193984",
+          "started_at": "2026-10-27T12:02:26Z",
+          "completed_at": "2026-10-27T12:05:01Z"
+        }
+      ]
+    },
+    {
+      "branch": "fix/prospective-question-flow-coverage",
+      "sha": "ec7fd1d86cc059be67f4133df70ff00fae4f5470",
+      "total_count": 3,
+      "checks": [
+        {
+          "name": "synthetic-integrity",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40971949713/job/123790581117",
+          "started_at": "2026-10-29T23:16:07Z",
+          "completed_at": "2026-10-29T23:20:10Z"
+        },
+        {
+          "name": "windows-synthetic-custody",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40971949560/job/123790579731",
+          "started_at": "2026-10-29T23:16:08Z",
+          "completed_at": "2026-10-29T23:19:09Z"
+        },
+        {
+          "name": "isolated-ledger",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40971949560/job/123790579296",
+          "started_at": "2026-10-29T23:16:07Z",
+          "completed_at": "2026-10-29T23:20:45Z"
+        }
+      ]
+    },
+    {
+      "branch": "fix/wave0-cognitive-action-gates",
+      "sha": "2c9aaf2532b3f90e135da73fbba2ade6fa3cba48",
+      "total_count": 0,
+      "checks": []
+    },
+    {
+      "branch": "fix/restore-memory-lab-on-main",
+      "sha": "e4cf49d5dc735afc6e602df49865c933f06a1c9b",
+      "total_count": 1,
+      "checks": [
+        {
+          "name": "synthetic-integrity",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40502509328/job/122183439153",
+          "started_at": "2026-10-27T12:16:48Z",
+          "completed_at": "2026-10-27T12:19:19Z"
+        }
+      ]
+    },
+    {
+      "branch": "integration/r-lab-evidence-20261030",
+      "sha": "4adf56aba3128e03e88da1ac2da7d730f251a7f8",
+      "total_count": 6,
+      "checks": [
+        {
+          "name": "context-tools (windows-latest)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41099555753/job/124214039353",
+          "started_at": "2026-10-30T17:31:29Z",
+          "completed_at": "2026-10-30T17:32:05Z"
+        },
+        {
+          "name": "secrets",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41099555753/job/124214039103",
+          "started_at": "2026-10-30T17:31:28Z",
+          "completed_at": "2026-10-30T17:32:23Z"
+        },
+        {
+          "name": "context-tools (ubuntu-24.04)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41099555753/job/124214038706",
+          "started_at": "2026-10-30T17:31:28Z",
+          "completed_at": "2026-10-30T17:31:54Z"
+        },
+        {
+          "name": "synthetic-integrity",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41099555672/job/124214038588",
+          "started_at": "2026-10-30T17:31:28Z",
+          "completed_at": "2026-10-30T17:37:33Z"
+        },
+        {
+          "name": "synthetic-shadow (windows-2022)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41099555715/job/124214038128",
+          "started_at": "2026-10-30T17:31:28Z",
+          "completed_at": "2026-10-30T17:42:48Z"
+        },
+        {
+          "name": "synthetic-shadow (ubuntu-24.04)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41099555715/job/124214037900",
+          "started_at": "2026-10-30T17:31:28Z",
+          "completed_at": "2026-10-30T17:35:07Z"
+        }
+      ]
+    },
+    {
+      "branch": "fix/study-session-integrity",
+      "sha": "04394616c55756a8c595d5cd2167bf0318bcb36c",
+      "total_count": 0,
+      "checks": []
+    },
+    {
+      "branch": "lab/scientific-decision-evaluation",
+      "sha": "9aac8927d5d360db9e5cd45245c7f85b7bac9f7e",
+      "total_count": 1,
+      "checks": [
+        {
+          "name": "synthetic-integrity",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40912923885/job/123585413089",
+          "started_at": "2026-10-29T16:34:34Z",
+          "completed_at": "2026-10-29T16:38:49Z"
+        }
+      ]
+    },
+    {
+      "branch": "main",
+      "sha": "789f9053f3e90a366a9f09542a0f7331b9d8348b",
+      "total_count": 6,
+      "checks": [
+        {
+          "name": "context-tools (ubuntu-24.04)",
+          "status": "completed",
+          "conclusion": "failure",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41119911836/job/124283701481",
+          "started_at": "2026-10-30T20:01:05Z",
+          "completed_at": "2026-10-30T20:01:12Z"
+        },
+        {
+          "name": "context-tools (windows-latest)",
+          "status": "completed",
+          "conclusion": "cancelled",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41119911836/job/124283701459",
+          "started_at": "2026-10-30T20:01:05Z",
+          "completed_at": "2026-10-30T20:01:23Z"
+        },
+        {
+          "name": "analyze (java-kotlin)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41119912000/job/124283700953",
+          "started_at": "2026-10-30T20:01:05Z",
+          "completed_at": "2026-10-30T20:03:42Z"
+        },
+        {
+          "name": "analyze (javascript-typescript)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41119912000/job/124283700819",
+          "started_at": "2026-10-30T20:01:05Z",
+          "completed_at": "2026-10-30T20:02:54Z"
+        },
+        {
+          "name": "secrets",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41119911836/job/124283700750",
+          "started_at": "2026-10-30T20:01:05Z",
+          "completed_at": "2026-10-30T20:01:12Z"
+        },
+        {
+          "name": "analyze (python)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/41119912000/job/124283700286",
+          "started_at": "2026-10-30T20:01:05Z",
+          "completed_at": "2026-10-30T20:02:02Z"
+        }
+      ]
+    },
+    {
+      "branch": "integration/r-laboratory-validation",
+      "sha": "bccb65940e27d78a768c1bc3bf28a907780ced28",
+      "total_count": 1,
+      "checks": [
+        {
+          "name": "synthetic-integrity",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40441070232/job/122022093810",
+          "started_at": "2026-10-27T05:09:44Z",
+          "completed_at": "2026-10-27T05:12:18Z"
+        }
+      ]
+    },
+    {
+      "branch": "lab/authentic-prospective-chain",
+      "sha": "8c20fcd11d510e85cb3b2147ad3760f104696a52",
+      "total_count": 2,
+      "checks": [
+        {
+          "name": "synthetic-integrity",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40934795071/job/123662361931",
+          "started_at": "2026-10-29T18:51:59Z",
+          "completed_at": "2026-10-29T18:55:38Z"
+        },
+        {
+          "name": "isolated-ledger",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/actions/runs/40934795011/job/123662360977",
+          "started_at": "2026-10-29T18:51:58Z",
+          "completed_at": "2026-10-29T18:55:16Z"
+        }
+      ]
+    }
+  ]
+}
