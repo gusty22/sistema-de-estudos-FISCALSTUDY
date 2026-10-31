@@ -532,3 +532,39 @@ test('FS-01C (Achado 1): Reload de pagina apos falha de envio restaura SENT_UNCO
   // Após confirmação, journal é limpo com integridade
   assert.equal(readPendingSession(sessionId), null);
 });
+
+test('FS-01C (Gate Final 2): Journal corrompido bloqueia cancelamento silencioso em Continuar Estudando do QuestionViewer', () => {
+  const sessionId = 'qv-corrupted-journal-test';
+  const prefix = 'fiscalstudy:study_session:v1:';
+
+  // Injeta journal corrompido no storage
+  globalThis.sessionStorage.setItem(prefix + sessionId, '{"version":1,"sessionId":"corrupted",INVALID_JSON');
+
+  // QuestionViewer tenta carregar fromJournal(sessionId) -> retorna null
+  const fromJ = StudySessionSubmission.fromJournal(sessionId);
+  assert.equal(fromJ, null);
+
+  // Usuário clica em "Continuar Estudando"
+  let pendingHandoffSubmissionRefCurrent = null;
+  let showDiscardConfirm = false;
+
+  const handleContinueStudying = () => {
+    const decision = evaluateContinuationDecision(pendingHandoffSubmissionRefCurrent, sessionId);
+    if (decision.requiresExplicitConfirmation) {
+      showDiscardConfirm = true;
+      return;
+    }
+    clearPendingSession(sessionId);
+    pendingHandoffSubmissionRefCurrent = null;
+  };
+
+  handleContinueStudying();
+
+  // Comprova que o descarte silencioso foi bloqueado categoricamente
+  assert.equal(showDiscardConfirm, true, 'Journal corrompido DEVE exibir modal de confirmação explícita');
+  assert.equal(globalThis.sessionStorage.getItem(prefix + sessionId), '{"version":1,"sessionId":"corrupted",INVALID_JSON');
+
+  // Usuário confirma conscientemente o descarte
+  executeConsciousDiscard(sessionId);
+  assert.equal(globalThis.sessionStorage.getItem(prefix + sessionId), null);
+});
