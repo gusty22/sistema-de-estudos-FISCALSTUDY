@@ -1,7 +1,7 @@
 # FiscalStudy — índice executivo
 Objetivo: estudo local com evidências rastreáveis, sem confundir acerto, retenção, domínio e transferência.
 
-Snapshot histórico (2026-10-31, referência histórica — nunca fonte de autorização atual): main `0686f08` (PRs #41–#47, #59–#65, #68, #70–#71, #74, #76, #78–#79, #82, #84, #86, #89 `MERGED`; Issue #87 `IN_PROGRESS` no Codex/Frente B; Issue #80 `BLOCKED`).
+Snapshot histórico (2026-10-31, referência histórica — nunca fonte de autorização atual): main `9ff9bae` (PRs #89, #91 `MERGED`; Feature FS-01 drafts #93, #95, #97 abertos para homologação; Issue #87 reservada ao Codex/Frente B; Issue #80 `BLOCKED`).
 Sempre consulte `git status --short`, `origin/main` e Issues/PRs atuais no GitHub para verificar a fila ou editar.
 A existência dos contratos não demonstra benefício pedagógico. Piloto pessoal não iniciado.
 
