@@ -1,0 +1,467 @@
+{
+  "date": "2026-10-30",
+  "main_sha": "e877e468fb4e77d143137cee3a6c97eb488ffb85",
+  "pagination": {
+    "branches": [
+      68,
+      0
+    ],
+    "pull_requests": [
+      74,
+      0
+    ]
+  },
+  "branches": [
+    {
+      "name": "chore/agent-pr-governance-20261030",
+      "sha": "f9efd38a2d48bcfe8a8eb86a3d455fb0eeb2dc9e",
+      "classification": "INTEGRATED",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "chore/development-context-security",
+      "sha": "03dcc721c6cb479fba43f515bfea809a323db8db",
+      "classification": "INTEGRATED",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "chore/pr41-pedagogical-decision",
+      "sha": "0eb98d1108a0aca4965d567fe23b0e19548ad5f5",
+      "classification": "INTEGRATED",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "dependabot/npm_and_yarn/frontend/types/node-26.6.5",
+      "sha": "529eae2e2ca97f67fc8a7164a6a3917f3de36e06",
+      "classification": "REJECTED",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "docs/context-checkpoint",
+      "sha": "46471e5fa576aa479341d8166c149b665ac98ed3",
+      "classification": "INTEGRATED",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "docs/execution-and-validation",
+      "sha": "24fd22454ee93083a93da0c1bf3ca020f77e8876",
+      "classification": "EQUIVALENT",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "docs/historical-consolidation-audit-20261030",
+      "sha": "adedca04f0366e0ebe78d45d18d1868c07939aa1",
+      "classification": "NOT_INTEGRATED",
+      "justification": "Published draft PR under manual review, no lost contribution"
+    },
+    {
+      "name": "docs/production-round-20261025",
+      "sha": "36cb8598ca7ba9af5c3658539102b03adfc8d7ff",
+      "classification": "INTEGRATED",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "experiment/fsrs-memory-lab",
+      "sha": "04320817714c29bc41f61ef9f2766251f1acc499",
+      "classification": "EQUIVALENT",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "experiment/individual-calibration-identifiability",
+      "sha": "756c7bbd3ebed7f68b4bbad76dc4a69dac73ca61",
+      "classification": "INTEGRATED",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "experiment/learner-baseline-comparison",
+      "sha": "ced195f082ff357cab9252ad093d74fa1d269f5d",
+      "classification": "EQUIVALENT",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "experiment/learner-lab-mvp",
+      "sha": "4705bd7c4bc5203dbc03921e45c2174ec522745c",
+      "classification": "INTEGRATED",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "experiment/learner-lab-results",
+      "sha": "0d3e6803a71682fa6b0efc0d63ac92766e1cd634",
+      "classification": "INTEGRATED",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "experiment/public-human-memory-validation",
+      "sha": "486c3b90b596ac55b466975bd7c63fd575114584",
+      "classification": "INTEGRATED",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "experiment/r-contextual-prequential-v1",
+      "sha": "ea41ff021456597737c8d442fa46663bb2f249bc",
+      "classification": "INTEGRATED",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "experiment/recorded-day-heldout-validation",
+      "sha": "1ddc6c04e8669e28518392f6a76945ff1140c0ee",
+      "classification": "INTEGRATED",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "feat/analytics-engine-integration",
+      "sha": "da3955f3637ee9520df8f73a107b85cb286cea86",
+      "classification": "INTEGRATED",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "feature/analytics-fsrs-retrieval",
+      "sha": "c006b12338798a94931fb9bdd1f4ee81c42d28cb",
+      "classification": "INTEGRATED",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "feature/analytics-runtime",
+      "sha": "89819ba0a9d6540b16b21cc3d934c39a75708c0d",
+      "classification": "EQUIVALENT",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "feature/antigravity-multiagent-foundation",
+      "sha": "865379a245a4751e7c4f1a6d8547d2976e62cc2c",
+      "classification": "INTEGRATED",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "feature/backend-fsrs-export-contract",
+      "sha": "d1f4e26af17bb95848f4d932731c85835a0c6fa7",
+      "classification": "INTEGRATED",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "feature/contextual-orchestrator-shadow",
+      "sha": "db2d2390ff2cad72a749e7851154114344d13baf",
+      "classification": "INTEGRATED",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "feature/database-contracts",
+      "sha": "c4bccacdde684ade19c963b3de9868154337ed13",
+      "classification": "INTEGRATED",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "feature/diagnostic-quarantine-foundation",
+      "sha": "7ede739d038a0ff2dc59a74fd5bdbf00cf5a73a5",
+      "classification": "INTEGRATED",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "feature/document-ingestion",
+      "sha": "40640990a284ed218c76598e3828f03a5ad12087",
+      "classification": "INTEGRATED",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "feature/epic-02-knowledge-model",
+      "sha": "e086c8441fde149eeb1b4557f3e3d7b6bfb602ea",
+      "classification": "INTEGRATED",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "feature/frente-c-learning-instruments",
+      "sha": "2c9c2ec71498d0495e39126ead5cb2f19804b0f9",
+      "classification": "INTEGRATED",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "feature/individual-learning-orchestrator",
+      "sha": "44691c0c576b5c697a5c0cff63384142546189a5",
+      "classification": "INTEGRATED",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "feature/learner-evidence-r",
+      "sha": "4b1bd9a26d53512d8e6a135c030126b4a025c8ed",
+      "classification": "INTEGRATED",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "feature/learning-backend",
+      "sha": "530e592ef2ae6ca3bd7d9f907a58a9a7a8a0e971",
+      "classification": "EQUIVALENT",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "feature/obsidian-knowledge-migration",
+      "sha": "fd44358d1edf17704dd3b88e8b44832a90116301",
+      "classification": "INTEGRATED",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "feature/pedagogical-inventory-b",
+      "sha": "a0a61262c78c1a808a2e267c2cdd158dd2f8859e",
+      "classification": "INTEGRATED",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "feature/prospective-question-ledger",
+      "sha": "3c223bec5cb6d872b638fcf0a8f68545f20a5ded",
+      "classification": "INTEGRATED",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "feature/prospective-scientific-scorecard",
+      "sha": "9a74468355f4147b324b5a390346f612bade4b9a",
+      "classification": "INTEGRATED",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "feature/quarantine-source-exposure",
+      "sha": "8c269d590ff3b054d01a48f21eb5b24eca5496a7",
+      "classification": "INTEGRATED",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "feature/r-temporal-baseline-audit",
+      "sha": "aac5ab8e6ec37f33971af6df6096e77c5e893c09",
+      "classification": "INTEGRATED",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "feature/source-provenance-read-barrier",
+      "sha": "4bb4d42d4f8c9c2aba9f739f2eef02e08c1c785f",
+      "classification": "INTEGRATED",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "feature/study-frontend",
+      "sha": "a5febc7a0f7313f218414c41c657196b17befa59",
+      "classification": "INTEGRATED",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "fix/agent-context-budget-20261030",
+      "sha": "c1688b4e1dc15a91c05aaca39c035f01802fcfe5",
+      "classification": "INTEGRATED",
+      "justification": "PR76 merged by maintainer, head ancestor main"
+    },
+    {
+      "name": "fix/analytics-bridge-provenance",
+      "sha": "d5e4ba99a4fb21f594d5bf84b7f68dc206d820bb",
+      "classification": "INTEGRATED",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "fix/analytics-learning-evidence",
+      "sha": "0398e526f520ec6c992898511eaa262267a06a9c",
+      "classification": "INTEGRATED",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "fix/analytics-utf8-transport",
+      "sha": "4ff7f22a5a271a47b27bb75263d76f01cdc37d13",
+      "classification": "INTEGRATED",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "fix/backend-annotation-order",
+      "sha": "d180e6c7e76b0862790c4c840f9247111aa08e3c",
+      "classification": "INTEGRATED",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "fix/backend-error-taxonomy",
+      "sha": "2f9d510edd8ec1a10d0ae30f817d14b2f1f38566",
+      "classification": "EQUIVALENT",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "fix/backend-operational-integrity",
+      "sha": "dcfce2e2f5c58a0f9b6acce227278d3a896c35c1",
+      "classification": "INTEGRATED",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "fix/backend-pedagogical-reasons",
+      "sha": "791be285cdc8c1b0d623a2f32eb7b7374443f6e2",
+      "classification": "EQUIVALENT",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "fix/backend-suite-recovery",
+      "sha": "8c071f88cf0e2b3b350433312a30662cd3ba98df",
+      "classification": "EQUIVALENT",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "fix/backend-suite-recovery-rebased",
+      "sha": "d63568b2f30102801afa99558639b4fab05413eb",
+      "classification": "INTEGRATED",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "fix/backend-ungraded-revisions",
+      "sha": "e5320d055bc288ff590b33a9ce65e772f56890c9",
+      "classification": "INTEGRATED",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "fix/branch-audit-ancestry-20261030",
+      "sha": "b2a4a864e7298b6a79520098e46d8014cb9afbbc",
+      "classification": "NOT_INTEGRATED",
+      "justification": "Published draft PR under manual review, no lost contribution"
+    },
+    {
+      "name": "fix/contextual-integration-gate",
+      "sha": "6b1e3bfe33b6436eefc1aa730905bac30cde9751",
+      "classification": "INTEGRATED",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "fix/dashboard-pedagogical-integrity",
+      "sha": "45ae555c5369aa2738af6b68f81184f4b2b6f61a",
+      "classification": "INTEGRATED",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "fix/frontend-accessibility-flows",
+      "sha": "da5bc26e46957a01d952ba38ae6be379a13c6340",
+      "classification": "INTEGRATED",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "fix/maestro-contest-scope",
+      "sha": "aeb4ff0da54b8216f7c9cf81ee51f78260d71c6d",
+      "classification": "INTEGRATED",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "fix/planning-contest-scope",
+      "sha": "70bd415b6d8af3746c13500c7bdbc97306708bb6",
+      "classification": "INTEGRATED",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "fix/prospective-activation-readiness",
+      "sha": "0f3af6879a08fe301b98e7a5e1c407625e3eeda8",
+      "classification": "INTEGRATED",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "fix/prospective-question-flow-coverage",
+      "sha": "ec7fd1d86cc059be67f4133df70ff00fae4f5470",
+      "classification": "INTEGRATED",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "fix/r-evidence-audit-integrity",
+      "sha": "4db0ac08c70e0c651b9bc345e6e9d6b634b2a6e7",
+      "classification": "INTEGRATED",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "fix/r-locale-evidence-20261030",
+      "sha": "e4ef48d89a02c1357e935a5ea55999b806cb2f37",
+      "classification": "NOT_INTEGRATED",
+      "justification": "Published draft PR under manual review, no lost contribution"
+    },
+    {
+      "name": "fix/r-ordinal-confidence-contract",
+      "sha": "a7f135be6fd535339efafe019d7a33ab4e33cd8f",
+      "classification": "INTEGRATED",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "fix/restore-memory-lab-on-main",
+      "sha": "e4cf49d5dc735afc6e602df49865c933f06a1c9b",
+      "classification": "INTEGRATED",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "fix/study-session-integrity",
+      "sha": "04394616c55756a8c595d5cd2167bf0318bcb36c",
+      "classification": "EQUIVALENT",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "fix/wave0-cognitive-action-gates",
+      "sha": "2c9aaf2532b3f90e135da73fbba2ade6fa3cba48",
+      "classification": "INTEGRATED",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "integration/r-lab-evidence-20261030",
+      "sha": "4adf56aba3128e03e88da1ac2da7d730f251a7f8",
+      "classification": "INTEGRATED",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "integration/r-laboratory-validation",
+      "sha": "bccb65940e27d78a768c1bc3bf28a907780ced28",
+      "classification": "EQUIVALENT",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "lab/authentic-prospective-chain",
+      "sha": "8c20fcd11d510e85cb3b2147ad3760f104696a52",
+      "classification": "INTEGRATED",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "lab/scientific-decision-evaluation",
+      "sha": "9aac8927d5d360db9e5cd45245c7f85b7bac9f7e",
+      "classification": "INTEGRATED",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    },
+    {
+      "name": "main",
+      "sha": "e877e468fb4e77d143137cee3a6c97eb488ffb85",
+      "classification": "INTEGRATED",
+      "justification": "Historical contribution audited; main advanced only by confirmed PR76"
+    }
+  ],
+  "new_pull_requests": [
+    {
+      "number": 79,
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/79",
+      "state": "open",
+      "merged_at": null,
+      "merge_commit_sha": "277bbabac22fbee5692b03d61e2fef9dd6cbc1d2",
+      "base": "main",
+      "head": "fix/r-locale-evidence-20261030",
+      "head_sha": "e4ef48d89a02c1357e935a5ea55999b806cb2f37"
+    },
+    {
+      "number": 78,
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/78",
+      "state": "open",
+      "merged_at": null,
+      "merge_commit_sha": "02d06e6cd98bdcada903b14a41ef747ceb529df3",
+      "base": "main",
+      "head": "docs/historical-consolidation-audit-20261030",
+      "head_sha": "adedca04f0366e0ebe78d45d18d1868c07939aa1"
+    },
+    {
+      "number": 76,
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/76",
+      "state": "closed",
+      "merged_at": "2026-10-30T20:53:17Z",
+      "merge_commit_sha": "e877e468fb4e77d143137cee3a6c97eb488ffb85",
+      "base": "main",
+      "head": "fix/agent-context-budget-20261030",
+      "head_sha": "c1688b4e1dc15a91c05aaca39c035f01802fcfe5"
+    },
+    {
+      "number": 74,
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/74",
+      "state": "open",
+      "merged_at": null,
+      "merge_commit_sha": "fdae8a920d557dbc1e6a0be5b51ad8d0ef0fc74b",
+      "base": "main",
+      "head": "fix/branch-audit-ancestry-20261030",
+      "head_sha": "b2a4a864e7298b6a79520098e46d8014cb9afbbc"
+    }
+  ],
+  "note": "Final inventory refresh precedes the final documentation commit of PR78; consult live PR metadata for its newest HEAD."
+}

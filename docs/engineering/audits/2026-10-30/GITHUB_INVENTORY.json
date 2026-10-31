@@ -1,0 +1,1254 @@
+{
+  "captured_date": "2026-10-30",
+  "repository": "gusty22/sistema-de-estudos-FISCALSTUDY",
+  "pagination": {
+    "branches": [
+      64,
+      0
+    ],
+    "pull_requests": [
+      70,
+      0
+    ]
+  },
+  "branches": [
+    {
+      "name": "chore/agent-pr-governance-20261030",
+      "sha": "f9efd38a2d48bcfe8a8eb86a3d455fb0eeb2dc9e"
+    },
+    {
+      "name": "chore/development-context-security",
+      "sha": "03dcc721c6cb479fba43f515bfea809a323db8db"
+    },
+    {
+      "name": "chore/pr41-pedagogical-decision",
+      "sha": "0eb98d1108a0aca4965d567fe23b0e19548ad5f5"
+    },
+    {
+      "name": "dependabot/npm_and_yarn/frontend/types/node-26.6.5",
+      "sha": "529eae2e2ca97f67fc8a7164a6a3917f3de36e06"
+    },
+    {
+      "name": "docs/context-checkpoint",
+      "sha": "46471e5fa576aa479341d8166c149b665ac98ed3"
+    },
+    {
+      "name": "docs/execution-and-validation",
+      "sha": "24fd22454ee93083a93da0c1bf3ca020f77e8876"
+    },
+    {
+      "name": "docs/production-round-20261025",
+      "sha": "36cb8598ca7ba9af5c3658539102b03adfc8d7ff"
+    },
+    {
+      "name": "experiment/fsrs-memory-lab",
+      "sha": "04320817714c29bc41f61ef9f2766251f1acc499"
+    },
+    {
+      "name": "experiment/individual-calibration-identifiability",
+      "sha": "756c7bbd3ebed7f68b4bbad76dc4a69dac73ca61"
+    },
+    {
+      "name": "experiment/learner-baseline-comparison",
+      "sha": "ced195f082ff357cab9252ad093d74fa1d269f5d"
+    },
+    {
+      "name": "experiment/learner-lab-mvp",
+      "sha": "4705bd7c4bc5203dbc03921e45c2174ec522745c"
+    },
+    {
+      "name": "experiment/learner-lab-results",
+      "sha": "0d3e6803a71682fa6b0efc0d63ac92766e1cd634"
+    },
+    {
+      "name": "experiment/public-human-memory-validation",
+      "sha": "486c3b90b596ac55b466975bd7c63fd575114584"
+    },
+    {
+      "name": "experiment/r-contextual-prequential-v1",
+      "sha": "ea41ff021456597737c8d442fa46663bb2f249bc"
+    },
+    {
+      "name": "experiment/recorded-day-heldout-validation",
+      "sha": "1ddc6c04e8669e28518392f6a76945ff1140c0ee"
+    },
+    {
+      "name": "feat/analytics-engine-integration",
+      "sha": "da3955f3637ee9520df8f73a107b85cb286cea86"
+    },
+    {
+      "name": "feature/analytics-fsrs-retrieval",
+      "sha": "c006b12338798a94931fb9bdd1f4ee81c42d28cb"
+    },
+    {
+      "name": "feature/analytics-runtime",
+      "sha": "89819ba0a9d6540b16b21cc3d934c39a75708c0d"
+    },
+    {
+      "name": "feature/antigravity-multiagent-foundation",
+      "sha": "865379a245a4751e7c4f1a6d8547d2976e62cc2c"
+    },
+    {
+      "name": "feature/backend-fsrs-export-contract",
+      "sha": "d1f4e26af17bb95848f4d932731c85835a0c6fa7"
+    },
+    {
+      "name": "feature/contextual-orchestrator-shadow",
+      "sha": "db2d2390ff2cad72a749e7851154114344d13baf"
+    },
+    {
+      "name": "feature/database-contracts",
+      "sha": "c4bccacdde684ade19c963b3de9868154337ed13"
+    },
+    {
+      "name": "feature/diagnostic-quarantine-foundation",
+      "sha": "7ede739d038a0ff2dc59a74fd5bdbf00cf5a73a5"
+    },
+    {
+      "name": "feature/document-ingestion",
+      "sha": "40640990a284ed218c76598e3828f03a5ad12087"
+    },
+    {
+      "name": "feature/epic-02-knowledge-model",
+      "sha": "e086c8441fde149eeb1b4557f3e3d7b6bfb602ea"
+    },
+    {
+      "name": "feature/frente-c-learning-instruments",
+      "sha": "2c9c2ec71498d0495e39126ead5cb2f19804b0f9"
+    },
+    {
+      "name": "feature/individual-learning-orchestrator",
+      "sha": "44691c0c576b5c697a5c0cff63384142546189a5"
+    },
+    {
+      "name": "feature/learner-evidence-r",
+      "sha": "4b1bd9a26d53512d8e6a135c030126b4a025c8ed"
+    },
+    {
+      "name": "feature/learning-backend",
+      "sha": "530e592ef2ae6ca3bd7d9f907a58a9a7a8a0e971"
+    },
+    {
+      "name": "feature/obsidian-knowledge-migration",
+      "sha": "fd44358d1edf17704dd3b88e8b44832a90116301"
+    },
+    {
+      "name": "feature/pedagogical-inventory-b",
+      "sha": "a0a61262c78c1a808a2e267c2cdd158dd2f8859e"
+    },
+    {
+      "name": "feature/prospective-question-ledger",
+      "sha": "3c223bec5cb6d872b638fcf0a8f68545f20a5ded"
+    },
+    {
+      "name": "feature/prospective-scientific-scorecard",
+      "sha": "9a74468355f4147b324b5a390346f612bade4b9a"
+    },
+    {
+      "name": "feature/quarantine-source-exposure",
+      "sha": "8c269d590ff3b054d01a48f21eb5b24eca5496a7"
+    },
+    {
+      "name": "feature/r-temporal-baseline-audit",
+      "sha": "aac5ab8e6ec37f33971af6df6096e77c5e893c09"
+    },
+    {
+      "name": "feature/source-provenance-read-barrier",
+      "sha": "4bb4d42d4f8c9c2aba9f739f2eef02e08c1c785f"
+    },
+    {
+      "name": "feature/study-frontend",
+      "sha": "a5febc7a0f7313f218414c41c657196b17befa59"
+    },
+    {
+      "name": "fix/analytics-bridge-provenance",
+      "sha": "d5e4ba99a4fb21f594d5bf84b7f68dc206d820bb"
+    },
+    {
+      "name": "fix/analytics-learning-evidence",
+      "sha": "0398e526f520ec6c992898511eaa262267a06a9c"
+    },
+    {
+      "name": "fix/analytics-utf8-transport",
+      "sha": "4ff7f22a5a271a47b27bb75263d76f01cdc37d13"
+    },
+    {
+      "name": "fix/backend-annotation-order",
+      "sha": "d180e6c7e76b0862790c4c840f9247111aa08e3c"
+    },
+    {
+      "name": "fix/backend-error-taxonomy",
+      "sha": "2f9d510edd8ec1a10d0ae30f817d14b2f1f38566"
+    },
+    {
+      "name": "fix/backend-operational-integrity",
+      "sha": "dcfce2e2f5c58a0f9b6acce227278d3a896c35c1"
+    },
+    {
+      "name": "fix/backend-pedagogical-reasons",
+      "sha": "791be285cdc8c1b0d623a2f32eb7b7374443f6e2"
+    },
+    {
+      "name": "fix/backend-suite-recovery",
+      "sha": "8c071f88cf0e2b3b350433312a30662cd3ba98df"
+    },
+    {
+      "name": "fix/backend-suite-recovery-rebased",
+      "sha": "d63568b2f30102801afa99558639b4fab05413eb"
+    },
+    {
+      "name": "fix/backend-ungraded-revisions",
+      "sha": "e5320d055bc288ff590b33a9ce65e772f56890c9"
+    },
+    {
+      "name": "fix/contextual-integration-gate",
+      "sha": "6b1e3bfe33b6436eefc1aa730905bac30cde9751"
+    },
+    {
+      "name": "fix/dashboard-pedagogical-integrity",
+      "sha": "45ae555c5369aa2738af6b68f81184f4b2b6f61a"
+    },
+    {
+      "name": "fix/frontend-accessibility-flows",
+      "sha": "da5bc26e46957a01d952ba38ae6be379a13c6340"
+    },
+    {
+      "name": "fix/maestro-contest-scope",
+      "sha": "aeb4ff0da54b8216f7c9cf81ee51f78260d71c6d"
+    },
+    {
+      "name": "fix/planning-contest-scope",
+      "sha": "70bd415b6d8af3746c13500c7bdbc97306708bb6"
+    },
+    {
+      "name": "fix/prospective-activation-readiness",
+      "sha": "0f3af6879a08fe301b98e7a5e1c407625e3eeda8"
+    },
+    {
+      "name": "fix/prospective-question-flow-coverage",
+      "sha": "ec7fd1d86cc059be67f4133df70ff00fae4f5470"
+    },
+    {
+      "name": "fix/r-evidence-audit-integrity",
+      "sha": "4db0ac08c70e0c651b9bc345e6e9d6b634b2a6e7"
+    },
+    {
+      "name": "fix/r-ordinal-confidence-contract",
+      "sha": "a7f135be6fd535339efafe019d7a33ab4e33cd8f"
+    },
+    {
+      "name": "fix/restore-memory-lab-on-main",
+      "sha": "e4cf49d5dc735afc6e602df49865c933f06a1c9b"
+    },
+    {
+      "name": "fix/study-session-integrity",
+      "sha": "04394616c55756a8c595d5cd2167bf0318bcb36c"
+    },
+    {
+      "name": "fix/wave0-cognitive-action-gates",
+      "sha": "2c9aaf2532b3f90e135da73fbba2ade6fa3cba48"
+    },
+    {
+      "name": "integration/r-lab-evidence-20261030",
+      "sha": "4adf56aba3128e03e88da1ac2da7d730f251a7f8"
+    },
+    {
+      "name": "integration/r-laboratory-validation",
+      "sha": "bccb65940e27d78a768c1bc3bf28a907780ced28"
+    },
+    {
+      "name": "lab/authentic-prospective-chain",
+      "sha": "8c20fcd11d510e85cb3b2147ad3760f104696a52"
+    },
+    {
+      "name": "lab/scientific-decision-evaluation",
+      "sha": "9aac8927d5d360db9e5cd45245c7f85b7bac9f7e"
+    },
+    {
+      "name": "main",
+      "sha": "789f9053f3e90a366a9f09542a0f7331b9d8348b"
+    }
+  ],
+  "pull_requests": [
+    {
+      "number": 71,
+      "title": "feat(agents): add persistent Antigravity subagent definitions (POC-02)",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/71",
+      "state": "closed",
+      "merged_at": "2026-10-30T19:59:18Z",
+      "closed_at": "2026-10-30T19:59:18Z",
+      "updated_at": "2026-10-30T19:59:19Z",
+      "head": "feature/antigravity-multiagent-foundation",
+      "head_sha": "865379a245a4751e7c4f1a6d8547d2976e62cc2c",
+      "base": "main",
+      "base_sha": "94c9b74d38615c3dae2087e627f9ed27963e84a4",
+      "merge_commit_sha": "6b7e8b38f2e8b8ce72ad85b231c2ca417eb79ae6"
+    },
+    {
+      "number": 70,
+      "title": "feat(agents): PRs obrigatórios, dependências rastreáveis e CI de governança",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/70",
+      "state": "closed",
+      "merged_at": "2026-10-30T20:00:59Z",
+      "closed_at": "2026-10-30T20:00:59Z",
+      "updated_at": "2026-10-30T20:00:59Z",
+      "head": "chore/agent-pr-governance-20261030",
+      "head_sha": "f9efd38a2d48bcfe8a8eb86a3d455fb0eeb2dc9e",
+      "base": "main",
+      "base_sha": "94c9b74d38615c3dae2087e627f9ed27963e84a4",
+      "merge_commit_sha": "789f9053f3e90a366a9f09542a0f7331b9d8348b"
+    },
+    {
+      "number": 68,
+      "title": "docs(lab): recuperar evidências históricas de validação cruzada sem sobrescrever código R",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/68",
+      "state": "closed",
+      "merged_at": "2026-10-30T17:31:39Z",
+      "closed_at": "2026-10-30T17:31:39Z",
+      "updated_at": "2026-10-30T17:31:40Z",
+      "head": "integration/r-lab-evidence-20261030",
+      "head_sha": "4adf56aba3128e03e88da1ac2da7d730f251a7f8",
+      "base": "main",
+      "base_sha": "bc6020df6f06ca81c794ed0d427c2d9667a0daea",
+      "merge_commit_sha": "94c9b74d38615c3dae2087e627f9ed27963e84a4"
+    },
+    {
+      "number": 67,
+      "title": "docs(integration): recuperar evidências de validação cruzada do laboratório R",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/67",
+      "state": "closed",
+      "merged_at": null,
+      "closed_at": "2026-10-30T17:31:42Z",
+      "updated_at": "2026-10-30T17:31:43Z",
+      "head": "integration/r-laboratory-validation",
+      "head_sha": "bccb65940e27d78a768c1bc3bf28a907780ced28",
+      "base": "main",
+      "base_sha": "7aaec37afe013f7bc8fb203d0974623f5bcf3786",
+      "merge_commit_sha": null
+    },
+    {
+      "number": 66,
+      "title": "chore(integration): recuperar na main a suíte backend da PR #61",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/66",
+      "state": "closed",
+      "merged_at": null,
+      "closed_at": "2026-10-30T17:24:49Z",
+      "updated_at": "2026-10-30T17:24:50Z",
+      "head": "fix/backend-suite-recovery",
+      "head_sha": "8c071f88cf0e2b3b350433312a30662cd3ba98df",
+      "base": "main",
+      "base_sha": "7aaec37afe013f7bc8fb203d0974623f5bcf3786",
+      "merge_commit_sha": "5bcbdc341ce6754639eb5c53d6b7b1e7c0bc46a2"
+    },
+    {
+      "number": 65,
+      "title": "Fix/backend suite recovery rebased",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/65",
+      "state": "closed",
+      "merged_at": "2026-10-30T17:27:19Z",
+      "closed_at": "2026-10-30T17:27:19Z",
+      "updated_at": "2026-10-30T17:27:19Z",
+      "head": "fix/backend-suite-recovery-rebased",
+      "head_sha": "d63568b2f30102801afa99558639b4fab05413eb",
+      "base": "main",
+      "base_sha": "7aaec37afe013f7bc8fb203d0974623f5bcf3786",
+      "merge_commit_sha": "bc6020df6f06ca81c794ed0d427c2d9667a0daea"
+    },
+    {
+      "number": 64,
+      "title": "Feature/frente c learning instruments",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/64",
+      "state": "closed",
+      "merged_at": "2026-10-30T17:11:19Z",
+      "closed_at": "2026-10-30T17:11:19Z",
+      "updated_at": "2026-10-30T17:11:19Z",
+      "head": "feature/frente-c-learning-instruments",
+      "head_sha": "2c9c2ec71498d0495e39126ead5cb2f19804b0f9",
+      "base": "main",
+      "base_sha": "b63c89d12b2802b1109c7492c7115d9190a333b6",
+      "merge_commit_sha": "7aaec37afe013f7bc8fb203d0974623f5bcf3786"
+    },
+    {
+      "number": 63,
+      "title": "Feature/pedagogical inventory b",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/63",
+      "state": "closed",
+      "merged_at": "2026-10-30T17:10:36Z",
+      "closed_at": "2026-10-30T17:10:36Z",
+      "updated_at": "2026-10-30T17:10:36Z",
+      "head": "feature/pedagogical-inventory-b",
+      "head_sha": "a0a61262c78c1a808a2e267c2cdd158dd2f8859e",
+      "base": "main",
+      "base_sha": "f2eab29f56fcd46e0a58cbaa541c8c6706a24a9e",
+      "merge_commit_sha": "b63c89d12b2802b1109c7492c7115d9190a333b6"
+    },
+    {
+      "number": 62,
+      "title": "feat(knowledge): integrar cofre técnico Obsidian e memória contínua dos agentes",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/62",
+      "state": "closed",
+      "merged_at": "2026-10-30T13:24:04Z",
+      "closed_at": "2026-10-30T13:24:04Z",
+      "updated_at": "2026-10-30T13:24:05Z",
+      "head": "feature/obsidian-knowledge-migration",
+      "head_sha": "fd44358d1edf17704dd3b88e8b44832a90116301",
+      "base": "main",
+      "base_sha": "61fcc283b50aecf4379418198317caf4d02d1569",
+      "merge_commit_sha": "f2eab29f56fcd46e0a58cbaa541c8c6706a24a9e"
+    },
+    {
+      "number": 61,
+      "title": "fix(backend): recupera suíte completa e isola exportações locais",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/61",
+      "state": "closed",
+      "merged_at": "2026-10-30T11:32:36Z",
+      "closed_at": "2026-10-30T11:32:36Z",
+      "updated_at": "2026-10-30T11:33:52Z",
+      "head": "fix/backend-suite-recovery",
+      "head_sha": "37e586a5bf57739aeee14a31a494b301cb611dab",
+      "base": "fix/study-session-integrity",
+      "base_sha": "642e2c885a37221269361e80ed0c84241e04ebf6",
+      "merge_commit_sha": "04394616c55756a8c595d5cd2167bf0318bcb36c"
+    },
+    {
+      "number": 60,
+      "title": "feat: integrar Core Java ao orquestrador R em shadow autenticado",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/60",
+      "state": "closed",
+      "merged_at": "2026-10-30T11:28:51Z",
+      "closed_at": "2026-10-30T11:28:51Z",
+      "updated_at": "2026-10-30T11:28:52Z",
+      "head": "feature/contextual-orchestrator-shadow",
+      "head_sha": "db2d2390ff2cad72a749e7851154114344d13baf",
+      "base": "main",
+      "base_sha": "b59041859d2c445cbfe5f4b8d5f581f7ef7f5096",
+      "merge_commit_sha": "53096817ac17ac24853c3c15ffaf1b65ef64c5f3"
+    },
+    {
+      "number": 59,
+      "title": "fix(backend): grava sessões e progresso em uma transação recuperável",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/59",
+      "state": "closed",
+      "merged_at": "2026-10-30T11:16:52Z",
+      "closed_at": "2026-10-30T11:16:52Z",
+      "updated_at": "2026-10-30T11:21:16Z",
+      "head": "fix/study-session-integrity",
+      "head_sha": "642e2c885a37221269361e80ed0c84241e04ebf6",
+      "base": "main",
+      "base_sha": "b59041859d2c445cbfe5f4b8d5f581f7ef7f5096",
+      "merge_commit_sha": "809bcd8d1cb5da0bfde9179d2c3729743d4300ed"
+    },
+    {
+      "number": 58,
+      "title": "build(deps): bump actions/setup-node from 4.4.0 to 7.1.0",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/58",
+      "state": "closed",
+      "merged_at": "2026-10-30T11:33:52Z",
+      "closed_at": "2026-10-30T11:33:52Z",
+      "updated_at": "2026-10-30T11:34:01Z",
+      "head": "dependabot/github_actions/actions/setup-node-7.1.0",
+      "head_sha": "e6754d5d9819012106317238d933ec137cf25e37",
+      "base": "main",
+      "base_sha": "b59041859d2c445cbfe5f4b8d5f581f7ef7f5096",
+      "merge_commit_sha": "61fcc283b50aecf4379418198317caf4d02d1569"
+    },
+    {
+      "number": 57,
+      "title": "build(deps): bump github/codeql-action/analyze from 793b778da9c9275a0f276522b27cb5fc14bba279 to 9b3254085494b55a0f7c4c2b3d2d52cc712ce370",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/57",
+      "state": "closed",
+      "merged_at": null,
+      "closed_at": "2026-10-30T11:34:03Z",
+      "updated_at": "2026-10-30T11:34:14Z",
+      "head": "dependabot/github_actions/github/codeql-action/analyze-9b3254085494b55a0f7c4c2b3d2d52cc712ce370",
+      "head_sha": "8d6de76972da8b47901c7994b027c544a2b0478c",
+      "base": "main",
+      "base_sha": "b59041859d2c445cbfe5f4b8d5f581f7ef7f5096",
+      "merge_commit_sha": "4d8ecdc9555ed8ec3fc70fd06b7ce6f03e8fff5c"
+    },
+    {
+      "number": 56,
+      "title": "build(deps-dev): bump @types/node from 24.19.1 to 26.6.5 in /frontend",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/56",
+      "state": "closed",
+      "merged_at": null,
+      "closed_at": "2026-10-30T11:34:00Z",
+      "updated_at": "2026-10-30T11:34:00Z",
+      "head": "dependabot/npm_and_yarn/frontend/types/node-26.6.5",
+      "head_sha": "529eae2e2ca97f67fc8a7164a6a3917f3de36e06",
+      "base": "main",
+      "base_sha": "d97473367cbbf36ba310444fbd4ddf3eabd44313",
+      "merge_commit_sha": "f8413d8971c772a8173d7b9083fa89babcafc030"
+    },
+    {
+      "number": 55,
+      "title": "build(deps-dev): bump typescript from 6.0.3 to 7.0.2 in /frontend",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/55",
+      "state": "closed",
+      "merged_at": null,
+      "closed_at": "2026-10-30T11:33:57Z",
+      "updated_at": "2026-10-30T11:34:10Z",
+      "head": "dependabot/npm_and_yarn/frontend/typescript-7.0.2",
+      "head_sha": "afca879dddcddf3af016100b66ea6ff7861eead4",
+      "base": "main",
+      "base_sha": "d97473367cbbf36ba310444fbd4ddf3eabd44313",
+      "merge_commit_sha": "c0588f31add478cbe918b86111385fac8e1bb6b9"
+    },
+    {
+      "number": 54,
+      "title": "build(deps): bump pandas from 2.3.3 to 3.1.0 in /analytics-engine/lab",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/54",
+      "state": "closed",
+      "merged_at": "2026-10-30T11:30:55Z",
+      "closed_at": "2026-10-30T11:30:55Z",
+      "updated_at": "2026-10-30T11:31:04Z",
+      "head": "dependabot/pip/analytics-engine/lab/pandas-3.1.0",
+      "head_sha": "e5884b0e3eeeca4594b49f7ec1106b04941b11f7",
+      "base": "main",
+      "base_sha": "b59041859d2c445cbfe5f4b8d5f581f7ef7f5096",
+      "merge_commit_sha": "d97473367cbbf36ba310444fbd4ddf3eabd44313"
+    },
+    {
+      "number": 53,
+      "title": "build(deps): bump the compatible group in /frontend with 5 updates",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/53",
+      "state": "closed",
+      "merged_at": "2026-10-30T11:30:43Z",
+      "closed_at": "2026-10-30T11:30:43Z",
+      "updated_at": "2026-10-30T11:30:54Z",
+      "head": "dependabot/npm_and_yarn/frontend/compatible-59a01bc4ea",
+      "head_sha": "3404af45a1bf64791122712809ec749f4d322938",
+      "base": "main",
+      "base_sha": "b59041859d2c445cbfe5f4b8d5f581f7ef7f5096",
+      "merge_commit_sha": "1381fcc6cec6a1fcbaed27ac939a1081adcdfe21"
+    },
+    {
+      "number": 52,
+      "title": "build(deps): bump the compatible group across 1 directory with 4 updates",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/52",
+      "state": "closed",
+      "merged_at": null,
+      "closed_at": "2026-10-30T11:33:55Z",
+      "updated_at": "2026-10-30T11:34:06Z",
+      "head": "dependabot/pip/analytics-engine/lab/compatible-08587be679",
+      "head_sha": "4426d5ebd1750708f3d3eb68ef3d464184e05097",
+      "base": "main",
+      "base_sha": "f28cdcfdd6f9c7e50a7b61e0d9f990a9dd631e6d",
+      "merge_commit_sha": "a96f8d9a70f006b028dfacc669b9fa9b55245bd3"
+    },
+    {
+      "number": 51,
+      "title": "build(deps): bump org.springframework.boot:spring-boot-starter-parent from 3.3.4 to 4.1.2 in /backend",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/51",
+      "state": "closed",
+      "merged_at": null,
+      "closed_at": "2026-10-30T11:33:52Z",
+      "updated_at": "2026-10-30T11:34:05Z",
+      "head": "dependabot/maven/backend/org.springframework.boot-spring-boot-starter-parent-4.1.2",
+      "head_sha": "272dbee943e78f094ec0b35a1d1de68cf9843df0",
+      "base": "main",
+      "base_sha": "b59041859d2c445cbfe5f4b8d5f581f7ef7f5096",
+      "merge_commit_sha": "cc4641efca97233874b4d8c6befc60698fcd5108"
+    },
+    {
+      "number": 50,
+      "title": "build(deps): bump the compatible group in /backend with 3 updates",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/50",
+      "state": "closed",
+      "merged_at": "2026-10-30T11:29:57Z",
+      "closed_at": "2026-10-30T11:29:57Z",
+      "updated_at": "2026-10-30T11:30:05Z",
+      "head": "dependabot/maven/backend/compatible-fa6c03310b",
+      "head_sha": "3e557915fe3a9842d3d2644756f96d0efa320953",
+      "base": "main",
+      "base_sha": "b59041859d2c445cbfe5f4b8d5f581f7ef7f5096",
+      "merge_commit_sha": "69b92b742cba11e3d379f80bfb71eaca9e26e7fd"
+    },
+    {
+      "number": 49,
+      "title": "fix(backend): preserva integridade dos retries e restaura build reproduzível",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/49",
+      "state": "closed",
+      "merged_at": "2026-10-30T10:35:08Z",
+      "closed_at": "2026-10-30T10:35:08Z",
+      "updated_at": "2026-10-30T10:35:08Z",
+      "head": "fix/backend-operational-integrity",
+      "head_sha": "dcfce2e2f5c58a0f9b6acce227278d3a896c35c1",
+      "base": "main",
+      "base_sha": "6489a1f6455161aec4cb581aeae14b76e64c19a3",
+      "merge_commit_sha": "b59041859d2c445cbfe5f4b8d5f581f7ef7f5096"
+    },
+    {
+      "number": 48,
+      "title": "Consolida protocolo universal de agentes e recuperação seletiva de contexto",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/48",
+      "state": "closed",
+      "merged_at": "2026-10-30T10:34:54Z",
+      "closed_at": "2026-10-30T10:34:54Z",
+      "updated_at": "2026-10-30T10:34:55Z",
+      "head": "chore/development-context-security",
+      "head_sha": "03dcc721c6cb479fba43f515bfea809a323db8db",
+      "base": "main",
+      "base_sha": "6489a1f6455161aec4cb581aeae14b76e64c19a3",
+      "merge_commit_sha": "3e3f223b414e9a89000324ff081b028a9841394f"
+    },
+    {
+      "number": 47,
+      "title": "fix: guard prospective capture and cover ordinary modal question flows",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/47",
+      "state": "closed",
+      "merged_at": "2026-10-29T23:28:39Z",
+      "closed_at": "2026-10-29T23:28:39Z",
+      "updated_at": "2026-10-29T23:28:39Z",
+      "head": "fix/prospective-question-flow-coverage",
+      "head_sha": "ec7fd1d86cc059be67f4133df70ff00fae4f5470",
+      "base": "main",
+      "base_sha": "091ccb89a08e549af8ccf3424160345f6a1a1187",
+      "merge_commit_sha": "6489a1f6455161aec4cb581aeae14b76e64c19a3"
+    },
+    {
+      "number": 46,
+      "title": "Verifica a prontidão do piloto e a fronteira criptográfica no Windows",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/46",
+      "state": "closed",
+      "merged_at": "2026-10-29T20:24:41Z",
+      "closed_at": "2026-10-29T20:24:41Z",
+      "updated_at": "2026-10-29T20:24:41Z",
+      "head": "fix/prospective-activation-readiness",
+      "head_sha": "0f3af6879a08fe301b98e7a5e1c407625e3eeda8",
+      "base": "main",
+      "base_sha": "8724b3f72bbda51de369e93e357cbbf720f52a7f",
+      "merge_commit_sha": "091ccb89a08e549af8ccf3424160345f6a1a1187"
+    },
+    {
+      "number": 45,
+      "title": "Autentica a cadeia prospectiva Java → exportação → Motor R",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/45",
+      "state": "closed",
+      "merged_at": "2026-10-29T19:10:18Z",
+      "closed_at": "2026-10-29T19:10:18Z",
+      "updated_at": "2026-10-29T19:10:18Z",
+      "head": "lab/authentic-prospective-chain",
+      "head_sha": "8c20fcd11d510e85cb3b2147ad3760f104696a52",
+      "base": "main",
+      "base_sha": "be6c93f452899d873e544b13846c6b4798a0833d",
+      "merge_commit_sha": "8724b3f72bbda51de369e93e357cbbf720f52a7f"
+    },
+    {
+      "number": 44,
+      "title": "Prepara avaliação científica prospectiva das decisões do Motor R",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/44",
+      "state": "closed",
+      "merged_at": "2026-10-29T17:34:15Z",
+      "closed_at": "2026-10-29T17:34:15Z",
+      "updated_at": "2026-10-29T17:34:15Z",
+      "head": "lab/scientific-decision-evaluation",
+      "head_sha": "9aac8927d5d360db9e5cd45245c7f85b7bac9f7e",
+      "base": "main",
+      "base_sha": "abf91929bdc847c47400cec04d90acf6e66ad065",
+      "merge_commit_sha": "be6c93f452899d873e544b13846c6b4798a0833d"
+    },
+    {
+      "number": 43,
+      "title": "Integra decisão contextual ao orquestrador com evidência vinculada",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/43",
+      "state": "closed",
+      "merged_at": "2026-10-29T14:37:49Z",
+      "closed_at": "2026-10-29T14:37:49Z",
+      "updated_at": "2026-10-29T14:37:50Z",
+      "head": "fix/contextual-integration-gate",
+      "head_sha": "6b1e3bfe33b6436eefc1aa730905bac30cde9751",
+      "base": "main",
+      "base_sha": "b13cefabe3d9fd3d4bc02515a04e7645dfe677ee",
+      "merge_commit_sha": "abf91929bdc847c47400cec04d90acf6e66ad065"
+    },
+    {
+      "number": 42,
+      "title": "Chore/pr41 pedagogical decision",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/42",
+      "state": "closed",
+      "merged_at": "2026-10-29T04:57:25Z",
+      "closed_at": "2026-10-29T04:57:25Z",
+      "updated_at": "2026-10-29T04:57:25Z",
+      "head": "chore/pr41-pedagogical-decision",
+      "head_sha": "0eb98d1108a0aca4965d567fe23b0e19548ad5f5",
+      "base": "main",
+      "base_sha": "d946e8f3c5510517d37862c220e09590ed308b79",
+      "merge_commit_sha": "b13cefabe3d9fd3d4bc02515a04e7645dfe677ee"
+    },
+    {
+      "number": 41,
+      "title": "Motor R: orquestrador individual com evidências, autoridade e propostas auditáveis",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/41",
+      "state": "closed",
+      "merged_at": "2026-10-29T03:28:21Z",
+      "closed_at": "2026-10-29T03:28:21Z",
+      "updated_at": "2026-10-29T03:28:21Z",
+      "head": "feature/individual-learning-orchestrator",
+      "head_sha": "44691c0c576b5c697a5c0cff63384142546189a5",
+      "base": "main",
+      "base_sha": "930141fe54bf9ac99643442cec1f666e59c94260",
+      "merge_commit_sha": "d946e8f3c5510517d37862c220e09590ed308b79"
+    },
+    {
+      "number": 40,
+      "title": "Motor R: prefix-only contextual prediction and human prequential comparison",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/40",
+      "state": "closed",
+      "merged_at": "2026-10-28T12:14:33Z",
+      "closed_at": "2026-10-28T12:14:33Z",
+      "updated_at": "2026-10-28T12:14:33Z",
+      "head": "experiment/r-contextual-prequential-v1",
+      "head_sha": "ea41ff021456597737c8d442fa46663bb2f249bc",
+      "base": "main",
+      "base_sha": "8e96cadcc42b01ffc903b307de2e03b8a2f7bf48",
+      "merge_commit_sha": "930141fe54bf9ac99643442cec1f666e59c94260"
+    },
+    {
+      "number": 39,
+      "title": "feat(evidence): captured source lineage, durable read barriers and ordinary pilot runner",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/39",
+      "state": "closed",
+      "merged_at": "2026-10-28T10:57:39Z",
+      "closed_at": "2026-10-28T10:57:39Z",
+      "updated_at": "2026-10-28T10:57:39Z",
+      "head": "feature/source-provenance-read-barrier",
+      "head_sha": "4bb4d42d4f8c9c2aba9f739f2eef02e08c1c785f",
+      "base": "main",
+      "base_sha": "508eccc454a7a6d32dfd9cce6e9ab415862ab8b9",
+      "merge_commit_sha": "8e96cadcc42b01ffc903b307de2e03b8a2f7bf48"
+    },
+    {
+      "number": 38,
+      "title": "feat(quarantine): guard raw sources and audit explicit maintenance exposures",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/38",
+      "state": "closed",
+      "merged_at": "2026-10-28T03:55:41Z",
+      "closed_at": "2026-10-28T03:55:41Z",
+      "updated_at": "2026-10-28T03:55:41Z",
+      "head": "feature/quarantine-source-exposure",
+      "head_sha": "8c269d590ff3b054d01a48f21eb5b24eca5496a7",
+      "base": "main",
+      "base_sha": "e53180367fba49f0a6d10a24feb55906383929f4",
+      "merge_commit_sha": "508eccc454a7a6d32dfd9cce6e9ab415862ab8b9"
+    },
+    {
+      "number": 37,
+      "title": "feat(quarantine): shared operational item policy and leakage guards",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/37",
+      "state": "closed",
+      "merged_at": "2026-10-28T02:06:54Z",
+      "closed_at": "2026-10-28T02:06:54Z",
+      "updated_at": "2026-10-28T02:06:54Z",
+      "head": "feature/diagnostic-quarantine-foundation",
+      "head_sha": "7ede739d038a0ff2dc59a74fd5bdbf00cf5a73a5",
+      "base": "main",
+      "base_sha": "7a562217d9bec73bccd322ea4382bae2d561d0de",
+      "merge_commit_sha": "e53180367fba49f0a6d10a24feb55906383929f4"
+    },
+    {
+      "number": 36,
+      "title": "feat(analytics): prospective scientific scorecard and temporal reference",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/36",
+      "state": "closed",
+      "merged_at": "2026-10-28T01:10:09Z",
+      "closed_at": "2026-10-28T01:10:09Z",
+      "updated_at": "2026-10-28T01:10:09Z",
+      "head": "feature/prospective-scientific-scorecard",
+      "head_sha": "9a74468355f4147b324b5a390346f612bade4b9a",
+      "base": "main",
+      "base_sha": "16bcb5831c56810dbf30ec4e16150e5a20036ea9",
+      "merge_commit_sha": "7a562217d9bec73bccd322ea4382bae2d561d0de"
+    },
+    {
+      "number": 35,
+      "title": "feat(lab): precommit personal question forecasts and verify SQLite-to-R evidence",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/35",
+      "state": "closed",
+      "merged_at": "2026-10-27T22:49:07Z",
+      "closed_at": "2026-10-27T22:49:07Z",
+      "updated_at": "2026-10-27T22:49:07Z",
+      "head": "feature/prospective-question-ledger",
+      "head_sha": "3c223bec5cb6d872b638fcf0a8f68545f20a5ded",
+      "base": "main",
+      "base_sha": "121d7bf640ed910f96973dc8345c3ed835b263ae",
+      "merge_commit_sha": "16bcb5831c56810dbf30ec4e16150e5a20036ea9"
+    },
+    {
+      "number": 34,
+      "title": "feat(lab): validate source-day FSRS transport on an untouched human cohort",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/34",
+      "state": "closed",
+      "merged_at": "2026-10-27T20:21:51Z",
+      "closed_at": "2026-10-27T20:21:51Z",
+      "updated_at": "2026-10-27T20:21:51Z",
+      "head": "experiment/recorded-day-heldout-validation",
+      "head_sha": "1ddc6c04e8669e28518392f6a76945ff1140c0ee",
+      "base": "main",
+      "base_sha": "be43082565d894c0a854a1d11ddf42b842f087ab",
+      "merge_commit_sha": "121d7bf640ed910f96973dc8345c3ed835b263ae"
+    },
+    {
+      "number": 33,
+      "title": "feat(lab): real human memory validation with past-only calibration transfer",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/33",
+      "state": "closed",
+      "merged_at": "2026-10-27T18:13:19Z",
+      "closed_at": "2026-10-27T18:13:20Z",
+      "updated_at": "2026-10-27T18:13:20Z",
+      "head": "experiment/public-human-memory-validation",
+      "head_sha": "486c3b90b596ac55b466975bd7c63fd575114584",
+      "base": "main",
+      "base_sha": "525fb13186cf062a87060df887697ce5e69ebf65",
+      "merge_commit_sha": "be43082565d894c0a854a1d11ddf42b842f087ab"
+    },
+    {
+      "number": 32,
+      "title": "feat(lab): test individual calibration and identifiability without planner authority",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/32",
+      "state": "closed",
+      "merged_at": "2026-10-27T12:47:01Z",
+      "closed_at": "2026-10-27T12:47:01Z",
+      "updated_at": "2026-10-27T12:47:01Z",
+      "head": "experiment/individual-calibration-identifiability",
+      "head_sha": "756c7bbd3ebed7f68b4bbad76dc4a69dac73ca61",
+      "base": "main",
+      "base_sha": "63a81c474cb974a09f16576cdb6b88397c667352",
+      "merge_commit_sha": "525fb13186cf062a87060df887697ce5e69ebf65"
+    },
+    {
+      "number": 31,
+      "title": "fix(lab): restore validated memory experiment absent from current main",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/31",
+      "state": "closed",
+      "merged_at": "2026-10-27T12:20:08Z",
+      "closed_at": "2026-10-27T12:20:08Z",
+      "updated_at": "2026-10-27T12:20:08Z",
+      "head": "fix/restore-memory-lab-on-main",
+      "head_sha": "e4cf49d5dc735afc6e602df49865c933f06a1c9b",
+      "base": "main",
+      "base_sha": "35f046a9dbcf70519209159257105b32b8021ba6",
+      "merge_commit_sha": "63a81c474cb974a09f16576cdb6b88397c667352"
+    },
+    {
+      "number": 30,
+      "title": "fix(analytics): correct confidence denominators and label mapping assumptions",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/30",
+      "state": "closed",
+      "merged_at": "2026-10-27T12:06:39Z",
+      "closed_at": "2026-10-27T12:06:40Z",
+      "updated_at": "2026-10-27T12:06:40Z",
+      "head": "fix/r-ordinal-confidence-contract",
+      "head_sha": "a7f135be6fd535339efafe019d7a33ab4e33cd8f",
+      "base": "main",
+      "base_sha": "28a43c1f4ad499b4df280a62b9d8091227ee2b8d",
+      "merge_commit_sha": "35f046a9dbcf70519209159257105b32b8021ba6"
+    },
+    {
+      "number": 29,
+      "title": "fix(analytics): preserve UTF-8 text across locale-independent CSV transport",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/29",
+      "state": "closed",
+      "merged_at": "2026-10-27T12:00:19Z",
+      "closed_at": "2026-10-27T12:00:19Z",
+      "updated_at": "2026-10-27T12:00:19Z",
+      "head": "fix/analytics-utf8-transport",
+      "head_sha": "4ff7f22a5a271a47b27bb75263d76f01cdc37d13",
+      "base": "main",
+      "base_sha": "4b28bcbd3df53ed158c7b2e7de156a9b10ef190f",
+      "merge_commit_sha": "28a43c1f4ad499b4df280a62b9d8091227ee2b8d"
+    },
+    {
+      "number": 28,
+      "title": "feat(lab): evaluate official FSRS memory forecasts with independent recall simulation",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/28",
+      "state": "closed",
+      "merged_at": "2026-10-27T04:55:06Z",
+      "closed_at": "2026-10-27T04:55:06Z",
+      "updated_at": "2026-10-27T04:55:06Z",
+      "head": "experiment/fsrs-memory-lab",
+      "head_sha": "04320817714c29bc41f61ef9f2766251f1acc499",
+      "base": "experiment/learner-baseline-comparison",
+      "base_sha": "9a6ecac2536df6d6cf57d252587c5699868f1945",
+      "merge_commit_sha": "ced195f082ff357cab9252ad093d74fa1d269f5d"
+    },
+    {
+      "number": 27,
+      "title": "feat(lab): compare R and pyBKT with explicit coverage and numerical abstention",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/27",
+      "state": "closed",
+      "merged_at": "2026-10-27T04:54:53Z",
+      "closed_at": "2026-10-27T04:54:54Z",
+      "updated_at": "2026-10-27T04:54:54Z",
+      "head": "experiment/learner-baseline-comparison",
+      "head_sha": "9a6ecac2536df6d6cf57d252587c5699868f1945",
+      "base": "main",
+      "base_sha": "f77b3a4a3faa3a9beecbc231be2eedbdc2790196",
+      "merge_commit_sha": "4b28bcbd3df53ed158c7b2e7de156a9b10ef190f"
+    },
+    {
+      "number": 26,
+      "title": "docs(lab): publish synthetic results, replay evidence and execution guide",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/26",
+      "state": "closed",
+      "merged_at": "2026-10-26T23:02:17Z",
+      "closed_at": "2026-10-26T23:02:17Z",
+      "updated_at": "2026-10-26T23:02:18Z",
+      "head": "experiment/learner-lab-results",
+      "head_sha": "0d3e6803a71682fa6b0efc0d63ac92766e1cd634",
+      "base": "main",
+      "base_sha": "d2b798684ba4708c02b3e393d39696bf77f7d517",
+      "merge_commit_sha": "f77b3a4a3faa3a9beecbc231be2eedbdc2790196"
+    },
+    {
+      "number": 25,
+      "title": "feat(lab): add isolated synthetic learner generator and real R baseli…",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/25",
+      "state": "closed",
+      "merged_at": "2026-10-26T22:56:08Z",
+      "closed_at": "2026-10-26T22:56:08Z",
+      "updated_at": "2026-10-26T22:56:08Z",
+      "head": "experiment/learner-lab-mvp",
+      "head_sha": "4705bd7c4bc5203dbc03921e45c2174ec522745c",
+      "base": "main",
+      "base_sha": "72305cb19fc568e2661c5093647ba1ab3593e64f",
+      "merge_commit_sha": "d2b798684ba4708c02b3e393d39696bf77f7d517"
+    },
+    {
+      "number": 24,
+      "title": "fix(analytics): preserve run provenance and reject unvalidated planning inputs",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/24",
+      "state": "closed",
+      "merged_at": "2026-10-26T22:55:31Z",
+      "closed_at": "2026-10-26T22:55:31Z",
+      "updated_at": "2026-10-26T22:55:31Z",
+      "head": "fix/analytics-bridge-provenance",
+      "head_sha": "d5e4ba99a4fb21f594d5bf84b7f68dc206d820bb",
+      "base": "main",
+      "base_sha": "4ec0343100baf389ceb615c2307354a64f99c296",
+      "merge_commit_sha": "72305cb19fc568e2661c5093647ba1ab3593e64f"
+    },
+    {
+      "number": 23,
+      "title": "fix(analytics): audit cognitive evidence and verify followup integrity",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/23",
+      "state": "closed",
+      "merged_at": "2026-10-26T22:55:16Z",
+      "closed_at": "2026-10-26T22:55:16Z",
+      "updated_at": "2026-10-26T22:55:16Z",
+      "head": "fix/r-evidence-audit-integrity",
+      "head_sha": "4db0ac08c70e0c651b9bc345e6e9d6b634b2a6e7",
+      "base": "main",
+      "base_sha": "4ec0343100baf389ceb615c2307354a64f99c296",
+      "merge_commit_sha": "a2bdeb8bb84decf156c96452642b3e6cbd3f22c9"
+    },
+    {
+      "number": 22,
+      "title": "feat(analytics): validate learner baselines over time",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/22",
+      "state": "closed",
+      "merged_at": "2026-10-26T20:31:26Z",
+      "closed_at": "2026-10-26T20:31:26Z",
+      "updated_at": "2026-10-26T20:31:26Z",
+      "head": "feature/r-temporal-baseline-audit",
+      "head_sha": "aac5ab8e6ec37f33971af6df6096e77c5e893c09",
+      "base": "main",
+      "base_sha": "dbf00bf1ce3fdc5ef4b455fa84619414a3251bad",
+      "merge_commit_sha": "4ec0343100baf389ceb615c2307354a64f99c296"
+    },
+    {
+      "number": 21,
+      "title": "feat(epic-02): modelo individual de conhecimento e gate final",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/21",
+      "state": "closed",
+      "merged_at": "2026-10-26T20:18:52Z",
+      "closed_at": "2026-10-26T20:18:52Z",
+      "updated_at": "2026-10-26T20:18:52Z",
+      "head": "feature/epic-02-knowledge-model",
+      "head_sha": "e086c8441fde149eeb1b4557f3e3d7b6bfb602ea",
+      "base": "main",
+      "base_sha": "0f4d7f0e54d056789baab6124859e932d743f441",
+      "merge_commit_sha": "dbf00bf1ce3fdc5ef4b455fa84619414a3251bad"
+    },
+    {
+      "number": 20,
+      "title": "fix(dashboard): integridade pedagogica e estados explicitos de interface",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/20",
+      "state": "closed",
+      "merged_at": "2026-10-26T20:18:30Z",
+      "closed_at": "2026-10-26T20:18:30Z",
+      "updated_at": "2026-10-26T20:18:30Z",
+      "head": "fix/dashboard-pedagogical-integrity",
+      "head_sha": "45ae555c5369aa2738af6b68f81184f4b2b6f61a",
+      "base": "main",
+      "base_sha": "90e8e101c48ffc06637bf720155e3e7045993e3d",
+      "merge_commit_sha": "0f4d7f0e54d056789baab6124859e932d743f441"
+    },
+    {
+      "number": 19,
+      "title": "fix(cognitive): fail closed on unvalidated review models",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/19",
+      "state": "closed",
+      "merged_at": "2026-10-26T20:16:36Z",
+      "closed_at": "2026-10-26T20:16:36Z",
+      "updated_at": "2026-10-26T20:16:36Z",
+      "head": "fix/wave0-cognitive-action-gates",
+      "head_sha": "2c9aaf2532b3f90e135da73fbba2ade6fa3cba48",
+      "base": "main",
+      "base_sha": "db8bf3d72646d22c62f7339d82a466ff1b66fcb8",
+      "merge_commit_sha": "90e8e101c48ffc06637bf720155e3e7045993e3d"
+    },
+    {
+      "number": 18,
+      "title": "feat(backend): export pre-update FSRS evidence for R analytics",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/18",
+      "state": "closed",
+      "merged_at": "2026-10-26T19:31:13Z",
+      "closed_at": "2026-10-26T19:31:13Z",
+      "updated_at": "2026-10-26T19:31:14Z",
+      "head": "feature/backend-fsrs-export-contract",
+      "head_sha": "d1f4e26af17bb95848f4d932731c85835a0c6fa7",
+      "base": "main",
+      "base_sha": "2ed519f290970a1926724733d8958cdb65a84a8d",
+      "merge_commit_sha": "db8bf3d72646d22c62f7339d82a466ff1b66fcb8"
+    },
+    {
+      "number": 17,
+      "title": "feat(analytics): distinguish expected and unexpected retrieval errors",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/17",
+      "state": "closed",
+      "merged_at": "2026-10-26T19:31:00Z",
+      "closed_at": "2026-10-26T19:31:00Z",
+      "updated_at": "2026-10-26T19:31:00Z",
+      "head": "feature/analytics-fsrs-retrieval",
+      "head_sha": "c006b12338798a94931fb9bdd1f4ee81c42d28cb",
+      "base": "main",
+      "base_sha": "2ed519f290970a1926724733d8958cdb65a84a8d",
+      "merge_commit_sha": "7db9cf7f9e0578d6b4403ff679ae93f4957806a0"
+    },
+    {
+      "number": 16,
+      "title": "fix(analytics): gate learner evidence and preserve provenance",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/16",
+      "state": "closed",
+      "merged_at": "2026-10-26T15:36:41Z",
+      "closed_at": "2026-10-26T15:36:41Z",
+      "updated_at": "2026-10-26T15:36:41Z",
+      "head": "feature/learner-evidence-r",
+      "head_sha": "4b1bd9a26d53512d8e6a135c030126b4a025c8ed",
+      "base": "main",
+      "base_sha": "90c26af0c67e5745e84080792d687dad200b4f49",
+      "merge_commit_sha": "2ed519f290970a1926724733d8958cdb65a84a8d"
+    },
+    {
+      "number": 15,
+      "title": "docs: add concise project checkpoint and Obsidian handoff",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/15",
+      "state": "closed",
+      "merged_at": "2026-10-26T03:41:45Z",
+      "closed_at": "2026-10-26T03:41:45Z",
+      "updated_at": "2026-10-26T03:41:46Z",
+      "head": "docs/context-checkpoint",
+      "head_sha": "46471e5fa576aa479341d8166c149b665ac98ed3",
+      "base": "main",
+      "base_sha": "fdd450c839c06e05379844b9a8f12edb2b438a5f",
+      "merge_commit_sha": "90c26af0c67e5745e84080792d687dad200b4f49"
+    },
+    {
+      "number": 14,
+      "title": "fix(planning): scope Maestro plans and honest empty states to each contest",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/14",
+      "state": "closed",
+      "merged_at": "2026-10-26T03:41:27Z",
+      "closed_at": "2026-10-26T03:41:27Z",
+      "updated_at": "2026-10-26T03:41:27Z",
+      "head": "fix/maestro-contest-scope",
+      "head_sha": "aeb4ff0da54b8216f7c9cf81ee51f78260d71c6d",
+      "base": "main",
+      "base_sha": "fdd450c839c06e05379844b9a8f12edb2b438a5f",
+      "merge_commit_sha": "4f37a238434e9559dbaaea5bb384b029622f4c9c"
+    },
+    {
+      "number": 13,
+      "title": "fix(planning): isolate contest cycles and bind completed-cycle queries",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/13",
+      "state": "closed",
+      "merged_at": "2026-10-26T03:41:05Z",
+      "closed_at": "2026-10-26T03:41:05Z",
+      "updated_at": "2026-10-26T03:41:05Z",
+      "head": "fix/planning-contest-scope",
+      "head_sha": "70bd415b6d8af3746c13500c7bdbc97306708bb6",
+      "base": "main",
+      "base_sha": "fdd450c839c06e05379844b9a8f12edb2b438a5f",
+      "merge_commit_sha": "c7fc50df6d2ab0a58838cbce5de232c957edfab2"
+    },
+    {
+      "number": 12,
+      "title": "docs: consolidar evidências da rodada de produção de 25/10",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/12",
+      "state": "closed",
+      "merged_at": "2026-10-25T19:24:33Z",
+      "closed_at": "2026-10-25T19:24:34Z",
+      "updated_at": "2026-10-25T19:24:34Z",
+      "head": "docs/production-round-20261025",
+      "head_sha": "36cb8598ca7ba9af5c3658539102b03adfc8d7ff",
+      "base": "docs/execution-and-validation",
+      "base_sha": "b5273cfdd68d9625da2bbc7ef4504b085e034b29",
+      "merge_commit_sha": "24fd22454ee93083a93da0c1bf3ca020f77e8876"
+    },
+    {
+      "number": 11,
+      "title": "fix(revisions): impedir agenda de revisão para respostas não avaliáveis",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/11",
+      "state": "closed",
+      "merged_at": "2026-10-25T19:24:20Z",
+      "closed_at": "2026-10-25T19:24:20Z",
+      "updated_at": "2026-10-25T19:24:20Z",
+      "head": "fix/backend-ungraded-revisions",
+      "head_sha": "e5320d055bc288ff590b33a9ce65e772f56890c9",
+      "base": "fix/backend-pedagogical-reasons",
+      "base_sha": "959bfd3a739c6d19dfb9ffa0f5822be9d5070e6d",
+      "merge_commit_sha": "791be285cdc8c1b0d623a2f32eb7b7374443f6e2"
+    },
+    {
+      "number": 10,
+      "title": "fix(events): ordenar anotações por instante com precisão preservada",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/10",
+      "state": "closed",
+      "merged_at": "2026-10-25T19:24:01Z",
+      "closed_at": "2026-10-25T19:24:01Z",
+      "updated_at": "2026-10-25T19:24:01Z",
+      "head": "fix/backend-annotation-order",
+      "head_sha": "d180e6c7e76b0862790c4c840f9247111aa08e3c",
+      "base": "fix/backend-error-taxonomy",
+      "base_sha": "1033f8348daa937eb81af5ffbdb643dae851d1c6",
+      "merge_commit_sha": "2f9d510edd8ec1a10d0ae30f817d14b2f1f38566"
+    },
+    {
+      "number": 9,
+      "title": "fix(revisions): qualificar justificativas pedagógicas das revisões",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/9",
+      "state": "closed",
+      "merged_at": "2026-10-25T19:23:48Z",
+      "closed_at": "2026-10-25T19:23:48Z",
+      "updated_at": "2026-10-25T19:23:48Z",
+      "head": "fix/backend-pedagogical-reasons",
+      "head_sha": "959bfd3a739c6d19dfb9ffa0f5822be9d5070e6d",
+      "base": "fix/backend-error-taxonomy",
+      "base_sha": "1033f8348daa937eb81af5ffbdb643dae851d1c6",
+      "merge_commit_sha": "a704901368005b2069a53a216f2d732ec81959e8"
+    },
+    {
+      "number": 8,
+      "title": "fix(analytics): exigir origem pessoal nas evidências de aprendizagem",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/8",
+      "state": "closed",
+      "merged_at": "2026-10-25T19:23:34Z",
+      "closed_at": "2026-10-25T19:23:34Z",
+      "updated_at": "2026-10-25T19:23:34Z",
+      "head": "fix/analytics-learning-evidence",
+      "head_sha": "0398e526f520ec6c992898511eaa262267a06a9c",
+      "base": "feature/analytics-runtime",
+      "base_sha": "c0f63c547ba1db61e9415cb0b000c2ff582d1be5",
+      "merge_commit_sha": "89819ba0a9d6540b16b21cc3d934c39a75708c0d"
+    },
+    {
+      "number": 7,
+      "title": "fix(errors): causas explícitas, anotações posteriores e isolamento por concurso",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/7",
+      "state": "closed",
+      "merged_at": "2026-10-25T19:23:21Z",
+      "closed_at": "2026-10-25T19:23:21Z",
+      "updated_at": "2026-10-25T19:23:21Z",
+      "head": "fix/backend-error-taxonomy",
+      "head_sha": "1033f8348daa937eb81af5ffbdb643dae851d1c6",
+      "base": "feature/learning-backend",
+      "base_sha": "fbca00b4723ec2cc11c25bec8f258499bb47d369",
+      "merge_commit_sha": "530e592ef2ae6ca3bd7d9f907a58a9a7a8a0e971"
+    },
+    {
+      "number": 6,
+      "title": "docs: arquitetura, validações e publicação rastreável por área",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/6",
+      "state": "closed",
+      "merged_at": "2026-10-25T19:23:09Z",
+      "closed_at": "2026-10-25T19:23:09Z",
+      "updated_at": "2026-10-25T19:23:09Z",
+      "head": "docs/execution-and-validation",
+      "head_sha": "b5273cfdd68d9625da2bbc7ef4504b085e034b29",
+      "base": "main",
+      "base_sha": "c26ee20352fc1b6ace0c58be4f24a41a1092fbf0",
+      "merge_commit_sha": "070eb98d11cfbe4b29ab7b1a0a5a677d376f5800"
+    },
+    {
+      "number": 5,
+      "title": "fix(backend): integrar tentativas, curadoria e aprendizagem rastreável",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/5",
+      "state": "closed",
+      "merged_at": "2026-10-25T19:22:55Z",
+      "closed_at": "2026-10-25T19:22:55Z",
+      "updated_at": "2026-10-25T19:22:55Z",
+      "head": "feature/learning-backend",
+      "head_sha": "fbca00b4723ec2cc11c25bec8f258499bb47d369",
+      "base": "main",
+      "base_sha": "c26ee20352fc1b6ace0c58be4f24a41a1092fbf0",
+      "merge_commit_sha": "56bff94e534a583bf3b2c1f666bd41261a5e00d8"
+    },
+    {
+      "number": 4,
+      "title": "fix(frontend): tentativas confiáveis, preferências e curadoria conectadas",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/4",
+      "state": "closed",
+      "merged_at": "2026-10-25T19:21:57Z",
+      "closed_at": "2026-10-25T19:21:57Z",
+      "updated_at": "2026-10-25T19:21:57Z",
+      "head": "feature/study-frontend",
+      "head_sha": "a5febc7a0f7313f218414c41c657196b17befa59",
+      "base": "main",
+      "base_sha": "c26ee20352fc1b6ace0c58be4f24a41a1092fbf0",
+      "merge_commit_sha": "24b1c3920e93c69fff3c2d162fbf26dc43dc0b61"
+    },
+    {
+      "number": 3,
+      "title": "fix(ingestion): preservar curadoria e impedir extração parcial silenciosa",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/3",
+      "state": "closed",
+      "merged_at": "2026-10-25T19:21:43Z",
+      "closed_at": "2026-10-25T19:21:43Z",
+      "updated_at": "2026-10-25T19:21:43Z",
+      "head": "feature/document-ingestion",
+      "head_sha": "40640990a284ed218c76598e3828f03a5ad12087",
+      "base": "main",
+      "base_sha": "c26ee20352fc1b6ace0c58be4f24a41a1092fbf0",
+      "merge_commit_sha": "47d88698098af306cf197f49b81753b12e8f8594"
+    },
+    {
+      "number": 2,
+      "title": "fix(analytics): exportação R e dependências explícitas",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/2",
+      "state": "closed",
+      "merged_at": "2026-10-25T19:21:27Z",
+      "closed_at": "2026-10-25T19:21:27Z",
+      "updated_at": "2026-10-25T19:21:27Z",
+      "head": "feature/analytics-runtime",
+      "head_sha": "c0f63c547ba1db61e9415cb0b000c2ff582d1be5",
+      "base": "main",
+      "base_sha": "c26ee20352fc1b6ace0c58be4f24a41a1092fbf0",
+      "merge_commit_sha": "d816326d9d334c3caada779cface87f6b599c8d0"
+    },
+    {
+      "number": 1,
+      "title": "fix(database): migrações SQLite e recuperação segura",
+      "url": "https://github.com/gusty22/sistema-de-estudos-FISCALSTUDY/pull/1",
+      "state": "closed",
+      "merged_at": "2026-10-25T19:01:51Z",
+      "closed_at": "2026-10-25T19:01:51Z",
+      "updated_at": "2026-10-25T19:01:51Z",
+      "head": "feature/database-contracts",
+      "head_sha": "c4bccacdde684ade19c963b3de9868154337ed13",
+      "base": "main",
+      "base_sha": "c26ee20352fc1b6ace0c58be4f24a41a1092fbf0",
+      "merge_commit_sha": "9344fcc55f8a78fccae2f6840b9dbe847b299f51"
+    }
+  ]
+}

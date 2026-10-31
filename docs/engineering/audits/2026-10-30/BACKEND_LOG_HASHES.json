@@ -1,0 +1,15 @@
+{
+  "note": "Only hashes and synthetic test summaries are versioned; raw logs remain local to avoid publishing machine paths.",
+  "logs": [
+    {
+      "name": "backend-suite.log",
+      "sha256": "94885a263d6a7fb751f2599cc696ef3613c1240bb991c58615a1dd3f6abace82",
+      "bytes": 167253
+    },
+    {
+      "name": "backend-suite-configured.log",
+      "sha256": "39ce4e184ad8625da94c1bf722f7e6c734fb09fa01a8a1b05e60aec4aaf7adf2",
+      "bytes": 145957
+    }
+  ]
+}

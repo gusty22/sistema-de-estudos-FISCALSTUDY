@@ -1,0 +1,984 @@
+{
+  "scope": "Additional local unreachable objects found in the preserved clone; distinct from remote branch/PR inventory; no GC or deletion performed",
+  "main_sha": "e877e468fb4e77d143137cee3a6c97eb488ffb85",
+  "commits": [
+    {
+      "sha": "63939ae6391a4087116ac694bf54e2ff0f82fc70",
+      "subject": "build(deps-dev): bump typescript from 6.0.3 to 7.0.2 in /frontend",
+      "patches": [
+        "+ 63939ae6391a4087116ac694bf54e2ff0f82fc70"
+      ],
+      "files": [
+        "M\tfrontend/package-lock.json",
+        "M\tfrontend/package.json"
+      ],
+      "paths": [
+        "frontend/package-lock.json",
+        "frontend/package.json"
+      ],
+      "absent_paths": [],
+      "comparison": [
+        {
+          "path": "frontend/package-lock.json",
+          "original_blob": "323c5e4d388520f9a21af2f0a6107d8ab50983d0",
+          "main_blob": "2dde3595dc0e60947179f6d50e41edb94b1f1e18",
+          "status": "EVOLVED"
+        },
+        {
+          "path": "frontend/package.json",
+          "original_blob": "1842130858cb522bcf6837a7547936940861c2a4",
+          "main_blob": "d3f4a05b6fddcc3bff9597e4481154bf977a362f",
+          "status": "EVOLVED"
+        }
+      ],
+      "classification": "REJECTED",
+      "justification": "Dependency updates rejected by maintainer in historical PRs; do not reapply"
+    },
+    {
+      "sha": "581a0a3e4701730f786a90ef3594ea1fdca84b3f",
+      "subject": "test(validation): merge integration/wave-1 into validation/wave-1-merge",
+      "patches": [],
+      "files": [],
+      "paths": [],
+      "absent_paths": [],
+      "comparison": [],
+      "classification": "EQUIVALENT",
+      "justification": "Validation merge has no exclusive patch"
+    },
+    {
+      "sha": "5424d77d3f1ea4f8984c5d5de1f35436e80a308a",
+      "subject": "feat(second-brain): implementar fase 2 com busca semantica local, ranking hibrido e medicao real de tokens",
+      "patches": [
+        "+ 5424d77d3f1ea4f8984c5d5de1f35436e80a308a"
+      ],
+      "files": [
+        "M\t.agents/memory/CONTEXT.md",
+        "M\t.agents/rules/graphify.md",
+        "M\tAGENTS.md",
+        "A\tscripts/measure_tokens.py",
+        "A\tscripts/obsidian_kb.py",
+        "A\tscripts/second_brain_bridge.py",
+        "A\tscripts/test_second_brain.py"
+      ],
+      "paths": [
+        ".agents/memory/CONTEXT.md",
+        ".agents/rules/graphify.md",
+        "AGENTS.md",
+        "scripts/measure_tokens.py",
+        "scripts/obsidian_kb.py",
+        "scripts/second_brain_bridge.py",
+        "scripts/test_second_brain.py"
+      ],
+      "absent_paths": [],
+      "comparison": [
+        {
+          "path": ".agents/memory/CONTEXT.md",
+          "original_blob": "97f20875b1c7cd3bdf61b86b84395bd807be7758",
+          "main_blob": "8ea2eb844f75552e9c8e269ef0ccf09b8aa33722",
+          "status": "EVOLVED"
+        },
+        {
+          "path": ".agents/rules/graphify.md",
+          "original_blob": "7a8ec72ac36494084eeb4abe1e08e1d3e4b2fec4",
+          "main_blob": "b942f31ea39b5731e660241b4739c90b11d4e561",
+          "status": "EVOLVED"
+        },
+        {
+          "path": "AGENTS.md",
+          "original_blob": "036cbedf66f29d48e18171d31c77a4b1d3d9d3b9",
+          "main_blob": "eac47857027b5c7156a34ee59b34d19418580839",
+          "status": "EVOLVED"
+        },
+        {
+          "path": "scripts/measure_tokens.py",
+          "original_blob": "7a0cb7aa5724cf2eefc8bed596fd8142747673ae",
+          "main_blob": "7a0cb7aa5724cf2eefc8bed596fd8142747673ae",
+          "status": "IDENTICAL"
+        },
+        {
+          "path": "scripts/obsidian_kb.py",
+          "original_blob": "fdfce1d03ebbd42ea7ec83026777094cce01e506",
+          "main_blob": "214c596e20aad1893544ab2438957d4532ea4368",
+          "status": "EVOLVED"
+        },
+        {
+          "path": "scripts/second_brain_bridge.py",
+          "original_blob": "c0b60a26eedeb699b3e2f17e41c0faa83aa03417",
+          "main_blob": "c0b60a26eedeb699b3e2f17e41c0faa83aa03417",
+          "status": "IDENTICAL"
+        },
+        {
+          "path": "scripts/test_second_brain.py",
+          "original_blob": "defcfef4ec404d89be782ac2cf167f4e1e4a2638",
+          "main_blob": "85a341664e8b5b1508dae6e5abe67f82d271086c",
+          "status": "EVOLVED"
+        }
+      ],
+      "classification": "SUPERSEDED",
+      "justification": "Historical prototype/checkpoint replaced by canonical context/task/inventory implementation; paths retained and current contracts audited, not a missing remote contribution"
+    },
+    {
+      "sha": "3d313e65ead1814dc941180636286042f7b62eba",
+      "subject": "feat(application): trigger TopicKnowledgeProjection on eligible REAL_STUDY attempt submissions",
+      "patches": [
+        "+ 5dbd1986c3d2fa084e29f0da9c6b51af11f02adb",
+        "+ b1f46a34123603c45aed8d26ff56beba1e94ff0c",
+        "+ a0c6aaaba717a377753f225bdb743a786d1b94ac",
+        "+ b854b9623642c9ff9688128e4603470e610773c0",
+        "+ 03f481e67fb7aeeea5d42cfd6f3fd01606c27b18",
+        "+ 59c4ac8a729b086a16476b032f8e6d020a46afb9",
+        "+ 3d313e65ead1814dc941180636286042f7b62eba"
+      ],
+      "files": [
+        "M\tbackend/src/main/java/com/fiscalstudy/backend/application/AttemptSubmissionService.java"
+      ],
+      "paths": [
+        "backend/src/main/java/com/fiscalstudy/backend/application/AttemptSubmissionService.java"
+      ],
+      "absent_paths": [],
+      "comparison": [
+        {
+          "path": "backend/src/main/java/com/fiscalstudy/backend/application/AttemptSubmissionService.java",
+          "original_blob": "db0bf464f158c69e16c1a4d0cd6436c154ff5f2d",
+          "main_blob": "ae12a6dfabc2831c6c4db0d7116145b6c2db6485",
+          "status": "EVOLVED"
+        }
+      ],
+      "classification": "SUPERSEDED",
+      "justification": "Incremental arbitrary-calibration prototype replaced by deterministic event-store reconstruction, observed ordinal confidence and existing current API/tests; do not reintroduce obsolete events/DTOs or hard-coded probability mappings"
+    },
+    {
+      "sha": "edbb1990e741b07d4a1e4316efa653d24df74775",
+      "subject": "docs(task): registrar commit baee7e7 na TASK-2026-10-30-03",
+      "patches": [
+        "+ baee7e7dc6b1a255d556546a7cbc56b42648928b",
+        "+ edbb1990e741b07d4a1e4316efa653d24df74775"
+      ],
+      "files": [
+        "M\t\"knowledge/07 - Di\\303\\241rio de Desenvolvimento/TASK-2026-10-30-03.md\""
+      ],
+      "paths": [
+        "knowledge/07 - Diário de Desenvolvimento/TASK-2026-10-30-03.md"
+      ],
+      "absent_paths": [],
+      "comparison": [
+        {
+          "path": "knowledge/07 - Diário de Desenvolvimento/TASK-2026-10-30-03.md",
+          "original_blob": "c97c5de3cde78cb5ba449929fabe564c6869ff22",
+          "main_blob": "cd9550a764223699e9e567a1a0200fd788ae4e08",
+          "status": "EVOLVED"
+        }
+      ],
+      "classification": "SUPERSEDED",
+      "justification": "Historical prototype/checkpoint replaced by canonical context/task/inventory implementation; paths retained and current contracts audited, not a missing remote contribution"
+    },
+    {
+      "sha": "5dbd1986c3d2fa084e29f0da9c6b51af11f02adb",
+      "subject": "test(knowledge): add unit tests for CognitiveMetricsCalculator and Brier Score rules",
+      "patches": [
+        "+ 5dbd1986c3d2fa084e29f0da9c6b51af11f02adb"
+      ],
+      "files": [
+        "A\tbackend/src/test/java/com/fiscalstudy/backend/domain/knowledge/CognitiveMetricsCalculatorTest.java"
+      ],
+      "paths": [
+        "backend/src/test/java/com/fiscalstudy/backend/domain/knowledge/CognitiveMetricsCalculatorTest.java"
+      ],
+      "absent_paths": [
+        "backend/src/test/java/com/fiscalstudy/backend/domain/knowledge/CognitiveMetricsCalculatorTest.java"
+      ],
+      "comparison": [
+        {
+          "path": "backend/src/test/java/com/fiscalstudy/backend/domain/knowledge/CognitiveMetricsCalculatorTest.java",
+          "status": "ABSENT_SUPERSEDED_REVIEW_REQUIRED"
+        }
+      ],
+      "classification": "SUPERSEDED",
+      "justification": "Incremental arbitrary-calibration prototype replaced by deterministic event-store reconstruction, observed ordinal confidence and existing current API/tests; do not reintroduce obsolete events/DTOs or hard-coded probability mappings"
+    },
+    {
+      "sha": "59c4ac8a729b086a16476b032f8e6d020a46afb9",
+      "subject": "test(web): add integration test for TopicKnowledgeController and REAL_STUDY isolation",
+      "patches": [
+        "+ 5dbd1986c3d2fa084e29f0da9c6b51af11f02adb",
+        "+ b1f46a34123603c45aed8d26ff56beba1e94ff0c",
+        "+ a0c6aaaba717a377753f225bdb743a786d1b94ac",
+        "+ b854b9623642c9ff9688128e4603470e610773c0",
+        "+ 03f481e67fb7aeeea5d42cfd6f3fd01606c27b18",
+        "+ 59c4ac8a729b086a16476b032f8e6d020a46afb9"
+      ],
+      "files": [
+        "A\tbackend/src/test/java/com/fiscalstudy/backend/infrastructure/in/web/TopicKnowledgeControllerIntegrationTest.java"
+      ],
+      "paths": [
+        "backend/src/test/java/com/fiscalstudy/backend/infrastructure/in/web/TopicKnowledgeControllerIntegrationTest.java"
+      ],
+      "absent_paths": [],
+      "comparison": [
+        {
+          "path": "backend/src/test/java/com/fiscalstudy/backend/infrastructure/in/web/TopicKnowledgeControllerIntegrationTest.java",
+          "original_blob": "c3de71bed4a9ef7ad3abbbbb6fdaf6905f93a989",
+          "main_blob": "2ab577c683b9398d166d57dab540b57ec497e851",
+          "status": "EVOLVED"
+        }
+      ],
+      "classification": "SUPERSEDED",
+      "justification": "Incremental arbitrary-calibration prototype replaced by deterministic event-store reconstruction, observed ordinal confidence and existing current API/tests; do not reintroduce obsolete events/DTOs or hard-coded probability mappings"
+    },
+    {
+      "sha": "a0c6aaaba717a377753f225bdb743a786d1b94ac",
+      "subject": "feat(application): implement TopicKnowledgeProjectionService with incremental updates",
+      "patches": [
+        "+ 5dbd1986c3d2fa084e29f0da9c6b51af11f02adb",
+        "+ b1f46a34123603c45aed8d26ff56beba1e94ff0c",
+        "+ a0c6aaaba717a377753f225bdb743a786d1b94ac"
+      ],
+      "files": [
+        "A\tbackend/src/main/java/com/fiscalstudy/backend/application/TopicKnowledgeProjectionService.java"
+      ],
+      "paths": [
+        "backend/src/main/java/com/fiscalstudy/backend/application/TopicKnowledgeProjectionService.java"
+      ],
+      "absent_paths": [
+        "backend/src/main/java/com/fiscalstudy/backend/application/TopicKnowledgeProjectionService.java"
+      ],
+      "comparison": [
+        {
+          "path": "backend/src/main/java/com/fiscalstudy/backend/application/TopicKnowledgeProjectionService.java",
+          "status": "ABSENT_SUPERSEDED_REVIEW_REQUIRED"
+        }
+      ],
+      "classification": "SUPERSEDED",
+      "justification": "Incremental arbitrary-calibration prototype replaced by deterministic event-store reconstruction, observed ordinal confidence and existing current API/tests; do not reintroduce obsolete events/DTOs or hard-coded probability mappings"
+    },
+    {
+      "sha": "784a1fe2cce9c08e7489fa383ee5de82d33ea986",
+      "subject": "docs(second-brain): consolidar suite de 10 testes de resiliencia e guia operacional",
+      "patches": [
+        "+ 5424d77d3f1ea4f8984c5d5de1f35436e80a308a",
+        "+ 784a1fe2cce9c08e7489fa383ee5de82d33ea986"
+      ],
+      "files": [
+        "A\tdocs/SEGUNDO_CEREBRO_OPERACIONAL.md",
+        "M\tscripts/test_second_brain.py"
+      ],
+      "paths": [
+        "docs/SEGUNDO_CEREBRO_OPERACIONAL.md",
+        "scripts/test_second_brain.py"
+      ],
+      "absent_paths": [],
+      "comparison": [
+        {
+          "path": "docs/SEGUNDO_CEREBRO_OPERACIONAL.md",
+          "original_blob": "99e9afdae3c5c25ee549bf6147258ffd65fd57b7",
+          "main_blob": "99e9afdae3c5c25ee549bf6147258ffd65fd57b7",
+          "status": "IDENTICAL"
+        },
+        {
+          "path": "scripts/test_second_brain.py",
+          "original_blob": "85a341664e8b5b1508dae6e5abe67f82d271086c",
+          "main_blob": "85a341664e8b5b1508dae6e5abe67f82d271086c",
+          "status": "IDENTICAL"
+        }
+      ],
+      "classification": "EQUIVALENT",
+      "justification": "All changed paths have identical blobs in current main"
+    },
+    {
+      "sha": "505277383fa1f8f01000958d908335e5a3bf2d45",
+      "subject": "build(deps): bump the compatible group",
+      "patches": [
+        "+ 505277383fa1f8f01000958d908335e5a3bf2d45"
+      ],
+      "files": [
+        "M\tanalytics-engine/lab/requirements-lab-lock.txt",
+        "M\tanalytics-engine/lab/requirements-lab.txt",
+        "M\tanalytics-engine/lab/requirements-memory-lab.txt"
+      ],
+      "paths": [
+        "analytics-engine/lab/requirements-lab-lock.txt",
+        "analytics-engine/lab/requirements-lab.txt",
+        "analytics-engine/lab/requirements-memory-lab.txt"
+      ],
+      "absent_paths": [],
+      "comparison": [
+        {
+          "path": "analytics-engine/lab/requirements-lab-lock.txt",
+          "original_blob": "926fb8e324e98bd56ee8491ce8f24ef4f31a866a",
+          "main_blob": "46739b95ec840f697b8bd6a9d73265fd936c934c",
+          "status": "EVOLVED"
+        },
+        {
+          "path": "analytics-engine/lab/requirements-lab.txt",
+          "original_blob": "5a836b9fc552772b2a59120462c8fcc266be5248",
+          "main_blob": "49eded03b4d520899ef7141ea1015c3ecac108c4",
+          "status": "EVOLVED"
+        },
+        {
+          "path": "analytics-engine/lab/requirements-memory-lab.txt",
+          "original_blob": "c7eb01b8e40189fcf77081565e72f36e131485d8",
+          "main_blob": "7d624df400466488e6893a7b83a0f648ab96c54a",
+          "status": "EVOLVED"
+        }
+      ],
+      "classification": "REJECTED",
+      "justification": "Dependency updates rejected by maintainer in historical PRs; do not reapply"
+    },
+    {
+      "sha": "b854b9623642c9ff9688128e4603470e610773c0",
+      "subject": "feat(dto): create StudentTopicMasteryDTO for Epic 02 REST contracts",
+      "patches": [
+        "+ 5dbd1986c3d2fa084e29f0da9c6b51af11f02adb",
+        "+ b1f46a34123603c45aed8d26ff56beba1e94ff0c",
+        "+ a0c6aaaba717a377753f225bdb743a786d1b94ac",
+        "+ b854b9623642c9ff9688128e4603470e610773c0"
+      ],
+      "files": [
+        "A\tbackend/src/main/java/com/fiscalstudy/backend/infrastructure/in/web/dto/StudentTopicMasteryDTO.java"
+      ],
+      "paths": [
+        "backend/src/main/java/com/fiscalstudy/backend/infrastructure/in/web/dto/StudentTopicMasteryDTO.java"
+      ],
+      "absent_paths": [
+        "backend/src/main/java/com/fiscalstudy/backend/infrastructure/in/web/dto/StudentTopicMasteryDTO.java"
+      ],
+      "comparison": [
+        {
+          "path": "backend/src/main/java/com/fiscalstudy/backend/infrastructure/in/web/dto/StudentTopicMasteryDTO.java",
+          "status": "ABSENT_SUPERSEDED_REVIEW_REQUIRED"
+        }
+      ],
+      "classification": "SUPERSEDED",
+      "justification": "Incremental arbitrary-calibration prototype replaced by deterministic event-store reconstruction, observed ordinal confidence and existing current API/tests; do not reintroduce obsolete events/DTOs or hard-coded probability mappings"
+    },
+    {
+      "sha": "74e350c5e8ec8f9afb1c198bc719d54ea1610f40",
+      "subject": "feat(knowledge): integrar cofre tecnico Obsidian e protocolo de memoria dos agentes",
+      "patches": [
+        "+ 74e350c5e8ec8f9afb1c198bc719d54ea1610f40"
+      ],
+      "files": [
+        "M\t.agents/memory/CONTEXT.md",
+        "M\t.gitignore",
+        "M\tAGENTS.md",
+        "A\tknowledge/00 - Painel/Dashboard.md",
+        "A\t\"knowledge/01 - Vis\\303\\243o Geral/Gloss\\303\\241rio do Dom\\303\\255nio.md\"",
+        "A\t\"knowledge/01 - Vis\\303\\243o Geral/Proposta de Valor.md\"",
+        "A\t\"knowledge/02 - Arquitetura e Engenharia/Event Store Imut\\303\\241vel.md\"",
+        "A\tknowledge/02 - Arquitetura e Engenharia/Isolamento Staging.md",
+        "A\t\"knowledge/02 - Arquitetura e Engenharia/Mapa Estrutural do C\\303\\263digo.md\"",
+        "A\tknowledge/02 - Arquitetura e Engenharia/Protocolo de Orquestracao Multiagente e Governanca.md",
+        "A\tknowledge/02 - Arquitetura e Engenharia/Relatorio de Integracao Experimental Wave 1.md",
+        "A\t\"knowledge/02 - Arquitetura e Engenharia/Vis\\303\\243o Sist\\303\\252mica.md\"",
+        "A\t\"knowledge/03 - Funcionalidades e Telas/M\\303\\263dulos A a E (Execu\\303\\247\\303\\243o).md\"",
+        "A\t\"knowledge/03 - Funcionalidades e Telas/M\\303\\263dulos F a J (Intelig\\303\\252ncia).md\"",
+        "A\tknowledge/03 - Funcionalidades e Telas/Tecnologia Calma.md",
+        "A\t\"knowledge/04 - Ci\\303\\252ncia da Aprendizagem/Ciclo em 4 Est\\303\\241gios.md\"",
+        "A\t\"knowledge/04 - Ci\\303\\252ncia da Aprendizagem/Psicometria e Modelo R.md\"",
+        "A\t\"knowledge/04 - Ci\\303\\252ncia da Aprendizagem/Recupera\\303\\247\\303\\243o Ativa.md\"",
+        "A\tknowledge/05 - Planejamento e Roadmap/Catalogo de Epics - Mentor Cognitivo Adaptativo.md",
+        "A\tknowledge/05 - Planejamento e Roadmap/Estado Atual.md",
+        "A\tknowledge/05 - Planejamento e Roadmap/Problemas Conhecidos.md",
+        "A\tknowledge/05 - Planejamento e Roadmap/Roadmap Geral.md",
+        "A\t\"knowledge/06 - Refer\\303\\252ncias e Fontes/\\303\\215ndice de Documentos.md\"",
+        "A\t\"knowledge/07 - Di\\303\\241rio de Desenvolvimento/README.md\"",
+        "A\t\"knowledge/07 - Di\\303\\241rio de Desenvolvimento/TASK-2026-10-30-01.md\"",
+        "A\t\"knowledge/08 - Decis\\303\\265es e Evid\\303\\252ncias/Evid\\303\\252ncias e Verificabilidade Cient\\303\\255fica.md\"",
+        "A\t\"knowledge/08 - Decis\\303\\265es e Evid\\303\\252ncias/Mapeamento de Decis\\303\\265es Can\\303\\264nicas.md\"",
+        "A\t\"knowledge/08 - Decis\\303\\265es e Evid\\303\\252ncias/README.md\"",
+        "A\tknowledge/README.md",
+        "M\tscripts/context.py",
+        "M\tscripts/obsidian_kb.py",
+        "A\tscripts/task_registry.py",
+        "A\tscripts/test_agent_continuity.py",
+        "A\tscripts/test_task_registry.py"
+      ],
+      "paths": [
+        ".agents/memory/CONTEXT.md",
+        ".gitignore",
+        "AGENTS.md",
+        "knowledge/00 - Painel/Dashboard.md",
+        "knowledge/01 - Visão Geral/Glossário do Domínio.md",
+        "knowledge/01 - Visão Geral/Proposta de Valor.md",
+        "knowledge/02 - Arquitetura e Engenharia/Event Store Imutável.md",
+        "knowledge/02 - Arquitetura e Engenharia/Isolamento Staging.md",
+        "knowledge/02 - Arquitetura e Engenharia/Mapa Estrutural do Código.md",
+        "knowledge/02 - Arquitetura e Engenharia/Protocolo de Orquestracao Multiagente e Governanca.md",
+        "knowledge/02 - Arquitetura e Engenharia/Relatorio de Integracao Experimental Wave 1.md",
+        "knowledge/02 - Arquitetura e Engenharia/Visão Sistêmica.md",
+        "knowledge/03 - Funcionalidades e Telas/Módulos A a E (Execução).md",
+        "knowledge/03 - Funcionalidades e Telas/Módulos F a J (Inteligência).md",
+        "knowledge/03 - Funcionalidades e Telas/Tecnologia Calma.md",
+        "knowledge/04 - Ciência da Aprendizagem/Ciclo em 4 Estágios.md",
+        "knowledge/04 - Ciência da Aprendizagem/Psicometria e Modelo R.md",
+        "knowledge/04 - Ciência da Aprendizagem/Recuperação Ativa.md",
+        "knowledge/05 - Planejamento e Roadmap/Catalogo de Epics - Mentor Cognitivo Adaptativo.md",
+        "knowledge/05 - Planejamento e Roadmap/Estado Atual.md",
+        "knowledge/05 - Planejamento e Roadmap/Problemas Conhecidos.md",
+        "knowledge/05 - Planejamento e Roadmap/Roadmap Geral.md",
+        "knowledge/06 - Referências e Fontes/Índice de Documentos.md",
+        "knowledge/07 - Diário de Desenvolvimento/README.md",
+        "knowledge/07 - Diário de Desenvolvimento/TASK-2026-10-30-01.md",
+        "knowledge/08 - Decisões e Evidências/Evidências e Verificabilidade Científica.md",
+        "knowledge/08 - Decisões e Evidências/Mapeamento de Decisões Canônicas.md",
+        "knowledge/08 - Decisões e Evidências/README.md",
+        "knowledge/README.md",
+        "scripts/context.py",
+        "scripts/obsidian_kb.py",
+        "scripts/task_registry.py",
+        "scripts/test_agent_continuity.py",
+        "scripts/test_task_registry.py"
+      ],
+      "absent_paths": [],
+      "comparison": [
+        {
+          "path": ".agents/memory/CONTEXT.md",
+          "original_blob": "8ea2eb844f75552e9c8e269ef0ccf09b8aa33722",
+          "main_blob": "8ea2eb844f75552e9c8e269ef0ccf09b8aa33722",
+          "status": "IDENTICAL"
+        },
+        {
+          "path": ".gitignore",
+          "original_blob": "67869c2b76268f3bdf09ce0cc789b4c1f5aa542e",
+          "main_blob": "67869c2b76268f3bdf09ce0cc789b4c1f5aa542e",
+          "status": "IDENTICAL"
+        },
+        {
+          "path": "AGENTS.md",
+          "original_blob": "508e3da452e1d070801e7d43d21a270381543659",
+          "main_blob": "eac47857027b5c7156a34ee59b34d19418580839",
+          "status": "EVOLVED"
+        },
+        {
+          "path": "knowledge/00 - Painel/Dashboard.md",
+          "original_blob": "056a1ba3307b5c68b6a3415fcbf42c2c2622a5ab",
+          "main_blob": "056a1ba3307b5c68b6a3415fcbf42c2c2622a5ab",
+          "status": "IDENTICAL"
+        },
+        {
+          "path": "knowledge/01 - Visão Geral/Glossário do Domínio.md",
+          "original_blob": "39616eb051def2613221aa53ea1d432f53db8231",
+          "main_blob": "39616eb051def2613221aa53ea1d432f53db8231",
+          "status": "IDENTICAL"
+        },
+        {
+          "path": "knowledge/01 - Visão Geral/Proposta de Valor.md",
+          "original_blob": "353baeb31a6b9474e49d590583f669947b1b17fd",
+          "main_blob": "353baeb31a6b9474e49d590583f669947b1b17fd",
+          "status": "IDENTICAL"
+        },
+        {
+          "path": "knowledge/02 - Arquitetura e Engenharia/Event Store Imutável.md",
+          "original_blob": "07420bb2b78a18e01d8e4448f7afbb34be84be1b",
+          "main_blob": "07420bb2b78a18e01d8e4448f7afbb34be84be1b",
+          "status": "IDENTICAL"
+        },
+        {
+          "path": "knowledge/02 - Arquitetura e Engenharia/Isolamento Staging.md",
+          "original_blob": "6d8e59755a6983d47618c3e705f14f115771a002",
+          "main_blob": "6d8e59755a6983d47618c3e705f14f115771a002",
+          "status": "IDENTICAL"
+        },
+        {
+          "path": "knowledge/02 - Arquitetura e Engenharia/Mapa Estrutural do Código.md",
+          "original_blob": "3bd44ab06c10bd5d840fa270de71b0581f979f10",
+          "main_blob": "3bd44ab06c10bd5d840fa270de71b0581f979f10",
+          "status": "IDENTICAL"
+        },
+        {
+          "path": "knowledge/02 - Arquitetura e Engenharia/Protocolo de Orquestracao Multiagente e Governanca.md",
+          "original_blob": "5e706f1e7e539c29110df957b5679cae65457688",
+          "main_blob": "5e706f1e7e539c29110df957b5679cae65457688",
+          "status": "IDENTICAL"
+        },
+        {
+          "path": "knowledge/02 - Arquitetura e Engenharia/Relatorio de Integracao Experimental Wave 1.md",
+          "original_blob": "fd778aba1d30d12d52cfd4da261da09ade4faec2",
+          "main_blob": "fd778aba1d30d12d52cfd4da261da09ade4faec2",
+          "status": "IDENTICAL"
+        },
+        {
+          "path": "knowledge/02 - Arquitetura e Engenharia/Visão Sistêmica.md",
+          "original_blob": "071ab80d0c84806d960f4148c6d265e7f11ef6d0",
+          "main_blob": "071ab80d0c84806d960f4148c6d265e7f11ef6d0",
+          "status": "IDENTICAL"
+        },
+        {
+          "path": "knowledge/03 - Funcionalidades e Telas/Módulos A a E (Execução).md",
+          "original_blob": "11d928c35bbee0b404d90f040c9610f3bfcdd2b5",
+          "main_blob": "11d928c35bbee0b404d90f040c9610f3bfcdd2b5",
+          "status": "IDENTICAL"
+        },
+        {
+          "path": "knowledge/03 - Funcionalidades e Telas/Módulos F a J (Inteligência).md",
+          "original_blob": "e78a1be3d182e9960e641d45e99e45d0916369ce",
+          "main_blob": "e78a1be3d182e9960e641d45e99e45d0916369ce",
+          "status": "IDENTICAL"
+        },
+        {
+          "path": "knowledge/03 - Funcionalidades e Telas/Tecnologia Calma.md",
+          "original_blob": "75d932848abfa2bd98c992ac1f7ca786e02c9c9f",
+          "main_blob": "75d932848abfa2bd98c992ac1f7ca786e02c9c9f",
+          "status": "IDENTICAL"
+        },
+        {
+          "path": "knowledge/04 - Ciência da Aprendizagem/Ciclo em 4 Estágios.md",
+          "original_blob": "3618460515d57df1643882e4ea55a8badb023705",
+          "main_blob": "3618460515d57df1643882e4ea55a8badb023705",
+          "status": "IDENTICAL"
+        },
+        {
+          "path": "knowledge/04 - Ciência da Aprendizagem/Psicometria e Modelo R.md",
+          "original_blob": "21f1d25cc76a090d554b7b9929c64250d0954d68",
+          "main_blob": "21f1d25cc76a090d554b7b9929c64250d0954d68",
+          "status": "IDENTICAL"
+        },
+        {
+          "path": "knowledge/04 - Ciência da Aprendizagem/Recuperação Ativa.md",
+          "original_blob": "3462f94309e0f0c66886a4601d6036b36c1fda54",
+          "main_blob": "3462f94309e0f0c66886a4601d6036b36c1fda54",
+          "status": "IDENTICAL"
+        },
+        {
+          "path": "knowledge/05 - Planejamento e Roadmap/Catalogo de Epics - Mentor Cognitivo Adaptativo.md",
+          "original_blob": "5ab190f57e7f46ef24291e81bf165143171151db",
+          "main_blob": "5ab190f57e7f46ef24291e81bf165143171151db",
+          "status": "IDENTICAL"
+        },
+        {
+          "path": "knowledge/05 - Planejamento e Roadmap/Estado Atual.md",
+          "original_blob": "57587e3e90440281c2325baa177f05d5200214a1",
+          "main_blob": "57587e3e90440281c2325baa177f05d5200214a1",
+          "status": "IDENTICAL"
+        },
+        {
+          "path": "knowledge/05 - Planejamento e Roadmap/Problemas Conhecidos.md",
+          "original_blob": "f3c6ef06a0260d072215dba660d86f91173847aa",
+          "main_blob": "f3c6ef06a0260d072215dba660d86f91173847aa",
+          "status": "IDENTICAL"
+        },
+        {
+          "path": "knowledge/05 - Planejamento e Roadmap/Roadmap Geral.md",
+          "original_blob": "f5d2a4eada970bdd18d9466adb8c0fb36e5635b6",
+          "main_blob": "f5d2a4eada970bdd18d9466adb8c0fb36e5635b6",
+          "status": "IDENTICAL"
+        },
+        {
+          "path": "knowledge/06 - Referências e Fontes/Índice de Documentos.md",
+          "original_blob": "bc5a5700e52607fbc77b0a07e13cc48c70b55742",
+          "main_blob": "bc5a5700e52607fbc77b0a07e13cc48c70b55742",
+          "status": "IDENTICAL"
+        },
+        {
+          "path": "knowledge/07 - Diário de Desenvolvimento/README.md",
+          "original_blob": "47e0a13a30926c1dad11a359416f6b5c9f0804d2",
+          "main_blob": "47e0a13a30926c1dad11a359416f6b5c9f0804d2",
+          "status": "IDENTICAL"
+        },
+        {
+          "path": "knowledge/07 - Diário de Desenvolvimento/TASK-2026-10-30-01.md",
+          "original_blob": "21ca10da9352cee16964dc48dc082d434009e0a5",
+          "main_blob": "a866c71ef943c74f8493e57f76a9cae41d6e1e76",
+          "status": "EVOLVED"
+        },
+        {
+          "path": "knowledge/08 - Decisões e Evidências/Evidências e Verificabilidade Científica.md",
+          "original_blob": "9e24074c556ab8d15fb303817ccd4bb6d19bc5df",
+          "main_blob": "9956f5aec63ea0eef9d548aed2bab9ee4fca408b",
+          "status": "EVOLVED"
+        },
+        {
+          "path": "knowledge/08 - Decisões e Evidências/Mapeamento de Decisões Canônicas.md",
+          "original_blob": "d1f6e0564778d1c2ff470bfc8b9a8d3c4b7504a8",
+          "main_blob": "d1f6e0564778d1c2ff470bfc8b9a8d3c4b7504a8",
+          "status": "IDENTICAL"
+        },
+        {
+          "path": "knowledge/08 - Decisões e Evidências/README.md",
+          "original_blob": "cbfb0f68e117a2149671b2f09969c474bd4cd5f7",
+          "main_blob": "cbfb0f68e117a2149671b2f09969c474bd4cd5f7",
+          "status": "IDENTICAL"
+        },
+        {
+          "path": "knowledge/README.md",
+          "original_blob": "922accf619dc245442a2dcdbf35ebd923f2df38e",
+          "main_blob": "922accf619dc245442a2dcdbf35ebd923f2df38e",
+          "status": "IDENTICAL"
+        },
+        {
+          "path": "scripts/context.py",
+          "original_blob": "593312a95df51db9ab35dc89f830411351e34b37",
+          "main_blob": "593312a95df51db9ab35dc89f830411351e34b37",
+          "status": "IDENTICAL"
+        },
+        {
+          "path": "scripts/obsidian_kb.py",
+          "original_blob": "214c596e20aad1893544ab2438957d4532ea4368",
+          "main_blob": "214c596e20aad1893544ab2438957d4532ea4368",
+          "status": "IDENTICAL"
+        },
+        {
+          "path": "scripts/task_registry.py",
+          "original_blob": "c473833bfba8cf9e090216886d3bacdb8907a437",
+          "main_blob": "a33300ff7c3f90bc43d179e646f053faacc983fc",
+          "status": "EVOLVED"
+        },
+        {
+          "path": "scripts/test_agent_continuity.py",
+          "original_blob": "e5689f4237775319da06b762b4f9997bbcf648bb",
+          "main_blob": "1355e620b7e3d55e205ed264eef0c51926461ccb",
+          "status": "EVOLVED"
+        },
+        {
+          "path": "scripts/test_task_registry.py",
+          "original_blob": "fa2118ba7d0765c8cb665cf242cf2b01aab2d984",
+          "main_blob": "afee28f9864f0d3db93db0746676c04533e828f3",
+          "status": "EVOLVED"
+        }
+      ],
+      "classification": "SUPERSEDED",
+      "justification": "Historical prototype/checkpoint replaced by canonical context/task/inventory implementation; paths retained and current contracts audited, not a missing remote contribution"
+    },
+    {
+      "sha": "4fe9d80d48266e23c158560f0af495204b02b1ce",
+      "subject": "feat(memory): formalizar protocolo universal dos agentes e testes dos 8 criterios do adendo",
+      "patches": [
+        "+ 4fe9d80d48266e23c158560f0af495204b02b1ce"
+      ],
+      "files": [
+        "M\tAGENTS.md",
+        "M\tanalytics-engine/AGENTS.md",
+        "M\t\"knowledge/07 - Di\\303\\241rio de Desenvolvimento/TASK-2026-10-30-01.md\"",
+        "M\tscripts/task_registry.py",
+        "M\tscripts/test_agent_continuity.py",
+        "M\tscripts/test_task_registry.py"
+      ],
+      "paths": [
+        "AGENTS.md",
+        "analytics-engine/AGENTS.md",
+        "knowledge/07 - Diário de Desenvolvimento/TASK-2026-10-30-01.md",
+        "scripts/task_registry.py",
+        "scripts/test_agent_continuity.py",
+        "scripts/test_task_registry.py"
+      ],
+      "absent_paths": [],
+      "comparison": [
+        {
+          "path": "AGENTS.md",
+          "original_blob": "c851bf84777c16d33003b54030c25bc368687214",
+          "main_blob": "eac47857027b5c7156a34ee59b34d19418580839",
+          "status": "EVOLVED"
+        },
+        {
+          "path": "analytics-engine/AGENTS.md",
+          "original_blob": "33849a27c16409655537235c9138264555807e0c",
+          "main_blob": "33849a27c16409655537235c9138264555807e0c",
+          "status": "IDENTICAL"
+        },
+        {
+          "path": "knowledge/07 - Diário de Desenvolvimento/TASK-2026-10-30-01.md",
+          "original_blob": "379f92474af1585781ff6ee2ab149ab080a8a472",
+          "main_blob": "a866c71ef943c74f8493e57f76a9cae41d6e1e76",
+          "status": "EVOLVED"
+        },
+        {
+          "path": "scripts/task_registry.py",
+          "original_blob": "eacf2d1621620dcb3f12d6082019b9357eeb6665",
+          "main_blob": "a33300ff7c3f90bc43d179e646f053faacc983fc",
+          "status": "EVOLVED"
+        },
+        {
+          "path": "scripts/test_agent_continuity.py",
+          "original_blob": "2c353b387bb4d16130ba87fddc328487eb496323",
+          "main_blob": "1355e620b7e3d55e205ed264eef0c51926461ccb",
+          "status": "EVOLVED"
+        },
+        {
+          "path": "scripts/test_task_registry.py",
+          "original_blob": "98d26f8faa884c270cf381a9d9cb173af6b1d6b9",
+          "main_blob": "afee28f9864f0d3db93db0746676c04533e828f3",
+          "status": "EVOLVED"
+        }
+      ],
+      "classification": "SUPERSEDED",
+      "justification": "Historical prototype/checkpoint replaced by canonical context/task/inventory implementation; paths retained and current contracts audited, not a missing remote contribution"
+    },
+    {
+      "sha": "5aeaeb3b9d737b8f1aef782b2fbb78a59488952d",
+      "subject": "build(deps-dev): bump @types/node from 24.19.1 to 26.6.5 in /frontend",
+      "patches": [
+        "+ 5aeaeb3b9d737b8f1aef782b2fbb78a59488952d"
+      ],
+      "files": [
+        "M\tfrontend/package-lock.json",
+        "M\tfrontend/package.json"
+      ],
+      "paths": [
+        "frontend/package-lock.json",
+        "frontend/package.json"
+      ],
+      "absent_paths": [],
+      "comparison": [
+        {
+          "path": "frontend/package-lock.json",
+          "original_blob": "08a56138f10d8c5fd2e3812f18eaa71e2b475a7f",
+          "main_blob": "2dde3595dc0e60947179f6d50e41edb94b1f1e18",
+          "status": "EVOLVED"
+        },
+        {
+          "path": "frontend/package.json",
+          "original_blob": "18992b16a9544a8e6c7d06e9d4029ebec9b4ad2a",
+          "main_blob": "d3f4a05b6fddcc3bff9597e4481154bf977a362f",
+          "status": "EVOLVED"
+        }
+      ],
+      "classification": "REJECTED",
+      "justification": "Dependency updates rejected by maintainer in historical PRs; do not reapply"
+    },
+    {
+      "sha": "baee7e7dc6b1a255d556546a7cbc56b42648928b",
+      "subject": "feat(inventory): formalizar matriz de inventario pedagogico confiavel, contratos e auditoria de candidatos",
+      "patches": [
+        "+ baee7e7dc6b1a255d556546a7cbc56b42648928b"
+      ],
+      "files": [
+        "M\tbackend/src/main/java/com/fiscalstudy/backend/application/LearningShadowSnapshotService.java",
+        "A\tbackend/src/main/java/com/fiscalstudy/backend/domain/CandidateRejection.java",
+        "A\tbackend/src/main/java/com/fiscalstudy/backend/domain/EpistemicStatus.java",
+        "A\tbackend/src/main/java/com/fiscalstudy/backend/domain/InventoryAuditResult.java",
+        "A\tbackend/src/main/java/com/fiscalstudy/backend/domain/PedagogicalActivityType.java",
+        "A\tbackend/src/main/java/com/fiscalstudy/backend/domain/PedagogicalCandidate.java",
+        "A\tbackend/src/main/java/com/fiscalstudy/backend/domain/PedagogicalRejectionReason.java",
+        "A\tbackend/src/test/java/com/fiscalstudy/backend/application/PedagogicalInventoryAuditTest.java",
+        "A\tdocs/architecture/PEDAGOGICAL_INVENTORY_CONTRACT.md",
+        "A\tknowledge/02 - Arquitetura e Engenharia/Matriz de Inventario Pedagogico Confiavel.md",
+        "A\t\"knowledge/07 - Di\\303\\241rio de Desenvolvimento/TASK-2026-10-30-03.md\""
+      ],
+      "paths": [
+        "backend/src/main/java/com/fiscalstudy/backend/application/LearningShadowSnapshotService.java",
+        "backend/src/main/java/com/fiscalstudy/backend/domain/CandidateRejection.java",
+        "backend/src/main/java/com/fiscalstudy/backend/domain/EpistemicStatus.java",
+        "backend/src/main/java/com/fiscalstudy/backend/domain/InventoryAuditResult.java",
+        "backend/src/main/java/com/fiscalstudy/backend/domain/PedagogicalActivityType.java",
+        "backend/src/main/java/com/fiscalstudy/backend/domain/PedagogicalCandidate.java",
+        "backend/src/main/java/com/fiscalstudy/backend/domain/PedagogicalRejectionReason.java",
+        "backend/src/test/java/com/fiscalstudy/backend/application/PedagogicalInventoryAuditTest.java",
+        "docs/architecture/PEDAGOGICAL_INVENTORY_CONTRACT.md",
+        "knowledge/02 - Arquitetura e Engenharia/Matriz de Inventario Pedagogico Confiavel.md",
+        "knowledge/07 - Diário de Desenvolvimento/TASK-2026-10-30-03.md"
+      ],
+      "absent_paths": [],
+      "comparison": [
+        {
+          "path": "backend/src/main/java/com/fiscalstudy/backend/application/LearningShadowSnapshotService.java",
+          "original_blob": "b57277396b95b4c2d299a42e19fda8d12d68da15",
+          "main_blob": "b57277396b95b4c2d299a42e19fda8d12d68da15",
+          "status": "IDENTICAL"
+        },
+        {
+          "path": "backend/src/main/java/com/fiscalstudy/backend/domain/CandidateRejection.java",
+          "original_blob": "40e768c9420c8db2677d12292b263136bfff9b5e",
+          "main_blob": "40e768c9420c8db2677d12292b263136bfff9b5e",
+          "status": "IDENTICAL"
+        },
+        {
+          "path": "backend/src/main/java/com/fiscalstudy/backend/domain/EpistemicStatus.java",
+          "original_blob": "db36fd9ae98431a832381744f1cb0e9db8a2ffd3",
+          "main_blob": "db36fd9ae98431a832381744f1cb0e9db8a2ffd3",
+          "status": "IDENTICAL"
+        },
+        {
+          "path": "backend/src/main/java/com/fiscalstudy/backend/domain/InventoryAuditResult.java",
+          "original_blob": "4f248bb90eb69a1e813f1b9bafe6ee5168e15faf",
+          "main_blob": "4f248bb90eb69a1e813f1b9bafe6ee5168e15faf",
+          "status": "IDENTICAL"
+        },
+        {
+          "path": "backend/src/main/java/com/fiscalstudy/backend/domain/PedagogicalActivityType.java",
+          "original_blob": "70431045a366eb757f791ed41190c7115bfa1303",
+          "main_blob": "70431045a366eb757f791ed41190c7115bfa1303",
+          "status": "IDENTICAL"
+        },
+        {
+          "path": "backend/src/main/java/com/fiscalstudy/backend/domain/PedagogicalCandidate.java",
+          "original_blob": "4a14a0187f13ea91005dcf18d9197fcec5228afc",
+          "main_blob": "4a14a0187f13ea91005dcf18d9197fcec5228afc",
+          "status": "IDENTICAL"
+        },
+        {
+          "path": "backend/src/main/java/com/fiscalstudy/backend/domain/PedagogicalRejectionReason.java",
+          "original_blob": "e4d541250f28fcab7a7ebd5ae29691cf7fde615f",
+          "main_blob": "e4d541250f28fcab7a7ebd5ae29691cf7fde615f",
+          "status": "IDENTICAL"
+        },
+        {
+          "path": "backend/src/test/java/com/fiscalstudy/backend/application/PedagogicalInventoryAuditTest.java",
+          "original_blob": "a6c2e239189245111347bc2ce46824740bfb668f",
+          "main_blob": "a6c2e239189245111347bc2ce46824740bfb668f",
+          "status": "IDENTICAL"
+        },
+        {
+          "path": "docs/architecture/PEDAGOGICAL_INVENTORY_CONTRACT.md",
+          "original_blob": "3b08db1e3cce0703683851121ff20b89e1bed6a0",
+          "main_blob": "3b08db1e3cce0703683851121ff20b89e1bed6a0",
+          "status": "IDENTICAL"
+        },
+        {
+          "path": "knowledge/02 - Arquitetura e Engenharia/Matriz de Inventario Pedagogico Confiavel.md",
+          "original_blob": "d74687d62ca7883c088e7085556abe6c0bb280d5",
+          "main_blob": "d74687d62ca7883c088e7085556abe6c0bb280d5",
+          "status": "IDENTICAL"
+        },
+        {
+          "path": "knowledge/07 - Diário de Desenvolvimento/TASK-2026-10-30-03.md",
+          "original_blob": "ff0db14231f1f305f763d2fc1676c290e9c1445e",
+          "main_blob": "cd9550a764223699e9e567a1a0200fd788ae4e08",
+          "status": "EVOLVED"
+        }
+      ],
+      "classification": "SUPERSEDED",
+      "justification": "Historical prototype/checkpoint replaced by canonical context/task/inventory implementation; paths retained and current contracts audited, not a missing remote contribution"
+    },
+    {
+      "sha": "26ef858153abb4b5e5e2083ba1f902528e034e44",
+      "subject": "fix(memory): reforcar invariante MERGED com verificacao remota obrigatoria",
+      "patches": [
+        "+ 26ef858153abb4b5e5e2083ba1f902528e034e44"
+      ],
+      "files": [
+        "M\tscripts/task_registry.py",
+        "M\tscripts/test_agent_continuity.py",
+        "M\tscripts/test_task_registry.py"
+      ],
+      "paths": [
+        "scripts/task_registry.py",
+        "scripts/test_agent_continuity.py",
+        "scripts/test_task_registry.py"
+      ],
+      "absent_paths": [],
+      "comparison": [
+        {
+          "path": "scripts/task_registry.py",
+          "original_blob": "a33300ff7c3f90bc43d179e646f053faacc983fc",
+          "main_blob": "a33300ff7c3f90bc43d179e646f053faacc983fc",
+          "status": "IDENTICAL"
+        },
+        {
+          "path": "scripts/test_agent_continuity.py",
+          "original_blob": "1355e620b7e3d55e205ed264eef0c51926461ccb",
+          "main_blob": "1355e620b7e3d55e205ed264eef0c51926461ccb",
+          "status": "IDENTICAL"
+        },
+        {
+          "path": "scripts/test_task_registry.py",
+          "original_blob": "afee28f9864f0d3db93db0746676c04533e828f3",
+          "main_blob": "afee28f9864f0d3db93db0746676c04533e828f3",
+          "status": "IDENTICAL"
+        }
+      ],
+      "classification": "EQUIVALENT",
+      "justification": "All changed paths have identical blobs in current main"
+    },
+    {
+      "sha": "03f481e67fb7aeeea5d42cfd6f3fd01606c27b18",
+      "subject": "feat(web): add TopicKnowledgeController REST endpoint /api/v1/knowledge/topics/{topicId}/mastery",
+      "patches": [
+        "+ 5dbd1986c3d2fa084e29f0da9c6b51af11f02adb",
+        "+ b1f46a34123603c45aed8d26ff56beba1e94ff0c",
+        "+ a0c6aaaba717a377753f225bdb743a786d1b94ac",
+        "+ b854b9623642c9ff9688128e4603470e610773c0",
+        "+ 03f481e67fb7aeeea5d42cfd6f3fd01606c27b18"
+      ],
+      "files": [
+        "A\tbackend/src/main/java/com/fiscalstudy/backend/infrastructure/in/web/TopicKnowledgeController.java"
+      ],
+      "paths": [
+        "backend/src/main/java/com/fiscalstudy/backend/infrastructure/in/web/TopicKnowledgeController.java"
+      ],
+      "absent_paths": [],
+      "comparison": [
+        {
+          "path": "backend/src/main/java/com/fiscalstudy/backend/infrastructure/in/web/TopicKnowledgeController.java",
+          "original_blob": "184e0cfad34bbd6d4be88c44bd0e22e2fa10dce9",
+          "main_blob": "d0caf01898426b47d1ae83d8ae455e5c88b58608",
+          "status": "EVOLVED"
+        }
+      ],
+      "classification": "SUPERSEDED",
+      "justification": "Incremental arbitrary-calibration prototype replaced by deterministic event-store reconstruction, observed ordinal confidence and existing current API/tests; do not reintroduce obsolete events/DTOs or hard-coded probability mappings"
+    },
+    {
+      "sha": "b1f46a34123603c45aed8d26ff56beba1e94ff0c",
+      "subject": "feat(domain): define KnowledgeAttemptEvaluatedEvent domain event for Epic 02",
+      "patches": [
+        "+ 5dbd1986c3d2fa084e29f0da9c6b51af11f02adb",
+        "+ b1f46a34123603c45aed8d26ff56beba1e94ff0c"
+      ],
+      "files": [
+        "A\tbackend/src/main/java/com/fiscalstudy/backend/domain/knowledge/KnowledgeAttemptEvaluatedEvent.java"
+      ],
+      "paths": [
+        "backend/src/main/java/com/fiscalstudy/backend/domain/knowledge/KnowledgeAttemptEvaluatedEvent.java"
+      ],
+      "absent_paths": [
+        "backend/src/main/java/com/fiscalstudy/backend/domain/knowledge/KnowledgeAttemptEvaluatedEvent.java"
+      ],
+      "comparison": [
+        {
+          "path": "backend/src/main/java/com/fiscalstudy/backend/domain/knowledge/KnowledgeAttemptEvaluatedEvent.java",
+          "status": "ABSENT_SUPERSEDED_REVIEW_REQUIRED"
+        }
+      ],
+      "classification": "SUPERSEDED",
+      "justification": "Incremental arbitrary-calibration prototype replaced by deterministic event-store reconstruction, observed ordinal confidence and existing current API/tests; do not reintroduce obsolete events/DTOs or hard-coded probability mappings"
+    },
+    {
+      "sha": "f9f668d64573f97be50fb1596886494deeacd499",
+      "subject": "fix(memory): reforcar invariante MERGED com verificacao remota obrigatoria",
+      "patches": [
+        "+ f9f668d64573f97be50fb1596886494deeacd499"
+      ],
+      "files": [
+        "M\t\"knowledge/07 - Di\\303\\241rio de Desenvolvimento/TASK-2026-10-30-01.md\"",
+        "M\tscripts/task_registry.py",
+        "M\tscripts/test_agent_continuity.py",
+        "M\tscripts/test_task_registry.py"
+      ],
+      "paths": [
+        "knowledge/07 - Diário de Desenvolvimento/TASK-2026-10-30-01.md",
+        "scripts/task_registry.py",
+        "scripts/test_agent_continuity.py",
+        "scripts/test_task_registry.py"
+      ],
+      "absent_paths": [],
+      "comparison": [
+        {
+          "path": "knowledge/07 - Diário de Desenvolvimento/TASK-2026-10-30-01.md",
+          "original_blob": "ab95ef8acc826fca11c8299c2f60a852470df844",
+          "main_blob": "a866c71ef943c74f8493e57f76a9cae41d6e1e76",
+          "status": "EVOLVED"
+        },
+        {
+          "path": "scripts/task_registry.py",
+          "original_blob": "a33300ff7c3f90bc43d179e646f053faacc983fc",
+          "main_blob": "a33300ff7c3f90bc43d179e646f053faacc983fc",
+          "status": "IDENTICAL"
+        },
+        {
+          "path": "scripts/test_agent_continuity.py",
+          "original_blob": "1355e620b7e3d55e205ed264eef0c51926461ccb",
+          "main_blob": "1355e620b7e3d55e205ed264eef0c51926461ccb",
+          "status": "IDENTICAL"
+        },
+        {
+          "path": "scripts/test_task_registry.py",
+          "original_blob": "afee28f9864f0d3db93db0746676c04533e828f3",
+          "main_blob": "afee28f9864f0d3db93db0746676c04533e828f3",
+          "status": "IDENTICAL"
+        }
+      ],
+      "classification": "SUPERSEDED",
+      "justification": "Historical prototype/checkpoint replaced by canonical context/task/inventory implementation; paths retained and current contracts audited, not a missing remote contribution"
+    }
+  ]
+}
