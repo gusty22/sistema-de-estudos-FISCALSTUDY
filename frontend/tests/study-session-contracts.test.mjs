@@ -6,7 +6,9 @@ import {
   savePendingSession,
   readPendingSession,
   clearPendingSession,
-  discardPendingSession
+  discardPendingSession,
+  savePendingSessionDetailed,
+  inspectPendingSession
 } from '../src/utils/studySessionSubmission.ts';
 
 const jsonResponse = (data, status = 200) =>
@@ -422,4 +424,78 @@ test('FS-01A (Achado E): Validacao estrita de resposta 200 rejeita corpo vazio, 
     assert.equal(result.status, 'RECORDED');
     assert.equal(readPendingSession(sessionId), null);
   }
+});
+
+test('FS-01A: Distinção rigorosa de durabilidade (DURABLE vs MEMORY_ONLY) e hasAttemptedSend', async () => {
+  const sessionId = 'study-durability-check';
+  const payload = { disciplina: 'Direito Civil', durationSeconds: 600 };
+
+  // 1. Em ambiente normal com storage funcional -> DURABLE
+  const subDurable = new StudySessionSubmission(payload, sessionId);
+  assert.equal(subDurable.storageState, 'DURABLE');
+  assert.equal(subDurable.isDurable, true);
+  assert.equal(subDurable.hasAttemptedSend, false);
+
+  // 2. Simula QuotaExceededError no storage -> MEMORY_ONLY
+  const origSetItem = globalThis.sessionStorage.setItem;
+  try {
+    globalThis.sessionStorage.setItem = () => { throw new Error('QuotaExceededError'); };
+    const detail = savePendingSessionDetailed('study-quota-mem-only', '{"test":1}');
+    assert.equal(detail.success, false);
+    assert.equal(detail.state, 'MEMORY_ONLY');
+    assert.equal(detail.isDurable, false);
+    assert.match(detail.warning, /armazenamento local.*memória volátil/i);
+
+    const subMem = new StudySessionSubmission(payload, 'study-quota-mem-sub');
+    assert.equal(subMem.storageState, 'MEMORY_ONLY');
+    assert.equal(subMem.isDurable, false);
+    assert.ok(subMem.storageWarning);
+
+    // Falha de rede quando em MEMORY_ONLY deve advertir claramente contra reload
+    globalThis.fetch = async () => { throw new Error('Network offline'); };
+    await assert.rejects(
+      subMem.send(),
+      (err) => err instanceof StudySessionError && /ATENÇÃO: o armazenamento local.*NÃO recarregue a página/i.test(err.message)
+    );
+    assert.equal(subMem.hasAttemptedSend, true);
+  } finally {
+    globalThis.sessionStorage.setItem = origSetItem;
+  }
+
+  // 3. Falha de rede quando em DURABLE declara que a operação foi salva localmente
+  globalThis.fetch = async () => { throw new Error('Network offline'); };
+  await assert.rejects(
+    subDurable.send(),
+    (err) => err instanceof StudySessionError && /salva localmente no navegador e pode ser reenviada/i.test(err.message)
+  );
+  assert.equal(subDurable.hasAttemptedSend, true);
+
+  discardPendingSession(sessionId);
+});
+
+test('FS-01A: Nao sobrescrever silenciosamente um journal invalido ou corrompido existente', () => {
+  const sessionId = 'study-corrupt-preservation';
+  const prefix = 'fiscalstudy:study_session:v1:';
+
+  // Grava entrada manifestamente corrompida / inválida no storage
+  globalThis.sessionStorage.setItem(prefix + sessionId, 'CORRUPTED_NON_JSON_{{');
+
+  // Verifica inspeção
+  const insp = inspectPendingSession(sessionId);
+  assert.equal(insp.exists, true);
+  assert.equal(insp.isCorrupted, true);
+
+  // Tentativa de salvar nova sessão sob o mesmo ID não deve sobrescrever
+  const saveRes = savePendingSessionDetailed(sessionId, '{"sessionId":"study-corrupt-preservation","disciplina":"TI"}');
+  assert.equal(saveRes.success, false);
+  assert.equal(saveRes.state, 'CORRUPTED_PRESERVED');
+  assert.equal(saveRes.isDurable, false);
+  assert.match(saveRes.warning, /Journal local existente está corrompido.*preservado para auditoria/i);
+
+  // Comprova que o registro bruto corrompido no storage NÃO foi alterado
+  assert.equal(globalThis.sessionStorage.getItem(prefix + sessionId), 'CORRUPTED_NON_JSON_{{');
+
+  // Descarte explícito pelo usuário expurga
+  discardPendingSession(sessionId);
+  assert.equal(globalThis.sessionStorage.getItem(prefix + sessionId), null);
 });

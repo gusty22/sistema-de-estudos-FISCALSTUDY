@@ -153,6 +153,8 @@ export default function SessaoEstudoAtiva({
   const pendingSubmissionRef = useRef<StudySessionSubmission | null>(null);
   const [saveError, setSaveError] = useState<{ message: string; isConflict: boolean; retryable: boolean } | null>(null);
   const [pendingRecoveryNotice, setPendingRecoveryNotice] = useState<string | null>(null);
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState<boolean>(false);
+  const [storageWarningNotice, setStorageWarningNotice] = useState<string | null>(null);
 
   const effectiveDiscipline = initialDiscipline || sessionStorage.getItem('fiscalstudy_session_discipline') || activeConcurso?.nome || DEFAULT_SESSION.discipline;
   const effectiveTopic = initialTopic || sessionStorage.getItem('fiscalstudy_session_topic') || DEFAULT_SESSION.topic;
@@ -189,6 +191,9 @@ export default function SessaoEstudoAtiva({
       const recovered = StudySessionSubmission.fromJournal(sessionId);
       if (recovered) {
         pendingSubmissionRef.current = recovered;
+        if (!recovered.isDurable && recovered.storageWarning) {
+          setStorageWarningNotice(recovered.storageWarning);
+        }
         const p = recovered.payload as any;
         if (typeof p.durationSeconds === 'number' && secondsElapsed === 0) {
           setSecondsElapsed(p.durationSeconds);
@@ -513,6 +518,9 @@ export default function SessaoEstudoAtiva({
         notas: difficultyText || undefined
       };
       pendingSubmissionRef.current = new StudySessionSubmission(payload, sessionId);
+        if (!pendingSubmissionRef.current.isDurable && pendingSubmissionRef.current.storageWarning) {
+          setStorageWarningNotice(pendingSubmissionRef.current.storageWarning);
+        }
       }
     }
 
@@ -555,17 +563,28 @@ export default function SessaoEstudoAtiva({
   };
 
 
-  const handleDiscardUncertainSession = () => {
+  const handleInitiateDiscard = () => {
+    if (isSavingSessionRef.current) return;
+    setShowDiscardConfirm(true);
+  };
+
+  const handleConfirmDiscard = () => {
     if (isSavingSessionRef.current) return;
     discardPendingSession(sessionId);
     pendingSubmissionRef.current = null;
     setSaveError(null);
     setPendingRecoveryNotice(null);
+    setShowDiscardConfirm(false);
+    setStorageWarningNotice(null);
     const newId = `sess_${crypto.randomUUID()}`;
     setSessionId(newId);
     try {
       sessionStorage.setItem('fiscalstudy_active_session_id', newId);
     } catch {}
+  };
+
+  const handleCancelDiscard = () => {
+    setShowDiscardConfirm(false);
   };
 
   // T14: ENCERRAMENTO DA SESSÃO
@@ -688,13 +707,44 @@ export default function SessaoEstudoAtiva({
                 </button>
                 <button
                   type="button"
-                  onClick={handleDiscardUncertainSession}
+                  onClick={handleInitiateDiscard}
                   disabled={isSavingSession}
                   className="px-3 py-1.5 border border-sky-500/30 text-sky-300 rounded-lg text-xs font-semibold hover:bg-sky-500/20 transition w-fit"
                 >
                   Descartar Operação Incerta
                 </button>
               </div>
+            </div>
+          )}
+
+          
+          {showDiscardConfirm && (
+            <div className="mb-4 p-3 rounded-xl text-left bg-red-900/30 border border-red-500/50 text-red-200 text-xs flex flex-col gap-2">
+              <span>⚠️ <strong>Atenção Crítica:</strong> O servidor pode já ter registrado esta sessão caso a resposta de confirmação tenha sido perdida após a gravação. Descartar a pendência localmente NÃO desfaz operações no banco de dados e iniciar uma nova sessão não impede duplicidade caso o envio anterior tenha sido gravado. Deseja realmente descartar a pendência local?</span>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleConfirmDiscard}
+                  disabled={isSavingSession}
+                  className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-semibold hover:bg-red-700 transition w-fit"
+                >
+                  Confirmar Descarte
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCancelDiscard}
+                  disabled={isSavingSession}
+                  className="px-3 py-1.5 border border-stone-500/40 text-stone-300 rounded-lg text-xs font-semibold hover:bg-stone-500/20 transition w-fit"
+                >
+                  Cancelar e Reconciliar
+                </button>
+              </div>
+            </div>
+          )}
+
+          {storageWarningNotice && !showDiscardConfirm && (
+            <div className="mb-4 p-2.5 rounded-xl text-left bg-amber-500/15 border border-amber-500/30 text-amber-400 text-xs">
+              ⚠️ {storageWarningNotice}
             </div>
           )}
 
@@ -716,7 +766,7 @@ export default function SessaoEstudoAtiva({
                 {(saveError.retryable || saveError.isConflict) && (
                   <button
                     type="button"
-                    onClick={handleDiscardUncertainSession}
+                    onClick={handleInitiateDiscard}
                     disabled={isSavingSession}
                     className="px-3 py-1.5 border border-red-500/30 text-red-300 rounded-lg text-xs font-semibold hover:bg-red-500/20 transition w-fit"
                   >

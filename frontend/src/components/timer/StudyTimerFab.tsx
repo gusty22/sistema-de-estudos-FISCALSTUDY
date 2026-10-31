@@ -32,6 +32,8 @@ export const StudyTimerFab: React.FC<StudyTimerFabProps> = ({ activeConcurso, on
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [saveError, setSaveError] = useState<{ message: string; isConflict: boolean; retryable: boolean } | null>(null);
   const [pendingRecoveryNotice, setPendingRecoveryNotice] = useState<string | null>(null);
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState<boolean>(false);
+  const [storageWarningNotice, setStorageWarningNotice] = useState<string | null>(null);
 
   // Recuperação real após reload (Achado C): restaura o payload exato sem reconstruir dados a partir de formulário modificado
   useEffect(() => {
@@ -39,6 +41,9 @@ export const StudyTimerFab: React.FC<StudyTimerFabProps> = ({ activeConcurso, on
       const recovered = StudySessionSubmission.fromJournal(sessionId);
       if (recovered) {
         pendingSubmissionRef.current = recovered;
+        if (!recovered.isDurable && recovered.storageWarning) {
+          setStorageWarningNotice(recovered.storageWarning);
+        }
         const p = recovered.payload as any;
         if (p.disciplina) setSelectedDisciplina(p.disciplina);
         if (typeof p.durationSeconds === 'number' && seconds === 0) setSeconds(p.durationSeconds);
@@ -165,17 +170,28 @@ export const StudyTimerFab: React.FC<StudyTimerFabProps> = ({ activeConcurso, on
     setIsRunning(false);
   };
 
-  const handleDiscardUncertainSession = () => {
+  const handleInitiateDiscard = () => {
+    if (isSubmitting) return;
+    setShowDiscardConfirm(true);
+  };
+
+  const handleConfirmDiscard = () => {
     if (isSubmitting) return;
     discardPendingSession(sessionId);
     pendingSubmissionRef.current = null;
     setSaveError(null);
     setPendingRecoveryNotice(null);
+    setShowDiscardConfirm(false);
+    setStorageWarningNotice(null);
     const newId = 'study-' + crypto.randomUUID();
     setSessionId(newId);
     try {
       sessionStorage.setItem('fiscalstudy_timer_session_id', newId);
     } catch {}
+  };
+
+  const handleCancelDiscard = () => {
+    setShowDiscardConfirm(false);
   };
 
   const handleReset = () => {
@@ -668,7 +684,7 @@ export const StudyTimerFab: React.FC<StudyTimerFabProps> = ({ activeConcurso, on
                         <button
                           type="button"
                           className="timer-btn timer-btn-secondary"
-                          onClick={handleDiscardUncertainSession}
+                          onClick={handleInitiateDiscard}
                           disabled={isSubmitting}
                           style={{ fontSize: '11px', padding: '4px 8px' }}
                         >
@@ -708,7 +724,7 @@ export const StudyTimerFab: React.FC<StudyTimerFabProps> = ({ activeConcurso, on
                           <button
                             type="button"
                             className="timer-btn timer-btn-secondary"
-                            onClick={handleDiscardUncertainSession}
+                            onClick={handleInitiateDiscard}
                             disabled={isSubmitting}
                             style={{ fontSize: '11px', padding: '4px 8px' }}
                           >
@@ -721,7 +737,59 @@ export const StudyTimerFab: React.FC<StudyTimerFabProps> = ({ activeConcurso, on
                 </div>
               )}
 
-              {saveSuccess && (
+              
+                  {showDiscardConfirm && (
+                    <div style={{
+                      marginTop: '8px',
+                      padding: '8px 10px',
+                      borderRadius: '6px',
+                      fontSize: '11px',
+                      background: 'rgba(239, 68, 68, 0.2)',
+                      border: '1px solid rgba(239, 68, 68, 0.4)',
+                      color: '#fca5a5',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '6px'
+                    }}>
+                      <span>⚠️ <strong>Atenção Crítica:</strong> O servidor pode já ter registrado esta operação caso a resposta tenha sido perdida após a gravação. Descartar a pendência localmente NÃO desfaz gravações no banco de dados e iniciar uma nova sessão não impede duplicidade caso o envio anterior tenha sido concluído no servidor. Deseja realmente descartar a pendência local?</span>
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <button
+                          type="button"
+                          className="timer-btn"
+                          onClick={handleConfirmDiscard}
+                          disabled={isSubmitting}
+                          style={{ background: '#dc2626', color: '#fff', fontSize: '11px', padding: '3px 8px' }}
+                        >
+                          Confirmar Descarte
+                        </button>
+                        <button
+                          type="button"
+                          className="timer-btn timer-btn-secondary"
+                          onClick={handleCancelDiscard}
+                          disabled={isSubmitting}
+                          style={{ fontSize: '11px', padding: '3px 8px' }}
+                        >
+                          Cancelar e Reconciliar
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {storageWarningNotice && !showDiscardConfirm && (
+                    <div style={{
+                      marginTop: '8px',
+                      padding: '6px 10px',
+                      borderRadius: '6px',
+                      fontSize: '11px',
+                      background: 'rgba(234, 179, 8, 0.15)',
+                      border: '1px solid rgba(234, 179, 8, 0.3)',
+                      color: '#eab308'
+                    }}>
+                      ⚠️ {storageWarningNotice}
+                    </div>
+                  )}
+
+                  {saveSuccess && (
                 <div style={{
                   padding: '8px 12px',
                   borderRadius: '8px',
