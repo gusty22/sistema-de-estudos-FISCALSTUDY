@@ -10,7 +10,9 @@ import {
   StudySessionError,
   readPendingSession,
   clearPendingSession,
-  discardPendingSession
+  discardPendingSession,
+  evaluateContinuationDecision,
+  executeConsciousDiscard
 } from '../src/utils/studySessionSubmission.ts';
 
 const jsonResponse = (data, status = 200) =>
@@ -318,7 +320,8 @@ test('FS-01C (Comportamento Real): Diferenciação entre cancelamento seguro ant
 
   let showDiscardConfirm = false;
   const onContinue1 = () => {
-    if (pendingRef && pendingRef.hasAttemptedSend && !pendingRef.confirmed) {
+    const decision = evaluateContinuationDecision(pendingRef, sessionId);
+    if (decision.requiresExplicitConfirmation) {
       showDiscardConfirm = true;
       return;
     }
@@ -348,7 +351,8 @@ test('FS-01C (Comportamento Real): Diferenciação entre cancelamento seguro ant
 
   // Usuário clica em "Continuar Estudando" enquanto operação está incerta:
   const onContinue2 = () => {
-    if (pendingRef && pendingRef.hasAttemptedSend && !pendingRef.confirmed) {
+    const decision = evaluateContinuationDecision(pendingRef, sessionId);
+    if (decision.requiresExplicitConfirmation) {
       showDiscardConfirm = true;
       return;
     }
@@ -461,4 +465,70 @@ test('FS-01C (Achado E): recordQuestionHandoff rejeita confirmacao ambigua ou st
   assert.notEqual(readPendingSession(sessionId), null, 'Journal deve permanecer para nova tentativa');
 
   discardPendingSession(sessionId);
+});
+
+test('FS-01C (Achado 1): Reload de pagina apos falha de envio restaura SENT_UNCONFIRMED e impede cancelamento silencioso', async () => {
+  const sessionId = 'qv-reload-sent-unconfirmed-test';
+  const payload = {
+    sessionId,
+    disciplina: 'Auditoria Fiscal',
+    durationSeconds: 900,
+    questoesFeitas: 10,
+    questoesAcertadas: 9,
+    rendimentoPercentual: 90,
+    confiancaMedia: 4.5,
+    activityType: 'HE',
+    nextSessionHandoff: 'Planejamento de auditoria concluido'
+  };
+
+  // 1. Cria a submissão e tenta enviar; rede falha
+  globalThis.fetch = async () => { throw new Error('HTTP 504 Gateway Timeout'); };
+  const sub = new StudySessionSubmission(payload, sessionId);
+  let caughtError = false;
+  try {
+    await recordQuestionHandoff(payload, sessionId, sub);
+  } catch (err) {
+    caughtError = true;
+  }
+  assert.equal(caughtError, true);
+  assert.equal(sub.hasAttemptedSend, true);
+  assert.equal(sub.lifecycleState, 'SENT_UNCONFIRMED');
+
+  // 2. Simula recarregamento completo da página (memória limpa, apenas storage preservado)
+  let pendingHandoffSubmissionRefCurrent = null;
+
+  // QuestionViewer useEffect é acionado no mount:
+  const recoveredFromJournal = StudySessionSubmission.fromJournal(sessionId);
+  assert.ok(recoveredFromJournal);
+  assert.equal(recoveredFromJournal.hasAttemptedSend, true);
+  assert.equal(recoveredFromJournal.lifecycleState, 'SENT_UNCONFIRMED');
+  pendingHandoffSubmissionRefCurrent = recoveredFromJournal;
+
+  // 3. Usuário clica em "Continuar Estudando" no modal recuperado
+  let showDiscardModal = false;
+  const handleContinueStudying = () => {
+    const decision = evaluateContinuationDecision(pendingHandoffSubmissionRefCurrent, sessionId);
+    if (decision.requiresExplicitConfirmation) {
+      showDiscardModal = true;
+      return;
+    }
+    clearPendingSession(sessionId);
+    pendingHandoffSubmissionRefCurrent = null;
+  };
+
+  handleContinueStudying();
+
+  // Comprova que o descarte silencioso foi categoricamente bloqueado
+  assert.equal(showDiscardModal, true, 'Deve exigir confirmação explícita pois a operação já foi enviada ao backend');
+  assert.notEqual(readPendingSession(sessionId), null, 'Journal pendente DEVE continuar preservado');
+
+  // 4. Usuário cancela o descarte e decide tentar reenviar (retry): backend agora responde 200
+  globalThis.fetch = async () => jsonResponse({ sessionId, status: 'RECORDED' }, 200);
+  const { submission: confirmedSub, result } = await recordQuestionHandoff(payload, sessionId, pendingHandoffSubmissionRefCurrent);
+  assert.equal(result.status, 'RECORDED');
+  assert.equal(confirmedSub.confirmed, true);
+  assert.equal(confirmedSub.lifecycleState, 'CONFIRMED');
+
+  // Após confirmação, journal é limpo com integridade
+  assert.equal(readPendingSession(sessionId), null);
 });

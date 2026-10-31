@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { AttemptSubmission, annotateAttempt, requestJson } from '../utils/attemptSubmission';
-import { StudySessionSubmission, StudySessionError, clearPendingSession, discardPendingSession } from '../utils/studySessionSubmission';
+import { StudySessionSubmission, StudySessionError, clearPendingSession, evaluateContinuationDecision, executeConsciousDiscard } from '../utils/studySessionSubmission';
 import { recordQuestionHandoff, executeEndSession } from '../utils/questionSessionLifecycle';
 import { prospectiveCaptureEnabled } from '../utils/prospectiveCapture';
 import { ProspectivePreparation } from '../utils/prospectivePreparation';
@@ -561,10 +561,9 @@ const QuestionViewer: React.FC = () => {
   const handleContinueStudyingFromHandoff = () => {
     if (isSubmittingHandoff) return;
 
-    const sub = pendingHandoffSubmissionRef.current;
-    // Se a submissão tentou envio e ainda não foi confirmada (operação incerta pós-envio),
-    // NÃO descarte silenciosamente: exija confirmação consciente com advertência
-    if (sub && sub.hasAttemptedSend && !sub.confirmed) {
+    // ACHADO 1: Avalia decisão através do contrato formal de ciclo de vida (em memória ou recuperado do journal)
+    const decision = evaluateContinuationDecision(pendingHandoffSubmissionRef.current, sessionId);
+    if (decision.requiresExplicitConfirmation) {
       setShowDiscardHandoffConfirm(true);
       return;
     }
@@ -580,7 +579,7 @@ const QuestionViewer: React.FC = () => {
 
   const handleConfirmDiscardHandoff = () => {
     if (isSubmittingHandoff) return;
-    discardPendingSession(sessionId);
+    executeConsciousDiscard(sessionId);
     pendingHandoffSubmissionRef.current = null;
     setHandoffError(null);
     setRecoveredJournalNotice(null);
