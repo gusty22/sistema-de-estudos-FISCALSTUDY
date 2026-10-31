@@ -1,8 +1,8 @@
 # FiscalStudy — índice executivo
 Objetivo: estudo local com evidências rastreáveis, sem confundir acerto, retenção, domínio e transferência.
 
-Snapshot histórico (2026-10-31): main `0686f08` (PRs #41–#47, #59–#65, #68, #70–#71, #74, #76, #78–#79, #82, #84, #86, #89 `MERGED`; Issues históricas #72,#73,#75,#77,#81,#83,#85,#88 concluídas; Issue #87 `IN_PROGRESS` no Codex/Frente B; Issue #80 `BLOCKED`; `READY_APPROVED=0` sem ordem explícita de `gusty22`).
-Confirme `git status --short`, `origin/main` e Issues/PRs no GitHub antes de editar em execução autorizada.
+Snapshot histórico (2026-10-31, referência histórica — nunca fonte de autorização atual): main `0686f08` (PRs #41–#47, #59–#65, #68, #70–#71, #74, #76, #78–#79, #82, #84, #86, #89 `MERGED`; Issue #87 `IN_PROGRESS` no Codex/Frente B; Issue #80 `BLOCKED`).
+Sempre consulte `git status --short`, `origin/main` e Issues/PRs atuais no GitHub para verificar a fila ou editar.
 A existência dos contratos não demonstra benefício pedagógico. Piloto pessoal não iniciado.
 
 Organização multiagente (`.agents/agents/`, descoberta nativa na raiz do repositório):
