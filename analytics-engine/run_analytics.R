@@ -254,7 +254,9 @@ main <- function() {
     writeLines(jsonlite::toJSON(empty_summary, pretty=TRUE, auto_unbox=TRUE), con=file.path(output_root,"metrics/metrics_summary_v1.json"), useBytes=TRUE)
     utils::write.csv(data.frame(metric_name="attempt_count", value=0, n_observations=0L), file.path(output_root,"metrics/metrics_summary_v1.csv"), row.names=FALSE)
     writeLines(jsonlite::toJSON(envelope(list(n_observations=0L, observed_attempt_count=nrow(raw_attempts_df), can_generate_student_profile=FALSE), if (nrow(raw_attempts_df) == 0) "NO_DATA" else "NO_EVALUABLE_EVIDENCE"),pretty=TRUE,auto_unbox=TRUE),con=file.path(output_root,"metrics/learning_profile_v1.json"),useBytes=TRUE)
-    writeLines(jsonlite::toJSON(envelope(list(evaluation_status="NO_DATA", total_interventions=0L, evaluated_count=0L), "NO_DATA"),pretty=TRUE,auto_unbox=TRUE),con=file.path(output_root,"metrics/intervention_evaluation_v1.json"),useBytes=TRUE)
+    cold_eval_recs <- evaluate_intervention_recommendations(interventions_df, attempts_df, questions_df, min_eval_sample = 5L)
+    cold_eval_recs <- envelope(cold_eval_recs, cold_eval_recs$evaluation_status, can_apply = FALSE)
+    writeLines(jsonlite::toJSON(cold_eval_recs, pretty = TRUE, auto_unbox = TRUE), con = file.path(output_root, "metrics/intervention_evaluation_v1.json"), useBytes = TRUE)
 
     cat(">>> Artefatos de Cold Start gravados com sucesso em output/metrics/\n")
     cat("========================================================================\n")
@@ -296,11 +298,8 @@ main <- function() {
   retrieval_diagnostics <- calculate_retrieval_surprise(attempts_df)
   temporal_baseline_backtest <- evaluate_baselines_temporally(attempts_df)
   
-  # Avaliação de recomendações/intervenções se disponível
-  eval_recs <- NULL
-  if (!is.null(interventions_df) && !is.null(val_int) && val_int$is_valid) {
-    eval_recs <- evaluate_intervention_recommendations(interventions_df, attempts_df, questions_df, min_eval_sample = 5L)
-  }
+  # Avaliação de recomendações/intervenções (fonte canônica Extensão 1.1.0)
+  eval_recs <- evaluate_intervention_recommendations(interventions_df, attempts_df, questions_df, min_eval_sample = 5L)
   
   # 5. Geração de Gráficos em Base R
   cat("\n[5/6] Gerando graficos estatisticos em Base R (PNG)...\n")
@@ -354,8 +353,7 @@ main <- function() {
   retrieval_diagnostics <- envelope(retrieval_diagnostics, retrieval_diagnostics$status, can_apply = FALSE)
   temporal_baseline_backtest <- envelope(temporal_baseline_backtest, temporal_baseline_backtest$status, can_apply = FALSE)
   robin_hood_weights <- envelope(robin_hood_weights, can_apply = FALSE)
-  if (is.null(eval_recs)) eval_recs <- list(evaluation_status = "NO_DATA", total_interventions = 0L, evaluated_count = 0L)
-  eval_recs <- envelope(eval_recs, "OBSERVATIONAL_ANALYSIS")
+  eval_recs <- envelope(eval_recs, eval_recs$evaluation_status, can_apply = FALSE)
 
   json_out <- file.path(output_root, "metrics/metrics_summary_v1.json")
   csv_out <- file.path(output_root, "metrics/metrics_summary_v1.csv")
