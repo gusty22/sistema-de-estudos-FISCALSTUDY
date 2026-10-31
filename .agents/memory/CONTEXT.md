@@ -1,14 +1,14 @@
 # FiscalStudy — índice executivo
 Objetivo: estudo local com evidências rastreáveis, sem confundir acerto, retenção, domínio e transferência.
 
-Snapshot histórico (2026-10-31): main `5eae86b06dc88a9e8a50d04817ce578b6fca287f` (PRs #41–#47, #59–#65, #68, #70–#71, #74, #76, #78–#79, #82, #84, #86 integradas).
-Sempre confirme `git status --short`, `git log -3 --oneline`, `origin/main` e Issues/PRs abertas no GitHub antes de editar.
+Snapshot histórico (2026-10-31, referência histórica — nunca fonte de autorização atual): main `0686f08` (PRs #41–#47, #59–#65, #68, #70–#71, #74, #76, #78–#79, #82, #84, #86, #89 `MERGED`; Issue #87 `IN_PROGRESS` no Codex/Frente B; Issue #80 `BLOCKED`).
+Sempre consulte `git status --short`, `origin/main` e Issues/PRs atuais no GitHub para verificar a fila ou editar.
 A existência dos contratos não demonstra benefício pedagógico. Piloto pessoal não iniciado.
 
 Organização multiagente (`.agents/agents/`, descoberta nativa na raiz do repositório):
-- Coordenador principal selecionável: `cto-fiscalstudy` (orquestra ondas de até 2 subagentes sob demanda, sem iniciar sessões ociosas).
-- Especialistas persistentes: `backend-java-specialist`, `r-engine-specialist`, `scientific-director`, `quality-supervisor`, `adversarial-auditor`, `github-integration-specialist`.
-- Coordenação Antigravity + Codex: responsabilidade por tarefa e dependências (`Depends-on`) são estado dinâmico verificado via GitHub Issues/PRs e `scripts/context.py task list` (ex.: no snapshot atual, a Issue #87 pertence à Frente B / Codex). Não edite escopo atribuído à outra plataforma sem autorização do proprietário; merge na `main` é exclusivo de `gusty22`.
+- Coordenador: `cto-fiscalstudy` (modos `ANALYSIS`, `PLANNING`, `APPROVED_EXECUTION`; ondas <=2 subagentes sob demanda).
+- Especialistas: `backend-java-specialist`, `r-engine-specialist`, `scientific-director`, `quality-supervisor`, `adversarial-auditor`, `github-integration-specialist`.
+- Coordenação Antigravity + Codex: responsabilidade e `Depends-on` verificados via GitHub Issues/PRs e `scripts/context.py task list` (Issue #87 reservada ao Codex). Não edite escopo da outra plataforma; merge na `main` é exclusivo de `gusty22`.
 
 Mapa mínimo:
 - Shadow Core Java → R: `docs/architecture/CORE_LEARNING_SHADOW.md`, `CORE_LEARNING_SHADOW_VALIDATION.md` e `PEDAGOGICAL_INVENTORY_CONTRACT.md`. Desligado por padrão.
