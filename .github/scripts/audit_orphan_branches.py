@@ -10,7 +10,6 @@ import json
 import os
 from pathlib import Path
 from urllib.request import Request, urlopen
-from urllib.parse import quote
 
 REPO = "gusty22/sistema-de-estudos-FISCALSTUDY"
 TOKEN = os.environ.get("GITHUB_TOKEN", "")
@@ -46,10 +45,9 @@ def audit(branches: list, prs: list, compare) -> list[dict]:
         if any(p.get("state") == "open" for p in matching):
             continue
         sha = branch["commit"]["sha"]
-        if any(p.get("merged_at") and p.get("base", {}).get("ref") == "main"
-               and p.get("head", {}).get("sha") == sha for p in matching):
-            continue
-        result = compare(name)
+        # Um PR merged pode ter usado squash/rebase; os metadados nao provam
+        # ancestralidade do HEAD atual. Compare sempre o commit inventariado.
+        result = compare(sha)
         if result.get("ahead_by", 0) <= 0:
             continue
         if any(p.get("merged_at") and p.get("base", {}).get("ref") != "main" for p in matching):
@@ -66,6 +64,7 @@ def audit(branches: list, prs: list, compare) -> list[dict]:
 
 def main() -> None:
     branches = pages("branches")
+    main_sha = next(b["commit"]["sha"] for b in branches if b["name"] == "main")
     # Parametros da pagina adicionados em unico endereco para evitar query duplicada.
     prs = []
     for page in range(1, 16):
@@ -77,11 +76,12 @@ def main() -> None:
         raise RuntimeError("Paginacao de PRs incompleta")
     candidates = audit(
         branches, prs,
-        lambda name: get(f"/repos/{REPO}/compare/main...{quote(name, safe='/')}"),
+        lambda sha: get(f"/repos/{REPO}/compare/{main_sha}...{sha}"),
     )
     rows = [
         "# FiscalStudy — auditoria semanal de branches",
         f"Branches remotas: {len(branches)}; PRs consultadas: {len(prs)}; candidatos a revisao: {len(candidates)}.",
+        f"Main inventariada: `{main_sha}`; comparacoes usam os SHAs capturados, nao nomes moveis.",
         "",
         "Candidatos nao significam codigo necessariamente ausente. Nao realizar merge automatico.",
         "",
