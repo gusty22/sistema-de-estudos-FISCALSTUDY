@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { AttemptSubmission, annotateAttempt, requestJson } from '../utils/attemptSubmission';
-import { StudySessionSubmission, StudySessionError, readPendingSession, clearPendingSession } from '../utils/studySessionSubmission';
+import { StudySessionSubmission, StudySessionError, clearPendingSession } from '../utils/studySessionSubmission';
 import { recordQuestionHandoff, executeEndSession } from '../utils/questionSessionLifecycle';
 import { prospectiveCaptureEnabled } from '../utils/prospectiveCapture';
 import { ProspectivePreparation } from '../utils/prospectivePreparation';
@@ -516,7 +516,12 @@ const QuestionViewer: React.FC = () => {
     };
 
     if (!pendingHandoffSubmissionRef.current) {
-      pendingHandoffSubmissionRef.current = new StudySessionSubmission(payload, sessionId);
+      const fromJ = StudySessionSubmission.fromJournal(sessionId);
+      if (fromJ) {
+        pendingHandoffSubmissionRef.current = fromJ;
+      } else {
+        pendingHandoffSubmissionRef.current = new StudySessionSubmission(payload, sessionId);
+      }
     }
 
     isSubmittingHandoffRef.current = true;
@@ -568,12 +573,13 @@ const QuestionViewer: React.FC = () => {
   const [sessionId, setSessionId] = useState<string>(getInitialSessionId);
   submissionScopeRef.current = sessionId + '|' + (question?.questionId || '');
 
-  // Recupera tentativamente o recado de handoff salvo em tentativa anterior não confirmada
+  // Recupera tentativamente o recado de handoff salvo em tentativa anterior não confirmada (Achado C)
   useEffect(() => {
     try {
-      const pending = readPendingSession(sessionId);
-      if (pending && pending.serializedBody) {
-        const parsed = JSON.parse(pending.serializedBody);
+      const fromJ = StudySessionSubmission.fromJournal(sessionId);
+      if (fromJ) {
+        pendingHandoffSubmissionRef.current = fromJ;
+        const parsed = fromJ.payload as any;
         if (parsed.nextSessionHandoff && !nextSessionHandoff) {
           setNextSessionHandoff(parsed.nextSessionHandoff);
         }

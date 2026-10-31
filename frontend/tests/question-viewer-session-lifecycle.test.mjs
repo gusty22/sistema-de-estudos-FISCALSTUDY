@@ -9,7 +9,8 @@ import {
   StudySessionSubmission,
   StudySessionError,
   readPendingSession,
-  clearPendingSession
+  clearPendingSession,
+  discardPendingSession
 } from '../src/utils/studySessionSubmission.ts';
 
 const jsonResponse = (data, status = 200) =>
@@ -80,7 +81,7 @@ test('FS-01C: recordQuestionHandoff rejeita HTTP 500 sem falso sucesso e preserv
   assert.equal(pending.sessionId, sessionId);
 });
 
-test('FS-01C: recordQuestionHandoff trata HTTP 409 (conflito) sem falso sucesso e limpa journal pendente', async () => {
+test('FS-01C (Achado D): recordQuestionHandoff trata HTTP 409 preservando journal para conciliacao/auditoria', async () => {
   globalThis.fetch = async () =>
     jsonResponse({ error: 'Session already recorded' }, 409);
 
@@ -108,9 +109,11 @@ test('FS-01C: recordQuestionHandoff trata HTTP 409 (conflito) sem falso sucesso 
   assert.equal(caughtError.isConflict, true, 'Status 409 e conflito real');
   assert.equal(!caughtError.isConflict, false, 'Status 409 nao e retryable');
 
-  // Journal deve ser limpo para evitar dados orfaos
+  // Journal deve ser preservado para conciliação ou descarte explícito
   const pending = readPendingSession(sessionId);
-  assert.equal(pending, null, 'Journal pendente deve ser limpo no caso de conflito 409');
+  assert.notEqual(pending, null, 'Journal pendente NAO deve ser limpo em 409');
+  discardPendingSession(sessionId);
+  assert.equal(readPendingSession(sessionId), null, 'Descarte explicito limpa o journal');
 });
 
 test('FS-01C: Falha de rede em recordQuestionHandoff preserva sessionId e dados para retry identico', async () => {
@@ -164,7 +167,7 @@ test('FS-01C: Barreira sincrona em recordQuestionHandoff compartilha a mesma Pro
   globalThis.fetch = async () => {
     networkCalls++;
     await new Promise((r) => setTimeout(r, 25));
-    return jsonResponse({ status: 'RECORDED' }, 200);
+    return jsonResponse({ sessionId, status: 'RECORDED' }, 200);
   };
 
   const sessionId = 'qv-real-concurrent';
@@ -314,4 +317,69 @@ test('FS-01C: Cancelar modal de handoff com Continuar Estudando invalida ref e l
 
   assert.equal(pendingSubmission, null, 'Ref deve ser anulado para forcar recalculacao de metricas em encerramento futuro');
   assert.equal(readPendingSession(sessionId), null, 'Journal obsoleto deve ser descartado');
+});
+
+test('FS-01C (Achado C): fromJournal recupera fielmente o payload de handoff sem reconstruir a partir de novos valores', async () => {
+  const sessionId = 'qv-journal-recovery-c';
+  const originalPayload = {
+    sessionId,
+    disciplina: 'Direito Tributario',
+    topicoId: 'Processo Administrativo Fiscal',
+    durationSeconds: 3100,
+    questoesFeitas: 15,
+    questoesAcertadas: 13,
+    rendimentoPercentual: 87,
+    confiancaMedia: 4.5,
+    activityType: 'HE',
+    nextSessionHandoff: 'Atenção para prazo de recurso voluntário no CARF'
+  };
+
+  // Simula gravação prévia no journal
+  new StudySessionSubmission(originalPayload, sessionId);
+
+  // Recupera via fromJournal
+  const recovered = StudySessionSubmission.fromJournal(sessionId);
+  assert.notEqual(recovered, null, 'fromJournal deve retornar a submissao persistida');
+  assert.equal(recovered.sessionId, sessionId);
+  assert.equal(recovered.payload.durationSeconds, 3100);
+  assert.equal(recovered.payload.nextSessionHandoff, originalPayload.nextSessionHandoff);
+  assert.equal(recovered.payload.activityType, 'HE');
+
+  // Envio subsequente com a submissão recuperada
+  globalThis.fetch = async () => jsonResponse({ sessionId, status: 'RECORDED' }, 200);
+  const { result } = await recordQuestionHandoff(originalPayload, sessionId, recovered);
+  assert.equal(result.status, 'RECORDED');
+  assert.equal(recovered.confirmed, true);
+  assert.equal(readPendingSession(sessionId), null);
+});
+
+test('FS-01C (Achado E): recordQuestionHandoff rejeita confirmacao ambigua ou status nao-RECORDED', async () => {
+  const sessionId = 'qv-strict-http-e';
+  const payload = {
+    sessionId,
+    disciplina: 'Economia',
+    durationSeconds: 500,
+    questoesFeitas: 5,
+    questoesAcertadas: 5,
+    rendimentoPercentual: 100,
+    confiancaMedia: 5.0,
+    activityType: 'HE',
+    nextSessionHandoff: 'Equilíbrio de Nash'
+  };
+
+  // Resposta HTTP 200 com status inesperado (diferente de RECORDED)
+  globalThis.fetch = async () => jsonResponse({ sessionId, status: 'PENDING_REVIEW' }, 200);
+
+  let caught = null;
+  try {
+    await recordQuestionHandoff(payload, sessionId);
+  } catch (err) {
+    caught = err;
+  }
+
+  assert.ok(caught instanceof StudySessionError);
+  assert.match(caught.message, /status de gravação inesperado/i);
+  assert.notEqual(readPendingSession(sessionId), null, 'Journal deve permanecer para nova tentativa');
+
+  discardPendingSession(sessionId);
 });
