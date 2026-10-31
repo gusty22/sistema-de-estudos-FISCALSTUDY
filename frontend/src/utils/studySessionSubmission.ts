@@ -209,7 +209,6 @@ export class StudySessionSubmission {
       // IMPORTANTE (ACHADO D): NÃO expurgar o journal pendente automaticamente!
       // A evidência do conflito deve ser preservada para conciliação ou descarte explícito pelo usuário.
       if (res.status === 409) {
-        clearPendingSession(this.sessionId);
         throw new StudySessionError(
           (data && data.message) || 'Conflito de sessão: esta identidade já foi registrada no servidor com dados divergentes.',
           409,

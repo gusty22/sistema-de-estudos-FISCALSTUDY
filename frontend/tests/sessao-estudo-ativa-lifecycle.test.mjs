@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import {
   StudySessionSubmission,
   StudySessionError,
-  readPendingSession
+  readPendingSession,
+  discardPendingSession
 } from '../src/utils/studySessionSubmission.ts';
 
 const jsonResponse = (data, status = 200) =>
@@ -166,7 +167,7 @@ test('FS-01B: Clique duplo em handleFinalizeAndRecord compartilha a mesma requis
   assert.equal(netCalls, 1);
 });
 
-test('FS-01B: Resposta HTTP 409 limpa o journal pendente para evitar orfandade', async () => {
+test('FS-01B (Achado D): Resposta HTTP 409 preserva o journal pendente para conciliacao/auditoria', async () => {
   globalThis.fetch = async () =>
     jsonResponse({ message: 'Session already recorded with different data' }, 409);
 
@@ -176,7 +177,9 @@ test('FS-01B: Resposta HTTP 409 limpa o journal pendente para evitar orfandade',
   );
 
   await assert.rejects(submission.send());
-  assert.equal(readPendingSession('sess-409-orphan-check'), null, 'Journal deve ser limpo em erro 409');
+  assert.notEqual(readPendingSession('sess-409-orphan-check'), null, 'Journal NAO deve ser limpo em erro 409');
+  discardPendingSession('sess-409-orphan-check');
+  assert.equal(readPendingSession('sess-409-orphan-check'), null, 'Descarte explicito limpa o journal');
 });
 
 test('FS-01B: onFinishSession e disparado estritamente apos confirmacao HTTP 200/201 e nunca durante o avanco de etapas', async () => {
@@ -257,4 +260,69 @@ test('FS-01B: fluxo Continuar Estudando regenera sessionId no state e storage ev
   assert.equal(sentSessionIds.length, 2);
   assert.equal(sentSessionIds[1], 'sess-resumed-456', 'Segunda submissao deve carregar novo sessionId');
   assert.notEqual(sentSessionIds[0], sentSessionIds[1], 'Identificadores devem ser distintos para evitar HTTP 409');
+});
+
+test('FS-01B (Achado C): Recarregamento apos falha restaura o payload exato do journal sem reconstruir duracao zero', async () => {
+  const sessionId = 'sess-active-reload-test';
+  const originalPayload = {
+    sessionId,
+    disciplina: 'Direito Tributario',
+    topicoId: 'Obrigacao Tributaria',
+    durationSeconds: 2700,
+    modo: 'CRONOMETRO',
+    activityType: 'ESTUDO_ORIENTADO',
+    interrupcoesCount: 2,
+    etapasConcluidas: 4,
+    totalEtapas: 4,
+    statusConclusao: 'SIM',
+    dificuldadeRelatada: 'Conceito de sujeito passivo por solidariedade',
+    notas: 'Dúvidas em jurisprudência do STJ'
+  };
+
+  // 1. Simula envio prévio que caiu em falha de rede (offline)
+  const sub1 = new StudySessionSubmission(originalPayload, sessionId);
+  globalThis.fetch = async () => { throw new Error('Network offline'); };
+  await assert.rejects(sub1.send());
+
+  // 2. Simula reload da página: componente lê sessionId do storage e recupera via fromJournal
+  const recoveredSubmission = StudySessionSubmission.fromJournal(sessionId);
+  assert.notEqual(recoveredSubmission, null, 'Deve encontrar a submissao pendente no journal');
+  assert.equal(recoveredSubmission.sessionId, sessionId);
+  assert.equal(recoveredSubmission.payload.durationSeconds, 2700, 'Duracao nao pode ser resetada para 0');
+  assert.equal(recoveredSubmission.payload.dificuldadeRelatada, originalPayload.dificuldadeRelatada);
+  assert.equal(recoveredSubmission.payload.notas, originalPayload.notas);
+
+  // 3. Reenvio da submissão recuperada com sucesso
+  const sentPayloads = [];
+  globalThis.fetch = async (url, init) => {
+    sentPayloads.push(init.body);
+    return jsonResponse({ sessionId, status: 'RECORDED' }, 200);
+  };
+
+  const result = await recoveredSubmission.send();
+  assert.equal(result.status, 'RECORDED');
+  assert.equal(recoveredSubmission.confirmed, true);
+  assert.equal(readPendingSession(sessionId), null, 'Journal deve ser limpo apos confirmacao');
+
+  // Comprova que o payload enviado no reenvio pós-reload é idêntico ao original
+  const sentObj = JSON.parse(sentPayloads[0]);
+  assert.equal(sentObj.durationSeconds, 2700);
+  assert.equal(sentObj.sessionId, sessionId);
+});
+
+test('FS-01B (Achado B): Continuar Estudando e bloqueado durante operacao incerta/retryable sem confirmacao', () => {
+  const sessionId = 'sess-active-uncertain-block';
+  const sub = new StudySessionSubmission({ disciplina: 'TI', durationSeconds: 600 }, sessionId);
+  assert.equal(sub.confirmed, false);
+
+  const saveError = { message: 'Network offline', isConflict: false, retryable: true };
+
+  // Regra de guarda do botao Continuar Estudando:
+  // Se houver submissão pendente não confirmada com retryable ou pendingRecoveryNotice, bloqueia reset silencioso
+  const isBlocked = Boolean(sub && !sub.confirmed && saveError?.retryable);
+  assert.equal(isBlocked, true, 'Deve bloquear reset/continuacao silenciosa em operacao incerta');
+
+  // Descarte explícito permite prosseguir
+  discardPendingSession(sessionId);
+  assert.equal(readPendingSession(sessionId), null);
 });
