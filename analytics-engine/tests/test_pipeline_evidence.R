@@ -72,13 +72,14 @@ if (fixture_run$exit == 0) {
 
 
 # A locale-C subprocess must preserve Unicode and emit warning-free metric CSV.
+source("tests/helpers/utf8_fixture.R")
 unicode_df <- pipeline_df
 unicode_label <- "Direito Tribut\u00e1rio: exce\u00e7\u00e3o"
 unicode_df$discipline <- rep(unicode_label,nrow(unicode_df))
 unicode_df$assunto <- rep("Cr\u00e9dito tribut\u00e1rio",nrow(unicode_df))
 unicode_input <- file.path(pipeline_dir,"unicode-attempts.csv")
 unicode_output <- file.path(pipeline_dir,"unicode-results")
-utils::write.csv(unicode_df,unicode_input,row.names=FALSE,fileEncoding="UTF-8")
+write_utf8_fixture_csv(unicode_df,unicode_input)
 unicode_manifest <- pipeline_manifest
 unicode_manifest$checksum <- compute_file_sha256(unicode_input)
 unicode_manifest_path <- file.path(pipeline_dir,"unicode-manifest.json")

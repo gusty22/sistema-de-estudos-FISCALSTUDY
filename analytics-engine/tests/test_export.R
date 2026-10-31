@@ -65,10 +65,11 @@ if (file.exists(test_csv)) file.remove(test_csv)
 
 
 # UTF-8 transport is independent of native locale and preserves the snapshot.
+source("tests/helpers/utf8_fixture.R")
 utf8_csv <- tempfile("utf8-contract-",fileext=".csv")
 utf8_value <- "Direito Tribut\u00e1rio: exce\u00e7\u00e3o, aten\u00e7\u00e3o e mem\u00f3ria"
 utf8_df <- data.frame(discipline=utf8_value,stringsAsFactors=FALSE)
-utils::write.csv(utf8_df,utf8_csv,row.names=FALSE,fileEncoding="UTF-8")
+write_utf8_fixture_csv(utf8_df,utf8_csv)
 utf8_before <- compute_file_sha256(utf8_csv)
 utf8_read <- read_utf8_csv(utf8_csv,stringsAsFactors=FALSE)
 assert_equal(utf8_read$discipline,utf8_value,"UTF-8 curriculum labels survive CSV decoding")
