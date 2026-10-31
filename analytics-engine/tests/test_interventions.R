@@ -156,3 +156,180 @@ assert_equal(evaluate_intervention_recommendations(bad_id, post_fixture)$evaluat
              "INVALID_INTERVENTION_DATA", "Duplicate intervention IDs fail validation")
 assert_equal(evaluate_intervention_recommendations(NULL)$evaluation_status, "NO_DATA",
              "Empty intervention input remains a no-data state")
+
+# ------------------------------------------------------------------------------
+# Testes Determinísticos de Integração no Pipeline Analítico (Extensão 1.1.0)
+# ------------------------------------------------------------------------------
+
+run_pipeline_eval <- function(args_list, run_id = "test-eval-run") {
+  tmp_out <- tempfile("eval-out-")
+  dir.create(tmp_out, recursive = TRUE, showWarnings = FALSE)
+  log_file <- tempfile(fileext = ".log")
+  keys <- c("FISCALSTUDY_ANALYTICS_OUTPUT", "FISCALSTUDY_RUN_ID", "FISCALSTUDY_ALLOW_DEMO")
+  old <- Sys.getenv(keys, unset = NA_character_)
+  on.exit({
+    for (i in seq_along(keys)) {
+      if (is.na(old[i])) Sys.unsetenv(keys[i]) else do.call(Sys.setenv, setNames(list(old[i]), keys[i]))
+    }
+    unlink(tmp_out, recursive = TRUE)
+    unlink(log_file)
+  }, add = TRUE)
+  Sys.setenv(FISCALSTUDY_ANALYTICS_OUTPUT = tmp_out, FISCALSTUDY_RUN_ID = run_id, FISCALSTUDY_ALLOW_DEMO = "true")
+  rscript <- file.path(R.home("bin"), if (.Platform$OS.type == "windows") "Rscript.exe" else "Rscript")
+  exit <- system2(rscript, c("run_analytics.R", args_list), stdout = log_file, stderr = log_file)
+  eval_json_path <- file.path(tmp_out, "metrics/intervention_evaluation_v1.json")
+  json_data <- if (file.exists(eval_json_path)) {
+    jsonlite::fromJSON(eval_json_path, simplifyVector = FALSE)
+  } else {
+    NULL
+  }
+  log_content <- if (file.exists(log_file)) readLines(log_file, warn = FALSE) else character(0)
+  list(exit = exit, json = json_data, log = log_content)
+}
+
+required_v1_1_fields <- c(
+  "evaluation_version", "evaluation_status", "status", "total_interventions",
+  "completed_interventions", "pending_evaluation_count", "evaluated_count",
+  "declared_evaluated_count", "unverified_followup_count", "is_validated",
+  "can_apply", "can_schedule", "transfer_status", "assessment_type_status",
+  "intervention_origin_status", "inference_scope", "followup_audit",
+  "activity_evaluation", "method_evaluation", "recovery_rate_by_type",
+  "methodological_cautions"
+)
+
+# 1. Cold Start sem intervenções
+res_cold <- run_pipeline_eval(c("tests/fixtures/test_zero_rows.csv"), run_id = "cold-start-eval")
+assert_equal(res_cold$exit, 0L, "Pipeline executa com sucesso sob Cold Start")
+cold_json <- res_cold$json
+assert_true(!is.null(cold_json), "intervention_evaluation_v1.json gerado no Cold Start")
+assert_equal(cold_json$evaluation_status, "NO_DATA", "Cold Start evaluation_status e NO_DATA")
+assert_equal(cold_json$status, "NO_DATA", "Cold Start status e NO_DATA")
+assert_equal(cold_json$evaluation_version, "1.1.0", "Cold Start possui evaluation_version 1.1.0")
+assert_false(cold_json$is_validated, "Cold Start is_validated e FALSE")
+assert_false(cold_json$can_apply, "Cold Start can_apply e FALSE")
+assert_false(cold_json$can_schedule, "Cold Start can_schedule e FALSE")
+assert_equal(cold_json$transfer_status, "NOT_ESTABLISHED", "Cold Start transfer_status e NOT_ESTABLISHED")
+assert_true(all(required_v1_1_fields %in% names(cold_json)), "Cold Start contem todos os campos da Extensao 1.1.0")
+
+# 2. Fluxo normal sem intervenções (incluindo entrada operacional adaptada de 1 argumento CSV)
+res_op <- run_pipeline_eval(c("tests/fixtures/test_cold_start.csv"), run_id = "op-eval-no-int")
+assert_equal(res_op$exit, 0L, "Pipeline executa com sucesso para entrada operacional adaptada")
+op_json <- res_op$json
+assert_true(!is.null(op_json), "intervention_evaluation_v1.json gerado para entrada operacional")
+assert_equal(op_json$evaluation_status, "NO_DATA", "Fluxo normal sem intervencoes retorna evaluation_status NO_DATA")
+assert_equal(op_json$status, "NO_DATA", "Fluxo normal sem intervencoes retorna status NO_DATA")
+assert_equal(op_json$evaluation_version, "1.1.0", "Fluxo normal sem intervencoes possui evaluation_version 1.1.0")
+assert_false(op_json$is_validated, "Fluxo normal sem intervencoes is_validated e FALSE")
+assert_false(op_json$can_apply, "Fluxo normal sem intervencoes can_apply e FALSE")
+assert_false(op_json$can_schedule, "Fluxo normal sem intervencoes can_schedule e FALSE")
+assert_equal(op_json$transfer_status, "NOT_ESTABLISHED", "Fluxo normal sem intervencoes transfer_status e NOT_ESTABLISHED")
+assert_true(all(required_v1_1_fields %in% names(op_json)), "Fluxo normal sem intervencoes contem todos os campos 1.1.0")
+
+# 3. Intervenções inválidas (tests/fixtures/invalid_interventions.csv) no pipeline run_analytics.R
+res_invalid <- run_pipeline_eval(
+  c("tests/fixtures/valid_events.csv", "tests/fixtures/valid_questions.csv", "tests/fixtures/invalid_interventions.csv"),
+  run_id = "invalid-eval-run"
+)
+assert_equal(res_invalid$exit, 0L, "Pipeline executa com fixture de intervencoes invalidas")
+inv_json <- res_invalid$json
+assert_true(!is.null(inv_json), "intervention_evaluation_v1.json gerado com intervencoes invalidas")
+assert_equal(inv_json$evaluation_status, "INVALID_INTERVENTION_DATA", "Intervencoes invalidas preservam evaluation_status INVALID_INTERVENTION_DATA")
+assert_equal(inv_json$status, "INVALID_INTERVENTION_DATA", "Intervencoes invalidas status coincide com evaluation_status")
+assert_true(length(inv_json$validation_issues) > 0L, "validation_issues preservado e nao vazio para dados invalidos")
+assert_false(inv_json$is_validated, "Intervencoes invalidas is_validated e FALSE")
+assert_false(inv_json$can_apply, "Intervencoes invalidas can_apply e FALSE")
+assert_false(inv_json$can_schedule, "Intervencoes invalidas can_schedule e FALSE")
+assert_equal(inv_json$transfer_status, "NOT_ESTABLISHED", "Intervencoes invalidas transfer_status e NOT_ESTABLISHED")
+assert_equal(inv_json$evaluation_version, "1.1.0", "Intervencoes invalidas mantem evaluation_version 1.1.0")
+
+# 4. Intervenções válidas sem eventos posteriores verificáveis
+# Cenário 4a: Eventos sem correspondência para o post_assessment_event_id declarado
+evt_valid_raw <- utils::read.csv("tests/fixtures/valid_events.csv", stringsAsFactors = FALSE)
+evt_no_followup <- evt_valid_raw[evt_valid_raw$event_id != "evt-12", ]
+tmp_dir_no_followup <- tempfile("no-followup-")
+dir.create(tmp_dir_no_followup, recursive = TRUE, showWarnings = FALSE)
+evt_no_followup_csv <- file.path(tmp_dir_no_followup, "events_no_followup.csv")
+utils::write.csv(evt_no_followup, evt_no_followup_csv, row.names = FALSE)
+
+res_no_post <- run_pipeline_eval(
+  c(evt_no_followup_csv, "tests/fixtures/valid_questions.csv", "tests/fixtures/valid_interventions.csv"),
+  run_id = "no-followup-eval-run"
+)
+assert_equal(res_no_post$exit, 0L, "Pipeline executa sem eventos posteriores correspondentes")
+no_post_json <- res_no_post$json
+assert_true(!is.null(no_post_json), "intervention_evaluation_v1.json gerado sem eventos correspondentes")
+assert_equal(no_post_json$evaluation_status, "INSUFFICIENT_EVIDENCE", "Sem eventos verificaveis evaluation_status e INSUFFICIENT_EVIDENCE")
+assert_equal(no_post_json$status, "INSUFFICIENT_EVIDENCE", "Sem eventos verificaveis status e INSUFFICIENT_EVIDENCE")
+assert_equal(no_post_json$declared_evaluated_count, 1L, "declared_evaluated_count e 1L")
+assert_equal(no_post_json$evaluated_count, 0L, "evaluated_count e 0L pois nenhum evento foi verificado")
+assert_equal(no_post_json$unverified_followup_count, 1L, "unverified_followup_count e 1L")
+unlink(tmp_dir_no_followup, recursive = TRUE)
+
+# Cenário 4b: valid_interventions.csv + valid_events.csv oficiais (amostra < 5)
+res_valid_fixtures <- run_pipeline_eval(
+  c("tests/fixtures/valid_events.csv", "tests/fixtures/valid_questions.csv", "tests/fixtures/valid_interventions.csv"),
+  run_id = "valid-fixtures-eval-run"
+)
+assert_equal(res_valid_fixtures$exit, 0L, "Pipeline executa com fixtures validas oficiais")
+vf_json <- res_valid_fixtures$json
+assert_true(!is.null(vf_json), "intervention_evaluation_v1.json gerado para fixtures validas")
+assert_equal(vf_json$evaluation_status, "INSUFFICIENT_EVIDENCE", "valid_interventions + valid_events retorna INSUFFICIENT_EVIDENCE")
+assert_equal(vf_json$status, "INSUFFICIENT_EVIDENCE", "status coincide com INSUFFICIENT_EVIDENCE")
+assert_equal(vf_json$total_interventions, 3L, "total_interventions e 3L")
+assert_equal(vf_json$declared_evaluated_count, 1L, "declared_evaluated_count e 1L")
+assert_equal(vf_json$evaluated_count, 1L, "evaluated_count e 1L para evento vinculado evt-12")
+assert_equal(vf_json$unverified_followup_count, 0L, "unverified_followup_count e 0L para evento vinculado")
+
+# 5. Intervenções com acompanhamentos posteriores verificáveis (amostra suficiente N >= 5)
+tmp_dir_suff <- tempfile("suff-eval-")
+dir.create(tmp_dir_suff, recursive = TRUE, showWarnings = FALSE)
+suff_int_csv <- file.path(tmp_dir_suff, "interventions.csv")
+suff_evt_csv <- file.path(tmp_dir_suff, "events.csv")
+
+# Utiliza expanded_int (8 intervenções) e post_fixture com questões válidas do catálogo oficial
+utils::write.csv(expanded_int, suff_int_csv, row.names = FALSE)
+
+suff_events_df <- data.frame(
+  event_id = expanded_int$post_assessment_event_id,
+  event_type = rep("ANSWER_SUBMITTED", 8),
+  session_id = rep("sess-post-1", 8),
+  question_id = paste0("q00", 1:8),
+  occurred_at = rep("2026-10-11T12:00:00Z", 8),
+  selected_option = rep("A", 8),
+  is_correct = expanded_int$post_outcome == "CORRECT",
+  confidence_level = rep(4L, 8),
+  active_time_ms = rep(30000L, 8),
+  stringsAsFactors = FALSE
+)
+utils::write.csv(suff_events_df, suff_evt_csv, row.names = FALSE)
+
+res_suff <- run_pipeline_eval(c(suff_evt_csv, "tests/fixtures/valid_questions.csv", suff_int_csv), run_id = "suff-eval-run")
+assert_equal(res_suff$exit, 0L, "Pipeline executa com amostra suficiente de intervencoes verificadas")
+suff_json <- res_suff$json
+assert_true(!is.null(suff_json), "intervention_evaluation_v1.json gerado para amostra suficiente")
+assert_equal(suff_json$evaluation_status, "OBSERVATIONAL_EVALUATION_COMPLETED",
+             "Amostra N >= 5 verificada produz OBSERVATIONAL_EVALUATION_COMPLETED")
+assert_equal(suff_json$status, "OBSERVATIONAL_EVALUATION_COMPLETED",
+             "status e OBSERVATIONAL_EVALUATION_COMPLETED")
+assert_false(suff_json$is_validated, "is_validated permanece FALSE sob avaliacao observacional")
+assert_false(suff_json$can_apply, "can_apply permanece FALSE")
+assert_false(suff_json$can_schedule, "can_schedule permanece FALSE")
+assert_equal(suff_json$transfer_status, "NOT_ESTABLISHED", "transfer_status permanece NOT_ESTABLISHED")
+assert_equal(suff_json$assessment_type_status, "DECLARED_NOT_INDEPENDENTLY_VERIFIED",
+             "assessment_type_status e DECLARED_NOT_INDEPENDENTLY_VERIFIED")
+assert_equal(suff_json$evaluated_count, 8L, "evaluated_count e 8L")
+unlink(tmp_dir_suff, recursive = TRUE)
+
+# 6. Conformidade do artefato versionado output/metrics/intervention_evaluation_v1.json
+disk_artifact_path <- "output/metrics/intervention_evaluation_v1.json"
+assert_true(file.exists(disk_artifact_path), "Artefato output/metrics/intervention_evaluation_v1.json existe em disco")
+disk_artifact <- jsonlite::fromJSON(disk_artifact_path, simplifyVector = FALSE)
+assert_equal(disk_artifact$evaluation_version, "1.1.0", "Artefato em disco tem evaluation_version 1.1.0")
+assert_equal(disk_artifact$status, disk_artifact$evaluation_status, "Artefato em disco status coincide com evaluation_status")
+assert_false(disk_artifact$is_real_student_data, "Artefato em disco is_real_student_data e FALSE")
+assert_false(disk_artifact$can_apply, "Artefato em disco can_apply e FALSE")
+assert_false(disk_artifact$can_schedule, "Artefato em disco can_schedule e FALSE")
+assert_equal(disk_artifact$transfer_status, "NOT_ESTABLISHED", "Artefato em disco transfer_status e NOT_ESTABLISHED")
+assert_true(all(required_v1_1_fields %in% names(disk_artifact)), "Artefato em disco contem todos os campos da Extensao 1.1.0")
+assert_false(any(c("fsrs_state", "next_review_at", "scheduled_at") %in% names(disk_artifact)),
+             "Avaliacao de intervencoes nao emite nem altera estado de agendamento FSRS")

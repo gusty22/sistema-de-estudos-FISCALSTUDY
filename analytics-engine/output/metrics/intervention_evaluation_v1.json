@@ -23,5 +23,42 @@
       "ci_upper": "NA"
     }
   },
-  "methodological_cautions": ["Evidencias quantitativas insuficientes para avaliar recomendacoes (N_avaliadas = 1 < 5 exigidas).", "Nao e possivel declarar superioridade ou eficacia de qualquer estrategia pedagogica com base nesta amostra.", "Aguardar acumulacao longitudinal de mais avaliacoes posteriores."]
+  "methodological_cautions": ["Only unambiguous, evaluable answer events strictly after the recorded intervention timestamp are counted.", "A recorded intervention timestamp does not establish completion time, absence of other interventions, randomization, or causal efficacy.", "Assessment type is declared; question novelty, topic equivalence and conceptual transfer are not verified by V1.", "Wilson intervals assume binomial observations; repeated/dependent followups do not establish independent sample size.", "No source-event link means no verified outcome, regardless of the declared CORRECT/INCORRECT value.", "Evidencias quantitativas insuficientes para avaliar recomendacoes (N_avaliadas = 1 < 5 exigidas).", "Nao e possivel declarar superioridade ou eficacia de qualquer estrategia pedagogica com base nesta amostra.", "Aguardar acumulacao longitudinal de mais avaliacoes posteriores."],
+  "evaluation_version": "1.1.0",
+  "declared_evaluated_count": 1,
+  "unverified_followup_count": 0,
+  "followup_audit": [
+    {
+      "intervention_id": "int-01",
+      "post_assessment_event_id": "evt-12",
+      "link_status": "VERIFIED_EVENT_LINK",
+      "observed_lag_hours": 27.7833,
+      "declared_lag_hours": 28.25
+    },
+    {
+      "intervention_id": "int-02",
+      "link_status": "NO_DECLARED_POST_OUTCOME"
+    },
+    {
+      "intervention_id": "int-03",
+      "link_status": "NO_DECLARED_POST_OUTCOME"
+    }
+  ],
+  "assessment_type_status": "DECLARED_NOT_INDEPENDENTLY_VERIFIED",
+  "intervention_origin_status": "NOT_ESTABLISHED_BY_V1",
+  "inference_scope": "OBSERVED_LINKED_FOLLOWUPS_NOT_CAUSAL_EFFECT",
+  "is_validated": false,
+  "can_apply": false,
+  "can_schedule": false,
+  "transfer_status": "NOT_ESTABLISHED",
+  "run_id": "demo-synthetic-fixture-v1.1.0",
+  "data_provenance": "SYNTHETIC_FIXTURE",
+  "is_real_student_data": false,
+  "provenance_audit": {
+    "verdict": "FIXTURE_SINTETICA_CONTROLADA",
+    "reasons": "Arquivo localizado em diretorio de fixtures ou declarado como fixture sintetica.",
+    "warnings": "PROIBIDO apresentar resultados desta fixture como historico real de estudante."
+  },
+  "validation_scope": "CANONICAL_EVENT_AND_QUESTION_SCHEMA",
+  "status": "INSUFFICIENT_EVIDENCE"
 }
