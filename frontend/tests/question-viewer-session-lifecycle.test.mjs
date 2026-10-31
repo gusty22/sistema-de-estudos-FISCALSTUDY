@@ -298,25 +298,104 @@ test('FS-01C: reconcileCognitiveSummary expurga questoes anuladas do denominador
   assert.equal(summary.accuracy, 50);
 });
 
-test('FS-01C: Cancelar modal de handoff com Continuar Estudando invalida ref e limpa journal pendente', () => {
-  const sessionId = 'qv-ref-invalidation';
+test('FS-01C (Comportamento Real): Diferenciação entre cancelamento seguro antes do envio e preservação de operação incerta', async () => {
+  const sessionId = 'qv-real-lifecycle-flow';
   const payload = {
     sessionId,
     disciplina: 'Economia',
-    durationSeconds: 300,
-    nextSessionHandoff: 'Parou na pág 10'
+    durationSeconds: 600,
+    questoesFeitas: 5,
+    questoesAcertadas: 4,
+    rendimentoPercentual: 80,
+    confiancaMedia: 4.0,
+    activityType: 'HE',
+    nextSessionHandoff: 'Revisar elasticidade'
   };
 
-  // Simulação de tentativa que falhou ou foi aberta
-  let pendingSubmission = new StudySessionSubmission(payload, sessionId);
-  assert.ok(pendingSubmission);
+  // 1. Cancelamento antes de qualquer envio: não cria operação pendente indevida e cancela com segurança
+  let pendingRef = new StudySessionSubmission(payload, sessionId);
+  assert.equal(pendingRef.hasAttemptedSend, false);
 
-  // Simulação da ação "Continuar Estudando" (conforme implementado em QuestionViewer.tsx)
-  pendingSubmission = null;
-  clearPendingSession(sessionId);
+  let showDiscardConfirm = false;
+  const onContinue1 = () => {
+    if (pendingRef && pendingRef.hasAttemptedSend && !pendingRef.confirmed) {
+      showDiscardConfirm = true;
+      return;
+    }
+    clearPendingSession(sessionId);
+    pendingRef = null;
+  };
 
-  assert.equal(pendingSubmission, null, 'Ref deve ser anulado para forcar recalculacao de metricas em encerramento futuro');
-  assert.equal(readPendingSession(sessionId), null, 'Journal obsoleto deve ser descartado');
+  onContinue1();
+  assert.equal(showDiscardConfirm, false, 'Não deve exigir confirmação dramática se o envio nunca foi tentado');
+  assert.equal(pendingRef, null);
+  assert.equal(readPendingSession(sessionId), null, 'Rascunho não-enviado pode ser descartado com segurança');
+
+  // 2. Falha de rede após possível commit: "Continuar Estudando" NÃO apaga o journal
+  globalThis.fetch = async () => { throw new Error('Network timeout (possible server commit)'); };
+
+  pendingRef = new StudySessionSubmission(payload, sessionId);
+  let networkCaught = false;
+  try {
+    await recordQuestionHandoff(payload, sessionId, pendingRef);
+  } catch (err) {
+    networkCaught = true;
+  }
+  assert.equal(networkCaught, true);
+  assert.equal(pendingRef.hasAttemptedSend, true);
+  assert.equal(pendingRef.confirmed, false);
+  assert.notEqual(readPendingSession(sessionId), null, 'Journal DEVE existir no storage');
+
+  // Usuário clica em "Continuar Estudando" enquanto operação está incerta:
+  const onContinue2 = () => {
+    if (pendingRef && pendingRef.hasAttemptedSend && !pendingRef.confirmed) {
+      showDiscardConfirm = true;
+      return;
+    }
+    clearPendingSession(sessionId);
+    pendingRef = null;
+  };
+
+  onContinue2();
+  assert.equal(showDiscardConfirm, true, 'Deve ativar o aviso de confirmação e bloquear descarte silencioso');
+  assert.notEqual(readPendingSession(sessionId), null, 'Journal NÃO pode ser apagado silenciosamente em operação incerta');
+
+  // 3. Retorno à finalização (reconciliação): mesma identidade e mesmo corpo JSON no retry
+  const sentPayloads = [];
+  globalThis.fetch = async (url, options) => {
+    sentPayloads.push(options.body);
+    return jsonResponse({ sessionId, status: 'RECORDED' }, 200);
+  };
+
+  const { submission: reconciledSub, result } = await recordQuestionHandoff(payload, sessionId, pendingRef);
+  assert.equal(result.status, 'RECORDED');
+  assert.equal(reconciledSub.confirmed, true);
+  assert.equal(sentPayloads.length, 1);
+  const sentJson = JSON.parse(sentPayloads[0]);
+  assert.equal(sentJson.sessionId, sessionId);
+  assert.equal(sentJson.nextSessionHandoff, payload.nextSessionHandoff);
+
+  // 4. Confirmação RECORDED: limpeza permitida
+  assert.equal(readPendingSession(sessionId), null, 'Após confirmação RECORDED, o journal é limpo com segurança');
+
+  // 5. HTTP 409: conflito preservado, sem geração automática de ID substituto
+  const conflictPayload = { ...payload, durationSeconds: 9999 };
+  globalThis.fetch = async () => jsonResponse({ message: 'Session already recorded with different data' }, 409);
+
+  let conflictSub = new StudySessionSubmission(conflictPayload, sessionId);
+  let caughtConflict = false;
+  try {
+    await recordQuestionHandoff(conflictPayload, sessionId, conflictSub);
+  } catch (err) {
+    caughtConflict = true;
+  }
+  assert.equal(caughtConflict, true);
+  assert.equal(conflictSub.confirmed, false);
+  assert.notEqual(readPendingSession(sessionId), null, 'Conflito 409 DEVE preservar o journal');
+  assert.equal(conflictSub.sessionId, sessionId, 'Nenhum ID substituto deve ser gerado automaticamente');
+
+  discardPendingSession(sessionId);
+  assert.equal(readPendingSession(sessionId), null);
 });
 
 test('FS-01C (Achado C): fromJournal recupera fielmente o payload de handoff sem reconstruir a partir de novos valores', async () => {

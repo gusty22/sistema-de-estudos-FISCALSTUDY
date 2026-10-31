@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { AttemptSubmission, annotateAttempt, requestJson } from '../utils/attemptSubmission';
-import { StudySessionSubmission, StudySessionError, clearPendingSession } from '../utils/studySessionSubmission';
+import { StudySessionSubmission, StudySessionError, clearPendingSession, discardPendingSession } from '../utils/studySessionSubmission';
 import { recordQuestionHandoff, executeEndSession } from '../utils/questionSessionLifecycle';
 import { prospectiveCaptureEnabled } from '../utils/prospectiveCapture';
 import { ProspectivePreparation } from '../utils/prospectivePreparation';
@@ -317,6 +317,7 @@ const QuestionViewer: React.FC = () => {
   const isEndingSessionRef = useRef(false);
   const [endSessionError, setEndSessionError] = useState<{ message: string; retryable?: boolean } | null>(null);
   const [recoveredJournalNotice, setRecoveredJournalNotice] = useState<string | null>(null);
+  const [showDiscardHandoffConfirm, setShowDiscardHandoffConfirm] = useState<boolean>(false);
 
 
   // Pensar o Contrário (Galinsky & Mussweiler) e Na Corda Bamba
@@ -556,6 +557,41 @@ const QuestionViewer: React.FC = () => {
     }
   };
   
+
+  const handleContinueStudyingFromHandoff = () => {
+    if (isSubmittingHandoff) return;
+
+    const sub = pendingHandoffSubmissionRef.current;
+    // Se a submissão tentou envio e ainda não foi confirmada (operação incerta pós-envio),
+    // NÃO descarte silenciosamente: exija confirmação consciente com advertência
+    if (sub && sub.hasAttemptedSend && !sub.confirmed) {
+      setShowDiscardHandoffConfirm(true);
+      return;
+    }
+
+    // Modal aberto sem submissão enviada ou operação preparada comprovadamente não enviada: cancelamento seguro
+    setHandoffError(null);
+    pendingHandoffSubmissionRef.current = null;
+    clearPendingSession(sessionId);
+    setRecoveredJournalNotice(null);
+    setShowDiscardHandoffConfirm(false);
+    setShowHandoffModal(false);
+  };
+
+  const handleConfirmDiscardHandoff = () => {
+    if (isSubmittingHandoff) return;
+    discardPendingSession(sessionId);
+    pendingHandoffSubmissionRef.current = null;
+    setHandoffError(null);
+    setRecoveredJournalNotice(null);
+    setShowDiscardHandoffConfirm(false);
+    setShowHandoffModal(false);
+  };
+
+  const handleCancelDiscardHandoff = () => {
+    setShowDiscardHandoffConfirm(false);
+  };
+
   // Create or retrieve session ID with persistence across page reloads
   const generateNewSessionId = () => {
     const id = 'session-' + crypto.randomUUID();
@@ -2407,18 +2443,53 @@ const QuestionViewer: React.FC = () => {
               </div>
             )}
 
+            {showDiscardHandoffConfirm && (
+              <div
+                style={{
+                  marginBottom: '1rem',
+                  padding: '0.75rem',
+                  borderRadius: 6,
+                  background: 'rgba(239, 68, 68, 0.2)',
+                  border: '1px solid #ef4444',
+                  color: '#fca5a5',
+                  fontSize: '0.85rem'
+                }}
+              >
+                <div style={{ fontWeight: 700, marginBottom: '0.35rem' }}>
+                  ⚠️ Atenção Crítica: Operação de Encerramento Pendente
+                </div>
+                <div style={{ marginBottom: '0.5rem', lineHeight: '1.4' }}>
+                  Uma tentativa de encerramento já foi transmitida ao servidor e o resultado é incerto. O backend pode já ter processado esta gravação caso a conexão tenha caído após o processamento. Se você continuar resolvendo questões descartando o recado anterior, o registro no banco de dados NÃO será desfeito e pode haver inconsistência no seu histórico. Deseja realmente descartar a pendência anterior para continuar resolvendo questões nesta sessão?
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button
+                    type="button"
+                    className="btn"
+                    style={{ background: '#dc2626', color: '#fff', fontSize: '0.8rem', padding: '0.35rem 0.75rem' }}
+                    onClick={handleConfirmDiscardHandoff}
+                    disabled={isSubmittingHandoff}
+                  >
+                    Confirmar Descarte e Continuar
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    style={{ fontSize: '0.8rem', padding: '0.35rem 0.75rem' }}
+                    onClick={handleCancelDiscardHandoff}
+                    disabled={isSubmittingHandoff}
+                  >
+                    Cancelar e Reconciliar
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
               <button
                 type="button"
                 className="btn btn-secondary"
                 disabled={isSubmittingHandoff}
-                onClick={() => {
-                  setHandoffError(null);
-                  pendingHandoffSubmissionRef.current = null;
-                  clearPendingSession(sessionId);
-                  setRecoveredJournalNotice(null);
-                  setShowHandoffModal(false);
-                }}
+                onClick={handleContinueStudyingFromHandoff}
               >
                 Continuar Estudando
               </button>
@@ -2428,7 +2499,7 @@ const QuestionViewer: React.FC = () => {
                 disabled={isSubmittingHandoff}
                 onClick={confirmEndSessionWithHandoff}
               >
-                {isSubmittingHandoff ? 'Salvando...' : handoffError?.retryable ? '🔄 Tentar Novamente' : 'Salvar Recado & Encerrar Sessão'}
+                {isSubmittingHandoff ? 'Salvando...' : handoffError?.retryable ? '🔄 Reconciliar Envio' : 'Salvar Recado & Encerrar Sessão'}
               </button>
             </div>
           </div>
