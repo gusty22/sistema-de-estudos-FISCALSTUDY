@@ -95,6 +95,7 @@ export interface JournalSaveStatus {
   isDurable: boolean;
   warning?: string;
   existingSerializedBody?: string;
+  effectiveLifecycleState?: OperationLifecycleState;
 }
 
 export function inspectPendingSession(sessionId: string): {
@@ -173,13 +174,26 @@ export function savePendingSessionDetailed(
     }
   }
 
+  // GATE FINAL 1: Transições de estado monotônicas e conservadoras.
+  // Impede regressão de estado: uma operação já enviada ou potencialmente enviada (SENT_UNCONFIRMED)
+  // não pode ser rebaixada para PREPARED simplesmente porque foi criada outra instância com o mesmo
+  // sessionId e mesmo payload.
+  // Journals legados sem estado explícito continuam tratados conservadoramente como potencialmente enviados.
+  let effectiveLifecycleState = lifecycleState;
+  if (inspect.exists && !inspect.isCorrupted && inspect.data && !inspect.isExpired) {
+    const existingState: OperationLifecycleState = inspect.data.lifecycleState || 'SENT_UNCONFIRMED';
+    if (existingState === 'SENT_UNCONFIRMED' && lifecycleState === 'PREPARED') {
+      effectiveLifecycleState = 'SENT_UNCONFIRMED';
+    }
+  }
+
   // 2. Grava ou atualiza a entrada válida
   try {
     const entry: JournalEntry = {
       version: 1,
       sessionId,
       serializedBody,
-      lifecycleState,
+      lifecycleState: effectiveLifecycleState,
       createdAt: inspect.data ? inspect.data.createdAt : Date.now(),
       expiresAt: Date.now() + JOURNAL_TTL_MS
     };
@@ -187,7 +201,8 @@ export function savePendingSessionDetailed(
     return {
       success: true,
       state: 'DURABLE',
-      isDurable: true
+      isDurable: true,
+      effectiveLifecycleState
     };
   } catch {
     // QuotaExceededError ou Storage restrito
@@ -269,11 +284,18 @@ export function discardPendingSession(sessionId: string): void {
  * Função compartilhada de avaliação de decisão para continuação / cancelamento
  * consumida tanto pelos componentes (ex: QuestionViewer) quanto pelos testes.
  */
+export type ContinuationReason =
+  | 'NOT_SENT'
+  | 'SENT_UNCONFIRMED'
+  | 'ALREADY_CONFIRMED'
+  | 'DISCARDED'
+  | 'CORRUPTED_OR_UNKNOWN';
+
 export interface ContinuationDecision {
   canProceedSilently: boolean;
   requiresExplicitConfirmation: boolean;
   lifecycleState: OperationLifecycleState;
-  reason: 'NOT_SENT' | 'SENT_UNCONFIRMED' | 'ALREADY_CONFIRMED' | 'DISCARDED';
+  reason: ContinuationReason;
   warningMessage?: string;
 }
 
@@ -281,36 +303,62 @@ export function evaluateContinuationDecision(
   submission: StudySessionSubmission | null,
   sessionId?: string
 ): ContinuationDecision {
-  // Se não houver submissão em memória e houver sessionId, consulta o journal persistido
-  if (!submission && sessionId) {
-    const inspected = inspectPendingSession(sessionId);
-    if (!inspected.exists || !inspected.data) {
+  const targetSessionId = sessionId || submission?.sessionId;
+
+  // Diferenciação estrita de estados do journal persistido:
+  // 1. Inspeciona o journal persistido se targetSessionId estiver disponível
+  if (targetSessionId) {
+    const inspected = inspectPendingSession(targetSessionId);
+
+    // Condição 4: Journal existente, mas corrompido ou de estado desconhecido (exists: true e data ausente/inválido)
+    // Preserva o registro e bloqueia categoricamente o descarte silencioso!
+    if (inspected.exists && (inspected.isCorrupted || !inspected.data)) {
       return {
-        canProceedSilently: true,
-        requiresExplicitConfirmation: false,
-        lifecycleState: 'PREPARED',
-        reason: 'NOT_SENT'
+        canProceedSilently: false,
+        requiresExplicitConfirmation: true,
+        lifecycleState: 'SENT_UNCONFIRMED',
+        reason: 'CORRUPTED_OR_UNKNOWN',
+        warningMessage: 'Registro local existente está corrompido ou em formato inválido. O descarte silencioso foi bloqueado para auditoria e conciliação explícita.'
       };
     }
-    // Interpretação conservadora para journal existente
-    const state: OperationLifecycleState = inspected.data.lifecycleState || 'SENT_UNCONFIRMED';
-    if (state === 'PREPARED') {
+
+    // Se não há instância em memória e inspecionamos o storage:
+    if (!submission) {
+      // Condição 1: Journal comprovadamente inexistente
+      if (!inspected.exists) {
+        return {
+          canProceedSilently: true,
+          requiresExplicitConfirmation: false,
+          lifecycleState: 'PREPARED',
+          reason: 'NOT_SENT'
+        };
+      }
+
+      // Se existe e data está presente:
+      // Interpretação conservadora: se lifecycleState não estiver explícito, trata como SENT_UNCONFIRMED
+      const state: OperationLifecycleState = inspected.data?.lifecycleState || 'SENT_UNCONFIRMED';
+      if (state === 'PREPARED') {
+        // Condição 2: Journal válido PREPARED
+        return {
+          canProceedSilently: true,
+          requiresExplicitConfirmation: false,
+          lifecycleState: 'PREPARED',
+          reason: 'NOT_SENT'
+        };
+      }
+
+      // Condição 3: Journal válido SENT_UNCONFIRMED (ou legado sem estado explícito)
       return {
-        canProceedSilently: true,
-        requiresExplicitConfirmation: false,
-        lifecycleState: 'PREPARED',
-        reason: 'NOT_SENT'
+        canProceedSilently: false,
+        requiresExplicitConfirmation: true,
+        lifecycleState: state,
+        reason: 'SENT_UNCONFIRMED',
+        warningMessage: 'Uma tentativa de encerramento já foi transmitida ao servidor e o resultado é incerto. O descarte silencioso foi bloqueado.'
       };
     }
-    return {
-      canProceedSilently: false,
-      requiresExplicitConfirmation: true,
-      lifecycleState: state,
-      reason: 'SENT_UNCONFIRMED',
-      warningMessage: 'Uma tentativa de encerramento já foi transmitida ao servidor e o resultado é incerto. O descarte silencioso foi bloqueado.'
-    };
   }
 
+  // Se não há instância e nenhum sessionId foi informado
   if (!submission) {
     return {
       canProceedSilently: true,
@@ -320,6 +368,18 @@ export function evaluateContinuationDecision(
     };
   }
 
+  // Instância em memória com estado de corrupção retido
+  if (submission.storageState === 'CORRUPTED_PRESERVED') {
+    return {
+      canProceedSilently: false,
+      requiresExplicitConfirmation: true,
+      lifecycleState: 'SENT_UNCONFIRMED',
+      reason: 'CORRUPTED_OR_UNKNOWN',
+      warningMessage: 'Registro local existente está corrompido ou em formato inválido. O descarte silencioso foi bloqueado para auditoria e conciliação explícita.'
+    };
+  }
+
+  // Instância confirmada
   if (submission.confirmed || submission.lifecycleState === 'CONFIRMED') {
     return {
       canProceedSilently: true,
@@ -329,7 +389,7 @@ export function evaluateContinuationDecision(
     };
   }
 
-  // Se foi transmitido (ou marcado como SENT_UNCONFIRMED) e não está confirmado
+  // Instância enviada ou com resultado incerto
   if (submission.lifecycleState === 'SENT_UNCONFIRMED' || submission.hasAttemptedSend) {
     return {
       canProceedSilently: false,
@@ -399,14 +459,21 @@ export class StudySessionSubmission {
       return;
     }
 
-    this.lifecycleState = 'PREPARED';
-    this.hasAttemptedSend = false;
-
-    // Persiste no journal do sessionStorage como PREPARED e registra durabilidade real
+    // Persiste no journal do sessionStorage e registra durabilidade real
     const saveStatus = savePendingSessionDetailed(this.sessionId, this.serializedBody, 'PREPARED');
     this.storageState = saveStatus.state;
     this.isDurable = saveStatus.isDurable;
     this.storageWarning = saveStatus.warning;
+
+    // Se o storage já continha um journal SENT_UNCONFIRMED sob o mesmo sessionId e payload,
+    // a nova instância reflete o estado efetivo persistido em vez de regredir para PREPARED
+    if (saveStatus.effectiveLifecycleState === 'SENT_UNCONFIRMED') {
+      this.lifecycleState = 'SENT_UNCONFIRMED';
+      this.hasAttemptedSend = true;
+    } else {
+      this.lifecycleState = 'PREPARED';
+      this.hasAttemptedSend = false;
+    }
   }
 
   /**
