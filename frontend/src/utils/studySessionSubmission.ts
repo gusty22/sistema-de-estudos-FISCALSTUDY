@@ -167,6 +167,7 @@ export class StudySessionSubmission {
       }
 
       if (res.status === 409) {
+        clearPendingSession(this.sessionId);
         throw new StudySessionError(
           data.message || 'Conflito de sessão: esta identidade já foi registrada no servidor com dados divergentes.',
           409,

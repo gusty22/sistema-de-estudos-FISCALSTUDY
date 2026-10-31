@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   ArrowLeft,
   Clock,
@@ -21,6 +21,7 @@ import { ResolucaoQuestaoModal } from '../questoes/ResolucaoQuestaoModal';
 import type { QuestionItem } from '../questoes/BancoQuestoes';
 import type { StudyMaterialItem } from '../materiais/BibliotecaMateriais';
 import type { ConcursoItem } from '../concursos/MeusConcursos';
+import { StudySessionSubmission, StudySessionError } from '../../utils/studySessionSubmission';
 import './SessaoEstudoAtiva.css';
 
 // ============================================================================
@@ -135,7 +136,22 @@ export default function SessaoEstudoAtiva({
     const storedType = sessionStorage.getItem('fiscalstudy_session_type') as ActivityType;
     return storedType && STEPS_BY_TYPE[storedType] ? storedType : initialActivityType;
   });
-  const [sessionId] = useState<string>(() => `sess_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`);
+  // Identidade de sessão estável para idempotência e recuperação local
+  const [sessionId, setSessionId] = useState<string>(() => {
+    try {
+      const stored = sessionStorage.getItem('fiscalstudy_active_session_id');
+      if (stored) return stored;
+      const generated = `sess_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+      sessionStorage.setItem('fiscalstudy_active_session_id', generated);
+      return generated;
+    } catch {
+      return `sess_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    }
+  });
+
+  const isSavingSessionRef = useRef<boolean>(false);
+  const pendingSubmissionRef = useRef<StudySessionSubmission | null>(null);
+  const [saveError, setSaveError] = useState<{ message: string; isConflict: boolean; retryable: boolean } | null>(null);
 
   const effectiveDiscipline = initialDiscipline || sessionStorage.getItem('fiscalstudy_session_discipline') || activeConcurso?.nome || DEFAULT_SESSION.discipline;
   const effectiveTopic = initialTopic || sessionStorage.getItem('fiscalstudy_session_topic') || DEFAULT_SESSION.topic;
@@ -279,14 +295,9 @@ export default function SessaoEstudoAtiva({
     if (currentStepIndex < session.steps.length - 1) {
       setCurrentStepIndex((prev) => prev + 1);
     } else {
+      // Ao concluir a ultima etapa, transiciona para a tela de revisao e encerramento (T14).
+      // O callback onFinishSession dispara estritamente apos confirmacao HTTP em handleFinalizeAndRecord.
       setTimerStatus('finished');
-      if (onFinishSession) {
-        onFinishSession({
-          durationSeconds: secondsElapsed,
-          discipline: session.discipline,
-          topic: session.topic
-        });
-      }
     }
   };
 
@@ -443,10 +454,12 @@ export default function SessaoEstudoAtiva({
     return null;
   };
 
-  // Envio idempotente para a API
+  // Envio idempotente para a API com barreira sincrona e recuperacao
   const handleFinalizeAndRecord = async () => {
-    setIsSavingSession(true);
-    try {
+    // Barreira sincrona contra clique duplo ou submissao apos confirmacao
+    if (isSavingSessionRef.current || isSaved) return;
+
+    if (!pendingSubmissionRef.current) {
       const payload = {
         sessionId,
         concursoId: activeConcurso?.id || null,
@@ -463,14 +476,25 @@ export default function SessaoEstudoAtiva({
         dificuldadeRelatada: difficultyReason || difficultyText || null,
         notas: difficultyText || undefined
       };
+      pendingSubmissionRef.current = new StudySessionSubmission(payload, sessionId);
+    }
 
-      await fetch('/api/v1/study-sessions/record', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
+    isSavingSessionRef.current = true;
+    setIsSavingSession(true);
+    setSaveError(null);
 
+    try {
+      await pendingSubmissionRef.current.send();
+
+      // Confirmacao valida recebida do backend (200 / 201)
       setIsSaved(true);
+      pendingSubmissionRef.current = null;
+      try {
+        sessionStorage.removeItem('fiscalstudy_active_session_id');
+      } catch {
+        // Silencioso em caso de storage restrito
+      }
+
       if (onFinishSession) {
         onFinishSession({
           durationSeconds: secondsElapsed,
@@ -478,9 +502,16 @@ export default function SessaoEstudoAtiva({
           topic: session.topic
         });
       }
-    } catch (err) {
-      console.error('Falha ao gravar sessão:', err);
+    } catch (err: unknown) {
+      const isConflict = err instanceof StudySessionError ? err.isConflict : false;
+      const message = err instanceof Error ? err.message : 'Falha ao gravar sessao no servidor.';
+      setSaveError({
+        message,
+        isConflict,
+        retryable: !isConflict
+      });
     } finally {
+      isSavingSessionRef.current = false;
       setIsSavingSession(false);
     }
   };
@@ -589,6 +620,23 @@ export default function SessaoEstudoAtiva({
             </div>
           </div>
 
+          {/* Feedback de Erro com Ação de Retry */}
+          {saveError && (
+            <div className="mb-4 p-3 rounded-xl text-left bg-red-500/10 border border-red-500/20 text-red-500 text-xs flex flex-col gap-2">
+              <span>{saveError.message}</span>
+              {saveError.retryable && (
+                <button
+                  type="button"
+                  onClick={handleFinalizeAndRecord}
+                  disabled={isSavingSession}
+                  className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-semibold hover:bg-red-700 transition w-fit"
+                >
+                  {isSavingSession ? 'Reenviando...' : '🔄 Tentar Novamente'}
+                </button>
+              )}
+            </div>
+          )}
+
           {/* Ações de Encerramento */}
           <div className="flex flex-col sm:flex-row gap-2.5 justify-center">
             <button
@@ -597,12 +645,26 @@ export default function SessaoEstudoAtiva({
               disabled={isSavingSession || isSaved}
               className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-semibold hover:bg-indigo-700 transition"
             >
-              {isSavingSession ? 'Salvando...' : isSaved ? '✓ Registrado com Sucesso' : 'Finalizar e Registrar'}
+              {isSavingSession ? 'Salvando...' : isSaved ? '✓ Registrado com Sucesso' : saveError?.retryable ? '🔄 Tentar Novamente' : 'Finalizar e Registrar'}
             </button>
 
             <button
               type="button"
-              onClick={() => setTimerStatus('running')}
+              onClick={() => {
+                setTimerStatus('running');
+                setSaveError(null);
+                if (isSaved) {
+                  setIsSaved(false);
+                  pendingSubmissionRef.current = null;
+                  const newId = `sess_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+                  setSessionId(newId);
+                  try {
+                    sessionStorage.setItem('fiscalstudy_active_session_id', newId);
+                  } catch {
+                    // Silencioso em caso de storage restrito
+                  }
+                }
+              }}
               className="px-4 py-2.5 border border-stone-300 dark:border-stone-700 rounded-xl text-xs font-semibold hover:bg-stone-100 dark:hover:bg-stone-800 transition"
             >
               Continuar Estudando
