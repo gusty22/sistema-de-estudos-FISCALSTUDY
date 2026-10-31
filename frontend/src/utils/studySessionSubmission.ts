@@ -76,22 +76,102 @@ interface JournalEntry {
   expiresAt: number;
 }
 
-export function savePendingSession(sessionId: string, serializedBody: string): boolean {
-  if (typeof sessionStorage === 'undefined') return false;
+export type JournalStorageState =
+  | 'DURABLE'               // Persistido com sucesso no sessionStorage
+  | 'MEMORY_ONLY'           // Storage desabilitado, quota excedida ou erro de acesso
+  | 'CORRUPTED_PRESERVED';  // Journal existente corrompido/inválido preservado para auditoria (não-sobrescrito)
+
+export interface JournalSaveStatus {
+  success: boolean;
+  state: JournalStorageState;
+  isDurable: boolean;
+  warning?: string;
+}
+
+export function inspectPendingSession(sessionId: string): {
+  exists: boolean;
+  isCorrupted: boolean;
+  isExpired: boolean;
+  raw?: string;
+  data?: JournalEntry;
+} {
+  if (typeof sessionStorage === 'undefined') {
+    return { exists: false, isCorrupted: false, isExpired: false };
+  }
+  try {
+    const raw = sessionStorage.getItem(JOURNAL_PREFIX + sessionId);
+    if (!raw) return { exists: false, isCorrupted: false, isExpired: false };
+    try {
+      const data = JSON.parse(raw);
+      if (
+        data &&
+        typeof data === 'object' &&
+        data.version === 1 &&
+        data.sessionId === sessionId &&
+        typeof data.serializedBody === 'string'
+      ) {
+        const isExpired = Date.now() > data.expiresAt;
+        return { exists: true, isCorrupted: false, isExpired, raw, data };
+      }
+      return { exists: true, isCorrupted: true, isExpired: false, raw };
+    } catch {
+      return { exists: true, isCorrupted: true, isExpired: false, raw };
+    }
+  } catch {
+    return { exists: false, isCorrupted: false, isExpired: false };
+  }
+}
+
+export function savePendingSessionDetailed(sessionId: string, serializedBody: string): JournalSaveStatus {
+  if (typeof sessionStorage === 'undefined') {
+    return {
+      success: false,
+      state: 'MEMORY_ONLY',
+      isDurable: false,
+      warning: 'sessionStorage não disponível no ambiente. A operação está retida apenas em memória volátil.'
+    };
+  }
+
+  // 1. Verifica se já existe um journal para este sessionId
+  const inspect = inspectPendingSession(sessionId);
+  if (inspect.exists && inspect.isCorrupted) {
+    // Não sobrescrever silenciosamente um journal inválido contendo uma operação ainda não reconciliada
+    return {
+      success: false,
+      state: 'CORRUPTED_PRESERVED',
+      isDurable: false,
+      warning: 'Journal local existente está corrompido ou em formato inválido. O registro anterior foi preservado para auditoria e a operação atual permanece em memória.'
+    };
+  }
+
+  // 2. Grava ou atualiza a entrada válida
   try {
     const entry: JournalEntry = {
       version: 1,
       sessionId,
       serializedBody,
-      createdAt: Date.now(),
+      createdAt: inspect.data ? inspect.data.createdAt : Date.now(),
       expiresAt: Date.now() + JOURNAL_TTL_MS
     };
     sessionStorage.setItem(JOURNAL_PREFIX + sessionId, JSON.stringify(entry));
-    return true;
+    return {
+      success: true,
+      state: 'DURABLE',
+      isDurable: true
+    };
   } catch {
-    // QuotaExceededError ou storage desabilitado: falha controlada sem interromper o fluxo em memória
-    return false;
+    // QuotaExceededError ou Storage restrito
+    return {
+      success: false,
+      state: 'MEMORY_ONLY',
+      isDurable: false,
+      warning: 'Falha ao gravar no armazenamento local do navegador (cota excedida ou restrição). A operação está preservada apenas em memória volátil e não será recuperada após recarregar a página.'
+    };
   }
+}
+
+export function savePendingSession(sessionId: string, serializedBody: string): boolean {
+  return savePendingSessionDetailed(sessionId, serializedBody).success;
 }
 
 export function readPendingSession(sessionId: string): { sessionId: string; serializedBody: string } | null {
@@ -138,6 +218,13 @@ export class StudySessionSubmission {
   readonly payload: Readonly<Record<string, unknown>>;
   readonly serializedBody: string;
   confirmed = false;
+  hasAttemptedSend = false;
+
+  // Estado de durabilidade de armazenamento
+  storageState: JournalStorageState = 'MEMORY_ONLY';
+  isDurable = false;
+  storageWarning?: string;
+
   private pendingPromise: Promise<StudySessionResult> | null = null;
 
   constructor(rawPayload: Record<string, unknown>, explicitSessionId?: string) {
@@ -149,8 +236,11 @@ export class StudySessionSubmission {
     this.serializedBody = JSON.stringify(normalized);
     this.payload = Object.freeze(JSON.parse(this.serializedBody));
 
-    // Persiste imediatamente no journal do sessionStorage para salvaguardar a operação
-    savePendingSession(this.sessionId, this.serializedBody);
+    // Persiste no journal do sessionStorage e registra durabilidade real
+    const saveStatus = savePendingSessionDetailed(this.sessionId, this.serializedBody);
+    this.storageState = saveStatus.state;
+    this.isDurable = saveStatus.isDurable;
+    this.storageWarning = saveStatus.warning;
   }
 
   /**
@@ -177,8 +267,13 @@ export class StudySessionSubmission {
       return this.pendingPromise;
     }
 
-    // Salva a intenção pendente no journal do navegador antes do dispatch de rede
-    savePendingSession(this.sessionId, this.serializedBody);
+    this.hasAttemptedSend = true;
+
+    // Reavalia a durabilidade de armazenamento antes do dispatch de rede
+    const saveStatus = savePendingSessionDetailed(this.sessionId, this.serializedBody);
+    this.storageState = saveStatus.state;
+    this.isDurable = saveStatus.isDurable;
+    this.storageWarning = saveStatus.warning;
 
     this.pendingPromise = (async () => {
       let res: Response;
@@ -189,8 +284,12 @@ export class StudySessionSubmission {
           body: this.serializedBody
         });
       } catch {
+        const networkErrorMessage = this.isDurable
+          ? 'Falha de conexão com o servidor. A operação foi salva localmente no navegador e pode ser reenviada com segurança.'
+          : 'Falha de conexão com o servidor. ATENÇÃO: o armazenamento local do navegador está indisponível (operação mantida apenas em memória volátil). NÃO recarregue a página antes de reenviar sob risco de perda dos dados.';
+
         throw new StudySessionError(
-          'Falha de conexão com o servidor. A operação pendente foi preservada para nova tentativa.',
+          networkErrorMessage,
           0,
           false,
           true
