@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { AttemptSubmission, annotateAttempt, requestJson } from '../utils/attemptSubmission';
+import { StudySessionSubmission, StudySessionError, clearPendingSession, evaluateContinuationDecision, executeConsciousDiscard } from '../utils/studySessionSubmission';
+import { recordQuestionHandoff, executeEndSession } from '../utils/questionSessionLifecycle';
 import { prospectiveCaptureEnabled } from '../utils/prospectiveCapture';
 import { ProspectivePreparation } from '../utils/prospectivePreparation';
 import { readAttemptJournal, restoreQuestionSession, saveQuestionSession } from '../utils/attemptJournal';
@@ -76,61 +78,61 @@ export interface MetaconFeedbackOption {
 }
 
 export const METACON_FEEDBACK_OPTIONS: MetaconFeedbackOption[] = [
-  { 
-    code: 'SABIA_COM_CONVICCAO', 
-    label: '🟢 Sabia e acertei com convicção', 
+  {
+    code: 'SABIA_COM_CONVICCAO',
+    label: '🟢 Sabia e acertei com convicção',
     shortLabel: 'Convicção Plena',
-    type: 'acerto', 
+    type: 'acerto',
     badgeColor: '#10b981',
-    description: 'Domínio conceitual real e seguro, sem hesitação ou dúvida.' 
+    description: 'Domínio conceitual real e seguro, sem hesitação ou dúvida.'
   },
-  { 
-    code: 'CHUTE_EDUCADO', 
-    label: '🟡 Acertei no chute educado / eliminação', 
+  {
+    code: 'CHUTE_EDUCADO',
+    label: '🟡 Acertei no chute educado / eliminação',
     shortLabel: 'Chute Educado',
-    type: 'acerto', 
+    type: 'acerto',
     badgeColor: '#f59e0b',
-    description: 'Acertei por descarte ou técnica de prova, mas preciso revisar a teoria.' 
+    description: 'Acertei por descarte ou técnica de prova, mas preciso revisar a teoria.'
   },
-  { 
-    code: 'SABIA_MAS_CONFUNDI', 
-    label: '🟠 Sabia, mas confundi / vacilei em detalhe', 
+  {
+    code: 'SABIA_MAS_CONFUNDI',
+    label: '🟠 Sabia, mas confundi / vacilei em detalhe',
     shortLabel: 'Sabia, mas confundi',
-    type: 'erro', 
+    type: 'erro',
     badgeColor: '#fb923c',
-    description: 'Conheço a matéria, mas troquei conceitos semelhantes, prazos ou caí em exceção.' 
+    description: 'Conheço a matéria, mas troquei conceitos semelhantes, prazos ou caí em exceção.'
   },
-  { 
-    code: 'NAO_SABIA_MATERIA', 
-    label: '🔴 Não sabia a matéria (Lacuna teórica pura)', 
+  {
+    code: 'NAO_SABIA_MATERIA',
+    label: '🔴 Não sabia a matéria (Lacuna teórica pura)',
     shortLabel: 'Lacuna Teórica',
-    type: 'erro', 
+    type: 'erro',
     badgeColor: '#ef4444',
-    description: 'Nunca estudei esse assunto ou esqueci completamente os fundamentos.' 
+    description: 'Nunca estudei esse assunto ou esqueci completamente os fundamentos.'
   },
-  { 
-    code: 'NAO_LEMBRAVA', 
-    label: '📉 Não lembrava (Falha de retenção / SRS)', 
+  {
+    code: 'NAO_LEMBRAVA',
+    label: '📉 Não lembrava (Falha de retenção / SRS)',
     shortLabel: 'Não lembrava',
-    type: 'erro', 
+    type: 'erro',
     badgeColor: '#a855f7',
-    description: 'Já tinha estudado, mas a memória decaiu na Curva de Ebbinghaus.' 
+    description: 'Já tinha estudado, mas a memória decaiu na Curva de Ebbinghaus.'
   },
-  { 
-    code: 'FALTA_ATENCAO', 
-    label: '🟣 Falta de atenção / Interpretação do comando', 
+  {
+    code: 'FALTA_ATENCAO',
+    label: '🟣 Falta de atenção / Interpretação do comando',
     shortLabel: 'Atenção / Comando',
-    type: 'erro', 
+    type: 'erro',
     badgeColor: '#8b5cf6',
-    description: 'Comi bronha no enunciado (ignorado "incorreto", "salvo", "vedado").' 
+    description: 'Comi bronha no enunciado (ignorado "incorreto", "salvo", "vedado").'
   },
-  { 
-    code: 'TRAVAMENTO_PRATICO', 
-    label: '🔵 Sabia a teoria, mas travei na aplicação prática', 
+  {
+    code: 'TRAVAMENTO_PRATICO',
+    label: '🔵 Sabia a teoria, mas travei na aplicação prática',
     shortLabel: 'Trava Prática',
-    type: 'erro', 
+    type: 'erro',
     badgeColor: '#38bdf8',
-    description: 'Entendo o conceito abstrato, mas travei no cálculo ou na subsunção ao caso.' 
+    description: 'Entendo o conceito abstrato, mas travei no cálculo ou na subsunção ao caso.'
   },
 ];
 
@@ -306,6 +308,17 @@ const QuestionViewer: React.FC = () => {
   const [showHandoffModal, setShowHandoffModal] = useState(false);
   const [nextSessionHandoff, setNextSessionHandoff] = useState('');
   const [sessionActivityType, setSessionActivityType] = useState<'HE' | 'HRE'>('HE');
+  const [isSubmittingHandoff, setIsSubmittingHandoff] = useState(false);
+  const isSubmittingHandoffRef = useRef(false);
+  const pendingHandoffSubmissionRef = useRef<StudySessionSubmission | null>(null);
+  const [handoffError, setHandoffError] = useState<{ message: string; isConflict?: boolean; retryable?: boolean } | null>(null);
+
+  const [isEndingSession, setIsEndingSession] = useState(false);
+  const isEndingSessionRef = useRef(false);
+  const [endSessionError, setEndSessionError] = useState<{ message: string; retryable?: boolean } | null>(null);
+  const [recoveredJournalNotice, setRecoveredJournalNotice] = useState<string | null>(null);
+  const [showDiscardHandoffConfirm, setShowDiscardHandoffConfirm] = useState<boolean>(false);
+
 
   // Pensar o Contrário (Galinsky & Mussweiler) e Na Corda Bamba
   const [pensarContrarioOpen, setPensarContrarioOpen] = useState(false);
@@ -481,37 +494,102 @@ const QuestionViewer: React.FC = () => {
   };
 
   const confirmEndSessionWithHandoff = async () => {
-    setShowHandoffModal(false);
-    try {
-      const totalSessionMs = sessionHistory.reduce((acc, i) => acc + (i.activeTimeMs || 0), 0) + (activeTimeMs || 0);
-      const totalQ = sessionHistory.length > 0 ? sessionHistory.length : 1;
-      const totalCorrect = sessionHistory.filter(i => i.isCorrect).length;
-      const confSum = sessionHistory.reduce((acc, i) => acc + (i.confidenceLevel || 3), 0);
-      const avgConf = totalQ > 0 ? Math.round((confSum / totalQ) * 10) / 10 : 3.0;
+    if (isSubmittingHandoffRef.current) return;
 
-      await fetch('/api/v1/study-sessions/record', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId,
-          concursoId: selectedConcursoId,
-          disciplina: question?.metadata?.discipline || selectedDiscipline || 'Geral',
-          topicoId: question?.metadata?.topic || selectedAssunto || 'Resolução de Questões',
-          durationSeconds: Math.max(1, Math.round(totalSessionMs / 1000)),
-          questoesFeitas: totalQ,
-          questoesAcertadas: totalCorrect,
-          rendimentoPercentual: Math.round((totalCorrect / totalQ) * 100),
-          confiancaMedia: avgConf,
-          activityType: sessionActivityType,
-          nextSessionHandoff: nextSessionHandoff.trim()
-        })
-      });
-    } catch (e) {
-      console.error("Failed to record study session handoff", e);
+    const totalSessionMs = sessionHistory.reduce((acc, i) => acc + (i.activeTimeMs || 0), 0) + (activeTimeMs || 0);
+    const totalQ = sessionHistory.length > 0 ? sessionHistory.length : 1;
+    const totalCorrect = sessionHistory.filter(i => i.isCorrect).length;
+    const confSum = sessionHistory.reduce((acc, i) => acc + (i.confidenceLevel || 3), 0);
+    const avgConf = totalQ > 0 ? Math.round((confSum / totalQ) * 10) / 10 : 3.0;
+
+    const payload = {
+      sessionId,
+      concursoId: selectedConcursoId,
+      disciplina: question?.metadata?.discipline || selectedDiscipline || 'Geral',
+      topicoId: question?.metadata?.topic || selectedAssunto || 'Resolução de Questões',
+      durationSeconds: Math.max(1, Math.round(totalSessionMs / 1000)),
+      questoesFeitas: totalQ,
+      questoesAcertadas: totalCorrect,
+      rendimentoPercentual: Math.round((totalCorrect / totalQ) * 100),
+      confiancaMedia: avgConf,
+      activityType: sessionActivityType,
+      nextSessionHandoff: nextSessionHandoff.trim()
+    };
+
+    if (!pendingHandoffSubmissionRef.current) {
+      const fromJ = StudySessionSubmission.fromJournal(sessionId);
+      if (fromJ) {
+        pendingHandoffSubmissionRef.current = fromJ;
+      } else {
+        pendingHandoffSubmissionRef.current = new StudySessionSubmission(payload, sessionId);
+      }
     }
-    endSession();
+
+    isSubmittingHandoffRef.current = true;
+    setIsSubmittingHandoff(true);
+    setHandoffError(null);
+
+    try {
+      const { submission } = await recordQuestionHandoff(payload, sessionId, pendingHandoffSubmissionRef.current);
+      pendingHandoffSubmissionRef.current = submission;
+      // Gravacao confirmada com sucesso (200 / 201)
+      pendingHandoffSubmissionRef.current = null;
+      setRecoveredJournalNotice(null);
+      setShowHandoffModal(false);
+      await endSession();
+    } catch (err: unknown) {
+      console.error("Failed to record study session handoff", err);
+      let errorMsg = 'Falha ao registrar a sessão no servidor. O estado foi preservado para nova tentativa.';
+      let isConflict = false;
+      let retryable = true;
+
+      if (err instanceof StudySessionError) {
+        errorMsg = err.message;
+        isConflict = err.isConflict;
+        retryable = !err.isConflict;
+      } else if (err instanceof Error) {
+        errorMsg = err.message;
+      }
+      setHandoffError({ message: errorMsg, isConflict, retryable });
+    } finally {
+      isSubmittingHandoffRef.current = false;
+      setIsSubmittingHandoff(false);
+    }
   };
-  
+
+  const handleContinueStudyingFromHandoff = () => {
+    if (isSubmittingHandoff) return;
+
+    // ACHADO 1: Avalia decisão através do contrato formal de ciclo de vida (em memória ou recuperado do journal)
+    const decision = evaluateContinuationDecision(pendingHandoffSubmissionRef.current, sessionId);
+    if (decision.requiresExplicitConfirmation) {
+      setShowDiscardHandoffConfirm(true);
+      return;
+    }
+
+    // Modal aberto sem submissão enviada ou operação preparada comprovadamente não enviada: cancelamento seguro
+    setHandoffError(null);
+    pendingHandoffSubmissionRef.current = null;
+    clearPendingSession(sessionId);
+    setRecoveredJournalNotice(null);
+    setShowDiscardHandoffConfirm(false);
+    setShowHandoffModal(false);
+  };
+
+  const handleConfirmDiscardHandoff = () => {
+    if (isSubmittingHandoff) return;
+    executeConsciousDiscard(sessionId);
+    pendingHandoffSubmissionRef.current = null;
+    setHandoffError(null);
+    setRecoveredJournalNotice(null);
+    setShowDiscardHandoffConfirm(false);
+    setShowHandoffModal(false);
+  };
+
+  const handleCancelDiscardHandoff = () => {
+    setShowDiscardHandoffConfirm(false);
+  };
+
   // Create or retrieve session ID with persistence across page reloads
   const generateNewSessionId = () => {
     const id = 'session-' + crypto.randomUUID();
@@ -528,6 +606,26 @@ const QuestionViewer: React.FC = () => {
   };
   const [sessionId, setSessionId] = useState<string>(getInitialSessionId);
   submissionScopeRef.current = sessionId + '|' + (question?.questionId || '');
+
+  // Recupera tentativamente o recado de handoff salvo em tentativa anterior não confirmada (Achado C)
+  useEffect(() => {
+    try {
+      const fromJ = StudySessionSubmission.fromJournal(sessionId);
+      if (fromJ) {
+        pendingHandoffSubmissionRef.current = fromJ;
+        const parsed = fromJ.payload as any;
+        if (parsed.nextSessionHandoff && !nextSessionHandoff) {
+          setNextSessionHandoff(parsed.nextSessionHandoff);
+        }
+        if (parsed.activityType && (parsed.activityType === 'HE' || parsed.activityType === 'HRE')) {
+          setSessionActivityType(parsed.activityType);
+        }
+        setRecoveredJournalNotice('Recado de transição e tipo de sessão recuperados de tentativa anterior pendente.');
+      }
+    } catch {
+      // Degradação silenciosa em caso de storage restrito ou dados corrompidos
+    }
+  }, [sessionId]);
 
   // The answer controls unlock only after a separate pre-answer request has committed.
   useEffect(() => {
@@ -854,6 +952,11 @@ const QuestionViewer: React.FC = () => {
   }, []);
 
   const endSession = async () => {
+    if (isEndingSessionRef.current) return;
+    isEndingSessionRef.current = true;
+    setIsEndingSession(true);
+    setEndSessionError(null);
+
     try {
       // 1. Auto-submissão da questão ativa se houver alternativa e confiança marcadas
       if (question && selectedOption && confidence > 0 && !feedback && !isSubmitting) {
@@ -864,98 +967,64 @@ const QuestionViewer: React.FC = () => {
       if ((pending?.payload && !pending.result) || (!captureEnabled && pendingAttemptRef.current && !pendingAttemptRef.current.confirmed)) {
         alert('Confirme ou recupere a resposta pendente antes de encerrar.'); return;
       }
-      // 2. Finaliza no backend
-      await fetch(`/api/v1/sessions/end`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId })
+
+      // 2. Monta histórico atualizado para Reconciliação Cognitiva
+      let history = [...sessionHistory];
+      if (question && selectedOption && feedback?.attemptId && confidence > 0 && !history.some(h => h.questionId === question.questionId)) {
+        const isCE = Array.isArray(question.options) && question.options.length === 2;
+        let optLetter = selectedOption.match(/^([A-Ea-e])\)?/)?.[1]?.toUpperCase() || selectedOption.charAt(0).toUpperCase();
+        if (isCE) {
+          if (selectedOption.toUpperCase().includes('CERT') || optLetter === 'C' || optLetter === 'A') optLetter = 'C';
+          else if (selectedOption.toUpperCase().includes('ERR') || optLetter === 'E' || optLetter === 'B') optLetter = 'E';
+        }
+        history.push({
+          attemptId: feedback.attemptId,
+          questionId: question.questionId,
+          statement: question.statement,
+          discipline: question.metadata?.discipline || selectedDiscipline || 'Geral',
+          topic: question.metadata?.topic || '',
+          board: question.metadata?.board || 'Banca',
+          year: question.metadata?.year || 2024,
+          options: [],
+          selectedOption: optLetter,
+          isCorrect: feedback.isCorrect,
+          gabaritoStatus: feedback?.gabaritoStatus || 'DEFINITIVO',
+          concursoPoint: feedback.concursoPoint,
+          confidenceLevel: confidence,
+          activeTimeMs: Math.max(1200, activeTimeMs),
+          tempoHesitacaoMs: 0,
+          trocasCount: optionSwitchCount,
+          friccaoScore: 0.1,
+          chuteEducadoDetectado: false,
+          fluenciaNeurologica: 'ALTA_FLUENCIA',
+          causaErro: selectedCausaErro || '',
+          naCordaBamba,
+          pensouContrario
+        });
+      }
+
+      // 3. Executa encerramento robusto desacoplado com validação HTTP e Reconciliação Cognitiva
+      const endResult = await executeEndSession({
+        sessionId,
+        history
       });
-      
-      // 3. Obtém o resumo consolidado do backend
-      let summaryData: SessionSummary | null = null;
-      try {
-        const res = await fetch(`/api/v1/sessions/${sessionId}/summary`);
-        if (res.ok) {
-          summaryData = await res.json();
-        }
-      } catch (e) {
-        console.error("Erro ao obter resumo do backend:", e);
-      }
-      
-      // 4. Reconciliação Cognitiva:
-      // Se summaryData for nulo ou totalAnswered === 0 mas houver histórico de respostas,
-      // calculamos os dados a partir do histórico para blindar a exibição contra latência de banco.
-      if (!summaryData || summaryData.totalAnswered === 0) {
-        let history = [...sessionHistory];
-        if (question && selectedOption && feedback?.attemptId && confidence > 0 && !history.some(h => h.questionId === question.questionId)) {
-          const isCE = Array.isArray(question.options) && question.options.length === 2;
-          let optLetter = selectedOption.match(/^([A-Ea-e])\)?/)?.[1]?.toUpperCase() || selectedOption.charAt(0).toUpperCase();
-          if (isCE) {
-            if (selectedOption.toUpperCase().includes('CERT') || optLetter === 'C' || optLetter === 'A') optLetter = 'C';
-            else if (selectedOption.toUpperCase().includes('ERR') || optLetter === 'E' || optLetter === 'B') optLetter = 'E';
-          }
-          history.push({
-            attemptId: feedback.attemptId,
-            questionId: question.questionId,
-            statement: question.statement,
-            discipline: question.metadata?.discipline || selectedDiscipline || 'Geral',
-            topic: question.metadata?.topic || '',
-            board: question.metadata?.board || 'Banca',
-            year: question.metadata?.year || 2024,
-            options: [],
-            selectedOption: optLetter,
-            isCorrect: feedback.isCorrect,
-            gabaritoStatus: feedback?.gabaritoStatus || 'DEFINITIVO',
-            concursoPoint: feedback.concursoPoint,
-            confidenceLevel: confidence,
-            activeTimeMs: Math.max(1200, activeTimeMs),
-            tempoHesitacaoMs: 0,
-            trocasCount: optionSwitchCount,
-            friccaoScore: 0.1,
-            chuteEducadoDetectado: false,
-            fluenciaNeurologica: 'ALTA_FLUENCIA',
-            causaErro: selectedCausaErro || '',
-            naCordaBamba,
-            pensouContrario
-          });
-        }
 
-        if (history.length > 0) {
-          const totalAns = history.length;
-          const corrects = history.filter(i => i.isCorrect).length;
-          const totalMs = history.reduce((acc, i) => acc + (i.activeTimeMs || 0), 0);
-          const overconf = history.filter(i => i.confidenceLevel === 5 && !i.isCorrect).length;
-          const anuladas = history.filter(i => i.gabaritoStatus === 'ANULADA').length;
-          const nonAnuladas = history.filter(i => i.gabaritoStatus !== 'ANULADA');
-          const nonAnuladasCorrect = nonAnuladas.filter(i => i.isCorrect).length;
-          const accuracy = nonAnuladas.length > 0 ? (nonAnuladasCorrect / nonAnuladas.length) * 100 : 0;
-          
-          summaryData = {
-            totalAnswered: totalAns,
-            correctCount: corrects,
-            accuracy,
-            averageTimeMs: totalAns > 0 ? (totalMs / totalAns) : 0,
-            overconfidenceCount: overconf,
-            concursoScore: corrects + anuladas,
-            anuladasCount: anuladas
-          };
-        }
-      }
-
-      setSummary(summaryData);
-      sessionStorage.removeItem('fiscalstudy_sessionStarted');
-      sessionStorage.removeItem('fiscalstudy_sessionId');
-      if (localStorage.getItem('fiscalstudy_active_question_session') === sessionId) localStorage.removeItem('fiscalstudy_active_question_session');
+      setSummary(endResult.summary);
       setSessionEnded(true);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Failed to end session", err);
+      const errorMsg = err instanceof Error ? err.message : 'Falha ao encerrar a sessão.';
+      setEndSessionError({ message: errorMsg, retryable: true });
+    } finally {
+      isEndingSessionRef.current = false;
+      setIsEndingSession(false);
     }
   };
 
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!sessionStarted || sessionEnded) return;
-      
+
       if (document.visibilityState === 'hidden') {
         if (lastFocusTime > 0) {
           setActiveTimeMs(prev => prev + (Date.now() - lastFocusTime));
@@ -982,7 +1051,7 @@ const QuestionViewer: React.FC = () => {
         finalActiveTime = Math.max(1200, activeTimeMs + elapsed);
       }
     }
-    
+
     if (pendingAttemptRef.current) finalActiveTime = Number(pendingAttemptRef.current.payload.activeTimeMs);
 
     // Identificar questões de Certo ou Errado (Cebraspe)
@@ -1027,8 +1096,8 @@ const QuestionViewer: React.FC = () => {
     });
 
     const hasApoio = Boolean(question.metadata?.supportMaterial && showSupportMaterial);
-    const currentIntervention = naCordaBamba 
-      ? 'NA_CORDA_BAMBA' 
+    const currentIntervention = naCordaBamba
+      ? 'NA_CORDA_BAMBA'
       : (pensouContrario ? 'PENSAR_CONTRARIO' : (studyMode === 'EMERGENCY' ? 'BLOCO_EMERGENCIA_15MIN' : 'REGULAR'));
 
     try {
@@ -1053,7 +1122,7 @@ const QuestionViewer: React.FC = () => {
       {
         setFeedback(result);
 
-        const currentOptions = Array.isArray(question.options) 
+        const currentOptions = Array.isArray(question.options)
           ? (typeof question.options[0] === 'string' ? (question.options as string[]) : (question.options as Option[]).map(o => `${o.label}) ${o.text}`))
           : [];
 
@@ -1453,10 +1522,10 @@ const QuestionViewer: React.FC = () => {
                             <span>🔄 Trocas de Alternativa: <strong>{item.trocasCount}</strong></span>
                             <span>•</span>
                             <span className={`biometric-badge ${item.fluenciaNeurologica}`} style={{ fontSize: '0.72rem', padding: '2px 6px' }}>
-                              {item.chuteEducadoDetectado 
-                                ? '⚠️ Chute Educado Detectado' 
-                                : (item.fluenciaNeurologica === 'ALTA_FLUENCIA' 
-                                    ? (isSimplifiedMode ? '⚡ Resposta Confiante' : '⚡ Alta Fluência') 
+                              {item.chuteEducadoDetectado
+                                ? '⚠️ Chute Educado Detectado'
+                                : (item.fluenciaNeurologica === 'ALTA_FLUENCIA'
+                                    ? (isSimplifiedMode ? '⚡ Resposta Confiante' : '⚡ Alta Fluência')
                                     : (isSimplifiedMode ? '🔍 Análise Cuidadosa' : '🔍 Fricção Moderada'))}
                             </span>
                           </div>
@@ -1464,8 +1533,8 @@ const QuestionViewer: React.FC = () => {
                           {/* Seletor de Feedback Metacognitivo Sincero */}
                           <div>
                             <span className="metacon-selector-title">
-                              {isSimplifiedMode 
-                                ? '🎯 Como você se sentiu nesta questão? (Clique para ajustar):' 
+                              {isSimplifiedMode
+                                ? '🎯 Como você se sentiu nesta questão? (Clique para ajustar):'
                                 : '🎯 Classificação de Sinceridade Metacognitiva (Clique para ajustar):'}
                             </span>
                             <div className="metacon-options-grid">
@@ -1594,6 +1663,32 @@ const QuestionViewer: React.FC = () => {
 
   return (
     <div className="viewer-container animate-fade-in">
+      {endSessionError && (
+        <div
+          className="end-session-error-banner"
+          style={{
+            background: '#7f1d1d',
+            borderBottom: '1px solid #dc2626',
+            color: '#fef2f2',
+            padding: '0.75rem 1.25rem',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            fontSize: '0.85rem'
+          }}
+        >
+          <span>⚠️ {endSessionError.message}</span>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            style={{ fontSize: '0.8rem', padding: '4px 12px' }}
+            onClick={endSession}
+            disabled={isEndingSession}
+          >
+            {isEndingSession ? 'Encerrando...' : '🔄 Tentar Encerrar Novamente'}
+          </button>
+        </div>
+      )}
       <header className="viewer-header">
         <div className="viewer-header-meta">
           <div className="meta-breadcrumb">
@@ -1636,9 +1731,10 @@ const QuestionViewer: React.FC = () => {
           <button
             type="button"
             className="end-session-btn"
+            disabled={isEndingSession || isSubmittingHandoff}
             onClick={() => setShowHandoffModal(true)}
           >
-            Encerrar Sessão
+            {isEndingSession ? 'Encerrando...' : isSubmittingHandoff ? 'Salvando...' : 'Encerrar Sessão'}
           </button>
         </div>
       </header>
@@ -1793,7 +1889,7 @@ const QuestionViewer: React.FC = () => {
         </div>
       )}
 
-      <main 
+      <main
         className="question-content glass"
         onMouseMove={(e) => {
           if (feedback) return;
@@ -1838,12 +1934,12 @@ const QuestionViewer: React.FC = () => {
         <div className="options" aria-busy={!prospectiveReady && !feedback} role="radiogroup" aria-label="Alternativas da questão">
           {optionsList.map((opt, idx) => {
             const isSelected = selectedOption === opt;
-            const letter = isCertoErrado 
-              ? (idx === 0 ? 'C' : 'E') 
+            const letter = isCertoErrado
+              ? (idx === 0 ? 'C' : 'E')
               : (opt.match(/^([A-Ea-e])\)?/)?.[1]?.toUpperCase() || opt.charAt(0).toUpperCase());
             const isUnverifiedGabarito = feedback?.gabaritoStatus === 'AUSENTE' || feedback?.gabaritoStatus === 'SOB_REVISAO';
             return (
-              <div 
+              <div
                 key={idx}
                 role="radio"
                 aria-checked={isSelected}
@@ -1910,8 +2006,8 @@ const QuestionViewer: React.FC = () => {
                 { lvl: 4, label: 'Alta' },
                 { lvl: 5, label: 'Certeza' },
               ].map(({ lvl, label }) => (
-                <button 
-                  key={lvl} 
+                <button
+                  key={lvl}
                   type="button"
                   aria-pressed={confidence === lvl}
                   aria-label={`Nível de certeza ${lvl}: ${label}`}
@@ -1946,18 +2042,18 @@ const QuestionViewer: React.FC = () => {
               <span>🟡 Marcar como Dúvida</span>
             </label>
 
-            <button 
-              className="btn submit-btn" 
+            <button
+              className="btn submit-btn"
               disabled={!selectedOption || confidence === 0 || isSubmitting || !prospectiveReady}
               aria-busy={isSubmitting}
               onClick={handleSubmit}
               title={
-                !selectedOption 
-                  ? 'Selecione uma alternativa antes de responder' 
-                  : confidence === 0 
-                    ? 'Indique seu Nível de Confiança (1 a 5) para liberar o botão Responder' 
-                    : isSubmitting 
-                      ? 'Gravando resposta...' 
+                !selectedOption
+                  ? 'Selecione uma alternativa antes de responder'
+                  : confidence === 0
+                    ? 'Indique seu Nível de Confiança (1 a 5) para liberar o botão Responder'
+                    : isSubmitting
+                      ? 'Gravando resposta...'
                       : pendingAttemptRef.current
                         ? 'Reenviar mesma tentativa para gravação'
                         : 'Confirmar resposta (Brier Score / Calibração)'
@@ -1980,7 +2076,7 @@ const QuestionViewer: React.FC = () => {
           </div>
         </div>
       ) : (
-        <div 
+        <div
           className={`feedback-bar glass animate-fade-in ${
             feedback.gabaritoStatus === 'ANULADA' ? 'feedback-correct' :
             (feedback.gabaritoStatus === 'AUSENTE' || feedback.gabaritoStatus === 'SOB_REVISAO') ? '' :
@@ -2082,15 +2178,15 @@ const QuestionViewer: React.FC = () => {
                 )}
               </div>
             )}
-            
+
             {/* Diagnóstico de Decisão & Confiança */}
             {biometricResult && (
               <div style={{ marginTop: '0.6rem', display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
                 <span className={`biometric-badge ${biometricResult.fluenciaNeurologica}`}>
-                  {biometricResult.chuteEducadoDetectado 
+                  {biometricResult.chuteEducadoDetectado
                     ? '⚠️ Atenção: Resposta com hesitação prolongada (Dúvida / Chute provável)'
-                    : (biometricResult.fluenciaNeurologica === 'ALTA_FLUENCIA' 
-                      ? '⚡ Alta Segurança: Resposta rápida e certeira' 
+                    : (biometricResult.fluenciaNeurologica === 'ALTA_FLUENCIA'
+                      ? '⚡ Alta Segurança: Resposta rápida e certeira'
                       : '🔍 Resposta ponderada')}
                 </span>
                 <span style={{ fontSize: '0.74rem', color: '#94a3b8' }}>
@@ -2160,7 +2256,7 @@ const QuestionViewer: React.FC = () => {
               </div>
             )}
           </div>
-          
+
           {(() => {
             const isCognitiveLocked = Boolean((feedback?.bloqueioCognitivo || (feedback?.errosConsecutivos != null && feedback.errosConsecutivos >= 3)) && !cognitiveLockResolved);
             const isAdvanceBlocked = Boolean((feynmanAuditRequired && !feynmanAuditCompleted) || isCognitiveLocked);
@@ -2177,20 +2273,20 @@ const QuestionViewer: React.FC = () => {
                 >
                   ⬅ Questão Anterior
                 </button>
-                <button 
-                  className="btn" 
+                <button
+                  className="btn"
                   onClick={async () => {
                     if (selectedOption && confidence > 0 && !feedback && !isSubmitting) {
                       await handleSubmit();
                     }
                     if (isLastInBatch) {
-                      await endSession();
+                      setShowHandoffModal(true);
                     } else {
                       handleNextQuestion();
                     }
-                  }} 
+                  }}
                   disabled={isAdvanceBlocked}
-                  style={{ 
+                  style={{
                     alignSelf: 'flex-end',
                     opacity: isAdvanceBlocked ? 0.45 : 1,
                     cursor: isAdvanceBlocked ? 'not-allowed' : 'pointer',
@@ -2199,15 +2295,15 @@ const QuestionViewer: React.FC = () => {
                   title={
                     isCognitiveLocked
                       ? 'Avanço bloqueado: fale com a IA para destravar o bloqueio cognitivo'
-                      : (feynmanAuditRequired && !feynmanAuditCompleted) 
-                        ? 'Avanço bloqueado: conserte seu modelo mental na auditoria Feynman acima' 
+                      : (feynmanAuditRequired && !feynmanAuditCompleted)
+                        ? 'Avanço bloqueado: conserte seu modelo mental na auditoria Feynman acima'
                         : (isLastInBatch ? 'Encerrar sessão e auditar respostas' : 'Avançar para a próxima questão')
                   }
                 >
                   {isCognitiveLocked
                     ? '🛑 Travamento: Fale com a IA para Destravar'
-                    : (feynmanAuditRequired && !feynmanAuditCompleted) 
-                      ? '🔒 Avanço Bloqueado (Feynman Pendente)' 
+                    : (feynmanAuditRequired && !feynmanAuditCompleted)
+                      ? '🔒 Avanço Bloqueado (Feynman Pendente)'
                       : (isLastInBatch ? '📊 Concluir Sessão & Ver Relatório ➔' : 'Próxima Questão ➔')}
                 </button>
               </div>
@@ -2310,20 +2406,98 @@ const QuestionViewer: React.FC = () => {
               />
             </div>
 
+            {handoffError && (
+              <div
+                style={{
+                  marginBottom: '1rem',
+                  padding: '0.75rem',
+                  borderRadius: 6,
+                  background: 'rgba(239, 68, 68, 0.15)',
+                  border: '1px solid #ef4444',
+                  color: '#fca5a5',
+                  fontSize: '0.85rem'
+                }}
+              >
+                <div style={{ fontWeight: 600, marginBottom: '0.25rem' }}>
+                  {handoffError.isConflict ? '⚠️ Sessão já registrada' : '⚠️ Erro ao registrar sessão'}
+                </div>
+                <div>{handoffError.message}</div>
+              </div>
+            )}
+
+            {recoveredJournalNotice && !handoffError && (
+              <div
+                style={{
+                  marginBottom: '1rem',
+                  padding: '0.65rem 0.85rem',
+                  borderRadius: 6,
+                  background: 'rgba(56, 189, 248, 0.12)',
+                  border: '1px solid #0284c7',
+                  color: '#7dd3fc',
+                  fontSize: '0.8rem'
+                }}
+              >
+                ℹ️ {recoveredJournalNotice}
+              </div>
+            )}
+
+            {showDiscardHandoffConfirm && (
+              <div
+                style={{
+                  marginBottom: '1rem',
+                  padding: '0.75rem',
+                  borderRadius: 6,
+                  background: 'rgba(239, 68, 68, 0.2)',
+                  border: '1px solid #ef4444',
+                  color: '#fca5a5',
+                  fontSize: '0.85rem'
+                }}
+              >
+                <div style={{ fontWeight: 700, marginBottom: '0.35rem' }}>
+                  ⚠️ Atenção Crítica: Operação de Encerramento Pendente
+                </div>
+                <div style={{ marginBottom: '0.5rem', lineHeight: '1.4' }}>
+                  Uma tentativa de encerramento já foi transmitida ao servidor e o resultado é incerto. O backend pode já ter processado esta gravação caso a conexão tenha caído após o processamento. Se você continuar resolvendo questões descartando o recado anterior, o registro no banco de dados NÃO será desfeito e pode haver inconsistência no seu histórico. Deseja realmente descartar a pendência anterior para continuar resolvendo questões nesta sessão?
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button
+                    type="button"
+                    className="btn"
+                    style={{ background: '#dc2626', color: '#fff', fontSize: '0.8rem', padding: '0.35rem 0.75rem' }}
+                    onClick={handleConfirmDiscardHandoff}
+                    disabled={isSubmittingHandoff}
+                  >
+                    Confirmar Descarte e Continuar
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    style={{ fontSize: '0.8rem', padding: '0.35rem 0.75rem' }}
+                    onClick={handleCancelDiscardHandoff}
+                    disabled={isSubmittingHandoff}
+                  >
+                    Cancelar e Reconciliar
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
               <button
                 type="button"
                 className="btn btn-secondary"
-                onClick={() => setShowHandoffModal(false)}
+                disabled={isSubmittingHandoff}
+                onClick={handleContinueStudyingFromHandoff}
               >
                 Continuar Estudando
               </button>
               <button
                 type="button"
                 className="btn btn-rec-action"
+                disabled={isSubmittingHandoff}
                 onClick={confirmEndSessionWithHandoff}
               >
-                Salvar Recado & Encerrar Sessão
+                {isSubmittingHandoff ? 'Salvando...' : handoffError?.retryable ? '🔄 Reconciliar Envio' : 'Salvar Recado & Encerrar Sessão'}
               </button>
             </div>
           </div>
