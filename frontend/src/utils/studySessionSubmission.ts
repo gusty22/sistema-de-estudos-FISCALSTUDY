@@ -68,24 +68,33 @@ export class StudySessionError extends Error {
 const JOURNAL_PREFIX = 'fiscalstudy:study_session:v1:';
 const JOURNAL_TTL_MS = 24 * 60 * 60 * 1000;
 
-interface JournalEntry {
+export type OperationLifecycleState =
+  | 'PREPARED'
+  | 'SENT_UNCONFIRMED'
+  | 'CONFIRMED'
+  | 'DISCARDED_BY_USER';
+
+export interface JournalEntry {
   version: 1;
   sessionId: string;
   serializedBody: string;
+  lifecycleState?: OperationLifecycleState;
   createdAt: number;
   expiresAt: number;
 }
 
 export type JournalStorageState =
-  | 'DURABLE'               // Persistido com sucesso no sessionStorage
-  | 'MEMORY_ONLY'           // Storage desabilitado, quota excedida ou erro de acesso
-  | 'CORRUPTED_PRESERVED';  // Journal existente corrompido/inválido preservado para auditoria (não-sobrescrito)
+  | 'DURABLE'                      // Persistido com sucesso no sessionStorage
+  | 'MEMORY_ONLY'                  // Storage desabilitado, quota excedida ou erro de acesso
+  | 'CORRUPTED_PRESERVED'          // Journal existente corrompido/inválido preservado para auditoria (não-sobrescrito)
+  | 'DIVERGENT_PAYLOAD_PRESERVED'; // Journal existente com payload divergente preservado (não-sobrescrito)
 
 export interface JournalSaveStatus {
   success: boolean;
   state: JournalStorageState;
   isDurable: boolean;
   warning?: string;
+  existingSerializedBody?: string;
 }
 
 export function inspectPendingSession(sessionId: string): {
@@ -122,7 +131,11 @@ export function inspectPendingSession(sessionId: string): {
   }
 }
 
-export function savePendingSessionDetailed(sessionId: string, serializedBody: string): JournalSaveStatus {
+export function savePendingSessionDetailed(
+  sessionId: string,
+  serializedBody: string,
+  lifecycleState: OperationLifecycleState = 'PREPARED'
+): JournalSaveStatus {
   if (typeof sessionStorage === 'undefined') {
     return {
       success: false,
@@ -135,7 +148,7 @@ export function savePendingSessionDetailed(sessionId: string, serializedBody: st
   // 1. Verifica se já existe um journal para este sessionId
   const inspect = inspectPendingSession(sessionId);
   if (inspect.exists && inspect.isCorrupted) {
-    // Não sobrescrever silenciosamente um journal inválido contendo uma operação ainda não reconciliada
+    // ACHADO 2: Não sobrescrever silenciosamente um journal inválido contendo uma operação ainda não reconciliada
     return {
       success: false,
       state: 'CORRUPTED_PRESERVED',
@@ -144,12 +157,29 @@ export function savePendingSessionDetailed(sessionId: string, serializedBody: st
     };
   }
 
+  // ACHADO 2: Verificação de divergência de payload em operação existente não confirmada
+  if (inspect.exists && !inspect.isCorrupted && inspect.data && !inspect.isExpired) {
+    const existingBody = inspect.data.serializedBody;
+    if (existingBody !== serializedBody) {
+      // Impede sobrescrita silenciosa de journal válido com payload divergente!
+      // Preserva a operação anterior para reconciliação e retorna erro explícito.
+      return {
+        success: false,
+        state: 'DIVERGENT_PAYLOAD_PRESERVED',
+        isDurable: false,
+        existingSerializedBody: existingBody,
+        warning: `Conflito de payload no journal: a sessão '${sessionId}' já possui uma operação pendente com dados divergentes. A operação anterior foi preservada para reconciliação.`
+      };
+    }
+  }
+
   // 2. Grava ou atualiza a entrada válida
   try {
     const entry: JournalEntry = {
       version: 1,
       sessionId,
       serializedBody,
+      lifecycleState,
       createdAt: inspect.data ? inspect.data.createdAt : Date.now(),
       expiresAt: Date.now() + JOURNAL_TTL_MS
     };
@@ -174,12 +204,17 @@ export function savePendingSession(sessionId: string, serializedBody: string): b
   return savePendingSessionDetailed(sessionId, serializedBody).success;
 }
 
-export function readPendingSession(sessionId: string): { sessionId: string; serializedBody: string } | null {
+export function readPendingJournalEntry(sessionId: string): JournalEntry | null {
   if (typeof sessionStorage === 'undefined') return null;
   try {
     const raw = sessionStorage.getItem(JOURNAL_PREFIX + sessionId);
     if (!raw) return null;
-    const data = JSON.parse(raw) as JournalEntry;
+    let data: JournalEntry;
+    try {
+      data = JSON.parse(raw);
+    } catch {
+      return null;
+    }
     if (data.version !== 1 || data.sessionId !== sessionId || typeof data.serializedBody !== 'string') {
       return null;
     }
@@ -187,10 +222,27 @@ export function readPendingSession(sessionId: string): { sessionId: string; seri
       sessionStorage.removeItem(JOURNAL_PREFIX + sessionId);
       return null;
     }
-    return { sessionId: data.sessionId, serializedBody: data.serializedBody };
+    return data;
   } catch {
     return null;
   }
+}
+
+export function readPendingSession(sessionId: string): {
+  sessionId: string;
+  serializedBody: string;
+  lifecycleState: OperationLifecycleState;
+} | null {
+  const entry = readPendingJournalEntry(sessionId);
+  if (!entry) return null;
+  // ACHADO 1: Interpretação conservadora para journals legados sem lifecycleState:
+  // Se não for possível demonstrar que a operação nunca foi enviada, trata como SENT_UNCONFIRMED
+  const lifecycleState: OperationLifecycleState = entry.lifecycleState || 'SENT_UNCONFIRMED';
+  return {
+    sessionId: entry.sessionId,
+    serializedBody: entry.serializedBody,
+    lifecycleState
+  };
 }
 
 /**
@@ -213,12 +265,108 @@ export function discardPendingSession(sessionId: string): void {
   clearPendingSession(sessionId);
 }
 
+/**
+ * Função compartilhada de avaliação de decisão para continuação / cancelamento
+ * consumida tanto pelos componentes (ex: QuestionViewer) quanto pelos testes.
+ */
+export interface ContinuationDecision {
+  canProceedSilently: boolean;
+  requiresExplicitConfirmation: boolean;
+  lifecycleState: OperationLifecycleState;
+  reason: 'NOT_SENT' | 'SENT_UNCONFIRMED' | 'ALREADY_CONFIRMED' | 'DISCARDED';
+  warningMessage?: string;
+}
+
+export function evaluateContinuationDecision(
+  submission: StudySessionSubmission | null,
+  sessionId?: string
+): ContinuationDecision {
+  // Se não houver submissão em memória e houver sessionId, consulta o journal persistido
+  if (!submission && sessionId) {
+    const inspected = inspectPendingSession(sessionId);
+    if (!inspected.exists || !inspected.data) {
+      return {
+        canProceedSilently: true,
+        requiresExplicitConfirmation: false,
+        lifecycleState: 'PREPARED',
+        reason: 'NOT_SENT'
+      };
+    }
+    // Interpretação conservadora para journal existente
+    const state: OperationLifecycleState = inspected.data.lifecycleState || 'SENT_UNCONFIRMED';
+    if (state === 'PREPARED') {
+      return {
+        canProceedSilently: true,
+        requiresExplicitConfirmation: false,
+        lifecycleState: 'PREPARED',
+        reason: 'NOT_SENT'
+      };
+    }
+    return {
+      canProceedSilently: false,
+      requiresExplicitConfirmation: true,
+      lifecycleState: state,
+      reason: 'SENT_UNCONFIRMED',
+      warningMessage: 'Uma tentativa de encerramento já foi transmitida ao servidor e o resultado é incerto. O descarte silencioso foi bloqueado.'
+    };
+  }
+
+  if (!submission) {
+    return {
+      canProceedSilently: true,
+      requiresExplicitConfirmation: false,
+      lifecycleState: 'PREPARED',
+      reason: 'NOT_SENT'
+    };
+  }
+
+  if (submission.confirmed || submission.lifecycleState === 'CONFIRMED') {
+    return {
+      canProceedSilently: true,
+      requiresExplicitConfirmation: false,
+      lifecycleState: 'CONFIRMED',
+      reason: 'ALREADY_CONFIRMED'
+    };
+  }
+
+  // Se foi transmitido (ou marcado como SENT_UNCONFIRMED) e não está confirmado
+  if (submission.lifecycleState === 'SENT_UNCONFIRMED' || submission.hasAttemptedSend) {
+    return {
+      canProceedSilently: false,
+      requiresExplicitConfirmation: true,
+      lifecycleState: 'SENT_UNCONFIRMED',
+      reason: 'SENT_UNCONFIRMED',
+      warningMessage: 'Uma tentativa de encerramento já foi transmitida ao servidor e o resultado é incerto. O descarte silencioso foi bloqueado para evitar perda de dados ou duplicidade.'
+    };
+  }
+
+  // Preparado mas comprovadamente não enviado
+  return {
+    canProceedSilently: true,
+    requiresExplicitConfirmation: false,
+    lifecycleState: 'PREPARED',
+    reason: 'NOT_SENT'
+  };
+}
+
+export function executeConsciousDiscard(sessionId: string): {
+  discarded: boolean;
+  lifecycleState: OperationLifecycleState;
+} {
+  discardPendingSession(sessionId);
+  return {
+    discarded: true,
+    lifecycleState: 'DISCARDED_BY_USER'
+  };
+}
+
 export class StudySessionSubmission {
   readonly sessionId: string;
   readonly payload: Readonly<Record<string, unknown>>;
   readonly serializedBody: string;
   confirmed = false;
   hasAttemptedSend = false;
+  lifecycleState: OperationLifecycleState = 'PREPARED';
 
   // Estado de durabilidade de armazenamento
   storageState: JournalStorageState = 'MEMORY_ONLY';
@@ -227,7 +375,14 @@ export class StudySessionSubmission {
 
   private pendingPromise: Promise<StudySessionResult> | null = null;
 
-  constructor(rawPayload: Record<string, unknown>, explicitSessionId?: string) {
+  constructor(
+    rawPayload: Record<string, unknown>,
+    explicitSessionId?: string,
+    options?: {
+      restoredFromJournal?: boolean;
+      initialLifecycleState?: OperationLifecycleState;
+    }
+  ) {
     const id = explicitSessionId || (rawPayload.sessionId as string) || ('study-' + crypto.randomUUID());
     this.sessionId = id;
 
@@ -236,8 +391,19 @@ export class StudySessionSubmission {
     this.serializedBody = JSON.stringify(normalized);
     this.payload = Object.freeze(JSON.parse(this.serializedBody));
 
-    // Persiste no journal do sessionStorage e registra durabilidade real
-    const saveStatus = savePendingSessionDetailed(this.sessionId, this.serializedBody);
+    if (options?.restoredFromJournal) {
+      this.lifecycleState = options.initialLifecycleState || 'SENT_UNCONFIRMED';
+      this.hasAttemptedSend = this.lifecycleState === 'SENT_UNCONFIRMED';
+      this.storageState = 'DURABLE';
+      this.isDurable = true;
+      return;
+    }
+
+    this.lifecycleState = 'PREPARED';
+    this.hasAttemptedSend = false;
+
+    // Persiste no journal do sessionStorage como PREPARED e registra durabilidade real
+    const saveStatus = savePendingSessionDetailed(this.sessionId, this.serializedBody, 'PREPARED');
     this.storageState = saveStatus.state;
     this.isDurable = saveStatus.isDurable;
     this.storageWarning = saveStatus.warning;
@@ -245,32 +411,50 @@ export class StudySessionSubmission {
 
   /**
    * Reconstrói a submissão a partir do journal pendente no sessionStorage.
-   * Garante que o payload recuperado seja idêntico ao gravado anteriormente (sem reconstrução alterada).
+   * ACHADO 1: Recupera corretamente o lifecycleState e adota interpretação conservadora para legados.
    */
   static fromJournal(sessionId: string): StudySessionSubmission | null {
-    const pending = readPendingSession(sessionId);
-    if (!pending || !pending.serializedBody) return null;
+    const entry = readPendingJournalEntry(sessionId);
+    if (!entry || !entry.serializedBody) return null;
     try {
-      const parsed = JSON.parse(pending.serializedBody);
-      return new StudySessionSubmission(parsed, sessionId);
+      const parsed = JSON.parse(entry.serializedBody);
+      // Interpretação conservadora: se não for comprovadamente PREPARED, trata como SENT_UNCONFIRMED
+      const lifecycleState: OperationLifecycleState =
+        entry.lifecycleState === 'PREPARED' ? 'PREPARED' : 'SENT_UNCONFIRMED';
+
+      const sub = new StudySessionSubmission(parsed, sessionId, {
+        restoredFromJournal: true,
+        initialLifecycleState: lifecycleState
+      });
+      return sub;
     } catch {
       return null;
     }
   }
 
-  /**
-   * Envia ou repete a submissão para a API.
-   * Chamadas concorrentes durante uma requisição em andamento compartilham a mesma Promise (barreira síncrona).
-   */
   send(url = '/api/v1/study-sessions/record'): Promise<StudySessionResult> {
     if (this.pendingPromise) {
       return this.pendingPromise;
     }
 
+    // ACHADO 2: Bloqueia envio se a submissão carregar payload divergente de journal existente
+    if (this.storageState === 'DIVERGENT_PAYLOAD_PRESERVED') {
+      return Promise.reject(
+        new StudySessionError(
+          `Conflito local de journal: a sessão '${this.sessionId}' já possui uma operação pendente com dados divergentes. A operação anterior foi preservada para reconciliação.`,
+          409,
+          true,
+          false
+        )
+      );
+    }
+
+    // ACHADO 1: A persistência do estado SENT_UNCONFIRMED DEVE ocorrer antes do envio da requisição
+    this.lifecycleState = 'SENT_UNCONFIRMED';
     this.hasAttemptedSend = true;
 
-    // Reavalia a durabilidade de armazenamento antes do dispatch de rede
-    const saveStatus = savePendingSessionDetailed(this.sessionId, this.serializedBody);
+    // Persiste SENT_UNCONFIRMED no journal do sessionStorage antes da requisição física
+    const saveStatus = savePendingSessionDetailed(this.sessionId, this.serializedBody, 'SENT_UNCONFIRMED');
     this.storageState = saveStatus.state;
     this.isDurable = saveStatus.isDurable;
     this.storageWarning = saveStatus.warning;
@@ -358,6 +542,7 @@ export class StudySessionSubmission {
 
       // Sucesso confirmado pelo backend (200 / 201 com status RECORDED e sessionId idêntico)
       this.confirmed = true;
+      this.lifecycleState = 'CONFIRMED';
       clearPendingSession(this.sessionId);
       return data as StudySessionResult;
     })().finally(() => {

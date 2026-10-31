@@ -8,7 +8,10 @@ import {
   clearPendingSession,
   discardPendingSession,
   savePendingSessionDetailed,
-  inspectPendingSession
+  inspectPendingSession,
+  readPendingJournalEntry,
+  evaluateContinuationDecision,
+  executeConsciousDiscard
 } from '../src/utils/studySessionSubmission.ts';
 
 const jsonResponse = (data, status = 200) =>
@@ -498,4 +501,158 @@ test('FS-01A: Nao sobrescrever silenciosamente um journal invalido ou corrompido
   // Descarte explícito pelo usuário expurga
   discardPendingSession(sessionId);
   assert.equal(globalThis.sessionStorage.getItem(prefix + sessionId), null);
+});
+
+test('FS-01A (Achado 1 - Test A): Falha de envio -> reload -> restaura SENT_UNCONFIRMED e impede descarte silencioso', async () => {
+  const sessionId = 'study-reload-recovery-01';
+  const payload = { sessionId, disciplina: 'Direito Tributário', tempoSegundos: 1200 };
+  const sub = new StudySessionSubmission(payload, sessionId);
+  assert.equal(sub.lifecycleState, 'PREPARED');
+
+  // Simula falha de envio de rede
+  globalThis.fetch = async () => { throw new Error('Network timeout'); };
+  await assert.rejects(sub.send());
+  assert.equal(sub.hasAttemptedSend, true);
+  assert.equal(sub.lifecycleState, 'SENT_UNCONFIRMED');
+
+  // Simula reload da página: instância anterior em memória é perdida, recria via fromJournal
+  const recovered = StudySessionSubmission.fromJournal(sessionId);
+  assert.ok(recovered);
+  assert.equal(recovered.sessionId, sessionId);
+  assert.equal(recovered.hasAttemptedSend, true);
+  assert.equal(recovered.lifecycleState, 'SENT_UNCONFIRMED');
+
+  // Continuação sem confirmação deve exigir confirmação explícita
+  const decision = evaluateContinuationDecision(recovered, sessionId);
+  assert.equal(decision.canProceedSilently, false);
+  assert.equal(decision.requiresExplicitConfirmation, true);
+  assert.equal(decision.lifecycleState, 'SENT_UNCONFIRMED');
+
+  // Descarte consciente explícito autorizado pelo usuário
+  const discardResult = executeConsciousDiscard(sessionId);
+  assert.equal(discardResult.discarded, true);
+  assert.equal(discardResult.lifecycleState, 'DISCARDED_BY_USER');
+  assert.equal(inspectPendingSession(sessionId).exists, false);
+});
+
+test('FS-01A (Achado 2 - Test B): Sobrescrita de journal com payload divergente e bloqueada preservando dados anteriores', async () => {
+  const sessionId = 'study-divergent-payload-02';
+  const payloadA = { sessionId, disciplina: 'Contabilidade', questoesRespondidas: 10 };
+  const subA = new StudySessionSubmission(payloadA, sessionId);
+  assert.equal(subA.storageState, 'DURABLE');
+
+  // Tentativa de instanciar nova submissão com mesmo sessionId e payload divergente
+  const payloadB = { sessionId, disciplina: 'Contabilidade', questoesRespondidas: 25 };
+  const subB = new StudySessionSubmission(payloadB, sessionId);
+  assert.equal(subB.storageState, 'DIVERGENT_PAYLOAD_PRESERVED');
+  assert.equal(subB.isDurable, false);
+  assert.match(subB.storageWarning, /Conflito de payload no journal/i);
+
+  // Journal no storage ainda retém payload A intacto
+  const entry = readPendingJournalEntry(sessionId);
+  assert.ok(entry);
+  assert.equal(entry.serializedBody, JSON.stringify(payloadA));
+
+  // Tentativa de send() da submissão B rejeita imediatamente com 409 Conflict sem chamar a rede
+  let fetchCalled = false;
+  globalThis.fetch = async () => {
+    fetchCalled = true;
+    return jsonResponse({ status: 'RECORDED' });
+  };
+
+  await assert.rejects(
+    subB.send(),
+    (err) => err instanceof StudySessionError && err.status === 409 && /Conflito local de journal/i.test(err.message)
+  );
+  assert.equal(fetchCalled, false, 'Fetch não deve ter sido chamado para envio com payload conflitante');
+
+  discardPendingSession(sessionId);
+});
+
+test('FS-01A (Test C): Safe retry de operacao identica com confirmacao RECORDED limpa o journal', async () => {
+  const sessionId = 'study-safe-retry-03';
+  const payload = { sessionId, disciplina: 'Legislação Tributária', tempoSegundos: 1800 };
+  const sub = new StudySessionSubmission(payload, sessionId);
+
+  // 1ª tentativa falha
+  globalThis.fetch = async () => { throw new Error('503 Service Unavailable'); };
+  await assert.rejects(sub.send());
+  assert.equal(sub.lifecycleState, 'SENT_UNCONFIRMED');
+  assert.equal(inspectPendingSession(sessionId).exists, true);
+
+  // 2ª tentativa (retry com mesmo payload): servidor agora responde 200 RECORDED
+  globalThis.fetch = async () => jsonResponse({
+    status: 'RECORDED',
+    sessionId,
+    recordedAt: '2026-10-31T20:00:00Z',
+    duracaoSegundos: 1800
+  });
+
+  const res = await sub.send();
+  assert.equal(res.status, 'RECORDED');
+  assert.equal(sub.confirmed, true);
+  assert.equal(sub.lifecycleState, 'CONFIRMED');
+
+  // Journal é limpo após confirmação
+  assert.equal(inspectPendingSession(sessionId).exists, false);
+});
+
+test('FS-01A (Test D): Journal legado sem metadado lifecycleState adota tratamento conservador SENT_UNCONFIRMED', () => {
+  const sessionId = 'study-legacy-journal-04';
+  const prefix = 'fiscalstudy:study_session:v1:';
+  const legacyData = {
+    version: 1,
+    sessionId,
+    serializedBody: JSON.stringify({ sessionId, disciplina: 'Auditoria' }),
+    // Sem campo lifecycleState propositalmente
+    createdAt: Date.now() - 1000,
+    expiresAt: Date.now() + 3600000
+  };
+
+  globalThis.sessionStorage.setItem(prefix + sessionId, JSON.stringify(legacyData));
+
+  // readPendingSession aplica fallback seguro
+  const pending = readPendingSession(sessionId);
+  assert.ok(pending);
+  assert.equal(pending.lifecycleState, 'SENT_UNCONFIRMED');
+
+  // fromJournal restaura como SENT_UNCONFIRMED
+  const recovered = StudySessionSubmission.fromJournal(sessionId);
+  assert.ok(recovered);
+  assert.equal(recovered.lifecycleState, 'SENT_UNCONFIRMED');
+  assert.equal(recovered.hasAttemptedSend, true);
+
+  // evaluateContinuationDecision exige confirmação explícita
+  const decision = evaluateContinuationDecision(recovered, sessionId);
+  assert.equal(decision.canProceedSilently, false);
+  assert.equal(decision.requiresExplicitConfirmation, true);
+
+  discardPendingSession(sessionId);
+});
+
+test('FS-01A (Test E): Falha de storage (MEMORY_ONLY) emite warning claro e nao promete recuperacao apos reload', async () => {
+  const sessionId = 'study-storage-failure-05';
+  const origSetItem = globalThis.sessionStorage.setItem;
+  try {
+    globalThis.sessionStorage.setItem = () => { throw new Error('QuotaExceeded'); };
+
+    const payload = { sessionId, disciplina: 'Direito Constitucional' };
+    const sub = new StudySessionSubmission(payload, sessionId);
+    assert.equal(sub.storageState, 'MEMORY_ONLY');
+    assert.equal(sub.isDurable, false);
+    assert.match(sub.storageWarning, /cota excedida ou restrição.*não será recuperada após recarregar a página/i);
+
+    // Falha de rede emite aviso enfático de que a operação está mantida apenas em memória
+    globalThis.fetch = async () => { throw new Error('Network error'); };
+    await assert.rejects(
+      sub.send(),
+      (err) => err instanceof StudySessionError && /ATENÇÃO: o armazenamento local.*NÃO recarregue a página/i.test(err.message)
+    );
+
+    // Simulando reload: como não houve persistência durável, fromJournal retorna null
+    const recovered = StudySessionSubmission.fromJournal(sessionId);
+    assert.equal(recovered, null);
+  } finally {
+    globalThis.sessionStorage.setItem = origSetItem;
+  }
 });
