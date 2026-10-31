@@ -4,7 +4,7 @@ Nenhuma configuração aqui modifica permissões, autenticação, provedor ou MC
 
 | Agente | Descoberta configurada | Skills / Especialistas | Estado da integração nesta execução |
 |---|---|---|---|
-| Antigravity App / CLI (`agy`) | `AGENTS.md` raiz e por módulo; `.agents/agents/*.md` quando aberto na raiz do repositório (`.git`) | `.agents/skills` sob demanda; coordenador `cto-fiscalstudy` (`--agent cto-fiscalstudy` no CLI ou seletor de agente no App) + 6 especialistas persistentes via `invoke_subagent` | `VERIFIED` em duas conversas independentes: descoberta de 7 agentes, zero subagentes ociosos no bootstrap e invocação sob demanda com encerramento limpo |
+| Antigravity App / CLI (`agy`) | `AGENTS.md` raiz e por módulo; `.agents/agents/*.md` quando aberto na raiz do repositório (`.git`) | `.agents/skills` sob demanda; coordenador `cto-fiscalstudy` (`--agent cto-fiscalstudy` no CLI ou seletor de agente no App, operando sob máquina de estados `ANALYSIS`, `PLANNING`, `APPROVED_EXECUTION`) + 6 especialistas persistentes via `invoke_subagent` | `VERIFIED` em conversas independentes: descoberta de 7 agentes, zero subagentes ociosos no bootstrap, bloqueio de execução sem autorização explícita (`READY_APPROVED = 0`), planejamento sem implementação e invocação sob demanda com encerramento limpo |
 | Codex | `AGENTS.md` raiz e por módulo | `.agents/skills`; catálogo sob demanda | `VERIFIED` apenas para a execução assistida desta tarefa e CLI; sem prova universal de obediência |
 | Claude Code | `CLAUDE.md` com `@AGENTS.md` | leitura seletiva do `SKILL.md`; não se presume alias nativo `.agents` | `CONFIGURED_NOT_TESTED` |
 | Gemini CLI | `GEMINI.md` com `@AGENTS.md` | `.agents/skills` é alias documentado; workspace deve ser confiado | `CONFIGURED_NOT_TESTED` |
