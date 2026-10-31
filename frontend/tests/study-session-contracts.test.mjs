@@ -5,7 +5,8 @@ import {
   StudySessionError,
   savePendingSession,
   readPendingSession,
-  clearPendingSession
+  clearPendingSession,
+  discardPendingSession
 } from '../src/utils/studySessionSubmission.ts';
 
 const jsonResponse = (data, status = 200) =>
@@ -155,6 +156,10 @@ test('FS-01A: HTTP 409 e tratado como conflito real de dados e nunca como sucess
   );
 
   assert.equal(submission.confirmed, false, 'Erro 409 nao pode marcar a sessao como confirmada');
+  // Achado D: Conflito HTTP 409 preserva journal pendente para conciliacao
+  assert.notEqual(readPendingSession('study-conflict-409'), null, 'HTTP 409 nao pode expurgar o journal');
+  discardPendingSession('study-conflict-409');
+  assert.equal(readPendingSession('study-conflict-409'), null, 'Descarte explicito limpa o journal');
 });
 
 test('FS-01A: HTTP 500 do servidor nao marca sucesso e preserva a operacao pendente para retry', async () => {
@@ -258,4 +263,163 @@ test('FS-01A: Politica de privacidade: dados ficam restritos ao namespace do ses
 
   clearPendingSession(sessionId);
   assert.equal(readPendingSession(sessionId), null);
+});
+
+test('FS-01A (Achado A): Taxonomia de dados e conservacao integral de reflexoes do estudante no journal', () => {
+  const sessionId = 'study-taxonomy-reflective';
+  const originalPayload = {
+    sessionId,
+    disciplina: 'Auditoria Fiscal',
+    durationSeconds: 1800,
+    activityType: 'LEITURA_TEORIA',
+    questoesFeitas: 0,
+    // Conteudo Reflexivo / User-authored (potencial PII)
+    notas: 'Dúvidas em testes de amostragem estatística e cálculo de materialidade.',
+    dificuldadeRelatada: 'Alta complexidade no cálculo de intervalo de confiança.',
+    nextSessionHandoff: 'Revisar NBC TA 530 itens 4 a 12 antes de fazer exercícios.'
+  };
+
+  const submission = new StudySessionSubmission(originalPayload, sessionId);
+  assert.equal(submission.sessionId, sessionId);
+  assert.equal(submission.payload.notas, originalPayload.notas);
+  assert.equal(submission.payload.dificuldadeRelatada, originalPayload.dificuldadeRelatada);
+  assert.equal(submission.payload.nextSessionHandoff, originalPayload.nextSessionHandoff);
+
+  const pending = readPendingSession(sessionId);
+  assert.notEqual(pending, null);
+  const parsed = JSON.parse(pending.serializedBody);
+  assert.equal(parsed.notas, originalPayload.notas);
+  assert.equal(parsed.nextSessionHandoff, originalPayload.nextSessionHandoff);
+
+  discardPendingSession(sessionId);
+  assert.equal(readPendingSession(sessionId), null);
+});
+
+test('FS-01A (Achado C): fromJournal recupera fielmente o payload original sem reconstruir a partir de valores default', () => {
+  const sessionId = 'study-recovery-c';
+  const originalPayload = {
+    sessionId,
+    disciplina: 'Direito Administrativo',
+    durationSeconds: 3600,
+    questoesFeitas: 25,
+    questoesAcertadas: 22,
+    notas: 'Atos administrativos - anulação e revogação'
+  };
+
+  new StudySessionSubmission(originalPayload, sessionId);
+
+  // Recupera diretamente do journal
+  const recovered = StudySessionSubmission.fromJournal(sessionId);
+  assert.notEqual(recovered, null, 'fromJournal deve reconstruir objeto valido');
+  assert.equal(recovered.sessionId, sessionId);
+  assert.equal(recovered.payload.durationSeconds, 3600);
+  assert.equal(recovered.payload.questoesFeitas, 25);
+  assert.equal(recovered.payload.notas, originalPayload.notas);
+  assert.equal(recovered.confirmed, false);
+
+  // Tentativa de recuperacao de ID inexistente
+  assert.equal(StudySessionSubmission.fromJournal('inexistent-id'), null);
+
+  discardPendingSession(sessionId);
+});
+
+test('FS-01A (Achado D): Journal e preservado em falhas e 409, sendo removido apenas sob confirmacao estrita ou descarte explicito', async () => {
+  const sessionId = 'study-lifecycle-d';
+  const payload = { disciplina: 'Contabilidade Geral', durationSeconds: 1200 };
+
+  const submission = new StudySessionSubmission(payload, sessionId);
+  assert.notEqual(readPendingSession(sessionId), null, 'Journal deve existir logo apos instanciacao');
+
+  // 1. Falha de rede: nao expurga o journal
+  globalThis.fetch = async () => { throw new Error('Offline'); };
+  await assert.rejects(submission.send());
+  assert.notEqual(readPendingSession(sessionId), null, 'Journal deve ser mantido apos falha de rede');
+
+  // 2. Erro 500 do servidor: nao expurga o journal
+  globalThis.fetch = async () => jsonResponse({ error: 'Server error' }, 500);
+  await assert.rejects(submission.send());
+  assert.notEqual(readPendingSession(sessionId), null, 'Journal deve ser mantido apos 500');
+
+  // 3. Conflito 409: nao expurga o journal automaticamente
+  globalThis.fetch = async () => jsonResponse({ message: 'Conflict' }, 409);
+  await assert.rejects(submission.send());
+  assert.notEqual(readPendingSession(sessionId), null, 'Journal deve ser mantido apos 409 para auditoria/conciliacao');
+
+  // 4. Descarte explicito pelo usuario
+  discardPendingSession(sessionId);
+  assert.equal(readPendingSession(sessionId), null, 'Descarte explicito deve expurgar o journal');
+});
+
+test('FS-01A (Achado E): Validacao estrita de resposta 200 rejeita corpo vazio, formato nao-JSON, sessionId divergente ou status invalido', async () => {
+  const sessionId = 'study-strict-http-e';
+  const payload = { disciplina: 'Direito Constitucional', durationSeconds: 900 };
+
+  // Subcaso 1: HTTP 200 com corpo vazio
+  {
+    globalThis.fetch = async () => new Response('', { status: 200 });
+    const sub = new StudySessionSubmission(payload, sessionId);
+    await assert.rejects(
+      sub.send(),
+      (err) => err instanceof StudySessionError && /corpo vazio|formato não-JSON/i.test(err.message)
+    );
+    assert.equal(sub.confirmed, false);
+    assert.notEqual(readPendingSession(sessionId), null);
+    discardPendingSession(sessionId);
+  }
+
+  // Subcaso 2: HTTP 200 com HTML de proxy/gateway (formato nao-JSON)
+  {
+    globalThis.fetch = async () =>
+      new Response('<html><body>502 Bad Gateway masquerading as 200</body></html>', {
+        status: 200,
+        headers: { 'Content-Type': 'text/html' }
+      });
+    const sub = new StudySessionSubmission(payload, sessionId);
+    await assert.rejects(
+      sub.send(),
+      (err) => err instanceof StudySessionError && /corpo vazio|formato não-JSON/i.test(err.message)
+    );
+    assert.equal(sub.confirmed, false);
+    assert.notEqual(readPendingSession(sessionId), null);
+    discardPendingSession(sessionId);
+  }
+
+  // Subcaso 3: HTTP 200 com sessionId divergente
+  {
+    globalThis.fetch = async () =>
+      jsonResponse({ sessionId: 'study-different-id', status: 'RECORDED' }, 200);
+    const sub = new StudySessionSubmission(payload, sessionId);
+    await assert.rejects(
+      sub.send(),
+      (err) => err instanceof StudySessionError && /diverge da enviada/i.test(err.message)
+    );
+    assert.equal(sub.confirmed, false);
+    assert.notEqual(readPendingSession(sessionId), null);
+    discardPendingSession(sessionId);
+  }
+
+  // Subcaso 4: HTTP 200 com status nao-RECORDED
+  {
+    globalThis.fetch = async () =>
+      jsonResponse({ sessionId, status: 'QUEUED' }, 200);
+    const sub = new StudySessionSubmission(payload, sessionId);
+    await assert.rejects(
+      sub.send(),
+      (err) => err instanceof StudySessionError && /status de gravação inesperado/i.test(err.message)
+    );
+    assert.equal(sub.confirmed, false);
+    assert.notEqual(readPendingSession(sessionId), null);
+    discardPendingSession(sessionId);
+  }
+
+  // Subcaso 5: HTTP 200 valido com RECORDED e sessionId identico -> sucesso confirmado e journal limpo
+  {
+    globalThis.fetch = async () =>
+      jsonResponse({ sessionId, status: 'RECORDED' }, 200);
+    const sub = new StudySessionSubmission(payload, sessionId);
+    const result = await sub.send();
+    assert.equal(sub.confirmed, true);
+    assert.equal(result.status, 'RECORDED');
+    assert.equal(readPendingSession(sessionId), null);
+  }
 });
