@@ -244,26 +244,28 @@ assert_equal(inv_json$evaluation_version, "1.1.0", "Intervencoes invalidas mante
 
 # 4. Intervenções válidas sem eventos posteriores verificáveis
 # Cenário 4a: Eventos sem correspondência para o post_assessment_event_id declarado
-evt_valid_raw <- utils::read.csv("tests/fixtures/valid_events.csv", stringsAsFactors = FALSE)
-evt_no_followup <- evt_valid_raw[evt_valid_raw$event_id != "evt-12", ]
-tmp_dir_no_followup <- tempfile("no-followup-")
-dir.create(tmp_dir_no_followup, recursive = TRUE, showWarnings = FALSE)
-evt_no_followup_csv <- file.path(tmp_dir_no_followup, "events_no_followup.csv")
-utils::write.csv(evt_no_followup, evt_no_followup_csv, row.names = FALSE)
+local({
+  evt_valid_raw <- utils::read.csv("tests/fixtures/valid_events.csv", stringsAsFactors = FALSE)
+  evt_no_followup <- evt_valid_raw[evt_valid_raw$event_id != "evt-12", ]
+  tmp_dir_no_followup <- tempfile("no-followup-")
+  dir.create(tmp_dir_no_followup, recursive = TRUE, showWarnings = FALSE)
+  on.exit(unlink(tmp_dir_no_followup, recursive = TRUE), add = TRUE)
+  evt_no_followup_csv <- file.path(tmp_dir_no_followup, "events_no_followup.csv")
+  utils::write.csv(evt_no_followup, evt_no_followup_csv, row.names = FALSE)
 
-res_no_post <- run_pipeline_eval(
-  c(evt_no_followup_csv, "tests/fixtures/valid_questions.csv", "tests/fixtures/valid_interventions.csv"),
-  run_id = "no-followup-eval-run"
-)
-assert_equal(res_no_post$exit, 0L, "Pipeline executa sem eventos posteriores correspondentes")
-no_post_json <- res_no_post$json
-assert_true(!is.null(no_post_json), "intervention_evaluation_v1.json gerado sem eventos correspondentes")
-assert_equal(no_post_json$evaluation_status, "INSUFFICIENT_EVIDENCE", "Sem eventos verificaveis evaluation_status e INSUFFICIENT_EVIDENCE")
-assert_equal(no_post_json$status, "INSUFFICIENT_EVIDENCE", "Sem eventos verificaveis status e INSUFFICIENT_EVIDENCE")
-assert_equal(no_post_json$declared_evaluated_count, 1L, "declared_evaluated_count e 1L")
-assert_equal(no_post_json$evaluated_count, 0L, "evaluated_count e 0L pois nenhum evento foi verificado")
-assert_equal(no_post_json$unverified_followup_count, 1L, "unverified_followup_count e 1L")
-unlink(tmp_dir_no_followup, recursive = TRUE)
+  res_no_post <- run_pipeline_eval(
+    c(evt_no_followup_csv, "tests/fixtures/valid_questions.csv", "tests/fixtures/valid_interventions.csv"),
+    run_id = "no-followup-eval-run"
+  )
+  assert_equal(res_no_post$exit, 0L, "Pipeline executa sem eventos posteriores correspondentes")
+  no_post_json <- res_no_post$json
+  assert_true(!is.null(no_post_json), "intervention_evaluation_v1.json gerado sem eventos correspondentes")
+  assert_equal(no_post_json$evaluation_status, "INSUFFICIENT_EVIDENCE", "Sem eventos verificaveis evaluation_status e INSUFFICIENT_EVIDENCE")
+  assert_equal(no_post_json$status, "INSUFFICIENT_EVIDENCE", "Sem eventos verificaveis status e INSUFFICIENT_EVIDENCE")
+  assert_equal(no_post_json$declared_evaluated_count, 1L, "declared_evaluated_count e 1L")
+  assert_equal(no_post_json$evaluated_count, 0L, "evaluated_count e 0L pois nenhum evento foi verificado")
+  assert_equal(no_post_json$unverified_followup_count, 1L, "unverified_followup_count e 1L")
+})
 
 # Cenário 4b: valid_interventions.csv + valid_events.csv oficiais (amostra < 5)
 res_valid_fixtures <- run_pipeline_eval(
@@ -281,44 +283,46 @@ assert_equal(vf_json$evaluated_count, 1L, "evaluated_count e 1L para evento vinc
 assert_equal(vf_json$unverified_followup_count, 0L, "unverified_followup_count e 0L para evento vinculado")
 
 # 5. Intervenções com acompanhamentos posteriores verificáveis (amostra suficiente N >= 5)
-tmp_dir_suff <- tempfile("suff-eval-")
-dir.create(tmp_dir_suff, recursive = TRUE, showWarnings = FALSE)
-suff_int_csv <- file.path(tmp_dir_suff, "interventions.csv")
-suff_evt_csv <- file.path(tmp_dir_suff, "events.csv")
+local({
+  tmp_dir_suff <- tempfile("suff-eval-")
+  dir.create(tmp_dir_suff, recursive = TRUE, showWarnings = FALSE)
+  on.exit(unlink(tmp_dir_suff, recursive = TRUE), add = TRUE)
+  suff_int_csv <- file.path(tmp_dir_suff, "interventions.csv")
+  suff_evt_csv <- file.path(tmp_dir_suff, "events.csv")
 
-# Utiliza expanded_int (8 intervenções) e post_fixture com questões válidas do catálogo oficial
-utils::write.csv(expanded_int, suff_int_csv, row.names = FALSE)
+  # Utiliza expanded_int (8 intervenções) e post_fixture com questões válidas do catálogo oficial
+  utils::write.csv(expanded_int, suff_int_csv, row.names = FALSE)
 
-suff_events_df <- data.frame(
-  event_id = expanded_int$post_assessment_event_id,
-  event_type = rep("ANSWER_SUBMITTED", 8),
-  session_id = rep("sess-post-1", 8),
-  question_id = paste0("q00", 1:8),
-  occurred_at = rep("2026-10-11T12:00:00Z", 8),
-  selected_option = rep("A", 8),
-  is_correct = expanded_int$post_outcome == "CORRECT",
-  confidence_level = rep(4L, 8),
-  active_time_ms = rep(30000L, 8),
-  stringsAsFactors = FALSE
-)
-utils::write.csv(suff_events_df, suff_evt_csv, row.names = FALSE)
+  suff_events_df <- data.frame(
+    event_id = expanded_int$post_assessment_event_id,
+    event_type = rep("ANSWER_SUBMITTED", 8),
+    session_id = rep("sess-post-1", 8),
+    question_id = paste0("q00", 1:8),
+    occurred_at = rep("2026-10-11T12:00:00Z", 8),
+    selected_option = rep("A", 8),
+    is_correct = expanded_int$post_outcome == "CORRECT",
+    confidence_level = rep(4L, 8),
+    active_time_ms = rep(30000L, 8),
+    stringsAsFactors = FALSE
+  )
+  utils::write.csv(suff_events_df, suff_evt_csv, row.names = FALSE)
 
-res_suff <- run_pipeline_eval(c(suff_evt_csv, "tests/fixtures/valid_questions.csv", suff_int_csv), run_id = "suff-eval-run")
-assert_equal(res_suff$exit, 0L, "Pipeline executa com amostra suficiente de intervencoes verificadas")
-suff_json <- res_suff$json
-assert_true(!is.null(suff_json), "intervention_evaluation_v1.json gerado para amostra suficiente")
-assert_equal(suff_json$evaluation_status, "OBSERVATIONAL_EVALUATION_COMPLETED",
-             "Amostra N >= 5 verificada produz OBSERVATIONAL_EVALUATION_COMPLETED")
-assert_equal(suff_json$status, "OBSERVATIONAL_EVALUATION_COMPLETED",
-             "status e OBSERVATIONAL_EVALUATION_COMPLETED")
-assert_false(suff_json$is_validated, "is_validated permanece FALSE sob avaliacao observacional")
-assert_false(suff_json$can_apply, "can_apply permanece FALSE")
-assert_false(suff_json$can_schedule, "can_schedule permanece FALSE")
-assert_equal(suff_json$transfer_status, "NOT_ESTABLISHED", "transfer_status permanece NOT_ESTABLISHED")
-assert_equal(suff_json$assessment_type_status, "DECLARED_NOT_INDEPENDENTLY_VERIFIED",
-             "assessment_type_status e DECLARED_NOT_INDEPENDENTLY_VERIFIED")
-assert_equal(suff_json$evaluated_count, 8L, "evaluated_count e 8L")
-unlink(tmp_dir_suff, recursive = TRUE)
+  res_suff <- run_pipeline_eval(c(suff_evt_csv, "tests/fixtures/valid_questions.csv", suff_int_csv), run_id = "suff-eval-run")
+  assert_equal(res_suff$exit, 0L, "Pipeline executa com amostra suficiente de intervencoes verificadas")
+  suff_json <- res_suff$json
+  assert_true(!is.null(suff_json), "intervention_evaluation_v1.json gerado para amostra suficiente")
+  assert_equal(suff_json$evaluation_status, "OBSERVATIONAL_EVALUATION_COMPLETED",
+               "Amostra N >= 5 verificada produz OBSERVATIONAL_EVALUATION_COMPLETED")
+  assert_equal(suff_json$status, "OBSERVATIONAL_EVALUATION_COMPLETED",
+               "status e OBSERVATIONAL_EVALUATION_COMPLETED")
+  assert_false(suff_json$is_validated, "is_validated permanece FALSE sob avaliacao observacional")
+  assert_false(suff_json$can_apply, "can_apply permanece FALSE")
+  assert_false(suff_json$can_schedule, "can_schedule permanece FALSE")
+  assert_equal(suff_json$transfer_status, "NOT_ESTABLISHED", "transfer_status permanece NOT_ESTABLISHED")
+  assert_equal(suff_json$assessment_type_status, "DECLARED_NOT_INDEPENDENTLY_VERIFIED",
+               "assessment_type_status e DECLARED_NOT_INDEPENDENTLY_VERIFIED")
+  assert_equal(suff_json$evaluated_count, 8L, "evaluated_count e 8L")
+})
 
 # 6. Conformidade do artefato versionado output/metrics/intervention_evaluation_v1.json
 disk_artifact_path <- "output/metrics/intervention_evaluation_v1.json"
@@ -333,3 +337,18 @@ assert_equal(disk_artifact$transfer_status, "NOT_ESTABLISHED", "Artefato em disc
 assert_true(all(required_v1_1_fields %in% names(disk_artifact)), "Artefato em disco contem todos os campos da Extensao 1.1.0")
 assert_false(any(c("fsrs_state", "next_review_at", "scheduled_at") %in% names(disk_artifact)),
              "Avaliacao de intervencoes nao emite nem altera estado de agendamento FSRS")
+
+# 7. Limpeza garantida de diretórios temporários diante de stop() inesperado
+leaked_path <- NULL
+tryCatch(
+  local({
+    tmp_unexpected <- tempfile("unexpected-stop-")
+    dir.create(tmp_unexpected, recursive = TRUE, showWarnings = FALSE)
+    on.exit(unlink(tmp_unexpected, recursive = TRUE), add = TRUE)
+    leaked_path <<- tmp_unexpected
+    stop("Falha inesperada simulada antes do fim do bloco")
+  }),
+  error = function(e) NULL
+)
+assert_true(!is.null(leaked_path) && !dir.exists(leaked_path),
+            "Escopo local com on.exit remove diretorio temporario mesmo diante de stop() inesperado")
