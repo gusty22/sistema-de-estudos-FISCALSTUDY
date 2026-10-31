@@ -141,11 +141,11 @@ export default function SessaoEstudoAtiva({
     try {
       const stored = sessionStorage.getItem('fiscalstudy_active_session_id');
       if (stored) return stored;
-      const generated = `sess_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+      const generated = `sess_${crypto.randomUUID()}`;
       sessionStorage.setItem('fiscalstudy_active_session_id', generated);
       return generated;
     } catch {
-      return `sess_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+      return `sess_${crypto.randomUUID()}`;
     }
   });
 
@@ -656,7 +656,7 @@ export default function SessaoEstudoAtiva({
                 if (isSaved) {
                   setIsSaved(false);
                   pendingSubmissionRef.current = null;
-                  const newId = `sess_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+                  const newId = `sess_${crypto.randomUUID()}`;
                   setSessionId(newId);
                   try {
                     sessionStorage.setItem('fiscalstudy_active_session_id', newId);
