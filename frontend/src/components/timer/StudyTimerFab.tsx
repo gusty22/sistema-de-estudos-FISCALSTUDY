@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import type { ConcursoItem } from '../concursos/MeusConcursos';
 import './StudyTimerFab.css';
 import { cachedStudyPreferences } from '../../utils/studyPreferences';
-import { StudySessionSubmission, StudySessionError } from '../../utils/studySessionSubmission';
+import { StudySessionSubmission, StudySessionError, discardPendingSession } from '../../utils/studySessionSubmission';
 
 interface StudyTimerFabProps {
   activeConcurso: ConcursoItem | null;
@@ -15,12 +15,52 @@ export const StudyTimerFab: React.FC<StudyTimerFabProps> = ({ activeConcurso, on
   const [isRunning, setIsRunning] = useState(false);
   const [seconds, setSeconds] = useState(0);
 
-  // Identidade de sessão estável para idempotência e recuperação
-  const [sessionId, setSessionId] = useState<string>(() => 'study-' + crypto.randomUUID());
+  // Identidade de sessão estável para idempotência e recuperação (sessionStorage)
+  const [sessionId, setSessionId] = useState<string>(() => {
+    try {
+      const stored = sessionStorage.getItem('fiscalstudy_timer_session_id');
+      if (stored) return stored;
+      const generated = 'study-' + crypto.randomUUID();
+      sessionStorage.setItem('fiscalstudy_timer_session_id', generated);
+      return generated;
+    } catch {
+      return 'study-' + crypto.randomUUID();
+    }
+  });
   const pendingSubmissionRef = useRef<StudySessionSubmission | null>(null);
   const isSubmittingRef = useRef<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [saveError, setSaveError] = useState<{ message: string; isConflict: boolean; retryable: boolean } | null>(null);
+  const [pendingRecoveryNotice, setPendingRecoveryNotice] = useState<string | null>(null);
+
+  // Recuperação real após reload (Achado C): restaura o payload exato sem reconstruir dados a partir de formulário modificado
+  useEffect(() => {
+    try {
+      const recovered = StudySessionSubmission.fromJournal(sessionId);
+      if (recovered) {
+        pendingSubmissionRef.current = recovered;
+        const p = recovered.payload as any;
+        if (p.disciplina) setSelectedDisciplina(p.disciplina);
+        if (typeof p.durationSeconds === 'number' && seconds === 0) setSeconds(p.durationSeconds);
+        if (p.nextSessionHandoff) setNextSessionHandoff(p.nextSessionHandoff);
+        if (p.notas) setNotas(p.notas);
+        if (p.activityType) setActivityType(p.activityType);
+        if (p.topicoId) setSelectedTopicoId(p.topicoId);
+        if (p.materialId) setSelectedMaterialId(p.materialId);
+        if (p.paginaInicio !== undefined) setPaginaInicio(p.paginaInicio);
+        if (p.paginaFim !== undefined) setPaginaFim(p.paginaFim);
+        if (p.paginasLidas !== undefined) setPaginasLidas(p.paginasLidas);
+        if (p.questoesFeitas !== undefined) setQuestoesFeitas(p.questoesFeitas);
+        if (p.questoesAcertadas !== undefined && p.questoesAcertadas !== null) setQuestoesAcertadas(p.questoesAcertadas);
+        setPendingRecoveryNotice(
+          'Operação anterior recuperada do armazenamento local da aba. Reconcilie o envio para garantir idempotência ou descarte explicitamente antes de iniciar nova sessão.'
+        );
+        setIsSaving(true);
+      }
+    } catch {
+      // Degradação segura
+    }
+  }, [sessionId]);
 
   // Pomodoro settings
   const [pomoPreset, setPomoPreset] = useState<number>(() => cachedStudyPreferences().sessionMinutes);
@@ -125,7 +165,25 @@ export const StudyTimerFab: React.FC<StudyTimerFabProps> = ({ activeConcurso, on
     setIsRunning(false);
   };
 
+  const handleDiscardUncertainSession = () => {
+    if (isSubmitting) return;
+    discardPendingSession(sessionId);
+    pendingSubmissionRef.current = null;
+    setSaveError(null);
+    setPendingRecoveryNotice(null);
+    const newId = 'study-' + crypto.randomUUID();
+    setSessionId(newId);
+    try {
+      sessionStorage.setItem('fiscalstudy_timer_session_id', newId);
+    } catch {}
+  };
+
   const handleReset = () => {
+    if (isSubmitting) return;
+    // Impede reset durante operação incerta (Achado B): exige reconciliação ou descarte explícito
+    if (pendingSubmissionRef.current && !pendingSubmissionRef.current.confirmed && (saveError?.retryable || pendingRecoveryNotice)) {
+      return;
+    }
     setIsRunning(false);
     if (mode === 'POMODORO') {
       setSeconds(pomoPreset * 60);
@@ -137,14 +195,12 @@ export const StudyTimerFab: React.FC<StudyTimerFabProps> = ({ activeConcurso, on
     pendingSubmissionRef.current = null;
     setSaveError(null);
     setSaveSuccess(null);
-    setSessionId('study-' + crypto.randomUUID());
-  };
-
-  const handleStartNewSession = () => {
-    pendingSubmissionRef.current = null;
-    setSaveError(null);
-    setSaveSuccess(null);
-    setSessionId('study-' + crypto.randomUUID());
+    setPendingRecoveryNotice(null);
+    const newId = 'study-' + crypto.randomUUID();
+    setSessionId(newId);
+    try {
+      sessionStorage.setItem('fiscalstudy_timer_session_id', newId);
+    } catch {}
   };
 
   const handleSwitchMode = (newMode: 'CRONOMETRO' | 'POMODORO') => {
@@ -234,7 +290,12 @@ export const StudyTimerFab: React.FC<StudyTimerFabProps> = ({ activeConcurso, on
       setQuestoesAcertadas('');
       setNotas('');
       setNextSessionHandoff('');
-      setSessionId('study-' + crypto.randomUUID());
+      setPendingRecoveryNotice(null);
+      const newId = 'study-' + crypto.randomUUID();
+      setSessionId(newId);
+      try {
+        sessionStorage.setItem('fiscalstudy_timer_session_id', newId);
+      } catch {}
       if (onSessionSaved) onSessionSaved();
       setTimeout(() => {
         setSaveSuccess(null);
@@ -381,7 +442,11 @@ export const StudyTimerFab: React.FC<StudyTimerFabProps> = ({ activeConcurso, on
                     ⏸ Pausar
                   </button>
                 )}
-                <button className="timer-btn timer-btn-secondary" onClick={handleReset}>
+                <button
+                  className="timer-btn timer-btn-secondary"
+                  onClick={handleReset}
+                  disabled={isSubmitting || !!(pendingSubmissionRef.current && !pendingSubmissionRef.current.confirmed && (saveError?.retryable || pendingRecoveryNotice))}
+                >
                   ↺ Reset
                 </button>
                 <button
@@ -576,6 +641,43 @@ export const StudyTimerFab: React.FC<StudyTimerFabProps> = ({ activeConcurso, on
                     {isSubmitting ? 'Gravando...' : 'Gravar na Linha do Tempo (Event Log)'}
                   </button>
 
+                  {pendingRecoveryNotice && !saveError && (
+                    <div style={{
+                      marginTop: '10px',
+                      padding: '8px 12px',
+                      borderRadius: '8px',
+                      fontSize: '12px',
+                      background: 'rgba(56, 189, 248, 0.15)',
+                      color: '#38bdf8',
+                      border: '1px solid rgba(56, 189, 248, 0.3)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '6px'
+                    }}>
+                      <span>ℹ️ {pendingRecoveryNotice}</span>
+                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                        <button
+                          type="button"
+                          className="timer-btn timer-btn-save"
+                          onClick={handleSaveSession}
+                          disabled={isSubmitting}
+                          style={{ fontSize: '11px', padding: '4px 8px' }}
+                        >
+                          {isSubmitting ? 'Reenviando...' : '🔄 Reconciliar Envio'}
+                        </button>
+                        <button
+                          type="button"
+                          className="timer-btn timer-btn-secondary"
+                          onClick={handleDiscardUncertainSession}
+                          disabled={isSubmitting}
+                          style={{ fontSize: '11px', padding: '4px 8px' }}
+                        >
+                          Descartar Operação Incerta
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   {saveError && (
                     <div style={{
                       marginTop: '10px',
@@ -590,28 +692,30 @@ export const StudyTimerFab: React.FC<StudyTimerFabProps> = ({ activeConcurso, on
                       gap: '6px'
                     }}>
                       <span>{saveError.message}</span>
-                      {saveError.retryable && (
-                        <button
-                          type="button"
-                          className="timer-btn timer-btn-save"
-                          onClick={handleSaveSession}
-                          disabled={isSubmitting}
-                          style={{ fontSize: '11px', padding: '4px 8px', alignSelf: 'flex-start' }}
-                        >
-                          {isSubmitting ? 'Reenviando...' : '🔄 Tentar Novamente'}
-                        </button>
-                      )}
-                      {saveError.isConflict && (
-                        <button
-                          type="button"
-                          className="timer-btn timer-btn-secondary"
-                          onClick={handleStartNewSession}
-                          disabled={isSubmitting}
-                          style={{ fontSize: '11px', padding: '4px 8px', alignSelf: 'flex-start' }}
-                        >
-                          Iniciar Nova Sessão (Novo ID)
-                        </button>
-                      )}
+                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                        {saveError.retryable && (
+                          <button
+                            type="button"
+                            className="timer-btn timer-btn-save"
+                            onClick={handleSaveSession}
+                            disabled={isSubmitting}
+                            style={{ fontSize: '11px', padding: '4px 8px' }}
+                          >
+                            {isSubmitting ? 'Reenviando...' : '🔄 Tentar Novamente (Reconciliar)'}
+                          </button>
+                        )}
+                        {(saveError.retryable || saveError.isConflict) && (
+                          <button
+                            type="button"
+                            className="timer-btn timer-btn-secondary"
+                            onClick={handleDiscardUncertainSession}
+                            disabled={isSubmitting}
+                            style={{ fontSize: '11px', padding: '4px 8px' }}
+                          >
+                            {saveError.isConflict ? 'Descartar Conflito e Iniciar Nova' : '⚠️ Descartar Operação Incerta'}
+                          </button>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
