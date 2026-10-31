@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import type { ConcursoItem } from '../concursos/MeusConcursos';
 import './StudyTimerFab.css';
 import { cachedStudyPreferences } from '../../utils/studyPreferences';
+import { StudySessionSubmission, StudySessionError } from '../../utils/studySessionSubmission';
 
 interface StudyTimerFabProps {
   activeConcurso: ConcursoItem | null;
@@ -13,6 +14,13 @@ export const StudyTimerFab: React.FC<StudyTimerFabProps> = ({ activeConcurso, on
   const [mode, setMode] = useState<'CRONOMETRO' | 'POMODORO'>('CRONOMETRO');
   const [isRunning, setIsRunning] = useState(false);
   const [seconds, setSeconds] = useState(0);
+
+  // Identidade de sessão estável para idempotência e recuperação
+  const [sessionId, setSessionId] = useState<string>(() => 'study-' + crypto.randomUUID());
+  const pendingSubmissionRef = useRef<StudySessionSubmission | null>(null);
+  const isSubmittingRef = useRef<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [saveError, setSaveError] = useState<{ message: string; isConflict: boolean; retryable: boolean } | null>(null);
 
   // Pomodoro settings
   const [pomoPreset, setPomoPreset] = useState<number>(() => cachedStudyPreferences().sessionMinutes);
@@ -126,6 +134,17 @@ export const StudyTimerFab: React.FC<StudyTimerFabProps> = ({ activeConcurso, on
       setSeconds(0);
     }
     setIsSaving(false);
+    pendingSubmissionRef.current = null;
+    setSaveError(null);
+    setSaveSuccess(null);
+    setSessionId('study-' + crypto.randomUUID());
+  };
+
+  const handleStartNewSession = () => {
+    pendingSubmissionRef.current = null;
+    setSaveError(null);
+    setSaveSuccess(null);
+    setSessionId('study-' + crypto.randomUUID());
   };
 
   const handleSwitchMode = (newMode: 'CRONOMETRO' | 'POMODORO') => {
@@ -160,6 +179,9 @@ export const StudyTimerFab: React.FC<StudyTimerFabProps> = ({ activeConcurso, on
   };
 
   const handleSaveSession = async () => {
+    // Barreira síncrona contra clique duplo / requisições concorrentes
+    if (isSubmittingRef.current) return;
+
     const duration = mode === 'POMODORO'
       ? (isBreak ? 0 : pomoPreset * 60 - seconds)
       : seconds;
@@ -170,55 +192,65 @@ export const StudyTimerFab: React.FC<StudyTimerFabProps> = ({ activeConcurso, on
       return;
     }
 
-    const payload = {
-      sessionId: `study-${Date.now()}`,
-      concursoId: activeConcurso?.id || null,
-      disciplina: selectedDisciplina || 'Geral',
-      topicoId: selectedTopicoId || null,
-      materialId: selectedMaterialId || null,
-      durationSeconds: Math.max(0, duration),
-      paginaInicio: paginaInicio !== '' ? Number(paginaInicio) : null,
-      paginaFim: paginaFim !== '' ? Number(paginaFim) : null,
-      paginasLidas: Number(paginasLidas) || 0,
-      questoesFeitas: Number(questoesFeitas) || 0,
-      questoesAcertadas: questoesAcertadas !== '' ? Number(questoesAcertadas) : null,
-      modo: mode,
-      activityType: activityType,
-      nextSessionHandoff: nextSessionHandoff.trim() || null,
-      notas: notas || null
-    };
+    // Se ainda não há submissão congelada criada para esta sessão, prepara a submissão imutável
+    if (!pendingSubmissionRef.current) {
+      const payload = {
+        sessionId,
+        concursoId: activeConcurso?.id || null,
+        disciplina: selectedDisciplina || 'Geral',
+        topicoId: selectedTopicoId || null,
+        materialId: selectedMaterialId || null,
+        durationSeconds: Math.max(0, duration),
+        paginaInicio: paginaInicio !== '' ? Number(paginaInicio) : null,
+        paginaFim: paginaFim !== '' ? Number(paginaFim) : null,
+        paginasLidas: Number(paginasLidas) || 0,
+        questoesFeitas: Number(questoesFeitas) || 0,
+        questoesAcertadas: questoesAcertadas !== '' ? Number(questoesAcertadas) : null,
+        modo: mode,
+        activityType: activityType,
+        nextSessionHandoff: nextSessionHandoff.trim() || null,
+        notas: notas || null
+      };
+      pendingSubmissionRef.current = new StudySessionSubmission(payload, sessionId);
+    }
+
+    isSubmittingRef.current = true;
+    setIsSubmitting(true);
+    setSaveError(null);
 
     try {
-      const res = await fetch('/api/v1/study-sessions/record', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
+      await pendingSubmissionRef.current.send();
 
-      if (res.ok) {
-        setSaveSuccess('✓ Sessão de estudo e micro-telemetria gravadas com sucesso!');
-        setIsRunning(false);
-        setIsSaving(false);
-        setSeconds(0);
-        setPaginaInicio('');
-        setPaginaFim('');
-        setPaginasLidas(0);
-        setQuestoesFeitas(0);
-        setQuestoesAcertadas('');
-        setNotas('');
-        setNextSessionHandoff('');
-        if (onSessionSaved) onSessionSaved();
-        setTimeout(() => {
-          setSaveSuccess(null);
-          setIsOpen(false);
-        }, 1500);
-      } else {
-        setSaveSuccess('Erro ao registrar sessão.');
-        setTimeout(() => setSaveSuccess(null), 3000);
-      }
-    } catch {
-      setSaveSuccess('Falha de conexão com o servidor.');
-      setTimeout(() => setSaveSuccess(null), 3000);
+      // Confirmação válida recebida do backend (200 / 201)
+      setSaveSuccess('✓ Sessão de estudo e micro-telemetria gravadas com sucesso!');
+      pendingSubmissionRef.current = null;
+      setIsRunning(false);
+      setIsSaving(false);
+      setSeconds(0);
+      setPaginaInicio('');
+      setPaginaFim('');
+      setPaginasLidas(0);
+      setQuestoesFeitas(0);
+      setQuestoesAcertadas('');
+      setNotas('');
+      setNextSessionHandoff('');
+      setSessionId('study-' + crypto.randomUUID());
+      if (onSessionSaved) onSessionSaved();
+      setTimeout(() => {
+        setSaveSuccess(null);
+        setIsOpen(false);
+      }, 1500);
+    } catch (err: unknown) {
+      const isConflict = err instanceof StudySessionError ? err.isConflict : false;
+      const message = err instanceof Error ? err.message : 'Erro ao registrar sessão no servidor.';
+      setSaveError({
+        message,
+        isConflict,
+        retryable: !isConflict
+      });
+    } finally {
+      isSubmittingRef.current = false;
+      setIsSubmitting(false);
     }
   };
 
@@ -536,9 +568,52 @@ export const StudyTimerFab: React.FC<StudyTimerFabProps> = ({ activeConcurso, on
                     />
                   </div>
 
-                  <button className="timer-btn timer-btn-save" onClick={handleSaveSession}>
-                    Gravar na Linha do Tempo (Event Log)
+                  <button
+                    className="timer-btn timer-btn-save"
+                    onClick={handleSaveSession}
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? 'Gravando...' : 'Gravar na Linha do Tempo (Event Log)'}
                   </button>
+
+                  {saveError && (
+                    <div style={{
+                      marginTop: '10px',
+                      padding: '8px 12px',
+                      borderRadius: '8px',
+                      fontSize: '12px',
+                      background: 'rgba(245, 90, 90, 0.15)',
+                      color: '#f55a5a',
+                      border: '1px solid rgba(245, 90, 90, 0.3)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '6px'
+                    }}>
+                      <span>{saveError.message}</span>
+                      {saveError.retryable && (
+                        <button
+                          type="button"
+                          className="timer-btn timer-btn-save"
+                          onClick={handleSaveSession}
+                          disabled={isSubmitting}
+                          style={{ fontSize: '11px', padding: '4px 8px', alignSelf: 'flex-start' }}
+                        >
+                          {isSubmitting ? 'Reenviando...' : '🔄 Tentar Novamente'}
+                        </button>
+                      )}
+                      {saveError.isConflict && (
+                        <button
+                          type="button"
+                          className="timer-btn timer-btn-secondary"
+                          onClick={handleStartNewSession}
+                          disabled={isSubmitting}
+                          style={{ fontSize: '11px', padding: '4px 8px', alignSelf: 'flex-start' }}
+                        >
+                          Iniciar Nova Sessão (Novo ID)
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 
