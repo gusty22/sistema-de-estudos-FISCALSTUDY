@@ -656,3 +656,88 @@ test('FS-01A (Test E): Falha de storage (MEMORY_ONLY) emite warning claro e nao 
     globalThis.sessionStorage.setItem = origSetItem;
   }
 });
+
+test('FS-01A (Gate Final 1): Transição monotônica impede regressão de SENT_UNCONFIRMED para PREPARED em nova instância', async () => {
+  const sessionId = 'study-monotonic-gate-01';
+  const payload = { sessionId, disciplina: 'Direito Tributário', tempoSegundos: 1500 };
+
+  // 1. Criação da operação A
+  const subA = new StudySessionSubmission(payload, sessionId);
+  assert.equal(subA.lifecycleState, 'PREPARED');
+
+  // 2. Envio com resultado incerto (falha de rede)
+  globalThis.fetch = async () => { throw new Error('Network timeout'); };
+  await assert.rejects(subA.send());
+  assert.equal(subA.lifecycleState, 'SENT_UNCONFIRMED');
+
+  const journalAfterSend = readPendingJournalEntry(sessionId);
+  assert.ok(journalAfterSend);
+  assert.equal(journalAfterSend.lifecycleState, 'SENT_UNCONFIRMED');
+
+  // 3. Nova instância criada com mesmo ID e mesmo payload
+  const subDuplicate = new StudySessionSubmission(payload, sessionId);
+
+  // 4. Verificação de que o journal permanece SENT_UNCONFIRMED (não foi rebaixado para PREPARED)
+  const journalAfterDuplicate = readPendingJournalEntry(sessionId);
+  assert.ok(journalAfterDuplicate);
+  assert.equal(journalAfterDuplicate.lifecycleState, 'SENT_UNCONFIRMED', 'Journal NÃO pode ser rebaixado para PREPARED');
+  assert.equal(subDuplicate.lifecycleState, 'SENT_UNCONFIRMED');
+  assert.equal(subDuplicate.hasAttemptedSend, true);
+
+  // 5. Recuperação após reload com bloqueio de descarte silencioso
+  const recovered = StudySessionSubmission.fromJournal(sessionId);
+  assert.ok(recovered);
+  assert.equal(recovered.lifecycleState, 'SENT_UNCONFIRMED');
+
+  const decision = evaluateContinuationDecision(recovered, sessionId);
+  assert.equal(decision.canProceedSilently, false);
+  assert.equal(decision.requiresExplicitConfirmation, true);
+  assert.equal(decision.reason, 'SENT_UNCONFIRMED');
+
+  discardPendingSession(sessionId);
+});
+
+test('FS-01A (Gate Final 2): Impedir descarte silencioso de journal corrompido e diferenciar os 4 estados de journal', () => {
+  const prefix = 'fiscalstudy:study_session:v1:';
+
+  // 1. Journal comprovadamente inexistente
+  const decisionInexistent = evaluateContinuationDecision(null, 'session-totally-inexistent');
+  assert.equal(decisionInexistent.canProceedSilently, true);
+  assert.equal(decisionInexistent.requiresExplicitConfirmation, false);
+  assert.equal(decisionInexistent.reason, 'NOT_SENT');
+
+  // 2. Journal válido PREPARED
+  const sessionPrepared = 'session-gate-prepared';
+  savePendingSessionDetailed(sessionPrepared, JSON.stringify({ sessionId: sessionPrepared, tempo: 100 }), 'PREPARED');
+  const decisionPrepared = evaluateContinuationDecision(null, sessionPrepared);
+  assert.equal(decisionPrepared.canProceedSilently, true);
+  assert.equal(decisionPrepared.requiresExplicitConfirmation, false);
+  assert.equal(decisionPrepared.reason, 'NOT_SENT');
+  discardPendingSession(sessionPrepared);
+
+  // 3. Journal válido SENT_UNCONFIRMED
+  const sessionSent = 'session-gate-sent';
+  savePendingSessionDetailed(sessionSent, JSON.stringify({ sessionId: sessionSent, tempo: 100 }), 'SENT_UNCONFIRMED');
+  const decisionSent = evaluateContinuationDecision(null, sessionSent);
+  assert.equal(decisionSent.canProceedSilently, false);
+  assert.equal(decisionSent.requiresExplicitConfirmation, true);
+  assert.equal(decisionSent.reason, 'SENT_UNCONFIRMED');
+  discardPendingSession(sessionSent);
+
+  // 4. Journal existente, mas corrompido ou de estado desconhecido
+  const sessionCorrupted = 'session-gate-corrupted';
+  globalThis.sessionStorage.setItem(prefix + sessionCorrupted, '{"version":1,"sessionId":"corrupted",INVALID_JSON');
+  
+  const decisionCorrupted = evaluateContinuationDecision(null, sessionCorrupted);
+  assert.equal(decisionCorrupted.canProceedSilently, false, 'Journal corrompido NÃO pode autorizar continuação silenciosa');
+  assert.equal(decisionCorrupted.requiresExplicitConfirmation, true, 'Journal corrompido DEVE exigir confirmação explícita');
+  assert.equal(decisionCorrupted.reason, 'CORRUPTED_OR_UNKNOWN');
+  assert.match(decisionCorrupted.warningMessage, /Registro local existente está corrompido ou em formato inválido/i);
+
+  // Comprova que o registro corrompido permanece preservado no storage
+  assert.equal(globalThis.sessionStorage.getItem(prefix + sessionCorrupted), '{"version":1,"sessionId":"corrupted",INVALID_JSON');
+
+  // Descarte explícito consciente expurga
+  executeConsciousDiscard(sessionCorrupted);
+  assert.equal(globalThis.sessionStorage.getItem(prefix + sessionCorrupted), null);
+});
