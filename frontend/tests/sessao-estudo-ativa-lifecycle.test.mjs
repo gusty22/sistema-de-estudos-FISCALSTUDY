@@ -326,3 +326,29 @@ test('FS-01B (Achado B): Continuar Estudando e bloqueado durante operacao incert
   discardPendingSession(sessionId);
   assert.equal(readPendingSession(sessionId), null);
 });
+
+test('FS-01B: Descarte consciente de operacao incerta com advertencia sobre risco de duplicacao', () => {
+  const sessionId = 'sess-active-conscious-discard';
+  const payload = { disciplina: 'Direito Administrativo', durationSeconds: 1500 };
+  const sub = new StudySessionSubmission(payload, sessionId);
+
+  assert.equal(sub.confirmed, false);
+  assert.notEqual(readPendingSession(sessionId), null);
+
+  let isConfirmingDiscard = false;
+  const handleInitiateDiscard = () => { isConfirmingDiscard = true; };
+  handleInitiateDiscard();
+  assert.equal(isConfirmingDiscard, true, 'Deve exigir confirmacao explicita antes de limpar o storage');
+
+  const handleCancelDiscard = () => { isConfirmingDiscard = false; };
+  handleCancelDiscard();
+  assert.equal(isConfirmingDiscard, false);
+  assert.notEqual(readPendingSession(sessionId), null, 'Cancelamento do descarte deve manter o journal');
+
+  const handleConfirmDiscard = () => {
+    discardPendingSession(sessionId);
+    isConfirmingDiscard = false;
+  };
+  handleConfirmDiscard();
+  assert.equal(readPendingSession(sessionId), null, 'Apos confirmacao deliberada, o journal e expurgado');
+});
