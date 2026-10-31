@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import type { ConcursoItem } from '../concursos/MeusConcursos';
 import './StudyTimerFab.css';
 import { cachedStudyPreferences } from '../../utils/studyPreferences';
+import { StudySessionSubmission, StudySessionError, discardPendingSession } from '../../utils/studySessionSubmission';
 
 interface StudyTimerFabProps {
   activeConcurso: ConcursoItem | null;
@@ -13,6 +14,58 @@ export const StudyTimerFab: React.FC<StudyTimerFabProps> = ({ activeConcurso, on
   const [mode, setMode] = useState<'CRONOMETRO' | 'POMODORO'>('CRONOMETRO');
   const [isRunning, setIsRunning] = useState(false);
   const [seconds, setSeconds] = useState(0);
+
+  // Identidade de sessão estável para idempotência e recuperação (sessionStorage)
+  const [sessionId, setSessionId] = useState<string>(() => {
+    try {
+      const stored = sessionStorage.getItem('fiscalstudy_timer_session_id');
+      if (stored) return stored;
+      const generated = 'study-' + crypto.randomUUID();
+      sessionStorage.setItem('fiscalstudy_timer_session_id', generated);
+      return generated;
+    } catch {
+      return 'study-' + crypto.randomUUID();
+    }
+  });
+  const pendingSubmissionRef = useRef<StudySessionSubmission | null>(null);
+  const isSubmittingRef = useRef<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [saveError, setSaveError] = useState<{ message: string; isConflict: boolean; retryable: boolean } | null>(null);
+  const [pendingRecoveryNotice, setPendingRecoveryNotice] = useState<string | null>(null);
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState<boolean>(false);
+  const [storageWarningNotice, setStorageWarningNotice] = useState<string | null>(null);
+
+  // Recuperação real após reload (Achado C): restaura o payload exato sem reconstruir dados a partir de formulário modificado
+  useEffect(() => {
+    try {
+      const recovered = StudySessionSubmission.fromJournal(sessionId);
+      if (recovered) {
+        pendingSubmissionRef.current = recovered;
+        if (!recovered.isDurable && recovered.storageWarning) {
+          setStorageWarningNotice(recovered.storageWarning);
+        }
+        const p = recovered.payload as any;
+        if (p.disciplina) setSelectedDisciplina(p.disciplina);
+        if (typeof p.durationSeconds === 'number' && seconds === 0) setSeconds(p.durationSeconds);
+        if (p.nextSessionHandoff) setNextSessionHandoff(p.nextSessionHandoff);
+        if (p.notas) setNotas(p.notas);
+        if (p.activityType) setActivityType(p.activityType);
+        if (p.topicoId) setSelectedTopicoId(p.topicoId);
+        if (p.materialId) setSelectedMaterialId(p.materialId);
+        if (p.paginaInicio !== undefined) setPaginaInicio(p.paginaInicio);
+        if (p.paginaFim !== undefined) setPaginaFim(p.paginaFim);
+        if (p.paginasLidas !== undefined) setPaginasLidas(p.paginasLidas);
+        if (p.questoesFeitas !== undefined) setQuestoesFeitas(p.questoesFeitas);
+        if (p.questoesAcertadas !== undefined && p.questoesAcertadas !== null) setQuestoesAcertadas(p.questoesAcertadas);
+        setPendingRecoveryNotice(
+          'Operação anterior recuperada do armazenamento local da aba. Reconcilie o envio para garantir idempotência ou descarte explicitamente antes de iniciar nova sessão.'
+        );
+        setIsSaving(true);
+      }
+    } catch {
+      // Degradação segura
+    }
+  }, [sessionId]);
 
   // Pomodoro settings
   const [pomoPreset, setPomoPreset] = useState<number>(() => cachedStudyPreferences().sessionMinutes);
@@ -117,7 +170,36 @@ export const StudyTimerFab: React.FC<StudyTimerFabProps> = ({ activeConcurso, on
     setIsRunning(false);
   };
 
+  const handleInitiateDiscard = () => {
+    if (isSubmitting) return;
+    setShowDiscardConfirm(true);
+  };
+
+  const handleConfirmDiscard = () => {
+    if (isSubmitting) return;
+    discardPendingSession(sessionId);
+    pendingSubmissionRef.current = null;
+    setSaveError(null);
+    setPendingRecoveryNotice(null);
+    setShowDiscardConfirm(false);
+    setStorageWarningNotice(null);
+    const newId = 'study-' + crypto.randomUUID();
+    setSessionId(newId);
+    try {
+      sessionStorage.setItem('fiscalstudy_timer_session_id', newId);
+    } catch {}
+  };
+
+  const handleCancelDiscard = () => {
+    setShowDiscardConfirm(false);
+  };
+
   const handleReset = () => {
+    if (isSubmitting) return;
+    // Impede reset durante operação incerta (Achado B): exige reconciliação ou descarte explícito
+    if (pendingSubmissionRef.current && !pendingSubmissionRef.current.confirmed && (saveError?.retryable || pendingRecoveryNotice)) {
+      return;
+    }
     setIsRunning(false);
     if (mode === 'POMODORO') {
       setSeconds(pomoPreset * 60);
@@ -126,6 +208,15 @@ export const StudyTimerFab: React.FC<StudyTimerFabProps> = ({ activeConcurso, on
       setSeconds(0);
     }
     setIsSaving(false);
+    pendingSubmissionRef.current = null;
+    setSaveError(null);
+    setSaveSuccess(null);
+    setPendingRecoveryNotice(null);
+    const newId = 'study-' + crypto.randomUUID();
+    setSessionId(newId);
+    try {
+      sessionStorage.setItem('fiscalstudy_timer_session_id', newId);
+    } catch {}
   };
 
   const handleSwitchMode = (newMode: 'CRONOMETRO' | 'POMODORO') => {
@@ -160,6 +251,9 @@ export const StudyTimerFab: React.FC<StudyTimerFabProps> = ({ activeConcurso, on
   };
 
   const handleSaveSession = async () => {
+    // Barreira síncrona contra clique duplo / requisições concorrentes
+    if (isSubmittingRef.current) return;
+
     const duration = mode === 'POMODORO'
       ? (isBreak ? 0 : pomoPreset * 60 - seconds)
       : seconds;
@@ -170,55 +264,70 @@ export const StudyTimerFab: React.FC<StudyTimerFabProps> = ({ activeConcurso, on
       return;
     }
 
-    const payload = {
-      sessionId: `study-${Date.now()}`,
-      concursoId: activeConcurso?.id || null,
-      disciplina: selectedDisciplina || 'Geral',
-      topicoId: selectedTopicoId || null,
-      materialId: selectedMaterialId || null,
-      durationSeconds: Math.max(0, duration),
-      paginaInicio: paginaInicio !== '' ? Number(paginaInicio) : null,
-      paginaFim: paginaFim !== '' ? Number(paginaFim) : null,
-      paginasLidas: Number(paginasLidas) || 0,
-      questoesFeitas: Number(questoesFeitas) || 0,
-      questoesAcertadas: questoesAcertadas !== '' ? Number(questoesAcertadas) : null,
-      modo: mode,
-      activityType: activityType,
-      nextSessionHandoff: nextSessionHandoff.trim() || null,
-      notas: notas || null
-    };
+    // Se ainda não há submissão congelada criada para esta sessão, prepara a submissão imutável
+    if (!pendingSubmissionRef.current) {
+      const payload = {
+        sessionId,
+        concursoId: activeConcurso?.id || null,
+        disciplina: selectedDisciplina || 'Geral',
+        topicoId: selectedTopicoId || null,
+        materialId: selectedMaterialId || null,
+        durationSeconds: Math.max(0, duration),
+        paginaInicio: paginaInicio !== '' ? Number(paginaInicio) : null,
+        paginaFim: paginaFim !== '' ? Number(paginaFim) : null,
+        paginasLidas: Number(paginasLidas) || 0,
+        questoesFeitas: Number(questoesFeitas) || 0,
+        questoesAcertadas: questoesAcertadas !== '' ? Number(questoesAcertadas) : null,
+        modo: mode,
+        activityType: activityType,
+        nextSessionHandoff: nextSessionHandoff.trim() || null,
+        notas: notas || null
+      };
+      pendingSubmissionRef.current = new StudySessionSubmission(payload, sessionId);
+    }
+
+    isSubmittingRef.current = true;
+    setIsSubmitting(true);
+    setSaveError(null);
 
     try {
-      const res = await fetch('/api/v1/study-sessions/record', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
+      await pendingSubmissionRef.current.send();
 
-      if (res.ok) {
-        setSaveSuccess('✓ Sessão de estudo e micro-telemetria gravadas com sucesso!');
-        setIsRunning(false);
-        setIsSaving(false);
-        setSeconds(0);
-        setPaginaInicio('');
-        setPaginaFim('');
-        setPaginasLidas(0);
-        setQuestoesFeitas(0);
-        setQuestoesAcertadas('');
-        setNotas('');
-        setNextSessionHandoff('');
-        if (onSessionSaved) onSessionSaved();
-        setTimeout(() => {
-          setSaveSuccess(null);
-          setIsOpen(false);
-        }, 1500);
-      } else {
-        setSaveSuccess('Erro ao registrar sessão.');
-        setTimeout(() => setSaveSuccess(null), 3000);
-      }
-    } catch {
-      setSaveSuccess('Falha de conexão com o servidor.');
-      setTimeout(() => setSaveSuccess(null), 3000);
+      // Confirmação válida recebida do backend (200 / 201)
+      setSaveSuccess('✓ Sessão de estudo e micro-telemetria gravadas com sucesso!');
+      pendingSubmissionRef.current = null;
+      setIsRunning(false);
+      setIsSaving(false);
+      setSeconds(0);
+      setPaginaInicio('');
+      setPaginaFim('');
+      setPaginasLidas(0);
+      setQuestoesFeitas(0);
+      setQuestoesAcertadas('');
+      setNotas('');
+      setNextSessionHandoff('');
+      setPendingRecoveryNotice(null);
+      const newId = 'study-' + crypto.randomUUID();
+      setSessionId(newId);
+      try {
+        sessionStorage.setItem('fiscalstudy_timer_session_id', newId);
+      } catch {}
+      if (onSessionSaved) onSessionSaved();
+      setTimeout(() => {
+        setSaveSuccess(null);
+        setIsOpen(false);
+      }, 1500);
+    } catch (err: unknown) {
+      const isConflict = err instanceof StudySessionError ? err.isConflict : false;
+      const message = err instanceof Error ? err.message : 'Erro ao registrar sessão no servidor.';
+      setSaveError({
+        message,
+        isConflict,
+        retryable: !isConflict
+      });
+    } finally {
+      isSubmittingRef.current = false;
+      setIsSubmitting(false);
     }
   };
 
@@ -349,7 +458,11 @@ export const StudyTimerFab: React.FC<StudyTimerFabProps> = ({ activeConcurso, on
                     ⏸ Pausar
                   </button>
                 )}
-                <button className="timer-btn timer-btn-secondary" onClick={handleReset}>
+                <button
+                  className="timer-btn timer-btn-secondary"
+                  onClick={handleReset}
+                  disabled={isSubmitting || !!(pendingSubmissionRef.current && !pendingSubmissionRef.current.confirmed && (saveError?.retryable || pendingRecoveryNotice))}
+                >
                   ↺ Reset
                 </button>
                 <button
@@ -536,13 +649,147 @@ export const StudyTimerFab: React.FC<StudyTimerFabProps> = ({ activeConcurso, on
                     />
                   </div>
 
-                  <button className="timer-btn timer-btn-save" onClick={handleSaveSession}>
-                    Gravar na Linha do Tempo (Event Log)
+                  <button
+                    className="timer-btn timer-btn-save"
+                    onClick={handleSaveSession}
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? 'Gravando...' : 'Gravar na Linha do Tempo (Event Log)'}
                   </button>
+
+                  {pendingRecoveryNotice && !saveError && (
+                    <div style={{
+                      marginTop: '10px',
+                      padding: '8px 12px',
+                      borderRadius: '8px',
+                      fontSize: '12px',
+                      background: 'rgba(56, 189, 248, 0.15)',
+                      color: '#38bdf8',
+                      border: '1px solid rgba(56, 189, 248, 0.3)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '6px'
+                    }}>
+                      <span>ℹ️ {pendingRecoveryNotice}</span>
+                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                        <button
+                          type="button"
+                          className="timer-btn timer-btn-save"
+                          onClick={handleSaveSession}
+                          disabled={isSubmitting}
+                          style={{ fontSize: '11px', padding: '4px 8px' }}
+                        >
+                          {isSubmitting ? 'Reenviando...' : '🔄 Reconciliar Envio'}
+                        </button>
+                        <button
+                          type="button"
+                          className="timer-btn timer-btn-secondary"
+                          onClick={handleInitiateDiscard}
+                          disabled={isSubmitting}
+                          style={{ fontSize: '11px', padding: '4px 8px' }}
+                        >
+                          Descartar Operação Incerta
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {saveError && (
+                    <div style={{
+                      marginTop: '10px',
+                      padding: '8px 12px',
+                      borderRadius: '8px',
+                      fontSize: '12px',
+                      background: 'rgba(245, 90, 90, 0.15)',
+                      color: '#f55a5a',
+                      border: '1px solid rgba(245, 90, 90, 0.3)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '6px'
+                    }}>
+                      <span>{saveError.message}</span>
+                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                        {saveError.retryable && (
+                          <button
+                            type="button"
+                            className="timer-btn timer-btn-save"
+                            onClick={handleSaveSession}
+                            disabled={isSubmitting}
+                            style={{ fontSize: '11px', padding: '4px 8px' }}
+                          >
+                            {isSubmitting ? 'Reenviando...' : '🔄 Tentar Novamente (Reconciliar)'}
+                          </button>
+                        )}
+                        {(saveError.retryable || saveError.isConflict) && (
+                          <button
+                            type="button"
+                            className="timer-btn timer-btn-secondary"
+                            onClick={handleInitiateDiscard}
+                            disabled={isSubmitting}
+                            style={{ fontSize: '11px', padding: '4px 8px' }}
+                          >
+                            {saveError.isConflict ? 'Descartar Conflito e Iniciar Nova' : '⚠️ Descartar Operação Incerta'}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
-              {saveSuccess && (
+              
+                  {showDiscardConfirm && (
+                    <div style={{
+                      marginTop: '8px',
+                      padding: '8px 10px',
+                      borderRadius: '6px',
+                      fontSize: '11px',
+                      background: 'rgba(239, 68, 68, 0.2)',
+                      border: '1px solid rgba(239, 68, 68, 0.4)',
+                      color: '#fca5a5',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '6px'
+                    }}>
+                      <span>⚠️ <strong>Atenção Crítica:</strong> O servidor pode já ter registrado esta operação caso a resposta tenha sido perdida após a gravação. Descartar a pendência localmente NÃO desfaz gravações no banco de dados e iniciar uma nova sessão não impede duplicidade caso o envio anterior tenha sido concluído no servidor. Deseja realmente descartar a pendência local?</span>
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <button
+                          type="button"
+                          className="timer-btn"
+                          onClick={handleConfirmDiscard}
+                          disabled={isSubmitting}
+                          style={{ background: '#dc2626', color: '#fff', fontSize: '11px', padding: '3px 8px' }}
+                        >
+                          Confirmar Descarte
+                        </button>
+                        <button
+                          type="button"
+                          className="timer-btn timer-btn-secondary"
+                          onClick={handleCancelDiscard}
+                          disabled={isSubmitting}
+                          style={{ fontSize: '11px', padding: '3px 8px' }}
+                        >
+                          Cancelar e Reconciliar
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {storageWarningNotice && !showDiscardConfirm && (
+                    <div style={{
+                      marginTop: '8px',
+                      padding: '6px 10px',
+                      borderRadius: '6px',
+                      fontSize: '11px',
+                      background: 'rgba(234, 179, 8, 0.15)',
+                      border: '1px solid rgba(234, 179, 8, 0.3)',
+                      color: '#eab308'
+                    }}>
+                      ⚠️ {storageWarningNotice}
+                    </div>
+                  )}
+
+                  {saveSuccess && (
                 <div style={{
                   padding: '8px 12px',
                   borderRadius: '8px',
