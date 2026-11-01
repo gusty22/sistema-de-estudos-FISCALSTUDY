@@ -619,3 +619,141 @@ body.theme-dark .dashboard-calm-wrapper,
   from { opacity: 0; transform: translateY(-4px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* ==========================================================================
+   CARD DE RETOMADA COGNITIVA ("ONDE VOCÊ PAROU" - FS-02B)
+   Discreto, acolhedor e integrador, sem ruído visual excessivo.
+   ========================================================================== */
+.calm-resumption-card {
+  background: var(--calm-card-bg);
+  border: 1px solid var(--calm-card-border);
+  border-radius: 1.25rem;
+  padding: 1.25rem 1.5rem;
+  box-shadow: var(--calm-card-shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  animation: calmFadeIn 0.3s ease-out;
+  position: relative;
+  overflow: hidden;
+}
+
+.calm-resumption-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(180deg, #6366f1 0%, #a855f7 100%);
+  border-top-left-radius: 1.25rem;
+  border-bottom-left-radius: 1.25rem;
+}
+
+.calm-resumption-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.calm-resumption-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--calm-primary);
+  margin: 0;
+}
+
+.calm-resumption-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.2rem 0.55rem;
+  border-radius: 9999px;
+  background-color: rgba(99, 102, 241, 0.12);
+  color: var(--calm-primary);
+}
+
+.calm-resumption-quote {
+  font-size: 0.92rem;
+  font-style: italic;
+  line-height: 1.5;
+  color: var(--calm-text);
+  margin: 0;
+  padding: 0.65rem 1rem;
+  border-left: 3px solid rgba(99, 102, 241, 0.4);
+  background-color: var(--calm-subtle-bg);
+  border-radius: 0 0.5rem 0.5rem 0;
+}
+
+.calm-resumption-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.calm-resumption-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.25rem 0.65rem;
+  border-radius: 0.5rem;
+  background-color: var(--calm-subtle-bg);
+  color: var(--calm-subtle-text);
+  border: 1px solid var(--calm-border);
+}
+
+.calm-resumption-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding-top: 0.25rem;
+}
+
+.calm-resumption-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1.15rem;
+  border-radius: 0.65rem;
+  background: var(--calm-primary);
+  color: #ffffff;
+  border: none;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px var(--calm-primary-shadow);
+}
+
+.calm-resumption-btn:hover {
+  background: var(--calm-primary-hover);
+  transform: translateY(-1px);
+}
+
+.calm-resumption-btn:active {
+  transform: translateY(0);
+}
+
+.calm-resumption-warning {
+  padding: 0.6rem 0.85rem;
+  border-radius: 0.5rem;
+  background-color: rgba(244, 63, 94, 0.08);
+  border: 1px solid rgba(244, 63, 94, 0.25);
+  color: #f43f5e;
+  font-size: 0.78rem;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+

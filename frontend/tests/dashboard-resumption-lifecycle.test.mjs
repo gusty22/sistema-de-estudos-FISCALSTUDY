@@ -361,4 +361,99 @@ describe('FS-02C: Confiabilidade da Fila e Diferenciação de Cold Start', () =>
     assert.equal(getDashboardUIState({ hasActiveConcurso: true, isLoading: false, loadError: null, editaisCount: 0, topicsCount: 0, queueActivitiesCount: 0 }), 'NO_EDITAL');
     assert.equal(getDashboardUIState({ hasActiveConcurso: true, isLoading: false, loadError: null, editaisCount: 1, topicsCount: 0, queueActivitiesCount: 0 }), 'NO_TOPICS_IN_EDITAL');
   });
+
+  test('T16: Ambas as fontes (agenda e ciclo) indisponíveis com fila vazia resultam em PARTIAL_UNAVAILABLE', () => {
+    const state = getDashboardUIState({
+      hasActiveConcurso: true,
+      isLoading: false,
+      loadError: null,
+      editaisCount: 1,
+      topicsCount: 20,
+      queueActivitiesCount: 0,
+      isAgendaUnavailable: true,
+      isCycleUnavailable: true
+    });
+    assert.equal(state, 'PARTIAL_UNAVAILABLE');
+  });
+
+  test('T17: Preservação de reflexões multilinhas e caracteres especiais no handoff', () => {
+    const complexNotes = '“Parar no art. 150, VI, «c» da CF/88 — revisar jurisprudência do STF sobre IPTU vs Templos!”\nLinha 2 com matemática: α + β ≤ γ';
+    const sessions = [
+      {
+        sessionId: 'sess-complex',
+        concursoId: 'conc-rfb',
+        disciplina: 'Direito Tributário',
+        topicoId: 'Imunidades',
+        nextSessionHandoff: complexNotes,
+        occurredAt: '2026-10-31T20:00:00Z'
+      }
+    ];
+
+    const handoff = extractLatestEligibleHandoff(sessions, 'conc-rfb');
+    assert.ok(handoff);
+    assert.equal(handoff.nextSessionHandoff, complexNotes);
+
+    const prep = prepareHandoffResumptionPayload(handoff);
+    assert.equal(prep.safe, true);
+    assert.equal(prep.sessionStorageItems.fiscalstudy_session_objective, complexNotes);
+  });
+
+  test('T18: Retomada guiada define fiscalstudy_session_type como ESTUDO_ORIENTADO e mode: RESUMPTION', () => {
+    const handoff = {
+      sessionId: 'sess-any',
+      concursoId: 'conc-1',
+      disciplina: 'Contabilidade Geral',
+      topicoId: 'DRE',
+      nextSessionHandoff: 'Revisar estrutura da DRE segundo a Lei 6.404/76',
+      occurredAt: '2026-10-31T21:00:00Z',
+      isFromLatestSession: true
+    };
+
+    const result = prepareHandoffResumptionPayload(handoff);
+    assert.equal(result.safe, true);
+    assert.equal(result.sessionStorageItems.fiscalstudy_session_type, 'ESTUDO_ORIENTADO');
+    assert.equal(result.navigationParams.mode, 'RESUMPTION');
+    assert.equal(result.navigationParams.disciplina, 'Contabilidade Geral');
+    assert.equal(result.navigationParams.assunto, 'DRE');
+  });
+
+  test('T19: prepareHandoffResumptionPayload com safety ativo e sessão sem pendências retorna safe: true', () => {
+    const cleanSessionId = 'sess-limpa-' + crypto.randomUUID();
+    const handoff = {
+      sessionId: 'sess-old',
+      concursoId: 'conc-1',
+      disciplina: 'Economia',
+      nextSessionHandoff: 'Microeconomia: curvas de indiferença',
+      occurredAt: '2026-10-31T15:00:00Z',
+      isFromLatestSession: true
+    };
+
+    const result = prepareHandoffResumptionPayload(handoff, {
+      checkSafety: true,
+      existingActiveSessionId: cleanSessionId
+    });
+
+    assert.equal(result.safe, true);
+    assert.ok(result.newSessionId);
+    assert.ok(result.sessionStorageItems.fiscalstudy_active_session_id);
+  });
+
+  test('T20: extractLatestEligibleHandoff com dados heterogêneos e elementos nulos não lança exceção', () => {
+    const sessions = [
+      null,
+      undefined,
+      42,
+      'string-invalida',
+      {},
+      { concursoId: null },
+      { concursoId: 'conc-1', occurredAt: 'invalido' },
+      { concursoId: 'conc-1', nextSessionHandoff: '', occurredAt: '2026-10-31T10:00:00Z' },
+      { concursoId: 'conc-1', nextSessionHandoff: 'Handoff sobrevivente', occurredAt: '2026-10-31T12:00:00Z', disciplina: 'AFO' }
+    ];
+
+    const handoff = extractLatestEligibleHandoff(sessions, 'conc-1');
+    assert.ok(handoff);
+    assert.equal(handoff.disciplina, 'AFO');
+    assert.equal(handoff.nextSessionHandoff, 'Handoff sobrevivente');
+  });
 });

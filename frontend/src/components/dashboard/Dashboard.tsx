@@ -14,7 +14,8 @@ import {
   History,
   Layers,
   CalendarDays,
-  Zap
+  Zap,
+  Bookmark
 } from 'lucide-react';
 import { useSimplifiedMode } from '../../context/SimplifiedModeContext';
 import {
@@ -23,8 +24,12 @@ import {
   getCurrentActivity,
   getNextQueueIndex,
   prepareSessionPayload,
+  extractLatestEligibleHandoff,
+  prepareHandoffResumptionPayload,
   type QueueActivity,
-  type DashboardUIState
+  type DashboardUIState,
+  type StudySessionRecord,
+  type EligibleHandoff
 } from './dashboardLogic';
 import './Dashboard.css';
 
@@ -140,6 +145,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
   // Estados de Carregamento e Comunicação
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [isAgendaUnavailable, setIsAgendaUnavailable] = useState(false);
+  const [isCycleUnavailable, setIsCycleUnavailable] = useState(false);
+  const [studySessions, setStudySessions] = useState<StudySessionRecord[]>([]);
+  const [resumptionSafetyWarning, setResumptionSafetyWarning] = useState<string | null>(null);
 
   // Carregar dados reais da API com tratamento explícito de erros
   const loadDashboardData = useCallback(() => {
@@ -149,6 +158,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
       setRevisionAgenda(null);
       setRobinHoodCycle(null);
       setAnomalyReport(null);
+      setStudySessions([]);
+      setIsAgendaUnavailable(false);
+      setIsCycleUnavailable(false);
+      setResumptionSafetyWarning(null);
       setIsLoading(false);
       setLoadError(null);
       return;
@@ -156,6 +169,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
     setIsLoading(true);
     setLoadError(null);
+    setIsAgendaUnavailable(false);
+    setIsCycleUnavailable(false);
+    setResumptionSafetyWarning(null);
 
     // 1. Tópicos do Edital Verticalizado (Endpoint Canônico)
     const editalPromise = fetch(`/api/v1/concursos/${encodeURIComponent(activeConcurso.id)}/edital`)
@@ -176,16 +192,42 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
     // 2. Agenda de Revisões Adaptativas
     const agendaPromise = fetch(`/api/v1/revisoes/agenda?concursoId=${encodeURIComponent(activeConcurso.id)}`)
-      .then((res) => (res.ok ? res.json() : null))
+      .then(async (res) => {
+        if (!res.ok) {
+          throw new Error(`Falha HTTP ${res.status} ao carregar agenda de revisões.`);
+        }
+        return res.json();
+      })
       .then((data) => {
-        if (data) setRevisionAgenda(data);
+        if (data) {
+          setRevisionAgenda(data);
+          setIsAgendaUnavailable(false);
+        }
+      })
+      .catch((err) => {
+        console.warn('Agenda de revisões indisponível:', err);
+        setRevisionAgenda(null);
+        setIsAgendaUnavailable(true);
       });
 
     // 3. Ciclo Robin Hood
     const cyclePromise = fetch(`/api/v1/cycle/robin-hood?concursoId=${encodeURIComponent(activeConcurso.id)}`)
-      .then((res) => (res.ok ? res.json() : null))
+      .then(async (res) => {
+        if (!res.ok) {
+          throw new Error(`Falha HTTP ${res.status} ao carregar ciclo Robin Hood.`);
+        }
+        return res.json();
+      })
       .then((data) => {
-        if (data) setRobinHoodCycle(data);
+        if (data) {
+          setRobinHoodCycle(data);
+          setIsCycleUnavailable(false);
+        }
+      })
+      .catch((err) => {
+        console.warn('Ciclo de estudos indisponível:', err);
+        setRobinHoodCycle(null);
+        setIsCycleUnavailable(true);
       });
 
     // 4. Auditoria Automática de Anomalias de Estudo
@@ -243,7 +285,22 @@ export const Dashboard: React.FC<DashboardProps> = ({
         }
       });
 
-    Promise.allSettled([editalPromise, agendaPromise, cyclePromise, anomaliesPromise, summaryPromise, routinePromise, ankiPromise])
+    // 8. Sessões Recentes para Retomada Cognitiva (FS-02A)
+    const sessionsPromise = fetch(`/api/v1/study-sessions?concursoId=${encodeURIComponent(activeConcurso.id)}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setStudySessions(data);
+        } else {
+          setStudySessions([]);
+        }
+      })
+      .catch((err) => {
+        console.warn('Sessões de estudo indisponíveis:', err);
+        setStudySessions([]);
+      });
+
+    Promise.allSettled([editalPromise, agendaPromise, cyclePromise, anomaliesPromise, summaryPromise, routinePromise, ankiPromise, sessionsPromise])
       .then((results) => {
         const editalResult = results[0];
         if (editalResult.status === 'rejected') {
@@ -265,6 +322,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
     return computeQueueActivities(revisionAgenda, robinHoodCycle);
   }, [revisionAgenda, robinHoodCycle]);
 
+  // Handoff elegível da última sessão válida (FS-02A)
+  const eligibleHandoff: EligibleHandoff | null = useMemo(() => {
+    return extractLatestEligibleHandoff(studySessions, activeConcurso?.id);
+  }, [studySessions, activeConcurso?.id]);
+
   // Estado Explícito da Interface do Dashboard
   const dashboardState: DashboardUIState = useMemo(() => {
     return getDashboardUIState({
@@ -273,9 +335,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
       loadError,
       editaisCount,
       topicsCount: topics.length,
-      queueActivitiesCount: queueActivities.length
+      queueActivitiesCount: queueActivities.length,
+      isAgendaUnavailable,
+      isCycleUnavailable
     });
-  }, [activeConcurso, isLoading, loadError, editaisCount, topics.length, queueActivities.length]);
+  }, [activeConcurso, isLoading, loadError, editaisCount, topics.length, queueActivities.length, isAgendaUnavailable, isCycleUnavailable]);
 
   // Atividade atual em destaque (Hero) — com guarda segura contra NaN e array vazio
   const currentActivity: QueueActivity | undefined = useMemo(() => {
@@ -295,6 +359,35 @@ export const Dashboard: React.FC<DashboardProps> = ({
     }
 
     onNavigateToTab('session', payload.navigationParams);
+  };
+
+  // Disparar retomada guiada a partir do Handoff (FS-02B)
+  const handleResumptionClick = () => {
+    if (!eligibleHandoff) return;
+
+    const existingActiveSessionId =
+      sessionStorage.getItem('fiscalstudy_active_session_id') ||
+      sessionStorage.getItem('fiscalstudy_timer_session_id');
+
+    const result = prepareHandoffResumptionPayload(eligibleHandoff, {
+      checkSafety: true,
+      existingActiveSessionId
+    });
+
+    if (!result.safe) {
+      setResumptionSafetyWarning(result.warning || 'Ação bloqueada por segurança de sessão pendente.');
+      return;
+    }
+
+    setResumptionSafetyWarning(null);
+
+    if (result.sessionStorageItems) {
+      for (const [key, value] of Object.entries(result.sessionStorageItems)) {
+        sessionStorage.setItem(key, value);
+      }
+    }
+
+    onNavigateToTab('session', result.navigationParams);
   };
 
   // Ajustes Rápidos
@@ -571,6 +664,125 @@ export const Dashboard: React.FC<DashboardProps> = ({
         )}
 
         {/* ==================================================================
+            1.5. CARD DE RETOMADA COGNITIVA ("ONDE VOCÊ PAROU" - FS-02B)
+            Discreto, acolhedor e seguro contra journals pendentes da FS-01
+            ================================================================== */}
+        {eligibleHandoff && (
+          <section className="calm-resumption-card" aria-label="Onde você parou" data-testid="calm-resumption-card">
+            <div className="calm-resumption-header">
+              <div className="calm-resumption-title">
+                <Bookmark className="w-4 h-4 text-indigo-500" />
+                <span>Onde você parou</span>
+              </div>
+              {eligibleHandoff.isFromLatestSession && (
+                <span className="calm-resumption-badge">
+                  Última sessão confirmada
+                </span>
+              )}
+            </div>
+
+            <blockquote className="calm-resumption-quote">
+              “{eligibleHandoff.nextSessionHandoff}”
+            </blockquote>
+
+            <div className="calm-resumption-meta">
+              <span className="calm-resumption-pill" title="Disciplina da sessão anterior">
+                <Layers className="w-3.5 h-3.5 text-indigo-500" />
+                <span>{eligibleHandoff.disciplina}</span>
+              </span>
+              {eligibleHandoff.topicoId && (
+                <span className="calm-resumption-pill" title="Tópico da sessão anterior">
+                  <BookOpen className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>{eligibleHandoff.topicoId}</span>
+                </span>
+              )}
+              {eligibleHandoff.occurredAt && (
+                <span className="calm-resumption-pill" title="Momento da sessão anterior">
+                  <Clock className="w-3.5 h-3.5 text-stone-400" />
+                  <span>
+                    {new Date(eligibleHandoff.occurredAt).toLocaleDateString('pt-BR', {
+                      day: '2-digit',
+                      month: '2-digit',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </span>
+                </span>
+              )}
+            </div>
+
+            {resumptionSafetyWarning && (
+              <div className="calm-resumption-warning" role="alert" data-testid="resumption-safety-warning">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                <span>{resumptionSafetyWarning}</span>
+              </div>
+            )}
+
+            <div className="calm-resumption-footer">
+              <button
+                type="button"
+                onClick={handleResumptionClick}
+                className="calm-resumption-btn"
+                data-testid="resumption-continue-btn"
+              >
+                <Play className="w-3.5 h-3.5 fill-current" />
+                <span>Continuar este assunto</span>
+              </button>
+            </div>
+          </section>
+        )}
+
+        {/* Banner de indisponibilidade parcial na fila ativa (FS-02C) */}
+        {dashboardState === 'HAS_ACTIVITIES' && (isAgendaUnavailable || isCycleUnavailable) && (
+          <div
+            className="calm-partial-warning-banner"
+            role="status"
+            style={{
+              padding: '0.75rem 1.25rem',
+              borderRadius: '0.75rem',
+              background: 'rgba(234, 179, 8, 0.08)',
+              border: '1px solid rgba(234, 179, 8, 0.25)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '0.75rem',
+              fontSize: '0.82rem',
+              color: 'var(--calm-text)'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
+              <span>
+                {isAgendaUnavailable && isCycleUnavailable
+                  ? 'Fila de atividades exibida com limitações: agenda e ciclo temporariamente inacessíveis.'
+                  : isAgendaUnavailable
+                    ? 'Agenda de revisões temporariamente indisponível. Exibindo atividades disponíveis do ciclo.'
+                    : 'Ciclo de estudos temporariamente indisponível. Exibindo revisões prioritárias da agenda.'}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={loadDashboardData}
+              style={{
+                background: 'transparent',
+                border: '1px solid rgba(234, 179, 8, 0.4)',
+                borderRadius: '0.375rem',
+                padding: '0.25rem 0.6rem',
+                fontSize: '0.75rem',
+                cursor: 'pointer',
+                color: 'inherit',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.3rem'
+              }}
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              Recarregar
+            </button>
+          </div>
+        )}
+
+        {/* ==================================================================
             2. HERO CARD: ESTADOS EXPLÍCITOS DA APLICAÇÃO (SEM FICTÍCIOS)
             ================================================================== */}
         {dashboardState === 'LOADING' && (
@@ -799,6 +1011,61 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 >
                   <Play className="w-4 h-4" />
                   Praticar Questões do Banco
+                </button>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {dashboardState === 'PARTIAL_UNAVAILABLE' && (
+          <section className="calm-hero-card" data-testid="dashboard-partial-unavailable" style={{ padding: '2.5rem 1.5rem', textAlign: 'center', border: '1px solid rgba(234, 179, 8, 0.3)', background: 'rgba(234, 179, 8, 0.04)' }}>
+            <div style={{ maxWidth: '520px', margin: '0 auto' }}>
+              <div style={{
+                width: '3.5rem',
+                height: '3.5rem',
+                borderRadius: '9999px',
+                backgroundColor: 'rgba(234, 179, 8, 0.12)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 1rem auto'
+              }}>
+                <AlertTriangle className="w-6 h-6 text-amber-500" />
+              </div>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--calm-text)', margin: '0 0 0.5rem 0' }}>
+                Atividades Temporariamente Indisponíveis
+              </h3>
+              <p style={{ fontSize: '0.88rem', color: 'var(--calm-text-muted)', lineHeight: 1.5, margin: '0 0 1.5rem 0' }}>
+                Não foi possível carregar sua agenda adaptativa ou ciclo de estudos devido a uma instabilidade temporária na rede ou no servidor.
+                Seu plano não está vazio: você pode tentar recarregar ou continuar praticando pelo banco de questões.
+              </p>
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={loadDashboardData}
+                  className="calm-btn-start"
+                  style={{ padding: '0.65rem 1.25rem', fontSize: '0.85rem' }}
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  Tentar Novamente (Recarregar)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onNavigateToTab('banco')}
+                  className="calm-btn-why"
+                  style={{ padding: '0.65rem 1.25rem', fontSize: '0.85rem' }}
+                >
+                  <Play className="w-4 h-4" />
+                  Praticar Questões do Banco
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onNavigateToTab('edital')}
+                  className="calm-btn-why"
+                  style={{ padding: '0.65rem 1.25rem', fontSize: '0.85rem' }}
+                >
+                  <BookOpen className="w-4 h-4" />
+                  Ver Edital Verticalizado
                 </button>
               </div>
             </div>
