@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   ArrowLeft,
   Clock,
@@ -21,6 +21,7 @@ import { ResolucaoQuestaoModal } from '../questoes/ResolucaoQuestaoModal';
 import type { QuestionItem } from '../questoes/BancoQuestoes';
 import type { StudyMaterialItem } from '../materiais/BibliotecaMateriais';
 import type { ConcursoItem } from '../concursos/MeusConcursos';
+import { StudySessionSubmission, StudySessionError, discardPendingSession } from '../../utils/studySessionSubmission';
 import './SessaoEstudoAtiva.css';
 
 // ============================================================================
@@ -135,7 +136,25 @@ export default function SessaoEstudoAtiva({
     const storedType = sessionStorage.getItem('fiscalstudy_session_type') as ActivityType;
     return storedType && STEPS_BY_TYPE[storedType] ? storedType : initialActivityType;
   });
-  const [sessionId] = useState<string>(() => `sess_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`);
+  // Identidade de sessão estável para idempotência e recuperação local
+  const [sessionId, setSessionId] = useState<string>(() => {
+    try {
+      const stored = sessionStorage.getItem('fiscalstudy_active_session_id');
+      if (stored) return stored;
+      const generated = `sess_${crypto.randomUUID()}`;
+      sessionStorage.setItem('fiscalstudy_active_session_id', generated);
+      return generated;
+    } catch {
+      return `sess_${crypto.randomUUID()}`;
+    }
+  });
+
+  const isSavingSessionRef = useRef<boolean>(false);
+  const pendingSubmissionRef = useRef<StudySessionSubmission | null>(null);
+  const [saveError, setSaveError] = useState<{ message: string; isConflict: boolean; retryable: boolean } | null>(null);
+  const [pendingRecoveryNotice, setPendingRecoveryNotice] = useState<string | null>(null);
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState<boolean>(false);
+  const [storageWarningNotice, setStorageWarningNotice] = useState<string | null>(null);
 
   const effectiveDiscipline = initialDiscipline || sessionStorage.getItem('fiscalstudy_session_discipline') || activeConcurso?.nome || DEFAULT_SESSION.discipline;
   const effectiveTopic = initialTopic || sessionStorage.getItem('fiscalstudy_session_topic') || DEFAULT_SESSION.topic;
@@ -166,6 +185,40 @@ export default function SessaoEstudoAtiva({
   const [showDifficulty, setShowDifficulty] = useState(false);
   const [difficultyText, setDifficultyText] = useState('');
   const [fatigueDismissed, setFatigueDismissed] = useState(false);
+  // Recuperação real após reload (Achado C): restaura o payload exato sem reconstruir dados com duração 0
+  useEffect(() => {
+    try {
+      const recovered = StudySessionSubmission.fromJournal(sessionId);
+      if (recovered) {
+        pendingSubmissionRef.current = recovered;
+        if (!recovered.isDurable && recovered.storageWarning) {
+          setStorageWarningNotice(recovered.storageWarning);
+        }
+        const p = recovered.payload as any;
+        if (typeof p.durationSeconds === 'number' && secondsElapsed === 0) {
+          setSecondsElapsed(p.durationSeconds);
+        }
+        if (typeof p.interrupcoesCount === 'number') {
+          setInterruptionCount(p.interrupcoesCount);
+        }
+        if (p.dificuldadeRelatada) {
+          setDifficultyReason(p.dificuldadeRelatada);
+        }
+        if (p.notas) {
+          setDifficultyText(p.notas);
+        }
+        if (p.statusConclusao) {
+          setCompletionStatus(p.statusConclusao);
+        }
+        setTimerStatus('finished');
+        setPendingRecoveryNotice(
+          'Operação anterior recuperada do armazenamento local da aba. Reconcilie o envio para garantir idempotência ou descarte explicitamente antes de iniciar nova sessão.'
+        );
+      }
+    } catch {
+      // Degradação segura
+    }
+  }, [sessionId]);
 
   // Estados para leitor de PDF e questões embutidos na sessão
   const [embeddedMaterial, setEmbeddedMaterial] = useState<StudyMaterialItem | null>(null);
@@ -184,7 +237,7 @@ export default function SessaoEstudoAtiva({
       if (res.ok) {
         const list: StudyMaterialItem[] = await res.json();
         // Procura material que coincida com a disciplina ou id
-        const match = list.find(m => 
+        const match = list.find(m =>
           (session.material.materialId && m.id === session.material.materialId) ||
           m.disciplina?.toLowerCase() === session.discipline.toLowerCase() ||
           m.titulo?.toLowerCase().includes(session.topic.toLowerCase())
@@ -195,7 +248,7 @@ export default function SessaoEstudoAtiva({
           return;
         }
       }
-      
+
       // Fallback: cria objeto temporário com os dados da sessão
       setEmbeddedMaterial({
         id: session.material.materialId || 'temp_mat',
@@ -279,14 +332,9 @@ export default function SessaoEstudoAtiva({
     if (currentStepIndex < session.steps.length - 1) {
       setCurrentStepIndex((prev) => prev + 1);
     } else {
+      // Ao concluir a ultima etapa, transiciona para a tela de revisao e encerramento (T14).
+      // O callback onFinishSession dispara estritamente apos confirmacao HTTP em handleFinalizeAndRecord.
       setTimerStatus('finished');
-      if (onFinishSession) {
-        onFinishSession({
-          durationSeconds: secondsElapsed,
-          discipline: session.discipline,
-          topic: session.topic
-        });
-      }
     }
   };
 
@@ -443,34 +491,56 @@ export default function SessaoEstudoAtiva({
     return null;
   };
 
-  // Envio idempotente para a API
+  // Envio idempotente para a API com barreira sincrona e recuperacao
   const handleFinalizeAndRecord = async () => {
+    // Barreira sincrona contra clique duplo ou submissao apos confirmacao
+    if (isSavingSessionRef.current || isSaved) return;
+
+    if (!pendingSubmissionRef.current) {
+      const fromJ = StudySessionSubmission.fromJournal(sessionId);
+      if (fromJ) {
+        pendingSubmissionRef.current = fromJ;
+      } else {
+        const payload = {
+          sessionId,
+          concursoId: activeConcurso?.id || null,
+          disciplina: session.discipline,
+          topicoId: session.topic,
+          materialId: session.material.materialId || null,
+          durationSeconds: secondsElapsed,
+          modo: 'CRONOMETRO',
+          activityType,
+          interrupcoesCount: interruptionCount,
+          etapasConcluidas: currentStepIndex + 1,
+          totalEtapas: session.steps.length,
+          statusConclusao: completionStatus,
+          dificuldadeRelatada: difficultyReason || difficultyText || null,
+          notas: difficultyText || undefined
+        };
+        pendingSubmissionRef.current = new StudySessionSubmission(payload, sessionId);
+        if (!pendingSubmissionRef.current.isDurable && pendingSubmissionRef.current.storageWarning) {
+          setStorageWarningNotice(pendingSubmissionRef.current.storageWarning);
+        }
+      }
+    }
+
+    isSavingSessionRef.current = true;
     setIsSavingSession(true);
+    setSaveError(null);
+
     try {
-      const payload = {
-        sessionId,
-        concursoId: activeConcurso?.id || null,
-        disciplina: session.discipline,
-        topicoId: session.topic,
-        materialId: session.material.materialId || null,
-        durationSeconds: secondsElapsed,
-        modo: 'CRONOMETRO',
-        activityType,
-        interrupcoesCount: interruptionCount,
-        etapasConcluidas: currentStepIndex + 1,
-        totalEtapas: session.steps.length,
-        statusConclusao: completionStatus,
-        dificuldadeRelatada: difficultyReason || difficultyText || null,
-        notas: difficultyText || undefined
-      };
+      await pendingSubmissionRef.current.send();
 
-      await fetch('/api/v1/study-sessions/record', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
+      // Confirmacao valida recebida do backend (200 / 201)
       setIsSaved(true);
+      pendingSubmissionRef.current = null;
+      setPendingRecoveryNotice(null);
+      try {
+        sessionStorage.removeItem('fiscalstudy_active_session_id');
+      } catch {
+        // Silencioso em caso de storage restrito
+      }
+
       if (onFinishSession) {
         onFinishSession({
           durationSeconds: secondsElapsed,
@@ -478,11 +548,43 @@ export default function SessaoEstudoAtiva({
           topic: session.topic
         });
       }
-    } catch (err) {
-      console.error('Falha ao gravar sessão:', err);
+    } catch (err: unknown) {
+      const isConflict = err instanceof StudySessionError ? err.isConflict : false;
+      const message = err instanceof Error ? err.message : 'Falha ao gravar sessao no servidor.';
+      setSaveError({
+        message,
+        isConflict,
+        retryable: !isConflict
+      });
     } finally {
+      isSavingSessionRef.current = false;
       setIsSavingSession(false);
     }
+  };
+
+
+  const handleInitiateDiscard = () => {
+    if (isSavingSessionRef.current) return;
+    setShowDiscardConfirm(true);
+  };
+
+  const handleConfirmDiscard = () => {
+    if (isSavingSessionRef.current) return;
+    discardPendingSession(sessionId);
+    pendingSubmissionRef.current = null;
+    setSaveError(null);
+    setPendingRecoveryNotice(null);
+    setShowDiscardConfirm(false);
+    setStorageWarningNotice(null);
+    const newId = `sess_${crypto.randomUUID()}`;
+    setSessionId(newId);
+    try {
+      sessionStorage.setItem('fiscalstudy_active_session_id', newId);
+    } catch {}
+  };
+
+  const handleCancelDiscard = () => {
+    setShowDiscardConfirm(false);
   };
 
   // T14: ENCERRAMENTO DA SESSÃO
@@ -589,6 +691,92 @@ export default function SessaoEstudoAtiva({
             </div>
           </div>
 
+
+          {/* Alerta de Recuperação de Operação Pendente */}
+          {pendingRecoveryNotice && !saveError && (
+            <div className="mb-4 p-3 rounded-xl text-left bg-sky-500/10 border border-sky-500/20 text-sky-400 text-xs flex flex-col gap-2">
+              <span>ℹ️ {pendingRecoveryNotice}</span>
+              <div className="flex gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={handleFinalizeAndRecord}
+                  disabled={isSavingSession}
+                  className="px-3 py-1.5 bg-sky-600 text-white rounded-lg text-xs font-semibold hover:bg-sky-700 transition w-fit"
+                >
+                  {isSavingSession ? 'Reenviando...' : '🔄 Reconciliar Envio'}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleInitiateDiscard}
+                  disabled={isSavingSession}
+                  className="px-3 py-1.5 border border-sky-500/30 text-sky-300 rounded-lg text-xs font-semibold hover:bg-sky-500/20 transition w-fit"
+                >
+                  Descartar Operação Incerta
+                </button>
+              </div>
+            </div>
+          )}
+
+
+          {showDiscardConfirm && (
+            <div className="mb-4 p-3 rounded-xl text-left bg-red-900/30 border border-red-500/50 text-red-200 text-xs flex flex-col gap-2">
+              <span>⚠️ <strong>Atenção Crítica:</strong> O servidor pode já ter registrado esta sessão caso a resposta de confirmação tenha sido perdida após a gravação. Descartar a pendência localmente NÃO desfaz operações no banco de dados e iniciar uma nova sessão não impede duplicidade caso o envio anterior tenha sido gravado. Deseja realmente descartar a pendência local?</span>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleConfirmDiscard}
+                  disabled={isSavingSession}
+                  className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-semibold hover:bg-red-700 transition w-fit"
+                >
+                  Confirmar Descarte
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCancelDiscard}
+                  disabled={isSavingSession}
+                  className="px-3 py-1.5 border border-stone-500/40 text-stone-300 rounded-lg text-xs font-semibold hover:bg-stone-500/20 transition w-fit"
+                >
+                  Cancelar e Reconciliar
+                </button>
+              </div>
+            </div>
+          )}
+
+          {storageWarningNotice && !showDiscardConfirm && (
+            <div className="mb-4 p-2.5 rounded-xl text-left bg-amber-500/15 border border-amber-500/30 text-amber-400 text-xs">
+              ⚠️ {storageWarningNotice}
+            </div>
+          )}
+
+          {/* Feedback de Erro com Ação de Retry */}
+          {saveError && (
+            <div className="mb-4 p-3 rounded-xl text-left bg-red-500/10 border border-red-500/20 text-red-500 text-xs flex flex-col gap-2">
+              <span>{saveError.message}</span>
+              <div className="flex gap-2 flex-wrap">
+                {saveError.retryable && (
+                  <button
+                    type="button"
+                    onClick={handleFinalizeAndRecord}
+                    disabled={isSavingSession}
+                    className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-semibold hover:bg-red-700 transition w-fit"
+                  >
+                    {isSavingSession ? 'Reenviando...' : '🔄 Tentar Novamente (Reconciliar)'}
+                  </button>
+                )}
+                {(saveError.retryable || saveError.isConflict) && (
+                  <button
+                    type="button"
+                    onClick={handleInitiateDiscard}
+                    disabled={isSavingSession}
+                    className="px-3 py-1.5 border border-red-500/30 text-red-300 rounded-lg text-xs font-semibold hover:bg-red-500/20 transition w-fit"
+                  >
+                    {saveError.isConflict ? 'Descartar Conflito e Iniciar Nova' : '⚠️ Descartar Operação Incerta'}
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Ações de Encerramento */}
           <div className="flex flex-col sm:flex-row gap-2.5 justify-center">
             <button
@@ -597,13 +785,33 @@ export default function SessaoEstudoAtiva({
               disabled={isSavingSession || isSaved}
               className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-semibold hover:bg-indigo-700 transition"
             >
-              {isSavingSession ? 'Salvando...' : isSaved ? '✓ Registrado com Sucesso' : 'Finalizar e Registrar'}
+              {isSavingSession ? 'Salvando...' : isSaved ? '✓ Registrado com Sucesso' : saveError?.retryable ? '🔄 Tentar Novamente' : 'Finalizar e Registrar'}
             </button>
 
             <button
               type="button"
-              onClick={() => setTimerStatus('running')}
-              className="px-4 py-2.5 border border-stone-300 dark:border-stone-700 rounded-xl text-xs font-semibold hover:bg-stone-100 dark:hover:bg-stone-800 transition"
+              onClick={() => {
+                // Impede reset durante operação incerta (Achado B): exige reconciliação ou descarte explícito
+                if (pendingSubmissionRef.current && !pendingSubmissionRef.current.confirmed && (saveError?.retryable || pendingRecoveryNotice)) {
+                  return;
+                }
+                setTimerStatus('running');
+                setSaveError(null);
+                setPendingRecoveryNotice(null);
+                if (isSaved) {
+                  setIsSaved(false);
+                  pendingSubmissionRef.current = null;
+                  const newId = `sess_${crypto.randomUUID()}`;
+                  setSessionId(newId);
+                  try {
+                    sessionStorage.setItem('fiscalstudy_active_session_id', newId);
+                  } catch {
+                    // Silencioso em caso de storage restrito
+                  }
+                }
+              }}
+              disabled={Boolean(pendingSubmissionRef.current && !pendingSubmissionRef.current.confirmed && (saveError?.retryable || pendingRecoveryNotice))}
+              className="px-4 py-2.5 border border-stone-300 dark:border-stone-700 rounded-xl text-xs font-semibold hover:bg-stone-100 dark:hover:bg-stone-800 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Continuar Estudando
             </button>
