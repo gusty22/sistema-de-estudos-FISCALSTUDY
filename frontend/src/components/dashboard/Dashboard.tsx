@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import type { ConcursoItem } from '../concursos/MeusConcursos';
 import { QuestionHistoryModal } from './QuestionHistoryModal';
 import {
@@ -14,7 +14,8 @@ import {
   History,
   Layers,
   CalendarDays,
-  Zap
+  Zap,
+  Bookmark
 } from 'lucide-react';
 import { useSimplifiedMode } from '../../context/SimplifiedModeContext';
 import {
@@ -23,8 +24,14 @@ import {
   getCurrentActivity,
   getNextQueueIndex,
   prepareSessionPayload,
+  extractLatestEligibleHandoff,
+  prepareHandoffResumptionPayload,
+  createDashboardLoadCoordinator,
   type QueueActivity,
-  type DashboardUIState
+  type DashboardUIState,
+  type StudySessionRecord,
+  type EligibleHandoff,
+  type ResumptionSafetyStatus
 } from './dashboardLogic';
 import './Dashboard.css';
 
@@ -140,25 +147,47 @@ export const Dashboard: React.FC<DashboardProps> = ({
   // Estados de Carregamento e Comunicação
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [isAgendaUnavailable, setIsAgendaUnavailable] = useState(false);
+  const [isCycleUnavailable, setIsCycleUnavailable] = useState(false);
+  const [studySessions, setStudySessions] = useState<StudySessionRecord[]>([]);
+  const [resumptionSafetyWarning, setResumptionSafetyWarning] = useState<string | null>(null);
+  const [resumptionSafetyStatus, setResumptionSafetyStatus] = useState<ResumptionSafetyStatus | null>(null);
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState<boolean>(false);
+  const loadCoordinatorRef = useRef(createDashboardLoadCoordinator());
 
-  // Carregar dados reais da API com tratamento explícito de erros
+  // Carregar dados reais da API com proteção contra race conditions e respostas obsoletas (ACHADO A)
   const loadDashboardData = useCallback(() => {
     if (!activeConcurso) {
+      loadCoordinatorRef.current.abortCurrent();
       setTopics([]);
       setEditaisCount(0);
       setRevisionAgenda(null);
       setRobinHoodCycle(null);
       setAnomalyReport(null);
+      setStudySessions([]);
+      setIsAgendaUnavailable(false);
+      setIsCycleUnavailable(false);
+      setResumptionSafetyWarning(null);
+      setResumptionSafetyStatus(null);
+      setShowDiscardConfirm(false);
       setIsLoading(false);
       setLoadError(null);
       return;
     }
 
+    const session = loadCoordinatorRef.current.startLoad(activeConcurso.id);
+    const { signal, isCurrent } = session;
+
     setIsLoading(true);
     setLoadError(null);
+    setIsAgendaUnavailable(false);
+    setIsCycleUnavailable(false);
+    setResumptionSafetyWarning(null);
+    setResumptionSafetyStatus(null);
+    setShowDiscardConfirm(false);
 
     // 1. Tópicos do Edital Verticalizado (Endpoint Canônico)
-    const editalPromise = fetch(`/api/v1/concursos/${encodeURIComponent(activeConcurso.id)}/edital`)
+    const editalPromise = fetch(`/api/v1/concursos/${encodeURIComponent(activeConcurso.id)}/edital`, { signal })
       .then(async (res) => {
         if (!res.ok) {
           throw new Error(`Falha HTTP ${res.status} ao carregar o edital do concurso.`);
@@ -166,6 +195,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         return res.json();
       })
       .then((data) => {
+        if (!isCurrent()) return;
         setEditaisCount(Array.isArray(data?.editais) ? data.editais.length : 0);
         if (data && Array.isArray(data.topicos)) {
           setTopics(data.topicos);
@@ -175,42 +205,81 @@ export const Dashboard: React.FC<DashboardProps> = ({
       });
 
     // 2. Agenda de Revisões Adaptativas
-    const agendaPromise = fetch(`/api/v1/revisoes/agenda?concursoId=${encodeURIComponent(activeConcurso.id)}`)
-      .then((res) => (res.ok ? res.json() : null))
+    const agendaPromise = fetch(`/api/v1/revisoes/agenda?concursoId=${encodeURIComponent(activeConcurso.id)}`, { signal })
+      .then(async (res) => {
+        if (!res.ok) {
+          throw new Error(`Falha HTTP ${res.status} ao carregar agenda de revisões.`);
+        }
+        return res.json();
+      })
       .then((data) => {
-        if (data) setRevisionAgenda(data);
+        if (!isCurrent()) return;
+        if (data) {
+          setRevisionAgenda(data);
+          setIsAgendaUnavailable(false);
+        }
+      })
+      .catch((err) => {
+        if (!isCurrent() || err?.name === 'AbortError') return;
+        console.warn('Agenda de revisões indisponível:', err);
+        setRevisionAgenda(null);
+        setIsAgendaUnavailable(true);
       });
 
     // 3. Ciclo Robin Hood
-    const cyclePromise = fetch(`/api/v1/cycle/robin-hood?concursoId=${encodeURIComponent(activeConcurso.id)}`)
-      .then((res) => (res.ok ? res.json() : null))
+    const cyclePromise = fetch(`/api/v1/cycle/robin-hood?concursoId=${encodeURIComponent(activeConcurso.id)}`, { signal })
+      .then(async (res) => {
+        if (!res.ok) {
+          throw new Error(`Falha HTTP ${res.status} ao carregar ciclo Robin Hood.`);
+        }
+        return res.json();
+      })
       .then((data) => {
-        if (data) setRobinHoodCycle(data);
+        if (!isCurrent()) return;
+        if (data) {
+          setRobinHoodCycle(data);
+          setIsCycleUnavailable(false);
+        }
+      })
+      .catch((err) => {
+        if (!isCurrent() || err?.name === 'AbortError') return;
+        console.warn('Ciclo de estudos indisponível:', err);
+        setRobinHoodCycle(null);
+        setIsCycleUnavailable(true);
       });
 
     // 4. Auditoria Automática de Anomalias de Estudo
-    const anomaliesPromise = fetch(`/api/v1/analytics/study-anomalies?concursoId=${encodeURIComponent(activeConcurso.id)}`)
+    const anomaliesPromise = fetch(`/api/v1/analytics/study-anomalies?concursoId=${encodeURIComponent(activeConcurso.id)}`, { signal })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
+        if (!isCurrent()) return;
         if (data && data.anomalies) setAnomalyReport(data);
+      })
+      .catch((err) => {
+        if (err?.name === 'AbortError') return;
       });
 
     // 5. Sumário de Horas Rastreadas
-    const summaryPromise = fetch(`/api/v1/study-sessions/summary?concursoId=${encodeURIComponent(activeConcurso.id)}`)
+    const summaryPromise = fetch(`/api/v1/study-sessions/summary?concursoId=${encodeURIComponent(activeConcurso.id)}`, { signal })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
+        if (!isCurrent()) return;
         if (data && data.totalHours !== undefined) {
           const minutes = Math.round(data.totalHours * 60);
           if (minutes > 0) {
             setStudiedTime(minutes);
           }
         }
+      })
+      .catch((err) => {
+        if (err?.name === 'AbortError') return;
       });
 
     // 6. Capacidade do Dia calculada a partir da Rotina
-    const routinePromise = fetch(`/api/v1/routine/effective-hours?concursoId=${encodeURIComponent(activeConcurso.id)}`)
+    const routinePromise = fetch(`/api/v1/routine/effective-hours?concursoId=${encodeURIComponent(activeConcurso.id)}`, { signal })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
+        if (!isCurrent()) return;
         if (data && data.effectiveMinutes && data.effectiveMinutes > 0) {
           setAvailableTime(data.effectiveMinutes);
         } else {
@@ -227,12 +296,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
             // usa valor padrao
           }
         }
+      })
+      .catch((err) => {
+        if (err?.name === 'AbortError') return;
       });
 
     // 7. Status do Anki
-    const ankiPromise = fetch('/api/v1/anki/status')
+    const ankiPromise = fetch('/api/v1/anki/status', { signal })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
+        if (!isCurrent()) return;
         if (data) {
           setAnkiStatus({
             connected: data.connected,
@@ -241,29 +314,71 @@ export const Dashboard: React.FC<DashboardProps> = ({
             autoSyncActive: data.autoSyncActive ?? true
           });
         }
+      })
+      .catch((err) => {
+        if (err?.name === 'AbortError') return;
       });
 
-    Promise.allSettled([editalPromise, agendaPromise, cyclePromise, anomaliesPromise, summaryPromise, routinePromise, ankiPromise])
+    // 8. Sessões Recentes para Retomada Cognitiva (FS-02A)
+    const sessionsPromise = fetch(`/api/v1/study-sessions?concursoId=${encodeURIComponent(activeConcurso.id)}`, { signal })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!isCurrent()) return;
+        if (Array.isArray(data)) {
+          setStudySessions(data);
+        } else {
+          setStudySessions([]);
+        }
+      })
+      .catch((err) => {
+        if (!isCurrent() || err?.name === 'AbortError') return;
+        console.warn('Sessões de estudo indisponíveis:', err);
+        setStudySessions([]);
+      });
+
+    Promise.allSettled([
+      editalPromise,
+      agendaPromise,
+      cyclePromise,
+      anomaliesPromise,
+      summaryPromise,
+      routinePromise,
+      ankiPromise,
+      sessionsPromise
+    ])
       .then((results) => {
+        if (!isCurrent()) return;
         const editalResult = results[0];
         if (editalResult.status === 'rejected') {
           const err = editalResult.reason;
+          if (err && err.name === 'AbortError') return;
           setLoadError(err instanceof Error ? err.message : 'Falha na comunicação com o servidor.');
         }
       })
       .finally(() => {
-        setIsLoading(false);
+        if (isCurrent()) {
+          setIsLoading(false);
+        }
       });
   }, [activeConcurso]);
 
   useEffect(() => {
+    const coordinator = loadCoordinatorRef.current;
     loadDashboardData();
+    return () => {
+      coordinator.abortCurrent();
+    };
   }, [loadDashboardData]);
 
   // Construção da Fila de Atividades Unificada (100% Determinística, ZERO Conteúdo Fictício)
   const queueActivities: QueueActivity[] = useMemo(() => {
     return computeQueueActivities(revisionAgenda, robinHoodCycle);
   }, [revisionAgenda, robinHoodCycle]);
+
+  // Handoff elegível da última sessão válida (FS-02A)
+  const eligibleHandoff: EligibleHandoff | null = useMemo(() => {
+    return extractLatestEligibleHandoff(studySessions, activeConcurso?.id);
+  }, [studySessions, activeConcurso?.id]);
 
   // Estado Explícito da Interface do Dashboard
   const dashboardState: DashboardUIState = useMemo(() => {
@@ -273,9 +388,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
       loadError,
       editaisCount,
       topicsCount: topics.length,
-      queueActivitiesCount: queueActivities.length
+      queueActivitiesCount: queueActivities.length,
+      isAgendaUnavailable,
+      isCycleUnavailable
     });
-  }, [activeConcurso, isLoading, loadError, editaisCount, topics.length, queueActivities.length]);
+  }, [activeConcurso, isLoading, loadError, editaisCount, topics.length, queueActivities.length, isAgendaUnavailable, isCycleUnavailable]);
 
   // Atividade atual em destaque (Hero) — com guarda segura contra NaN e array vazio
   const currentActivity: QueueActivity | undefined = useMemo(() => {
@@ -295,6 +412,40 @@ export const Dashboard: React.FC<DashboardProps> = ({
     }
 
     onNavigateToTab('session', payload.navigationParams);
+  };
+
+  // Disparar retomada guiada a partir do Handoff (FS-02B & ACHADO B)
+  const handleResumptionClick = (forceDiscardPrevious = false) => {
+    if (!eligibleHandoff) return;
+
+    const existingActiveSessionId =
+      sessionStorage.getItem('fiscalstudy_active_session_id') ||
+      sessionStorage.getItem('fiscalstudy_timer_session_id');
+
+    const result = prepareHandoffResumptionPayload(eligibleHandoff, {
+      checkSafety: true,
+      existingActiveSessionId,
+      forceDiscardPrevious
+    });
+
+    if (!result.safe) {
+      setResumptionSafetyWarning(result.warning || 'Ação bloqueada por segurança de sessão ativa.');
+      setResumptionSafetyStatus(result.status || 'SESSION_IN_PROGRESS');
+      setShowDiscardConfirm(false);
+      return;
+    }
+
+    setShowDiscardConfirm(false);
+    setResumptionSafetyWarning(null);
+    setResumptionSafetyStatus(null);
+
+    if (result.sessionStorageItems) {
+      for (const [key, value] of Object.entries(result.sessionStorageItems)) {
+        sessionStorage.setItem(key, value);
+      }
+    }
+
+    onNavigateToTab('session', result.navigationParams);
   };
 
   // Ajustes Rápidos
@@ -571,6 +722,205 @@ export const Dashboard: React.FC<DashboardProps> = ({
         )}
 
         {/* ==================================================================
+            1.5. CARD DE RETOMADA COGNITIVA ("ONDE VOCÊ PAROU" - FS-02B)
+            Discreto, acolhedor e seguro contra journals pendentes da FS-01
+            ================================================================== */}
+        {eligibleHandoff && (
+          <section className="calm-resumption-card" aria-label="Onde você parou" data-testid="calm-resumption-card">
+            <div className="calm-resumption-header">
+              <div className="calm-resumption-title">
+                <Bookmark className="w-4 h-4 text-indigo-500" />
+                <span>Onde você parou</span>
+              </div>
+              {eligibleHandoff.isFromLatestSession && (
+                <span className="calm-resumption-badge">
+                  Última sessão confirmada
+                </span>
+              )}
+            </div>
+
+            <blockquote className="calm-resumption-quote">
+              “{eligibleHandoff.nextSessionHandoff}”
+            </blockquote>
+
+            <div className="calm-resumption-meta">
+              <span className="calm-resumption-pill" title="Disciplina da sessão anterior">
+                <Layers className="w-3.5 h-3.5 text-indigo-500" />
+                <span>{eligibleHandoff.disciplina}</span>
+              </span>
+              {eligibleHandoff.topicoId && (
+                <span className="calm-resumption-pill" title="Tópico da sessão anterior">
+                  <BookOpen className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>{eligibleHandoff.topicoId}</span>
+                </span>
+              )}
+              {eligibleHandoff.occurredAt && (
+                <span className="calm-resumption-pill" title="Momento da sessão anterior">
+                  <Clock className="w-3.5 h-3.5 text-stone-400" />
+                  <span>
+                    {new Date(eligibleHandoff.occurredAt).toLocaleDateString('pt-BR', {
+                      day: '2-digit',
+                      month: '2-digit',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </span>
+                </span>
+              )}
+            </div>
+
+            {resumptionSafetyWarning && (
+              <div className="calm-resumption-warning" role="alert" data-testid="resumption-safety-warning">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                <span>{resumptionSafetyWarning}</span>
+              </div>
+            )}
+
+            <div className="calm-resumption-footer">
+              {resumptionSafetyStatus === 'SESSION_IN_PROGRESS' ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', width: '100%' }}>
+                  {!showDiscardConfirm ? (
+                    <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                      <button
+                        type="button"
+                        onClick={() => onNavigateToTab('session')}
+                        className="calm-resumption-btn"
+                        data-testid="resumption-resume-existing-btn"
+                      >
+                        <Play className="w-3.5 h-3.5 fill-current" />
+                        <span>Retomar Sessão em Andamento</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowDiscardConfirm(true)}
+                        className="calm-btn-ghost"
+                        data-testid="resumption-discard-btn"
+                        style={{ fontSize: '0.78rem' }}
+                      >
+                        Descartar anterior e iniciar este assunto
+                      </button>
+                    </div>
+                  ) : (
+                    <div
+                      data-testid="resumption-discard-confirm-panel"
+                      style={{
+                        padding: '0.75rem 1rem',
+                        borderRadius: '0.75rem',
+                        background: 'rgba(239, 68, 68, 0.08)',
+                        border: '1px solid rgba(239, 68, 68, 0.25)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.5rem'
+                      }}
+                    >
+                      <div style={{ fontSize: '0.78rem', color: 'var(--calm-text-main, #0f172a)', lineHeight: '1.4' }}>
+                        ⚠️ <strong>Atenção:</strong> Existe uma sessão de estudos em andamento no navegador. Ao abandoná-la, qualquer progresso ainda não salvo ou tempo decorrido não registrado será perdido. Deseja realmente descartar a sessão ativa anterior e iniciar este novo assunto?
+                      </div>
+                      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        <button
+                          type="button"
+                          onClick={() => handleResumptionClick(true)}
+                          data-testid="confirm-discard-resumption-btn"
+                          style={{
+                            background: '#ef4444',
+                            color: '#ffffff',
+                            border: 'none',
+                            borderRadius: '0.5rem',
+                            padding: '0.35rem 0.75rem',
+                            fontSize: '0.75rem',
+                            fontWeight: 600,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Confirmar Descarte e Iniciar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setShowDiscardConfirm(false)}
+                          data-testid="cancel-discard-resumption-btn"
+                          style={{
+                            background: 'transparent',
+                            color: 'var(--calm-text-muted, #64748b)',
+                            border: '1px solid var(--calm-card-border, #e2e8f0)',
+                            borderRadius: '0.5rem',
+                            padding: '0.35rem 0.75rem',
+                            fontSize: '0.75rem',
+                            fontWeight: 500,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => handleResumptionClick(false)}
+                  className="calm-resumption-btn"
+                  data-testid="resumption-continue-btn"
+                >
+                  <Play className="w-3.5 h-3.5 fill-current" />
+                  <span>Continuar este assunto</span>
+                </button>
+              )}
+            </div>
+          </section>
+        )}
+
+        {/* Banner de indisponibilidade parcial na fila ativa (FS-02C) */}
+        {dashboardState === 'HAS_ACTIVITIES' && (isAgendaUnavailable || isCycleUnavailable) && (
+          <div
+            className="calm-partial-warning-banner"
+            role="status"
+            style={{
+              padding: '0.75rem 1.25rem',
+              borderRadius: '0.75rem',
+              background: 'rgba(234, 179, 8, 0.08)',
+              border: '1px solid rgba(234, 179, 8, 0.25)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '0.75rem',
+              fontSize: '0.82rem',
+              color: 'var(--calm-text)'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
+              <span>
+                {isAgendaUnavailable && isCycleUnavailable
+                  ? 'Fila de atividades exibida com limitações: agenda e ciclo temporariamente inacessíveis.'
+                  : isAgendaUnavailable
+                    ? 'Agenda de revisões temporariamente indisponível. Exibindo atividades disponíveis do ciclo.'
+                    : 'Ciclo de estudos temporariamente indisponível. Exibindo revisões prioritárias da agenda.'}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={loadDashboardData}
+              style={{
+                background: 'transparent',
+                border: '1px solid rgba(234, 179, 8, 0.4)',
+                borderRadius: '0.375rem',
+                padding: '0.25rem 0.6rem',
+                fontSize: '0.75rem',
+                cursor: 'pointer',
+                color: 'inherit',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.3rem'
+              }}
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              Recarregar
+            </button>
+          </div>
+        )}
+
+        {/* ==================================================================
             2. HERO CARD: ESTADOS EXPLÍCITOS DA APLICAÇÃO (SEM FICTÍCIOS)
             ================================================================== */}
         {dashboardState === 'LOADING' && (
@@ -799,6 +1149,61 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 >
                   <Play className="w-4 h-4" />
                   Praticar Questões do Banco
+                </button>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {dashboardState === 'PARTIAL_UNAVAILABLE' && (
+          <section className="calm-hero-card" data-testid="dashboard-partial-unavailable" style={{ padding: '2.5rem 1.5rem', textAlign: 'center', border: '1px solid rgba(234, 179, 8, 0.3)', background: 'rgba(234, 179, 8, 0.04)' }}>
+            <div style={{ maxWidth: '520px', margin: '0 auto' }}>
+              <div style={{
+                width: '3.5rem',
+                height: '3.5rem',
+                borderRadius: '9999px',
+                backgroundColor: 'rgba(234, 179, 8, 0.12)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 1rem auto'
+              }}>
+                <AlertTriangle className="w-6 h-6 text-amber-500" />
+              </div>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--calm-text)', margin: '0 0 0.5rem 0' }}>
+                Atividades Temporariamente Indisponíveis
+              </h3>
+              <p style={{ fontSize: '0.88rem', color: 'var(--calm-text-muted)', lineHeight: 1.5, margin: '0 0 1.5rem 0' }}>
+                Não foi possível carregar sua agenda adaptativa ou ciclo de estudos devido a uma instabilidade temporária na rede ou no servidor.
+                Seu plano não está vazio: você pode tentar recarregar ou continuar praticando pelo banco de questões.
+              </p>
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={loadDashboardData}
+                  className="calm-btn-start"
+                  style={{ padding: '0.65rem 1.25rem', fontSize: '0.85rem' }}
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  Tentar Novamente (Recarregar)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onNavigateToTab('banco')}
+                  className="calm-btn-why"
+                  style={{ padding: '0.65rem 1.25rem', fontSize: '0.85rem' }}
+                >
+                  <Play className="w-4 h-4" />
+                  Praticar Questões do Banco
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onNavigateToTab('edital')}
+                  className="calm-btn-why"
+                  style={{ padding: '0.65rem 1.25rem', fontSize: '0.85rem' }}
+                >
+                  <BookOpen className="w-4 h-4" />
+                  Ver Edital Verticalizado
                 </button>
               </div>
             </div>
