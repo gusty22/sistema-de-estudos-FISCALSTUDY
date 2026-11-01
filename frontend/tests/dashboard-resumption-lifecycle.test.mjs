@@ -20,7 +20,8 @@ const {
   prepareHandoffResumptionPayload,
   checkResumptionSafety,
   getDashboardUIState,
-  computeQueueActivities
+  computeQueueActivities,
+  createDashboardLoadCoordinator
 } = await import('../src/components/dashboard/dashboardLogic.ts');
 
 describe('FS-02A: Extração Segura e Determinística do Handoff', () => {
@@ -418,7 +419,6 @@ describe('FS-02C: Confiabilidade da Fila e Diferenciação de Cold Start', () =>
   });
 
   test('T19: prepareHandoffResumptionPayload com safety ativo e sessão sem pendências retorna safe: true', () => {
-    const cleanSessionId = 'sess-limpa-' + crypto.randomUUID();
     const handoff = {
       sessionId: 'sess-old',
       concursoId: 'conc-1',
@@ -428,14 +428,23 @@ describe('FS-02C: Confiabilidade da Fila e Diferenciação de Cold Start', () =>
       isFromLatestSession: true
     };
 
-    const result = prepareHandoffResumptionPayload(handoff, {
+    // Caso 1: Sem sessão anterior ativa
+    const resultNoSession = prepareHandoffResumptionPayload(handoff, {
       checkSafety: true,
-      existingActiveSessionId: cleanSessionId
+      existingActiveSessionId: null
     });
+    assert.equal(resultNoSession.safe, true);
+    assert.equal(resultNoSession.status, 'NO_PREVIOUS_SESSION');
+    assert.ok(resultNoSession.newSessionId);
 
-    assert.equal(result.safe, true);
-    assert.ok(result.newSessionId);
-    assert.ok(result.sessionStorageItems.fiscalstudy_active_session_id);
+    // Caso 2: Sessão anterior com descarte explícito
+    const resultDiscarded = prepareHandoffResumptionPayload(handoff, {
+      checkSafety: true,
+      existingActiveSessionId: 'sess-abandonada-1',
+      forceDiscardPrevious: true
+    });
+    assert.equal(resultDiscarded.safe, true);
+    assert.equal(resultDiscarded.status, 'PREVIOUS_SESSION_COMPLETED');
   });
 
   test('T20: extractLatestEligibleHandoff com dados heterogêneos e elementos nulos não lança exceção', () => {
@@ -455,5 +464,191 @@ describe('FS-02C: Confiabilidade da Fila e Diferenciação de Cold Start', () =>
     assert.ok(handoff);
     assert.equal(handoff.disciplina, 'AFO');
     assert.equal(handoff.nextSessionHandoff, 'Handoff sobrevivente');
+  });
+
+  test('T21 (ACHADO B): Sessão ativa em andamento sem journal bloqueia sobrescrita automática de identidade', () => {
+    globalThis.sessionStorage.clear();
+    const activeId = 'sess-estudo-em-andamento-777';
+    globalThis.sessionStorage.setItem('fiscalstudy_active_session_id', activeId);
+
+    // Comprova que NÃO há journal de encerramento para activeId
+    assert.equal(globalThis.sessionStorage.getItem('fiscalstudy:study_session:v1:' + activeId), null);
+
+    // Avalia segurança: ausência de journal NÃO pode ser convertida em confirmação de encerramento!
+    const safety = checkResumptionSafety(activeId);
+    assert.equal(safety.safe, false, 'Ausência de journal NÃO autoriza nova sessão quando há sessão ativa');
+    assert.equal(safety.status, 'SESSION_IN_PROGRESS');
+    assert.equal(safety.reason, 'SESSION_IN_PROGRESS');
+    assert.equal(safety.activeSessionId, activeId);
+    assert.ok(safety.warning.includes('em andamento'));
+
+    // Tentar preparar a retomada sem descarte explícito é bloqueado
+    const handoff = {
+      sessionId: 'sess-historica-1',
+      concursoId: 'conc-1',
+      disciplina: 'Direito Administrativo',
+      nextSessionHandoff: 'Continuar atos',
+      isFromLatestSession: true
+    };
+
+    const prep = prepareHandoffResumptionPayload(handoff, {
+      checkSafety: true,
+      existingActiveSessionId: activeId
+    });
+
+    assert.equal(prep.safe, false);
+    assert.equal(prep.status, 'SESSION_IN_PROGRESS');
+    assert.equal(prep.activeSessionId, activeId);
+
+    // Invariante crucial: o sessionStorage retém a sessão ativa original (NÃO sobrescrita!)
+    assert.equal(globalThis.sessionStorage.getItem('fiscalstudy_active_session_id'), activeId);
+  });
+
+  test('T22 (ACHADO B): Distinção rigorosa entre os 5 estados de segurança de sessão', () => {
+    globalThis.sessionStorage.clear();
+
+    // 1. Nenhuma sessão anterior
+    assert.equal(checkResumptionSafety(null).status, 'NO_PREVIOUS_SESSION');
+    assert.equal(checkResumptionSafety('').status, 'NO_PREVIOUS_SESSION');
+    assert.equal(checkResumptionSafety('   ').status, 'NO_PREVIOUS_SESSION');
+
+    // 2. Sessão anterior comprovadamente concluída (via descarte explícito ou confirmada)
+    assert.equal(checkResumptionSafety('sess-1', { forceDiscardPrevious: true }).status, 'PREVIOUS_SESSION_COMPLETED');
+
+    // 3. Sessão anterior em andamento (sem journal)
+    assert.equal(checkResumptionSafety('sess-active-no-journal').status, 'SESSION_IN_PROGRESS');
+
+    // 4. Operação enviada sem confirmação (SENT_UNCONFIRMED)
+    const uncertainId = 'sess-uncertain-123';
+    globalThis.sessionStorage.setItem('fiscalstudy:study_session:v1:' + uncertainId, JSON.stringify({
+      version: 1,
+      sessionId: uncertainId,
+      serializedBody: '{}',
+      lifecycleState: 'SENT_UNCONFIRMED',
+      createdAt: Date.now(),
+      expiresAt: Date.now() + 86400000
+    }));
+    assert.equal(checkResumptionSafety(uncertainId).status, 'SENT_UNCONFIRMED_PENDING');
+
+    // 5. Journal corrompido ou estado desconhecido
+    const corruptedId = 'sess-corrupted-999';
+    globalThis.sessionStorage.setItem('fiscalstudy:study_session:v1:' + corruptedId, '{ malformed json');
+    assert.equal(checkResumptionSafety(corruptedId).status, 'CORRUPTED_JOURNAL');
+  });
+
+  test('T23 (ACHADO B): Resolução explícita com forceDiscardPrevious permite prosseguir com nova identidade', () => {
+    const activeId = 'sess-in-progress-to-discard';
+    const handoff = {
+      sessionId: 'sess-old-88',
+      concursoId: 'conc-1',
+      disciplina: 'TI',
+      nextSessionHandoff: 'Redes de computadores',
+      isFromLatestSession: true
+    };
+
+    // Usuário confirma conscientemente o descarte da sessão anterior
+    const prep = prepareHandoffResumptionPayload(handoff, {
+      checkSafety: true,
+      existingActiveSessionId: activeId,
+      forceDiscardPrevious: true
+    });
+
+    assert.equal(prep.safe, true);
+    assert.equal(prep.status, 'PREVIOUS_SESSION_COMPLETED');
+    assert.ok(prep.newSessionId.startsWith('study-'));
+    assert.notEqual(prep.newSessionId, activeId);
+    assert.equal(prep.sessionStorageItems.fiscalstudy_active_session_id, prep.newSessionId);
+  });
+
+  test('T24 (ACHADO A): Coordenador de carga protege contra respostas obsoletas fora de ordem ao trocar de concurso', () => {
+    const coordinator = createDashboardLoadCoordinator();
+
+    // 1. Usuário seleciona concurso A -> requisição de carga A iniciada
+    const loadA = coordinator.startLoad('conc-A');
+    assert.equal(loadA.concursoId, 'conc-A');
+    assert.equal(loadA.requestId, 1);
+    assert.equal(loadA.isCurrent(), true);
+    assert.equal(loadA.signal.aborted, false);
+
+    // 2. Usuário troca rapidamente para concurso B -> requisição B iniciada
+    const loadB = coordinator.startLoad('conc-B');
+    assert.equal(loadB.concursoId, 'conc-B');
+    assert.equal(loadB.requestId, 2);
+    assert.equal(loadB.isCurrent(), true);
+
+    // 3. Comprova que a carga A foi automaticamente abortada e não é mais current
+    assert.equal(loadA.isCurrent(), false, 'Carga A não pode ser considerada atual após troca para B');
+    assert.equal(loadA.signal.aborted, true, 'Sinal de cancelamento de A deve estar ativo');
+    assert.equal(coordinator.isCurrent(loadA.requestId, 'conc-A'), false);
+
+    // 4. Cenário de resposta fora de ordem:
+    // B responde primeiro (rede rápida)
+    let stateAppliedConcurso = null;
+    let stateData = null;
+
+    if (loadB.isCurrent()) {
+      stateAppliedConcurso = loadB.concursoId;
+      stateData = 'DADOS_DO_CONCURSO_B';
+    }
+    assert.equal(stateAppliedConcurso, 'conc-B');
+    assert.equal(stateData, 'DADOS_DO_CONCURSO_B');
+
+    // Resposta atrasada de A chega mais tarde (rede lenta)
+    if (loadA.isCurrent()) {
+      stateAppliedConcurso = loadA.concursoId;
+      stateData = 'DADOS_DO_CONCURSO_A';
+    }
+
+    // Invariante crucial: os dados atrasados de A NUNCA sobrepõem a interface de B
+    assert.equal(stateAppliedConcurso, 'conc-B', 'Dados de A nunca podem substituir o estado de B');
+    assert.equal(stateData, 'DADOS_DO_CONCURSO_B');
+  });
+
+  test('T25 (ACHADO A): Isolamento estrito de isLoading e loadError contra falhas de requisições anteriores', () => {
+    const coordinator = createDashboardLoadCoordinator();
+
+    const loadA = coordinator.startLoad('conc-A');
+    let uiIsLoading = true;
+    let uiLoadError = null;
+
+    // Usuário muda para B
+    const loadB = coordinator.startLoad('conc-B');
+
+    // A falha com erro de rede posteriormente
+    const delayedErrorA = new Error('Falha HTTP 500 no concurso A');
+    if (loadA.isCurrent()) {
+      uiLoadError = delayedErrorA.message;
+    }
+    if (loadA.isCurrent()) {
+      uiIsLoading = false;
+    }
+
+    // Comprova que o erro de A não afeta B e o loading de B não é encerrado prematuramente por A
+    assert.equal(uiLoadError, null, 'Erro da requisição obsoleta de A não pode definir loadError em B');
+    assert.equal(uiIsLoading, true, 'Finally da requisição obsoleta de A não pode desativar isLoading de B');
+
+    // B conclui com sucesso
+    if (loadB.isCurrent()) {
+      uiIsLoading = false;
+    }
+    assert.equal(uiIsLoading, false);
+    assert.equal(uiLoadError, null);
+  });
+
+  test('T26 (ACHADO A): Operação de retry gera nova sessão e invalida tentativa anterior do mesmo concurso', () => {
+    const coordinator = createDashboardLoadCoordinator();
+
+    const load1 = coordinator.startLoad('conc-B');
+    assert.equal(load1.requestId, 1);
+    assert.equal(load1.isCurrent(), true);
+
+    // Usuário clica em 'Tentar Novamente (Recarregar)' para o mesmo concurso B
+    const retryLoad = coordinator.startLoad('conc-B');
+    assert.equal(retryLoad.requestId, 2);
+    assert.equal(retryLoad.isCurrent(), true);
+
+    // Tentativa anterior 1 foi abortada
+    assert.equal(load1.isCurrent(), false);
+    assert.equal(load1.signal.aborted, true);
   });
 });

@@ -72,19 +72,48 @@ export interface EligibleHandoff {
   isFromLatestSession: boolean;
 }
 
+export type ResumptionSafetyStatus =
+  | 'NO_PREVIOUS_SESSION'
+  | 'PREVIOUS_SESSION_COMPLETED'
+  | 'SESSION_IN_PROGRESS'
+  | 'SENT_UNCONFIRMED_PENDING'
+  | 'PREPARED_PENDING'
+  | 'CORRUPTED_JOURNAL'
+  | 'UNKNOWN_STATE';
+
 export interface ResumptionSafetyCheck {
   safe: boolean;
-  reason?: 'SENT_UNCONFIRMED_PENDING' | 'CORRUPTED_JOURNAL';
+  status: ResumptionSafetyStatus;
+  reason?: ResumptionSafetyStatus;
   warning?: string;
+  activeSessionId?: string;
 }
 
 export interface HandoffResumptionPayloadResult {
   safe: boolean;
-  reason?: 'SENT_UNCONFIRMED_PENDING' | 'CORRUPTED_JOURNAL';
+  status?: ResumptionSafetyStatus;
+  reason?: ResumptionSafetyStatus;
   warning?: string;
+  activeSessionId?: string;
   newSessionId?: string;
   sessionStorageItems?: Record<string, string>;
   navigationParams?: { disciplina: string; assunto?: string; mode: string };
+}
+
+export interface DashboardLoadSession {
+  requestId: number;
+  concursoId: string;
+  isCurrent: () => boolean;
+  abort: () => void;
+  signal: AbortSignal;
+}
+
+export interface DashboardLoadCoordinator {
+  startLoad: (concursoId: string | number) => DashboardLoadSession;
+  isCurrent: (requestId: number, concursoId?: string | number) => boolean;
+  abortCurrent: () => void;
+  getCurrentRequestId: () => number;
+  getCurrentConcursoId: () => string | null;
 }
 
 function parseOccurredAt(dateStr: unknown): number | null {
@@ -165,32 +194,103 @@ export function extractLatestEligibleHandoff(
 }
 
 /**
- * Inspeciona journals da FS-01 para garantir que não sobrescreveremos
- * silenciosamente uma operação incerta ou registro local corrompido.
+ * Inspeciona journals da FS-01 e status de sessão em andamento para garantir
+ * que não sobrescreveremos silenciosamente uma sessão em andamento, uma
+ * operação incerta (SENT_UNCONFIRMED) ou registro local corrompido.
+ *
+ * Implementa distinção segura entre:
+ * 1. Nenhuma sessão anterior (NO_PREVIOUS_SESSION -> safe: true)
+ * 2. Sessão anterior comprovadamente concluída (PREVIOUS_SESSION_COMPLETED -> safe: true)
+ * 3. Sessão anterior em andamento sem journal (SESSION_IN_PROGRESS -> safe: false)
+ * 4. Operação enviada sem confirmação (SENT_UNCONFIRMED_PENDING -> safe: false)
+ * 5. Journal corrompido ou estado desconhecido (CORRUPTED_JOURNAL / UNKNOWN_STATE -> safe: false)
  */
-export function checkResumptionSafety(currentActiveSessionId?: string | null): ResumptionSafetyCheck {
-  if (!currentActiveSessionId) return { safe: true };
+export function checkResumptionSafety(
+  currentActiveSessionId?: string | null,
+  options?: { forceDiscardPrevious?: boolean }
+): ResumptionSafetyCheck {
+  if (!currentActiveSessionId || !currentActiveSessionId.trim()) {
+    return {
+      safe: true,
+      status: 'NO_PREVIOUS_SESSION',
+      reason: 'NO_PREVIOUS_SESSION'
+    };
+  }
 
-  const inspect = inspectPendingSession(currentActiveSessionId);
+  const activeId = currentActiveSessionId.trim();
+
+  // Se o usuário optou explicitamente por resolver/descartar a sessão anterior
+  if (options?.forceDiscardPrevious) {
+    return {
+      safe: true,
+      status: 'PREVIOUS_SESSION_COMPLETED',
+      reason: 'PREVIOUS_SESSION_COMPLETED',
+      activeSessionId: activeId
+    };
+  }
+
+  const inspect = inspectPendingSession(activeId);
+
   if (inspect.exists) {
     if (inspect.isCorrupted) {
       return {
         safe: false,
+        status: 'CORRUPTED_JOURNAL',
         reason: 'CORRUPTED_JOURNAL',
+        activeSessionId: activeId,
         warning: 'Existe um registro local corrompido ou inválido no navegador. O início de uma nova sessão foi bloqueado para auditoria e conciliação explícita.'
       };
     }
+
     const state = inspect.data?.lifecycleState || 'SENT_UNCONFIRMED';
     if (state === 'SENT_UNCONFIRMED') {
       return {
         safe: false,
+        status: 'SENT_UNCONFIRMED_PENDING',
         reason: 'SENT_UNCONFIRMED_PENDING',
+        activeSessionId: activeId,
         warning: 'Existe uma sessão pendente de confirmação pelo servidor. Conclua ou descarte-a conscientemente antes de iniciar nova sessão.'
       };
     }
+
+    if (state === 'PREPARED') {
+      return {
+        safe: false,
+        status: 'PREPARED_PENDING',
+        reason: 'PREPARED_PENDING',
+        activeSessionId: activeId,
+        warning: 'Existe uma sessão preparada com envio pendente. Finalize ou descarte a operação antes de iniciar nova sessão.'
+      };
+    }
+
+    if (state === 'CONFIRMED' || state === 'DISCARDED_BY_USER') {
+      return {
+        safe: true,
+        status: 'PREVIOUS_SESSION_COMPLETED',
+        reason: 'PREVIOUS_SESSION_COMPLETED',
+        activeSessionId: activeId
+      };
+    }
+
+    return {
+      safe: false,
+      status: 'UNKNOWN_STATE',
+      reason: 'UNKNOWN_STATE',
+      activeSessionId: activeId,
+      warning: 'Existe um registro local em estado desconhecido. Por segurança, resolva a sessão anterior antes de prosseguir.'
+    };
   }
 
-  return { safe: true };
+  // ACHADO B: A ausência de journal NÃO comprova conclusão quando há activeSessionId!
+  // SessaoEstudoAtiva retém fiscalstudy_active_session_id enquanto a sessão está em andamento,
+  // antes de qualquer journal de encerramento ser criado. Preservar a identidade e exigir decisão explícita.
+  return {
+    safe: false,
+    status: 'SESSION_IN_PROGRESS',
+    reason: 'SESSION_IN_PROGRESS',
+    activeSessionId: activeId,
+    warning: 'Existe uma sessão de estudos em andamento no navegador. Retome a sessão ativa existente ou conclua-a antes de iniciar um novo assunto.'
+  };
 }
 
 /**
@@ -203,15 +303,20 @@ export function prepareHandoffResumptionPayload(
     generatedSessionId?: string;
     checkSafety?: boolean;
     existingActiveSessionId?: string | null;
+    forceDiscardPrevious?: boolean;
   }
 ): HandoffResumptionPayloadResult {
   if (options?.checkSafety) {
-    const safety = checkResumptionSafety(options.existingActiveSessionId);
+    const safety = checkResumptionSafety(options.existingActiveSessionId, {
+      forceDiscardPrevious: options.forceDiscardPrevious
+    });
     if (!safety.safe) {
       return {
         safe: false,
+        status: safety.status,
         reason: safety.reason,
-        warning: safety.warning
+        warning: safety.warning,
+        activeSessionId: safety.activeSessionId
       };
     }
   }
@@ -220,7 +325,9 @@ export function prepareHandoffResumptionPayload(
 
   return {
     safe: true,
+    status: options?.existingActiveSessionId ? 'PREVIOUS_SESSION_COMPLETED' : 'NO_PREVIOUS_SESSION',
     newSessionId,
+    activeSessionId: options?.existingActiveSessionId || undefined,
     sessionStorageItems: {
       fiscalstudy_active_session_id: newSessionId,
       fiscalstudy_session_discipline: handoff.disciplina,
@@ -233,6 +340,71 @@ export function prepareHandoffResumptionPayload(
       disciplina: handoff.disciplina,
       assunto: handoff.topicoId,
       mode: 'RESUMPTION'
+    }
+  };
+}
+
+/**
+ * Cria coordenador de requisições assíncronas do Dashboard com AbortController
+ * e controle de geração, protegendo contra respostas atrasadas/fora de ordem
+ * em trocas rápidas de concurso (ACHADO A).
+ */
+export function createDashboardLoadCoordinator(): DashboardLoadCoordinator {
+  let currentRequestId = 0;
+  let currentConcursoId: string | null = null;
+  let currentController: AbortController | null = null;
+
+  return {
+    startLoad(concursoId: string | number): DashboardLoadSession {
+      const cid = String(concursoId).trim();
+      if (currentController) {
+        currentController.abort();
+      }
+      const controller = new AbortController();
+      currentController = controller;
+      currentRequestId += 1;
+      const thisRequestId = currentRequestId;
+      currentConcursoId = cid;
+
+      return {
+        requestId: thisRequestId,
+        concursoId: cid,
+        isCurrent: () => {
+          return (
+            thisRequestId === currentRequestId &&
+            currentConcursoId === cid &&
+            !controller.signal.aborted
+          );
+        },
+        abort: () => {
+          controller.abort();
+        },
+        signal: controller.signal
+      };
+    },
+
+    isCurrent(requestId: number, concursoId?: string | number): boolean {
+      if (requestId !== currentRequestId) return false;
+      if (concursoId !== undefined && concursoId !== null) {
+        if (String(concursoId).trim() !== currentConcursoId) return false;
+      }
+      if (currentController && currentController.signal.aborted) return false;
+      return true;
+    },
+
+    abortCurrent() {
+      if (currentController) {
+        currentController.abort();
+        currentController = null;
+      }
+    },
+
+    getCurrentRequestId() {
+      return currentRequestId;
+    },
+
+    getCurrentConcursoId() {
+      return currentConcursoId;
     }
   };
 }

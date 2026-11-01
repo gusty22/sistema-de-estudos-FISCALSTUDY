@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import type { ConcursoItem } from '../concursos/MeusConcursos';
 import { QuestionHistoryModal } from './QuestionHistoryModal';
 import {
@@ -26,10 +26,12 @@ import {
   prepareSessionPayload,
   extractLatestEligibleHandoff,
   prepareHandoffResumptionPayload,
+  createDashboardLoadCoordinator,
   type QueueActivity,
   type DashboardUIState,
   type StudySessionRecord,
-  type EligibleHandoff
+  type EligibleHandoff,
+  type ResumptionSafetyStatus
 } from './dashboardLogic';
 import './Dashboard.css';
 
@@ -149,10 +151,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [isCycleUnavailable, setIsCycleUnavailable] = useState(false);
   const [studySessions, setStudySessions] = useState<StudySessionRecord[]>([]);
   const [resumptionSafetyWarning, setResumptionSafetyWarning] = useState<string | null>(null);
+  const [resumptionSafetyStatus, setResumptionSafetyStatus] = useState<ResumptionSafetyStatus | null>(null);
+  const loadCoordinatorRef = useRef(createDashboardLoadCoordinator());
 
-  // Carregar dados reais da API com tratamento explícito de erros
+  // Carregar dados reais da API com proteção contra race conditions e respostas obsoletas (ACHADO A)
   const loadDashboardData = useCallback(() => {
     if (!activeConcurso) {
+      loadCoordinatorRef.current.abortCurrent();
       setTopics([]);
       setEditaisCount(0);
       setRevisionAgenda(null);
@@ -162,19 +167,24 @@ export const Dashboard: React.FC<DashboardProps> = ({
       setIsAgendaUnavailable(false);
       setIsCycleUnavailable(false);
       setResumptionSafetyWarning(null);
+      setResumptionSafetyStatus(null);
       setIsLoading(false);
       setLoadError(null);
       return;
     }
+
+    const session = loadCoordinatorRef.current.startLoad(activeConcurso.id);
+    const { signal, isCurrent } = session;
 
     setIsLoading(true);
     setLoadError(null);
     setIsAgendaUnavailable(false);
     setIsCycleUnavailable(false);
     setResumptionSafetyWarning(null);
+    setResumptionSafetyStatus(null);
 
     // 1. Tópicos do Edital Verticalizado (Endpoint Canônico)
-    const editalPromise = fetch(`/api/v1/concursos/${encodeURIComponent(activeConcurso.id)}/edital`)
+    const editalPromise = fetch(`/api/v1/concursos/${encodeURIComponent(activeConcurso.id)}/edital`, { signal })
       .then(async (res) => {
         if (!res.ok) {
           throw new Error(`Falha HTTP ${res.status} ao carregar o edital do concurso.`);
@@ -182,6 +192,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         return res.json();
       })
       .then((data) => {
+        if (!isCurrent()) return;
         setEditaisCount(Array.isArray(data?.editais) ? data.editais.length : 0);
         if (data && Array.isArray(data.topicos)) {
           setTopics(data.topicos);
@@ -191,7 +202,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       });
 
     // 2. Agenda de Revisões Adaptativas
-    const agendaPromise = fetch(`/api/v1/revisoes/agenda?concursoId=${encodeURIComponent(activeConcurso.id)}`)
+    const agendaPromise = fetch(`/api/v1/revisoes/agenda?concursoId=${encodeURIComponent(activeConcurso.id)}`, { signal })
       .then(async (res) => {
         if (!res.ok) {
           throw new Error(`Falha HTTP ${res.status} ao carregar agenda de revisões.`);
@@ -199,19 +210,21 @@ export const Dashboard: React.FC<DashboardProps> = ({
         return res.json();
       })
       .then((data) => {
+        if (!isCurrent()) return;
         if (data) {
           setRevisionAgenda(data);
           setIsAgendaUnavailable(false);
         }
       })
       .catch((err) => {
+        if (!isCurrent() || err?.name === 'AbortError') return;
         console.warn('Agenda de revisões indisponível:', err);
         setRevisionAgenda(null);
         setIsAgendaUnavailable(true);
       });
 
     // 3. Ciclo Robin Hood
-    const cyclePromise = fetch(`/api/v1/cycle/robin-hood?concursoId=${encodeURIComponent(activeConcurso.id)}`)
+    const cyclePromise = fetch(`/api/v1/cycle/robin-hood?concursoId=${encodeURIComponent(activeConcurso.id)}`, { signal })
       .then(async (res) => {
         if (!res.ok) {
           throw new Error(`Falha HTTP ${res.status} ao carregar ciclo Robin Hood.`);
@@ -219,40 +232,51 @@ export const Dashboard: React.FC<DashboardProps> = ({
         return res.json();
       })
       .then((data) => {
+        if (!isCurrent()) return;
         if (data) {
           setRobinHoodCycle(data);
           setIsCycleUnavailable(false);
         }
       })
       .catch((err) => {
+        if (!isCurrent() || err?.name === 'AbortError') return;
         console.warn('Ciclo de estudos indisponível:', err);
         setRobinHoodCycle(null);
         setIsCycleUnavailable(true);
       });
 
     // 4. Auditoria Automática de Anomalias de Estudo
-    const anomaliesPromise = fetch(`/api/v1/analytics/study-anomalies?concursoId=${encodeURIComponent(activeConcurso.id)}`)
+    const anomaliesPromise = fetch(`/api/v1/analytics/study-anomalies?concursoId=${encodeURIComponent(activeConcurso.id)}`, { signal })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
+        if (!isCurrent()) return;
         if (data && data.anomalies) setAnomalyReport(data);
+      })
+      .catch((err) => {
+        if (err?.name === 'AbortError') return;
       });
 
     // 5. Sumário de Horas Rastreadas
-    const summaryPromise = fetch(`/api/v1/study-sessions/summary?concursoId=${encodeURIComponent(activeConcurso.id)}`)
+    const summaryPromise = fetch(`/api/v1/study-sessions/summary?concursoId=${encodeURIComponent(activeConcurso.id)}`, { signal })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
+        if (!isCurrent()) return;
         if (data && data.totalHours !== undefined) {
           const minutes = Math.round(data.totalHours * 60);
           if (minutes > 0) {
             setStudiedTime(minutes);
           }
         }
+      })
+      .catch((err) => {
+        if (err?.name === 'AbortError') return;
       });
 
     // 6. Capacidade do Dia calculada a partir da Rotina
-    const routinePromise = fetch(`/api/v1/routine/effective-hours?concursoId=${encodeURIComponent(activeConcurso.id)}`)
+    const routinePromise = fetch(`/api/v1/routine/effective-hours?concursoId=${encodeURIComponent(activeConcurso.id)}`, { signal })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
+        if (!isCurrent()) return;
         if (data && data.effectiveMinutes && data.effectiveMinutes > 0) {
           setAvailableTime(data.effectiveMinutes);
         } else {
@@ -269,12 +293,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
             // usa valor padrao
           }
         }
+      })
+      .catch((err) => {
+        if (err?.name === 'AbortError') return;
       });
 
     // 7. Status do Anki
-    const ankiPromise = fetch('/api/v1/anki/status')
+    const ankiPromise = fetch('/api/v1/anki/status', { signal })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
+        if (!isCurrent()) return;
         if (data) {
           setAnkiStatus({
             connected: data.connected,
@@ -283,12 +311,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
             autoSyncActive: data.autoSyncActive ?? true
           });
         }
+      })
+      .catch((err) => {
+        if (err?.name === 'AbortError') return;
       });
 
     // 8. Sessões Recentes para Retomada Cognitiva (FS-02A)
-    const sessionsPromise = fetch(`/api/v1/study-sessions?concursoId=${encodeURIComponent(activeConcurso.id)}`)
+    const sessionsPromise = fetch(`/api/v1/study-sessions?concursoId=${encodeURIComponent(activeConcurso.id)}`, { signal })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
+        if (!isCurrent()) return;
         if (Array.isArray(data)) {
           setStudySessions(data);
         } else {
@@ -296,25 +328,43 @@ export const Dashboard: React.FC<DashboardProps> = ({
         }
       })
       .catch((err) => {
+        if (!isCurrent() || err?.name === 'AbortError') return;
         console.warn('Sessões de estudo indisponíveis:', err);
         setStudySessions([]);
       });
 
-    Promise.allSettled([editalPromise, agendaPromise, cyclePromise, anomaliesPromise, summaryPromise, routinePromise, ankiPromise, sessionsPromise])
+    Promise.allSettled([
+      editalPromise,
+      agendaPromise,
+      cyclePromise,
+      anomaliesPromise,
+      summaryPromise,
+      routinePromise,
+      ankiPromise,
+      sessionsPromise
+    ])
       .then((results) => {
+        if (!isCurrent()) return;
         const editalResult = results[0];
         if (editalResult.status === 'rejected') {
           const err = editalResult.reason;
+          if (err && err.name === 'AbortError') return;
           setLoadError(err instanceof Error ? err.message : 'Falha na comunicação com o servidor.');
         }
       })
       .finally(() => {
-        setIsLoading(false);
+        if (isCurrent()) {
+          setIsLoading(false);
+        }
       });
   }, [activeConcurso]);
 
   useEffect(() => {
+    const coordinator = loadCoordinatorRef.current;
     loadDashboardData();
+    return () => {
+      coordinator.abortCurrent();
+    };
   }, [loadDashboardData]);
 
   // Construção da Fila de Atividades Unificada (100% Determinística, ZERO Conteúdo Fictício)
@@ -361,8 +411,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
     onNavigateToTab('session', payload.navigationParams);
   };
 
-  // Disparar retomada guiada a partir do Handoff (FS-02B)
-  const handleResumptionClick = () => {
+  // Disparar retomada guiada a partir do Handoff (FS-02B & ACHADO B)
+  const handleResumptionClick = (forceDiscardPrevious = false) => {
     if (!eligibleHandoff) return;
 
     const existingActiveSessionId =
@@ -371,15 +421,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
     const result = prepareHandoffResumptionPayload(eligibleHandoff, {
       checkSafety: true,
-      existingActiveSessionId
+      existingActiveSessionId,
+      forceDiscardPrevious
     });
 
     if (!result.safe) {
-      setResumptionSafetyWarning(result.warning || 'Ação bloqueada por segurança de sessão pendente.');
+      setResumptionSafetyWarning(result.warning || 'Ação bloqueada por segurança de sessão ativa.');
+      setResumptionSafetyStatus(result.status || 'SESSION_IN_PROGRESS');
       return;
     }
 
     setResumptionSafetyWarning(null);
+    setResumptionSafetyStatus(null);
 
     if (result.sessionStorageItems) {
       for (const [key, value] of Object.entries(result.sessionStorageItems)) {
@@ -719,15 +772,38 @@ export const Dashboard: React.FC<DashboardProps> = ({
             )}
 
             <div className="calm-resumption-footer">
-              <button
-                type="button"
-                onClick={handleResumptionClick}
-                className="calm-resumption-btn"
-                data-testid="resumption-continue-btn"
-              >
-                <Play className="w-3.5 h-3.5 fill-current" />
-                <span>Continuar este assunto</span>
-              </button>
+              {resumptionSafetyStatus === 'SESSION_IN_PROGRESS' ? (
+                <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                  <button
+                    type="button"
+                    onClick={() => onNavigateToTab('session')}
+                    className="calm-resumption-btn"
+                    data-testid="resumption-resume-existing-btn"
+                  >
+                    <Play className="w-3.5 h-3.5 fill-current" />
+                    <span>Retomar Sessão em Andamento</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleResumptionClick(true)}
+                    className="calm-btn-ghost"
+                    data-testid="resumption-discard-btn"
+                    style={{ fontSize: '0.78rem' }}
+                  >
+                    Descartar anterior e iniciar este assunto
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => handleResumptionClick(false)}
+                  className="calm-resumption-btn"
+                  data-testid="resumption-continue-btn"
+                >
+                  <Play className="w-3.5 h-3.5 fill-current" />
+                  <span>Continuar este assunto</span>
+                </button>
+              )}
             </div>
           </section>
         )}
