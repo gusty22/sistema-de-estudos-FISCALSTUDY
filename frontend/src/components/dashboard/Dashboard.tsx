@@ -152,6 +152,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [studySessions, setStudySessions] = useState<StudySessionRecord[]>([]);
   const [resumptionSafetyWarning, setResumptionSafetyWarning] = useState<string | null>(null);
   const [resumptionSafetyStatus, setResumptionSafetyStatus] = useState<ResumptionSafetyStatus | null>(null);
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState<boolean>(false);
   const loadCoordinatorRef = useRef(createDashboardLoadCoordinator());
 
   // Carregar dados reais da API com proteção contra race conditions e respostas obsoletas (ACHADO A)
@@ -168,6 +169,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       setIsCycleUnavailable(false);
       setResumptionSafetyWarning(null);
       setResumptionSafetyStatus(null);
+      setShowDiscardConfirm(false);
       setIsLoading(false);
       setLoadError(null);
       return;
@@ -182,6 +184,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     setIsCycleUnavailable(false);
     setResumptionSafetyWarning(null);
     setResumptionSafetyStatus(null);
+    setShowDiscardConfirm(false);
 
     // 1. Tópicos do Edital Verticalizado (Endpoint Canônico)
     const editalPromise = fetch(`/api/v1/concursos/${encodeURIComponent(activeConcurso.id)}/edital`, { signal })
@@ -428,9 +431,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
     if (!result.safe) {
       setResumptionSafetyWarning(result.warning || 'Ação bloqueada por segurança de sessão ativa.');
       setResumptionSafetyStatus(result.status || 'SESSION_IN_PROGRESS');
+      setShowDiscardConfirm(false);
       return;
     }
 
+    setShowDiscardConfirm(false);
     setResumptionSafetyWarning(null);
     setResumptionSafetyStatus(null);
 
@@ -773,25 +778,82 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
             <div className="calm-resumption-footer">
               {resumptionSafetyStatus === 'SESSION_IN_PROGRESS' ? (
-                <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                  <button
-                    type="button"
-                    onClick={() => onNavigateToTab('session')}
-                    className="calm-resumption-btn"
-                    data-testid="resumption-resume-existing-btn"
-                  >
-                    <Play className="w-3.5 h-3.5 fill-current" />
-                    <span>Retomar Sessão em Andamento</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleResumptionClick(true)}
-                    className="calm-btn-ghost"
-                    data-testid="resumption-discard-btn"
-                    style={{ fontSize: '0.78rem' }}
-                  >
-                    Descartar anterior e iniciar este assunto
-                  </button>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', width: '100%' }}>
+                  {!showDiscardConfirm ? (
+                    <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                      <button
+                        type="button"
+                        onClick={() => onNavigateToTab('session')}
+                        className="calm-resumption-btn"
+                        data-testid="resumption-resume-existing-btn"
+                      >
+                        <Play className="w-3.5 h-3.5 fill-current" />
+                        <span>Retomar Sessão em Andamento</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowDiscardConfirm(true)}
+                        className="calm-btn-ghost"
+                        data-testid="resumption-discard-btn"
+                        style={{ fontSize: '0.78rem' }}
+                      >
+                        Descartar anterior e iniciar este assunto
+                      </button>
+                    </div>
+                  ) : (
+                    <div
+                      data-testid="resumption-discard-confirm-panel"
+                      style={{
+                        padding: '0.75rem 1rem',
+                        borderRadius: '0.75rem',
+                        background: 'rgba(239, 68, 68, 0.08)',
+                        border: '1px solid rgba(239, 68, 68, 0.25)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.5rem'
+                      }}
+                    >
+                      <div style={{ fontSize: '0.78rem', color: 'var(--calm-text-main, #0f172a)', lineHeight: '1.4' }}>
+                        ⚠️ <strong>Atenção:</strong> Existe uma sessão de estudos em andamento no navegador. Ao abandoná-la, qualquer progresso ainda não salvo ou tempo decorrido não registrado será perdido. Deseja realmente descartar a sessão ativa anterior e iniciar este novo assunto?
+                      </div>
+                      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        <button
+                          type="button"
+                          onClick={() => handleResumptionClick(true)}
+                          data-testid="confirm-discard-resumption-btn"
+                          style={{
+                            background: '#ef4444',
+                            color: '#ffffff',
+                            border: 'none',
+                            borderRadius: '0.5rem',
+                            padding: '0.35rem 0.75rem',
+                            fontSize: '0.75rem',
+                            fontWeight: 600,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Confirmar Descarte e Iniciar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setShowDiscardConfirm(false)}
+                          data-testid="cancel-discard-resumption-btn"
+                          style={{
+                            background: 'transparent',
+                            color: 'var(--calm-text-muted, #64748b)',
+                            border: '1px solid var(--calm-card-border, #e2e8f0)',
+                            borderRadius: '0.5rem',
+                            padding: '0.35rem 0.75rem',
+                            fontSize: '0.75rem',
+                            fontWeight: 500,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <button

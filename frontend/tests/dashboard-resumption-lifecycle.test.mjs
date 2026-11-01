@@ -437,14 +437,14 @@ describe('FS-02C: Confiabilidade da Fila e Diferenciação de Cold Start', () =>
     assert.equal(resultNoSession.status, 'NO_PREVIOUS_SESSION');
     assert.ok(resultNoSession.newSessionId);
 
-    // Caso 2: Sessão anterior com descarte explícito
+    // Caso 2: Sessão anterior com descarte explícito de sessão em andamento (PREVIOUS_SESSION_DISCARDED)
     const resultDiscarded = prepareHandoffResumptionPayload(handoff, {
       checkSafety: true,
       existingActiveSessionId: 'sess-abandonada-1',
       forceDiscardPrevious: true
     });
     assert.equal(resultDiscarded.safe, true);
-    assert.equal(resultDiscarded.status, 'PREVIOUS_SESSION_COMPLETED');
+    assert.equal(resultDiscarded.status, 'PREVIOUS_SESSION_DISCARDED');
   });
 
   test('T20: extractLatestEligibleHandoff com dados heterogêneos e elementos nulos não lança exceção', () => {
@@ -504,7 +504,7 @@ describe('FS-02C: Confiabilidade da Fila e Diferenciação de Cold Start', () =>
     assert.equal(globalThis.sessionStorage.getItem('fiscalstudy_active_session_id'), activeId);
   });
 
-  test('T22 (ACHADO B): Distinção rigorosa entre os 5 estados de segurança de sessão', () => {
+  test('T22 (ACHADO B): Distinção rigorosa entre os estados de segurança de sessão', () => {
     globalThis.sessionStorage.clear();
 
     // 1. Nenhuma sessão anterior
@@ -512,13 +512,25 @@ describe('FS-02C: Confiabilidade da Fila e Diferenciação de Cold Start', () =>
     assert.equal(checkResumptionSafety('').status, 'NO_PREVIOUS_SESSION');
     assert.equal(checkResumptionSafety('   ').status, 'NO_PREVIOUS_SESSION');
 
-    // 2. Sessão anterior comprovadamente concluída (via descarte explícito ou confirmada)
-    assert.equal(checkResumptionSafety('sess-1', { forceDiscardPrevious: true }).status, 'PREVIOUS_SESSION_COMPLETED');
+    // 2. Sessão anterior comprovadamente concluída (CONFIRMED no journal)
+    const confirmedId = 'sess-confirmed-1';
+    globalThis.sessionStorage.setItem('fiscalstudy:study_session:v1:' + confirmedId, JSON.stringify({
+      version: 1,
+      sessionId: confirmedId,
+      serializedBody: '{}',
+      lifecycleState: 'CONFIRMED',
+      createdAt: Date.now(),
+      expiresAt: Date.now() + 86400000
+    }));
+    assert.equal(checkResumptionSafety(confirmedId).status, 'PREVIOUS_SESSION_COMPLETED');
 
-    // 3. Sessão anterior em andamento (sem journal)
+    // 3. Descarte consciente de sessão em andamento sem journal (PREVIOUS_SESSION_DISCARDED)
+    assert.equal(checkResumptionSafety('sess-in-progress-1', { forceDiscardPrevious: true }).status, 'PREVIOUS_SESSION_DISCARDED');
+
+    // 4. Sessão anterior em andamento sem descarte (SESSION_IN_PROGRESS)
     assert.equal(checkResumptionSafety('sess-active-no-journal').status, 'SESSION_IN_PROGRESS');
 
-    // 4. Operação enviada sem confirmação (SENT_UNCONFIRMED)
+    // 5. Operação enviada sem confirmação (SENT_UNCONFIRMED)
     const uncertainId = 'sess-uncertain-123';
     globalThis.sessionStorage.setItem('fiscalstudy:study_session:v1:' + uncertainId, JSON.stringify({
       version: 1,
@@ -530,7 +542,7 @@ describe('FS-02C: Confiabilidade da Fila e Diferenciação de Cold Start', () =>
     }));
     assert.equal(checkResumptionSafety(uncertainId).status, 'SENT_UNCONFIRMED_PENDING');
 
-    // 5. Journal corrompido ou estado desconhecido
+    // 6. Journal corrompido ou estado desconhecido
     const corruptedId = 'sess-corrupted-999';
     globalThis.sessionStorage.setItem('fiscalstudy:study_session:v1:' + corruptedId, '{ malformed json');
     assert.equal(checkResumptionSafety(corruptedId).status, 'CORRUPTED_JOURNAL');
@@ -554,7 +566,7 @@ describe('FS-02C: Confiabilidade da Fila e Diferenciação de Cold Start', () =>
     });
 
     assert.equal(prep.safe, true);
-    assert.equal(prep.status, 'PREVIOUS_SESSION_COMPLETED');
+    assert.equal(prep.status, 'PREVIOUS_SESSION_DISCARDED');
     assert.ok(prep.newSessionId.startsWith('study-'));
     assert.notEqual(prep.newSessionId, activeId);
     assert.equal(prep.sessionStorageItems.fiscalstudy_active_session_id, prep.newSessionId);
@@ -650,5 +662,276 @@ describe('FS-02C: Confiabilidade da Fila e Diferenciação de Cold Start', () =>
     // Tentativa anterior 1 foi abortada
     assert.equal(load1.isCurrent(), false);
     assert.equal(load1.signal.aborted, true);
+  });
+
+  test('T27 (Achado de Segurança - Cenário 1): Sessão em andamento sem journal permite descarte consciente com status PREVIOUS_SESSION_DISCARDED', () => {
+    globalThis.sessionStorage.clear();
+    const activeId = 'sess-progress-clean-1';
+    globalThis.sessionStorage.setItem('fiscalstudy_active_session_id', activeId);
+
+    // Sem journal existente
+    assert.equal(globalThis.sessionStorage.getItem('fiscalstudy:study_session:v1:' + activeId), null);
+
+    const safety = checkResumptionSafety(activeId, { forceDiscardPrevious: true });
+    assert.equal(safety.safe, true);
+    assert.equal(safety.status, 'PREVIOUS_SESSION_DISCARDED');
+    assert.equal(safety.reason, 'PREVIOUS_SESSION_DISCARDED');
+    assert.equal(safety.activeSessionId, activeId);
+
+    const handoff = {
+      sessionId: 'sess-old-1',
+      concursoId: 'conc-1',
+      disciplina: 'Direito Constitucional',
+      nextSessionHandoff: 'Direitos fundamentais',
+      isFromLatestSession: true
+    };
+
+    const prep = prepareHandoffResumptionPayload(handoff, {
+      checkSafety: true,
+      existingActiveSessionId: activeId,
+      forceDiscardPrevious: true
+    });
+
+    assert.equal(prep.safe, true);
+    assert.equal(prep.status, 'PREVIOUS_SESSION_DISCARDED');
+    assert.ok(prep.newSessionId);
+    assert.notEqual(prep.newSessionId, activeId);
+    assert.equal(prep.sessionStorageItems.fiscalstudy_active_session_id, prep.newSessionId);
+  });
+
+  test('T28 (Achado de Segurança - Cenário 2): Sessão que passa de SESSION_IN_PROGRESS para SENT_UNCONFIRMED antes do clique tem descarte bloqueado', () => {
+    globalThis.sessionStorage.clear();
+    const activeId = 'sess-race-unconfirmed-2';
+    globalThis.sessionStorage.setItem('fiscalstudy_active_session_id', activeId);
+
+    // Inicialmente sem journal: se avaliada antes, estaria como SESSION_IN_PROGRESS
+    const initialSafety = checkResumptionSafety(activeId);
+    assert.equal(initialSafety.status, 'SESSION_IN_PROGRESS');
+
+    // Mas antes do clique de confirmação de descarte, ocorre submissão que fica pendente de confirmação (SENT_UNCONFIRMED)
+    globalThis.sessionStorage.setItem('fiscalstudy:study_session:v1:' + activeId, JSON.stringify({
+      version: 1,
+      sessionId: activeId,
+      serializedBody: '{"duracao": 3600}',
+      lifecycleState: 'SENT_UNCONFIRMED',
+      createdAt: Date.now(),
+      expiresAt: Date.now() + 86400000
+    }));
+
+    // Ao tentar descarte consciente, a revalidação obrigatória do journal detecta SENT_UNCONFIRMED e bloqueia a ação
+    const revalidatedSafety = checkResumptionSafety(activeId, { forceDiscardPrevious: true });
+    assert.equal(revalidatedSafety.safe, false, 'forceDiscardPrevious não pode contornar SENT_UNCONFIRMED');
+    assert.equal(revalidatedSafety.status, 'SENT_UNCONFIRMED_PENDING');
+    assert.equal(revalidatedSafety.activeSessionId, activeId);
+    assert.ok(revalidatedSafety.warning.includes('pendente de confirmação'));
+
+    const handoff = {
+      sessionId: 'sess-old-2',
+      concursoId: 'conc-1',
+      disciplina: 'Auditoria Privada',
+      nextSessionHandoff: 'Normas NBC TI',
+      isFromLatestSession: true
+    };
+
+    const prep = prepareHandoffResumptionPayload(handoff, {
+      checkSafety: true,
+      existingActiveSessionId: activeId,
+      forceDiscardPrevious: true
+    });
+
+    assert.equal(prep.safe, false);
+    assert.equal(prep.status, 'SENT_UNCONFIRMED_PENDING');
+  });
+
+  test('T29 (Achado de Segurança - Cenário 3): Journal corrompido com forceDiscardPrevious=true tem descarte bloqueado', () => {
+    globalThis.sessionStorage.clear();
+    const corruptedId = 'sess-corrupted-must-block-3';
+    globalThis.sessionStorage.setItem('fiscalstudy_active_session_id', corruptedId);
+    globalThis.sessionStorage.setItem('fiscalstudy:study_session:v1:' + corruptedId, '{ broken-json !!!');
+
+    // Mesmo com forceDiscardPrevious: true, journal corrompido NUNCA é contornado
+    const safety = checkResumptionSafety(corruptedId, { forceDiscardPrevious: true });
+    assert.equal(safety.safe, false, 'forceDiscardPrevious não pode contornar journal corrompido');
+    assert.equal(safety.status, 'CORRUPTED_JOURNAL');
+    assert.equal(safety.activeSessionId, corruptedId);
+    assert.ok(safety.warning.includes('corrompido ou inválido'));
+
+    const handoff = {
+      sessionId: 'sess-old-3',
+      concursoId: 'conc-1',
+      disciplina: 'Legislação Tributária',
+      nextSessionHandoff: 'Regulamento do ICMS',
+      isFromLatestSession: true
+    };
+
+    const prep = prepareHandoffResumptionPayload(handoff, {
+      checkSafety: true,
+      existingActiveSessionId: corruptedId,
+      forceDiscardPrevious: true
+    });
+
+    assert.equal(prep.safe, false);
+    assert.equal(prep.status, 'CORRUPTED_JOURNAL');
+  });
+
+  test('T30 (Achado de Segurança - Cenário 4): Estado desconhecido no journal tem descarte bloqueado', () => {
+    globalThis.sessionStorage.clear();
+    const unknownId = 'sess-unknown-state-4';
+    globalThis.sessionStorage.setItem('fiscalstudy_active_session_id', unknownId);
+    globalThis.sessionStorage.setItem('fiscalstudy:study_session:v1:' + unknownId, JSON.stringify({
+      version: 1,
+      sessionId: unknownId,
+      serializedBody: '{}',
+      lifecycleState: 'NON_EXISTENT_FUTURE_STATE',
+      createdAt: Date.now(),
+      expiresAt: Date.now() + 86400000
+    }));
+
+    // Revalidação detecta estado desconhecido e bloqueia
+    const safety = checkResumptionSafety(unknownId, { forceDiscardPrevious: true });
+    assert.equal(safety.safe, false, 'forceDiscardPrevious não pode contornar UNKNOWN_STATE');
+    assert.equal(safety.status, 'UNKNOWN_STATE');
+    assert.equal(safety.activeSessionId, unknownId);
+
+    const handoff = {
+      sessionId: 'sess-old-4',
+      concursoId: 'conc-1',
+      disciplina: 'Português',
+      nextSessionHandoff: 'Crase e regência verbal',
+      isFromLatestSession: true
+    };
+
+    const prep = prepareHandoffResumptionPayload(handoff, {
+      checkSafety: true,
+      existingActiveSessionId: unknownId,
+      forceDiscardPrevious: true
+    });
+
+    assert.equal(prep.safe, false);
+    assert.equal(prep.status, 'UNKNOWN_STATE');
+  });
+
+  test('T31 (Achado de Segurança - Cenário 5): Falha no descarte preserva rigorosamente activeSessionId e journal no storage', () => {
+    globalThis.sessionStorage.clear();
+    const activeId = 'sess-preserved-identity-5';
+    const journalKey = 'fiscalstudy:study_session:v1:' + activeId;
+    const journalRaw = JSON.stringify({
+      version: 1,
+      sessionId: activeId,
+      serializedBody: '{"tempo": 1200, "notas": "Dados intactos preservados"}',
+      lifecycleState: 'SENT_UNCONFIRMED',
+      createdAt: Date.now(),
+      expiresAt: Date.now() + 86400000
+    });
+
+    globalThis.sessionStorage.setItem('fiscalstudy_active_session_id', activeId);
+    globalThis.sessionStorage.setItem('fiscalstudy_timer_session_id', activeId);
+    globalThis.sessionStorage.setItem(journalKey, journalRaw);
+
+    const handoff = {
+      sessionId: 'sess-old-5',
+      concursoId: 'conc-1',
+      disciplina: 'Contabilidade de Custos',
+      nextSessionHandoff: 'Equivalência patrimonial',
+      isFromLatestSession: true
+    };
+
+    // Tenta descarte que é bloqueado por revalidação
+    const prep = prepareHandoffResumptionPayload(handoff, {
+      checkSafety: true,
+      existingActiveSessionId: activeId,
+      forceDiscardPrevious: true
+    });
+
+    assert.equal(prep.safe, false);
+    assert.equal(prep.newSessionId, undefined, 'Nenhum novo sessionId gerado em caso de bloqueio');
+    assert.equal(prep.sessionStorageItems, undefined, 'Nenhum item de storage retornado em caso de bloqueio');
+
+    // Invariante de integridade estrita: nada foi alterado ou expurgado do sessionStorage
+    assert.equal(globalThis.sessionStorage.getItem('fiscalstudy_active_session_id'), activeId);
+    assert.equal(globalThis.sessionStorage.getItem('fiscalstudy_timer_session_id'), activeId);
+    assert.equal(globalThis.sessionStorage.getItem(journalKey), journalRaw);
+  });
+
+  test('T32 (Comportamental): Máquina de estados do fluxo de confirmação e descarte consciente', () => {
+    globalThis.sessionStorage.clear();
+    const activeId = 'sess-behavioral-flow-1';
+    globalThis.sessionStorage.setItem('fiscalstudy_active_session_id', activeId);
+
+    const handoff = {
+      sessionId: 'sess-target-1',
+      concursoId: 'conc-1',
+      disciplina: 'Direito Previdenciário',
+      nextSessionHandoff: 'Benefícios em espécie',
+      isFromLatestSession: true
+    };
+
+    // 1. Simulação do estado inicial do componente:
+    let resumptionSafetyStatus = null;
+    let resumptionSafetyWarning = null;
+    let showDiscardConfirm = false;
+    let navigatedTab = null;
+    let navigationParams = null;
+
+    // Ação: Usuário clica no botão "Continuar este assunto"
+    const handleResumptionClick = (forceDiscard = false) => {
+      const existingId = globalThis.sessionStorage.getItem('fiscalstudy_active_session_id');
+      const result = prepareHandoffResumptionPayload(handoff, {
+        checkSafety: true,
+        existingActiveSessionId: existingId,
+        forceDiscardPrevious: forceDiscard
+      });
+
+      if (!result.safe) {
+        resumptionSafetyWarning = result.warning || 'Ação bloqueada';
+        resumptionSafetyStatus = result.status || 'SESSION_IN_PROGRESS';
+        showDiscardConfirm = false;
+        return;
+      }
+
+      showDiscardConfirm = false;
+      resumptionSafetyWarning = null;
+      resumptionSafetyStatus = null;
+
+      if (result.sessionStorageItems) {
+        for (const [key, value] of Object.entries(result.sessionStorageItems)) {
+          globalThis.sessionStorage.setItem(key, value);
+        }
+      }
+
+      navigatedTab = 'session';
+      navigationParams = result.navigationParams;
+    };
+
+    // 2. Primeiro clique: deve bloquear e solicitar decisão consciente
+    handleResumptionClick(false);
+    assert.equal(resumptionSafetyStatus, 'SESSION_IN_PROGRESS');
+    assert.ok(resumptionSafetyWarning);
+    assert.equal(showDiscardConfirm, false);
+    assert.equal(navigatedTab, null);
+
+    // 3. Usuário clica em "Descartar anterior e iniciar este assunto" -> abre painel com advertência
+    showDiscardConfirm = true;
+    assert.equal(showDiscardConfirm, true);
+
+    // 4. Usuário clica em "Cancelar" -> fecha painel sem alterar sessão
+    showDiscardConfirm = false;
+    assert.equal(showDiscardConfirm, false);
+    assert.equal(globalThis.sessionStorage.getItem('fiscalstudy_active_session_id'), activeId);
+
+    // 5. Usuário abre novamente e clica em "Confirmar Descarte e Iniciar"
+    showDiscardConfirm = true;
+    handleResumptionClick(true);
+
+    // 6. Confirma que o descarte consciente foi aceito com PREVIOUS_SESSION_DISCARDED,
+    // novo ID gerado no storage e navegação disparada
+    assert.equal(resumptionSafetyStatus, null);
+    assert.equal(resumptionSafetyWarning, null);
+    assert.equal(showDiscardConfirm, false);
+    assert.equal(navigatedTab, 'session');
+    assert.equal(navigationParams.mode, 'RESUMPTION');
+    const newId = globalThis.sessionStorage.getItem('fiscalstudy_active_session_id');
+    assert.ok(newId.startsWith('study-'));
+    assert.notEqual(newId, activeId);
   });
 });

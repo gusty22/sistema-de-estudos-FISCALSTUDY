@@ -75,6 +75,7 @@ export interface EligibleHandoff {
 export type ResumptionSafetyStatus =
   | 'NO_PREVIOUS_SESSION'
   | 'PREVIOUS_SESSION_COMPLETED'
+  | 'PREVIOUS_SESSION_DISCARDED'
   | 'SESSION_IN_PROGRESS'
   | 'SENT_UNCONFIRMED_PENDING'
   | 'PREPARED_PENDING'
@@ -219,19 +220,11 @@ export function checkResumptionSafety(
 
   const activeId = currentActiveSessionId.trim();
 
-  // Se o usuário optou explicitamente por resolver/descartar a sessão anterior
-  if (options?.forceDiscardPrevious) {
-    return {
-      safe: true,
-      status: 'PREVIOUS_SESSION_COMPLETED',
-      reason: 'PREVIOUS_SESSION_COMPLETED',
-      activeSessionId: activeId
-    };
-  }
-
+  // 1. Inspecionar SEMPRE o estado atual do journal antes de qualquer descarte
   const inspect = inspectPendingSession(activeId);
 
   if (inspect.exists) {
+    // 3. Nunca permitir que forceDiscardPrevious contorne CORRUPTED_JOURNAL, SENT_UNCONFIRMED ou UNKNOWN_STATE
     if (inspect.isCorrupted) {
       return {
         safe: false,
@@ -281,9 +274,19 @@ export function checkResumptionSafety(
     };
   }
 
-  // ACHADO B: A ausência de journal NÃO comprova conclusão quando há activeSessionId!
-  // SessaoEstudoAtiva retém fiscalstudy_active_session_id enquanto a sessão está em andamento,
-  // antes de qualquer journal de encerramento ser criado. Preservar a identidade e exigir decisão explícita.
+  // 2. Permitir o descarte consciente de SESSION_IN_PROGRESS somente se a situação
+  // continuar comprovadamente sem journal pendente ou incerto.
+  if (options?.forceDiscardPrevious) {
+    // 6. Não marcar PREVIOUS_SESSION_COMPLETED quando ocorreu abandono voluntário; marcar PREVIOUS_SESSION_DISCARDED
+    return {
+      safe: true,
+      status: 'PREVIOUS_SESSION_DISCARDED',
+      reason: 'PREVIOUS_SESSION_DISCARDED',
+      activeSessionId: activeId
+    };
+  }
+
+  // Sem forceDiscardPrevious, bloqueia e avisa que a sessão está em andamento
   return {
     safe: false,
     status: 'SESSION_IN_PROGRESS',
@@ -306,6 +309,10 @@ export function prepareHandoffResumptionPayload(
     forceDiscardPrevious?: boolean;
   }
 ): HandoffResumptionPayloadResult {
+  let resolvedStatus: ResumptionSafetyStatus = options?.existingActiveSessionId
+    ? (options.forceDiscardPrevious ? 'PREVIOUS_SESSION_DISCARDED' : 'PREVIOUS_SESSION_COMPLETED')
+    : 'NO_PREVIOUS_SESSION';
+
   if (options?.checkSafety) {
     const safety = checkResumptionSafety(options.existingActiveSessionId, {
       forceDiscardPrevious: options.forceDiscardPrevious
@@ -319,13 +326,14 @@ export function prepareHandoffResumptionPayload(
         activeSessionId: safety.activeSessionId
       };
     }
+    resolvedStatus = safety.status;
   }
 
   const newSessionId = options?.generatedSessionId || ('study-' + crypto.randomUUID());
 
   return {
     safe: true,
-    status: options?.existingActiveSessionId ? 'PREVIOUS_SESSION_COMPLETED' : 'NO_PREVIOUS_SESSION',
+    status: resolvedStatus,
     newSessionId,
     activeSessionId: options?.existingActiveSessionId || undefined,
     sessionStorageItems: {
