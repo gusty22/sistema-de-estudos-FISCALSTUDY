@@ -8,9 +8,11 @@ import {
   Plus,
   ChevronDown,
   AlertTriangle,
+  AlertCircle,
   Upload
 } from 'lucide-react';
 import type { ConcursoItem } from '../concursos/MeusConcursos';
+import { normalizeCurriculum } from './curriculumNormalizer';
 import './AssistenteObjetivoWizard.css';
 
 // ============================================================================
@@ -165,7 +167,6 @@ export default function AssistenteObjetivoWizard({
   onConcursoCreated,
   initialData
 }: AssistenteObjetivoWizardProps) {
-  useModalA11y({ isOpen, onClose, closeOnEscape: true, restoreFocus: true });
   // 1. Tema Paper / Night
   const [theme] = useState<'paper' | 'night'>(() => {
     return (localStorage.getItem('fiscalstudy_theme') as 'paper' | 'night') || 'paper';
@@ -193,6 +194,10 @@ export default function AssistenteObjetivoWizard({
   const [curriculumTree, setCurriculumTree] = useState<CurriculumNode[]>(DEFAULT_CURRICULUM_TEMPLATE);
   const [selectedNodeId, setSelectedNodeId] = useState<string>('node_st1');
   const [curriculumStatus, setCurriculumStatus] = useState<CurriculumStatus>('ESTRUTURALMENTE_VALIDO');
+  const [showImportModal, setShowImportModal] = useState<boolean>(false);
+  const [importJsonText, setImportJsonText] = useState<string>('');
+  const [importNotice, setImportNotice] = useState<string | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
 
   // 5. T04: Diagnóstico Inicial Autodeclarado (SELF_REPORTED)
   const [diagnosticMap, setDiagnosticMap] = useState<Record<string, FamiliarityLevel>>({
@@ -409,25 +414,35 @@ export default function AssistenteObjetivoWizard({
     });
   };
 
+  const applyNormalizedCurriculum = (nodes: CurriculumNode[], statsMsg?: string) => {
+    setCurriculumTree(nodes);
+    setCurriculumStatus('IMPORTADO');
+    if (nodes.length > 0) {
+      setSelectedNodeId(nodes[0].id);
+    }
+    setImportNotice(statsMsg || `${nodes.length} matérias carregadas com sucesso.`);
+    setImportError(null);
+    setShowImportModal(false);
+  };
+
   const handleImportJsonFile = () => {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = '.json,application/json';
+    input.accept = '.json,application/json,text/plain';
     input.onchange = (e: any) => {
       const file = e.target.files?.[0];
       if (!file) return;
       const reader = new FileReader();
       reader.onload = (event) => {
-        try {
-          const parsed = JSON.parse(event.target?.result as string);
-          if (Array.isArray(parsed)) {
-            setCurriculumTree(parsed);
-            setCurriculumStatus('IMPORTADO');
-          } else {
-            alert('O JSON deve ser uma lista de nós no formato CurriculumNode[].');
-          }
-        } catch {
-          alert('JSON inválido ou corrompido.');
+        const content = event.target?.result as string;
+        const result = normalizeCurriculum(content);
+        if (result.success) {
+          applyNormalizedCurriculum(
+            result.nodes,
+            `Currículo importado com sucesso! ${result.stats.disciplinesCount} matéria(s), ${result.stats.topicsCount} tópico(s) e ${result.stats.subtopicsCount} subtópico(s) carregados.`
+          );
+        } else {
+          setImportError(result.error);
         }
       };
       reader.readAsText(file);
@@ -435,10 +450,41 @@ export default function AssistenteObjetivoWizard({
     input.click();
   };
 
+  const handleImportPastedJson = () => {
+    if (!importJsonText.trim()) {
+      setImportError('Por favor, cole o JSON gerado antes de clicar em importar.');
+      return;
+    }
+    const result = normalizeCurriculum(importJsonText);
+    if (result.success) {
+      applyNormalizedCurriculum(
+        result.nodes,
+        `Currículo importado com sucesso! ${result.stats.disciplinesCount} matéria(s), ${result.stats.topicsCount} tópico(s) e ${result.stats.subtopicsCount} subtópico(s) carregados.`
+      );
+      setImportJsonText('');
+    } else {
+      setImportError(result.error);
+    }
+  };
+
+  const handleCloseWizard = () => {
+    if (currentStepIndex > 0 || curriculumStatus === 'IMPORTADO') {
+      const confirmed = window.confirm(
+        'Deseja realmente fechar o assistente? O progresso da configuração atual não será salvo.'
+      );
+      if (!confirmed) return;
+    }
+    setCurrentStepIndex(0);
+    setCurriculumStatus('ESTRUTURALMENTE_VALIDO');
+    onClose();
+  };
+
+  useModalA11y({ isOpen, onClose: handleCloseWizard, closeOnEscape: true, restoreFocus: true });
+
   if (!isOpen) return null;
 
   return (
-    <div className="wizard-calm-backdrop animate-fadeIn" onClick={(e) => e.target === e.currentTarget && onClose()}>
+    <div className="wizard-calm-backdrop animate-fadeIn">
       <div
         className={`wizard-calm-modal theme-${theme}`}
         role="dialog"
@@ -471,7 +517,7 @@ export default function AssistenteObjetivoWizard({
 
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleCloseWizard}
             className="wizard-close-btn"
             aria-label="Fechar assistente de objetivo"
             title="Fechar assistente (Esc)"
@@ -663,20 +709,47 @@ export default function AssistenteObjetivoWizard({
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => setCurriculumTree(DEFAULT_CURRICULUM_TEMPLATE)}
+                    onClick={() => {
+                      setCurriculumTree(DEFAULT_CURRICULUM_TEMPLATE);
+                      setCurriculumStatus('ESTRUTURALMENTE_VALIDO');
+                      setSelectedNodeId('node_st1');
+                      setImportNotice(null);
+                    }}
                     className="text-xs font-medium px-3 py-1.5 rounded-lg border border-stone-300 dark:border-stone-700 hover:bg-stone-200 dark:hover:bg-stone-800 transition"
                   >
                     Usar Modelo Padrão
                   </button>
                   <button
                     type="button"
-                    onClick={handleImportJsonFile}
+                    onClick={() => {
+                      setShowImportModal(true);
+                      setImportError(null);
+                    }}
                     className="text-xs font-medium px-3 py-1.5 rounded-lg border border-indigo-300 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 hover:opacity-85 transition flex items-center gap-1.5"
+                    data-testid="wizard-open-import-json-btn"
                   >
                     <Upload className="w-3.5 h-3.5" /> Importar JSON
                   </button>
                 </div>
               </div>
+
+              {/* Banner de Feedback de Importação de Currículo */}
+              {importNotice && (
+                <div className="p-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 text-xs flex items-center justify-between animate-fadeIn" data-testid="wizard-import-notice">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    <span>{importNotice}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setImportNotice(null)}
+                    className="text-stone-400 hover:text-stone-600 dark:hover:text-stone-200"
+                    title="Fechar aviso"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
 
               {/* Editor Dividido (Árvore à Esquerda + Detalhes à Direita) */}
               <div className="curriculum-editor-split">
@@ -1060,6 +1133,95 @@ export default function AssistenteObjetivoWizard({
           </button>
         </footer>
       </div>
+
+      {/* MODAL DE IMPORTAÇÃO DE JSON (GEMINI E NATIVO) */}
+      {showImportModal && (
+        <div
+          className="wizard-calm-backdrop"
+          style={{ zIndex: 60, backgroundColor: 'rgba(0, 0, 0, 0.7)' }}
+          onClick={(e) => e.target === e.currentTarget && setShowImportModal(false)}
+        >
+          <div
+            className={`wizard-calm-modal theme-${theme}`}
+            style={{ maxWidth: '640px', maxHeight: '90vh' }}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="import-json-modal-title"
+          >
+            <header className="wizard-calm-header">
+              <div className="flex items-center gap-2">
+                <Upload className="w-4 h-4 text-indigo-500" />
+                <h3 id="import-json-modal-title" style={{ fontSize: '1rem', fontWeight: 700, margin: 0 }}>
+                  Importar Estrutura Curricular (JSON)
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setShowImportModal(false); setImportError(null); }}
+                className="wizard-close-btn"
+                aria-label="Fechar importador de JSON"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </header>
+
+            <div className="wizard-calm-body space-y-4">
+              <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed m-0">
+                Cole o JSON com a lista de matérias e tópicos (como gerado pelo <strong>Gemini</strong>) ou selecione um arquivo <code>.json</code> salvo no seu computador.
+              </p>
+
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label htmlFor="curriculum-json-textarea" className="text-xs font-semibold text-stone-700 dark:text-stone-300">
+                    Colar JSON de Matérias e Tópicos:
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleImportJsonFile}
+                    className="text-xs text-indigo-600 dark:text-indigo-400 font-semibold hover:underline flex items-center gap-1"
+                  >
+                    <Upload className="w-3.5 h-3.5" /> Ou escolher arquivo .json
+                  </button>
+                </div>
+                <textarea
+                  id="curriculum-json-textarea"
+                  value={importJsonText}
+                  onChange={(e) => { setImportJsonText(e.target.value); setImportError(null); }}
+                  placeholder={'{\n  "materias": [\n    {\n      "id": "mat_001",\n      "nome": "Língua Portuguesa",\n      "topicos": [\n        { "id": "top_001", "nome": "Interpretação de textos", "subtopicos": [] }\n      ]\n    }\n  ]\n}'}
+                  className="wizard-textarea w-full font-mono text-xs"
+                  rows={10}
+                  style={{ width: '100%', boxSizing: 'border-box' }}
+                />
+              </div>
+
+              {importError && (
+                <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
+                  <span>{importError}</span>
+                </div>
+              )}
+            </div>
+
+            <footer className="wizard-calm-footer" style={{ justifyContent: 'flex-end', gap: '0.75rem' }}>
+              <button
+                type="button"
+                onClick={() => { setShowImportModal(false); setImportError(null); }}
+                className="wizard-nav-btn secondary"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleImportPastedJson}
+                className="wizard-nav-btn primary"
+                data-testid="wizard-confirm-import-json-btn"
+              >
+                <CheckCircle2 className="w-4 h-4" /> Importar Estrutura
+              </button>
+            </footer>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
